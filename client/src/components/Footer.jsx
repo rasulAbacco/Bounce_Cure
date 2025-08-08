@@ -1,4 +1,5 @@
-import React from "react";
+
+import React from 'react'
 import { FaTwitter, FaFacebookF, FaLinkedinIn, FaGithub } from "react-icons/fa";
 import { Link } from "react-router-dom";
 
