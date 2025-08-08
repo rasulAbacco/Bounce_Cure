@@ -23,13 +23,18 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="fixed w-full z-50 bg-black/40 backdrop-blur-lg border-b border-white/10">
+    <nav className="fixed w-full z-10 bg-black/90 backdrop-blur-lg border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
 
         {/* Logo */}
-        <div className="text-2xl font-bold text-white tracking-wide w-18">
-          <img src="./vamsi-4.png" alt="Bounce Cure Logo" />
+        <div className="flex items-center justify-center h-40 w-30 md:h-20 md:w-20">
+          <img
+            src="./vamsi-4.png"
+            alt="Bounce Cure Logo"
+            className="h-full w-auto object-contain block"
+          />
         </div>
+
 
         {/* Desktop Links */}
         <div className="hidden md:flex space-x-8 items-center">
@@ -113,14 +118,14 @@ const Navbar = () => {
               {link.name}
             </Link>
           ))}
-        <a
-          href="/signup"
-          className="block bg-gray-500/80 text-white text-center 
+          <a
+            href="/signup"
+            className="block bg-gray-500/80 text-white text-center 
                     text-9xl
                     px-4 py-2 rounded-xl hover:bg-blue-400/90 transition duration-300"
-        >
-          Sign Up
-        </a>
+          >
+            Sign Up
+          </a>
 
           <a
             href="/login"
