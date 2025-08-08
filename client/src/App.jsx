@@ -1,24 +1,29 @@
-import React from 'react'
+import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
- 
- 
+
 import HomePage from './pages/HomePage';
 import Pricing from './pages/Pricing';
 
+import Contact from './components/Contact';
+
+import About from './pages/About';
+import Features from './pages/Features';
+
+
 function App() {
   return (
-    <div>
+    <Router>
      
-      <Router>
-        
+
         <Routes>
           <Route path="/" element={<HomePage />} />
-          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/features" element={<Features />} />
+          <Route path="/contact" element={<Contact />} />
         </Routes>
-    </Router>
 
-    </div>
-  )
+    </Router>
+  );
 }
 
-export default App
+export default App;
