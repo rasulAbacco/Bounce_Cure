@@ -7,6 +7,7 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
 
+
   const links = [
     { name: 'Home', to: '/' },
     { name: 'About', to: '/about' },
@@ -15,6 +16,8 @@ const Navbar = () => {
     { name: 'Pricing', to: '/pricing' },
     { name: 'Contact', to: '/contact' },
   ];
+
+
 
   const services = [
     { name: 'Email Verification', icon: <FaEnvelope />, to: '/services/email-verification' },
