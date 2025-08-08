@@ -1,9 +1,12 @@
 import React from 'react';
 import { Shield, Zap, Lock, TrendingUp, CheckCircle, Users, Star, Mail, ArrowRight, Globe, Target, Award, Sparkles, BarChart3, Clock, Database } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import Navbar from '../components/Navbar';
 
 export default function About() {
   return (
+    <div>
+        <Navbar />
     <div className="bg-black text-white font-sans min-h-screen overflow-hidden">
       
       {/* Hero Section */}
@@ -33,7 +36,7 @@ export default function About() {
           <div className="mb-1 inline-block">
             
           </div>
-          <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r text-[#c2831f]  animate-fade-in ">
+          <h1 className="text-6xl font-bold mb-6 bg-gradient-to-r text-[#c2831f]  animate-fade-in ">
             Empowering Email Verification
           </h1>
           <p className="text-gray-300 max-w-3xl mx-auto mb-8 text-xl leading-relaxed">
@@ -50,7 +53,7 @@ export default function About() {
       </section>
 
       {/* Stats Section */}
-      <section className="py-16 px-4 bg-gradient-to-r from-gray-900 to-black">
+      <section className="py-8 px-4 bg-gradient-to-r from-gray-900 to-black">
         <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
           {[
             { number: "99.9%", label: "Accuracy Rate", icon: <Target className="w-8 h-8 mx-auto mb-2 text-[#c2831f]" /> },
@@ -70,7 +73,7 @@ export default function About() {
       </section>
 
       {/* Timeline / Milestones */}
-      <section className="max-w-5xl mx-auto px-4 py-20 space-y-12">
+      <section className="max-w-5xl mx-auto px-4 py-16 space-y-12">
         <div className="text-center mb-16">
           <h2 className="text-4xl font-bold mb-4">Our Journey</h2>
           <p className="text-gray-400 text-lg">Building the future of email verification</p>
@@ -118,7 +121,7 @@ export default function About() {
       </section>
 
       {/* Core Values - Updated to match dark theme */}
-      <section className="bg-gradient-to-b from-black to-gray-900 py-20 px-4 relative">
+      <section className="bg-gradient-to-b from-black to-gray-900 py-16 px-4 relative">
         
         <div className="relative z-10">
           <div className="text-center mb-16">
@@ -167,7 +170,7 @@ export default function About() {
       </section>
 
       {/* Technology Section */}
-      <section className="py-20 px-4 bg-gradient-to-b from-black to-gray-900">
+      <section className="py-16 px-4 bg-gradient-to-b from-black to-gray-900">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl font-bold mb-4">Cutting-Edge Technology</h2>
@@ -216,7 +219,7 @@ export default function About() {
       </section>
 
       {/* Why Choose Us */}
-      <section className="py-20 px-4 text-center bg-gradient-to-r from-gray-900 via-black to-gray-900">
+      <section className="py-16 px-4 text-center bg-gradient-to-r from-gray-900 via-black to-gray-900">
         <div className="max-w-6xl mx-auto">
           <h2 className="text-5xl font-bold mb-4">Why Choose Us?</h2>
           <p className="text-gray-400 mb-16 text-xl">Experience the difference with our premium features</p>
@@ -291,7 +294,7 @@ export default function About() {
       </section>
 
       {/* Final CTA - Updated to match dark theme */}
-      <section className="text-center py-20 px-4 bg-gradient-to-r from-gray-900 via-black to-gray-900 relative overflow-hidden">
+      <section className="text-center py-17 px-4 bg-gradient-to-r from-gray-900 via-black to-gray-900 relative overflow-hidden">
         
         <div className="relative z-10">
           <div className="mb-8">
@@ -333,6 +336,7 @@ export default function About() {
           animation: fade-in 1s ease-out;
         }
       `}</style>
+    </div>
     </div>
   );
 }
