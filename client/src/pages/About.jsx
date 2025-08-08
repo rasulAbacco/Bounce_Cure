@@ -13,7 +13,7 @@ export default function About() {
     <div className="bg-black text-white font-sans min-h-screen overflow-hidden">
       
       {/* Hero Section */}
-      <section className="text-center py-24 px-4 relative overflow-hidden">
+      <section className="text-center py-14 px-4 relative overflow-hidden">
         {/* Animated Background Elements */}
         <div className="absolute w-50 h-50 bg-white opacity-5 rounded-full blur-3xl -top-20 -left-20 animate-pulse"></div>
         <div className="absolute w-50 h-50 bg-white opacity-3 rounded-full blur-3xl -bottom-20 -right-20 animate-pulse delay-1000"></div>

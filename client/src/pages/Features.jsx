@@ -14,7 +14,7 @@ export default function Features() {
     <div className="bg-black text-white font-sans min-h-screen overflow-hidden">
       
       {/* Hero Section */}
-      <section className="text-center py-24 px-4 relative overflow-hidden">
+      <section className="text-center py-14 px-4 relative overflow-hidden">
        
         {/* Floating Particles */}
         <div className="absolute inset-0">
