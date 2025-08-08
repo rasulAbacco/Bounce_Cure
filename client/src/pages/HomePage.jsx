@@ -867,16 +867,14 @@ function HomePage() {
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center px-6 py-4 whitespace-nowrap border-b-2 font-medium text-sm transition-all duration-200 ${
-                      activeTab === tab.id
+                    className={`flex items-center px-6 py-4 whitespace-nowrap border-b-2 font-medium text-sm transition-all duration-200 ${activeTab === tab.id
                         ? "border-blue-500 text-blue-600 bg-blue-50"
                         : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50"
-                    }`}
+                      }`}
                   >
                     <IconComponent
-                      className={`h-5 w-5 mr-2 ${
-                        activeTab === tab.id ? "text-blue-600" : "text-gray-400"
-                      }`}
+                      className={`h-5 w-5 mr-2 ${activeTab === tab.id ? "text-blue-600" : "text-gray-400"
+                        }`}
                     />
                     {tab.label}
                   </button>
@@ -894,21 +892,21 @@ function HomePage() {
 
       {/* -------- */}
       <div class="bg-[#f9f9fc] py-12">
-  <div class="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
-    <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-10 text-center">
-      <p class="text-4xl font-bold text-[#0f1e49]">99.7%</p>
-      <p class="text-base text-gray-500 mt-3">accuracy rate</p>
-    </div>
-    <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-10 text-center">
-      <p class="text-4xl font-bold text-[#0f1e49]">2 billion</p>
-      <p class="text-base text-gray-500 mt-3">verifications per month</p>
-    </div>
-    <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-10 text-center">
-      <p class="text-4xl font-bold text-[#0f1e49]">200+ billion</p>
-      <p class="text-base text-gray-500 mt-3">emails validated</p>
-    </div>
-  </div>
-</div>
+        <div class="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
+          <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-10 text-center">
+            <p class="text-4xl font-bold text-[#0f1e49]">99.7%</p>
+            <p class="text-base text-gray-500 mt-3">accuracy rate</p>
+          </div>
+          <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-10 text-center">
+            <p class="text-4xl font-bold text-[#0f1e49]">2 billion</p>
+            <p class="text-base text-gray-500 mt-3">verifications per month</p>
+          </div>
+          <div class="bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 p-10 text-center">
+            <p class="text-4xl font-bold text-[#0f1e49]">200+ billion</p>
+            <p class="text-base text-gray-500 mt-3">emails validated</p>
+          </div>
+        </div>
+      </div>
 
       {/* =============== */}
     </div>
