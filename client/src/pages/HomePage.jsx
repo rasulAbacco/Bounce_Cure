@@ -871,16 +871,15 @@ const renderPostalValidation = () => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center px-6 py-4 whitespace-nowrap border-b-2 font-medium text-sm transition-all duration-200 ${
-                      activeTab === tab.id
+                    className={`flex items-center px-6 py-4 whitespace-nowrap border-b-2 font-medium text-sm transition-all duration-200 ${activeTab === tab.id
                         ? "border-blue-500 text-blue-600 bg-blue-50"
+
                         : "border-transparent text-[#c2831f] hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50"
                     }`}
                   >
                     <IconComponent
-                      className={`h-5 w-5 mr-2 ${
-                        activeTab === tab.id ? "text-blue-600" : "text-gray-400"
-                      }`}
+                      className={`h-5 w-5 mr-2 ${activeTab === tab.id ? "text-blue-600" : "text-gray-400"
+                        }`}
                     />
                     {tab.label}
                   </button>
@@ -897,6 +896,8 @@ const renderPostalValidation = () => (
       </div>
 
       {/* -------- */}
+
+      
 <div className="py-12"> 
   <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
 
@@ -928,6 +929,7 @@ const renderPostalValidation = () => (
 
   </div>
 </div>
+
 
 
       <div>
