@@ -2,11 +2,14 @@ import React from 'react';
 import { Shield, Zap, Lock, TrendingUp, CheckCircle, Users, Star, Mail, ArrowRight, Globe, Target, Award, Sparkles, BarChart3, Clock, Database, Settings, Layers, Cpu, Cloud, FileText, Download, Upload, Eye, Filter, Search, Webhook, Key, Gauge, RefreshCw, AlertTriangle, CheckSquare } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
+import Footer from '../components/Footer';
+import PageLayout from '../components/PageLayout';
 
 export default function Features() {
   return (
+    <PageLayout>
     <div>
-        <Navbar />
+      
         
     <div className="bg-black text-white font-sans min-h-screen overflow-hidden">
       
@@ -432,6 +435,8 @@ console.log(result.status); // 'valid', 'invalid', 'risky'`}</code>
         }
       `}</style>
     </div>
+   
     </div>
+    </PageLayout>
   );
 }
