@@ -1,11 +1,17 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
+
 import FreeValidation from './pages/FreeValidation';
 import IntegrationPage from './pages/IntegrationPage';
 import SignupPage from './pages/SignupPage';
 import LoginPage from './pages/LoginPage';
 import ForgotPassword from './pages/ForgotPasswordPage';
+import Pricing from './pages/Pricing';
+import Contact from './components/Contact';
+import About from './pages/About';
+import Features from './pages/Features';
+
 function App() {
   return (
 

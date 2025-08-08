@@ -31,8 +31,9 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
 
         {/* Logo */}
-        <div className="text-2xl font-bold text-white tracking-wide w-18">
-          <img src="./vamsi-4.png" alt="Bounce Cure Logo" />
+        <div className="text-2xl font-bold text-blue-600 tracking-wide w-45 ">
+          {/* <span className="animate-bounce inline-block">Bounce Core</span>  */}
+           <img src="./Logo/1.png" alt=""  />
         </div>
 
         {/* Desktop Links */}
