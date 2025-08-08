@@ -128,7 +128,7 @@ const ContactPage = () => {
                   placeholder="Optional"
                 />
               </div>
-              <div className="form-field">
+              <div className="form-field1">
                 <label htmlFor="service">Service</label>
                 <select
                   name="service"

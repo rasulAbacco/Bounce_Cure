@@ -9,11 +9,12 @@ body {
   color: #fff;
 }
 
-.contact-page {
+.contact-page  {
   padding: 4rem 2rem;
   max-width: 1200px;
   margin: auto;
 }
+
 
 .glass-card {
   background: rgba(255, 255, 255, 0.1);
@@ -56,7 +57,7 @@ body {
 
 .card svg {
   font-size: 1.5rem;
-  color: white;
+  color: #c2831f;
 }
 
 .contact-form {
@@ -82,19 +83,38 @@ body {
   flex-direction: column;
 }
 
-input, textarea, select {
+.two-col .form-field,
+.two-col .form-field1 {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.two-col .form-field input,
+.two-col .form-field textarea,
+.two-col .form-field select,
+.two-col .form-field1 input,
+.two-col .form-field1 textarea,
+.two-col .form-field1 select {
   padding: 0.75rem;
   border: none;
   border-radius: 10px;
   background: rgba(255, 255, 255, 0.05);
-  color: #fff;
+  color: black;
   font-size: 1rem;
   resize: none;
 }
 
-input:focus, textarea:focus, select:focus {
+.two-col .form-field input:focus,
+.two-col .form-field textarea:focus,
+.two-col .form-field select:focus,
+.two-col .form-field1 input:focus,
+.two-col .form-field1 textarea:focus,
+.two-col .form-field1 select:focus {
   outline: 2px solid white;
+  background: rgba(255, 255, 255, 0.1); /* Slight highlight on focus */
 }
+
 
 label {
   font-weight: 500;
@@ -103,7 +123,7 @@ label {
 
 .btn-primary {
   background: white;
-  color: #000;
+  color: #c2831f;
   padding: 0.75rem 2rem;
   border: none;
   border-radius: 10px;
@@ -120,7 +140,7 @@ label {
   background: transparent;
   color: white;
   padding: 0.75rem 1.5rem;
-  border: 2px solid white;
+  border: 2px solid #c2831f;
   border-radius: 10px;
   cursor: pointer;
   font-weight: 600;
@@ -128,7 +148,7 @@ label {
 }
 
 .btn-ghost:hover {
-  background: white;
+  background: #c2831f;
   color: #000;
 }
 
