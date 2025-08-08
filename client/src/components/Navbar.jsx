@@ -111,33 +111,39 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <div className="md:hidden bg-black/40 backdrop-blur-lg px-6 pb-6 shadow-lg space-y-4 text-[86px] border-t border-white/10">
-          {links.map((link) => (
-            <Link
-              key={link.name}
-              to={link.to}
-              className="block text-white hover:text-blue-400 font-medium transition duration-300"
-            >
-              {link.name}
-            </Link>
-          ))}
-          <a
-            href="/signup"
-            className="block bg-gray-500/80 text-white text-center 
-                    text-9xl
-                    px-4 py-2 rounded-xl hover:bg-blue-400/90 transition duration-300"
-          >
-            Sign Up
-          </a>
+        <div className="md:hidden bg-black/40 backdrop-blur-lg px-6 pb-6 shadow-lg space-y-4 border-t border-white/10">
+          {/* Nav Links */}
+          <div className="space-y-3">
+            {links.map((link) => (
+              <Link
+                key={link.name}
+                to={link.to}
+                className="block text-white text-lg hover:text-blue-400 font-medium transition duration-300"
+              >
+                {link.name}
+              </Link>
+            ))}
+          </div>
 
-          <a
-            href="/login"
-            className="block border border-white text-white text-center px-4 py-2 rounded-xl hover:bg-white/10 transition duration-300"
-          >
-            Sign In
-          </a>
+          {/* Buttons */}
+          <div className="space-y-3 pt-4">
+            <a
+              href="/signup"
+              className="block bg-[#c2831f] text-white text-center text-lg px-4 py-2 rounded-xl hover:bg-[#c2831f] transition duration-300"
+            >
+              Sign Up
+            </a>
+            <a
+              href="/login"
+              className="block border border-[#c2831f] text-white text-center text-lg px-4 py-2 rounded-xl hover:bg-white/10 transition duration-300"
+            >
+              Sign In
+            </a>
+          </div>
         </div>
       )}
+
+
     </nav>
   );
 };
