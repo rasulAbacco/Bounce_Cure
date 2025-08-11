@@ -87,19 +87,19 @@ export default function About() {
                 icon: <Shield className="w-6 h-6 text-[#c2831f]" />,
                 title: "Founded in 2023",
                 desc: "Solving real issues for real marketers with innovative solutions.",
-                image: "/public/AboutFeatures/Foundedin.png"
+                image: "/AboutFeatures/Foundedin.png"
               },
               {
                 icon: <Zap className="w-6 h-6 text-[#c2831f]" />,
                 title: "Lightning-Fast API",
                 desc: "Verify thousands of emails in milliseconds with our advanced infrastructure.",
-                image: "/public/AboutFeatures/LightningAPI.png"
+                image: "/AboutFeatures/LightningAPI.png"
               },
               {
                 icon: <Lock className="w-6 h-6 text-[#c2831f]" />,
                 title: "Security First",
                 desc: "Built for compliance and privacy by default, protecting your data.",
-                image: "/public/AboutFeatures/Security.png"
+                image: "/AboutFeatures/Security.png"
               }
             ].map((item, i) => (
               <div key={i} className="group">
@@ -151,19 +151,19 @@ export default function About() {
                     icon: <TrendingUp className="w-10 h-10 text-[#c2831f]" />,
                     title: "Growth",
                     desc: "Fuel your campaigns with verified contacts and watch your business soar.",
-                    image: "/public/AboutFeatures/Rename.png?height=150&width=200&text=Growth+Chart"
+                    image: "/AboutFeatures/Rename.png?height=150&width=200&text=Growth+Chart"
                   },
                   {
                     icon: <Users className="w-10 h-10 text-[#c2831f]" />,
                     title: "Trust",
                     desc: "We earn it every time you send an email, building lasting relationships.",
-                    image: "/public/AboutFeatures/Trust.png?height=150&width=200&text=Trust+Network"
+                    image: "/AboutFeatures/Trust.png?height=150&width=200&text=Trust+Network"
                   },
                   {
                     icon: <CheckCircle className="w-10 h-10 text-[#c2831f]" />,
                     title: "Accuracy",
                     desc: "Every result. Every time. No compromise on quality or precision.",
-                    image: "/public/AboutFeatures/Accuracy.png?height=150&width=200&text=Accuracy+Target"
+                    image: "/AboutFeatures/Accuracy.png?height=150&width=200&text=Accuracy+Target"
                   }
                 ].map((val, i) => (
                   <div key={i} className="group bg-white/5 border-2 border-white/10 rounded-2xl p-8 hover:shadow-2xl hover:scale-[1.05] hover:border-white/30 hover:bg-white/10 transition-all duration-500 cursor-pointer">
@@ -196,7 +196,7 @@ export default function About() {
               <div className="grid md:grid-cols-2 gap-12 items-center">
                 <div>
                   <img
-                    src="/public/AboutFeatures/Tech.png?height=600&width=700&text=AI+Technology+Dashboard"
+                    src="/AboutFeatures/Tech.png?height=600&width=700&text=AI+Technology+Dashboard"
                     alt="Technology Dashboard"
                     className="w-full border-white/20 hover:border-white/40 transition-all duration-500 hover:scale-105"
                   />
@@ -299,7 +299,7 @@ export default function About() {
                   </div>
                   <div>
                     <img
-                      src="/public/AboutFeatures/Dashboard.png?height=300&width=400&text=Analytics+Dashboard"
+                      src="/AboutFeatures/Dashboard.png?height=300&width=400&text=Analytics+Dashboard"
                       alt="Analytics Dashboard"
                       className="w-full  border-white/20 hover:scale-105 transition-transform duration-500"
                     />
