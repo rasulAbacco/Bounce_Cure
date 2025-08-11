@@ -51,7 +51,7 @@ export default function Features() {
           </section>
 
           {/* Core Features Grid */}
-          <section className="py-4 px-4 bg-gradient-to-r from-gray-900 to-black">
+          <section className="py-4 px-4 ">
             <div className="max-w-7xl mx-auto">
               <div className="text-center mb-16">
                 <h2 className="text-4xl font-bold mb-4">Core Features</h2>
@@ -238,7 +238,7 @@ export default function Features() {
           </section>
 
           {/* Integration Options */}
-          <section className="py-4 px-2 bg-gradient-to-r from-gray-900 via-black to-gray-900">
+          <section className="py-4 px-2 ">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-16">
                 <h2 className="text-4xl font-bold mb-4">Seamless Integrations</h2>
@@ -295,7 +295,7 @@ console.log(result.status); // 'valid', 'invalid', 'risky'`}</code>
           </section>
 
           {/* Verification Types */}
-          <section className="py-18 px-4 bg-gradient-to-b from-black to-gray-900">
+          <section className="py-18 px-4 ">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-16">
                 <h2 className="text-4xl font-bold mb-4">Verification Types</h2>
@@ -357,7 +357,7 @@ console.log(result.status); // 'valid', 'invalid', 'risky'`}</code>
 
 
           {/* Performance Stats */}
-          <section className="py-12 px-4 bg-gradient-to-r from-gray-900 to-black">
+          <section className="py-12 px-4 ">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-12">
                 <h2 className="text-3xl font-bold mb-4">Performance Metrics</h2>
@@ -384,7 +384,7 @@ console.log(result.status); // 'valid', 'invalid', 'risky'`}</code>
           </section>
 
           {/* Final CTA */}
-          <section className="text-center py-16 px-4 bg-gradient-to-r from-gray-900 via-black to-gray-900 relative overflow-hidden">
+          <section className="text-center py-16 px-4 relative overflow-hidden">
 
             <div className="relative z-10">
               <div className="mb-8">
