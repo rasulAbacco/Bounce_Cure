@@ -56,7 +56,7 @@ const ModernLogin = () => {
 
     return (
         <PageLayout>
-            <div className="min-h-screen bg-black flex flex-col md:flex-row w-full">
+            <div className="min-h-screen bg-black flex flex-col md:flex-row w-full ">
                 {/* Animated Background Elements */}
                 <div className="absolute inset-0 overflow-hidden">
                     <div className="absolute -top-40 -right-40 w-80 h-80 bg-white rounded-full mix-blend-difference filter blur-xl opacity-3 animate-pulse"></div>
@@ -65,7 +65,7 @@ const ModernLogin = () => {
                 </div>
 
                 {/* Left Side */}
-                <div className="flex-1 flex items-center justify-center p-6 sm:p-8 relative z-10 mt-[20%]">
+                <div className="flex-1 flex items-center justify-center p-6 sm:p-8 relative z-10 mt-[5%]">
                     <div className="w-full max-w-lg text-center md:text-left">
                         {/* Welcome Section */}
                         <div className="mb-8 sm:mb-12">
