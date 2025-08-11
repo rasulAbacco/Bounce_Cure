@@ -15,6 +15,13 @@ body {
   margin: auto;
 }
 
+.contact-page h1 {
+  font-size: 2.5rem;
+  margin-bottom: 1rem;
+  color: white;
+  font-weight: 800;
+}
+
 
 .glass-card {
   background: rgba(255, 255, 255, 0.1);
@@ -49,6 +56,19 @@ body {
   gap: 1rem;
 }
 
+.contact-cards .glass-card {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.9rem; /* smaller padding */
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.15); /* glass effect */
+  backdrop-filter: blur(8px);
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  font-size: 0.85rem; /* slightly smaller text */
+}
+
+
 .card {
   display: flex;
   gap: 1rem;
@@ -60,6 +80,7 @@ body {
   color: #c2831f;
 }
 
+
 .contact-form {
   display: flex;
   flex-direction: column;
@@ -69,8 +90,27 @@ body {
 .form-row {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 1.5rem;
+  height: 100%;
+  border-radius: 20px;
 }
+
+.form-row textarea {
+  width: 100%;
+  min-height: 150px; /* makes it bigger vertically */
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  resize: vertical; /* allow user to resize vertically */
+  box-sizing: border-box;
+}
+
+.form-row textarea:focus {
+  outline: none;
+  border-color: white; /* deep blue for focus */
+}
+
 
 .two-col {
   flex-direction: row;
@@ -143,6 +183,7 @@ label {
   border: 2px solid #c2831f;
   border-radius: 10px;
   cursor: pointer;
+  width: 40%;
   font-weight: 600;
   transition: all 0.3s;
 }
@@ -163,12 +204,19 @@ label {
   align-items: center;
   gap: 1rem;
   margin-top: 1rem;
+   
 }
 
 .newsletter-form input {
   width: 100%;
-  max-width: 400px;
+  max-width: 430px;
   text-align: center;
+  width: 100%;
+  padding: 12px;
+  font-size: 16px;
+  border: 1px solid #ccc;
+    border-radius: 8px;
+
 }
 
 .error {
@@ -178,7 +226,6 @@ label {
 
 .form-feedback {
   margin-top: 1rem;
-  color: #00ff99;
   font-weight: 600;
   text-align: center;
 }
@@ -188,6 +235,32 @@ label {
   align-items: center;
   gap: 0.5rem;
   font-size: 0.95rem;
+}
+
+
+/* Social icons */
+.social-icons {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.social-icons a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  background: white;
+  color: black;
+  border-radius: 50%;
+  font-size: 18px;
+  transition: all 0.3s ease;
+}
+
+.social-icons a:hover {
+  transform: translateY(-3px);
 }
 
 @media (max-width: 768px) {
@@ -203,3 +276,4 @@ label {
     width: 100%;
   }
 }
+
