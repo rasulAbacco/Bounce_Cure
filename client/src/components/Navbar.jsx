@@ -31,12 +31,14 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
 
         {/* Logo */}
+
         <div className="flex items-center justify-center h-40 w-30 md:h-20 md:w-20">
           <img
             src="./vamsi-4.png"
             alt="Bounce Cure Logo"
             className="h-full w-auto object-contain block"
           />
+
         </div>
 
 
@@ -158,6 +160,7 @@ const Navbar = () => {
               )
             ))}
           </div>
+
 
           {/* Buttons */}
           <div className="space-y-3 pt-4">
