@@ -4,6 +4,7 @@ import { FaEnvelope, FaListAlt, FaPlug } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 const Navbar = () => {
+
   const [menuOpen, setMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
 
