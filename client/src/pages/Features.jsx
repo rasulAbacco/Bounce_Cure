@@ -42,7 +42,7 @@ export default function Features() {
               </p>
               <Link
                 to="/get-started"
-                className="group inline-flex items-center bg-white text-[#c2831f] px-8 py-4 rounded-full font-medium hover:bg-black hover:text-white border-2 border-white transition-all duration-300 hover:scale-105 hover:shadow-2xl"
+                className="group inline-flex items-center bg-black text-[#c2831f] px-8 py-4 rounded-full font-medium hover:bg-black hover:text-white border-2 border-white transition-all duration-300 hover:scale-105 hover:shadow-2xl"
               >
                 Explore Features
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />

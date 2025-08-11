@@ -42,7 +42,7 @@ export default function About() {
               </p>
               <Link
                 to="/get-started"
-                className="group inline-flex items-center bg-white text-[#c2831f] px-6 sm:px-8 py-3 sm:py-4 rounded-full font-medium hover:bg-black hover:text-[#c2831f] border-2 border-white transition-all duration-300 hover:scale-105 hover:shadow-2xl mb-8 lg:mb-0"
+                className="group inline-flex items-center bg-black text-[#c2831f] px-6 sm:px-8 py-3 sm:py-4 rounded-full font-medium hover:bg-black hover:text-[#c2831f] border-2 border-white transition-all duration-300 hover:scale-105 hover:shadow-2xl mb-8 lg:mb-0"
               >
                 Get Started
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
