@@ -397,14 +397,14 @@ console.log(result.status); // 'valid', 'invalid', 'risky'`}</code>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <Link
                   to="/get-started"
-                  className="group bg-white text-[#c2831f] px-8 py-4 rounded-full font-semibold hover:bg-black hover:text-[#c2831f] border-2 border-white transition-all duration-300 hover:scale-105 hover:shadow-xl inline-flex items-center justify-center"
+                  className="group bg-white text-black px-8 py-4 rounded-full font-semibold hover:bg-black hover:text-[#c2831f] border-2 border-white transition-all duration-300 hover:scale-105 hover:shadow-xl inline-flex items-center justify-center"
                 >
                   Start Free Trial
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
                 </Link>
                 <Link
                   to="/demo"
-                  className="group bg-black text-[#c2831f] px-8 py-4 rounded-full font-semibold hover:bg-white hover:text-[#c2831f] border-2 border-white transition-all duration-300 hover:scale-105 hover:shadow-xl inline-flex items-center justify-center"
+                  className="group bg-black text-[#c2831f] px-8 py-4 rounded-full font-semibold hover:bg-white hover:text-black border-2 border-white transition-all duration-300 hover:scale-105 hover:shadow-xl inline-flex items-center justify-center"
                 >
                   <Eye className="mr-2 w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
                   View Live Demo
