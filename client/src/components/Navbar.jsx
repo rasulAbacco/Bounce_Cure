@@ -33,7 +33,7 @@ const Navbar = () => {
         {/* Logo */}
         <div className="text-2xl font-bold text-blue-600 tracking-wide w-45 ">
           {/* <span className="animate-bounce inline-block">Bounce Core</span>  */}
-           <img src="./Logo/1.png" alt=""  />
+           <img src="./Logo/2.png" alt=""  />
         </div>
 
         {/* Desktop Links */}
