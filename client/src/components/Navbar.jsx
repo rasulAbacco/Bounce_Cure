@@ -1,13 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { Menu, X } from 'lucide-react';
 import { FaEnvelope, FaListAlt, FaPlug } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 const Navbar = () => {
-
   const [menuOpen, setMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
-
+  const closeTimeoutRef = useRef(null);
 
   const links = [
     { name: 'Home', to: '/' },
@@ -18,26 +17,32 @@ const Navbar = () => {
     { name: 'Contact', to: '/contact' },
   ];
 
-
-
   const services = [
     { name: 'Email Verification', icon: <FaEnvelope />, to: '/services/email-verification' },
     { name: 'Bulk Verification', icon: <FaListAlt />, to: '/services/bulk-verification' },
     { name: 'Integrations', icon: <FaPlug />, to: '/services/integrations' },
   ];
 
+  // Desktop hover handlers
+  const handleMouseEnter = () => {
+    clearTimeout(closeTimeoutRef.current);
+    setServicesOpen(true);
+  };
+
+  const handleMouseLeave = () => {
+    closeTimeoutRef.current = setTimeout(() => {
+      setServicesOpen(false);
+    }, 200); // small delay to allow moving cursor
+  };
+
   return (
     <nav className="fixed w-full z-10 bg-black/90 backdrop-blur-lg border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-
+        
         {/* Logo */}
-
-        <div className="text-2xl font-bold text-blue-600 tracking-wide w-45 ">
-          {/* <span className="animate-bounce inline-block">Bounce Core</span>  */}
-           <img src="./Logo/2.png" alt=""  />
-
+        <div className="text-2xl font-bold text-blue-600 tracking-wide w-45">
+          <img src="./Logo/2.png" alt="Logo" />
         </div>
-
 
         {/* Desktop Links */}
         <div className="hidden md:flex space-x-8 items-center">
@@ -45,9 +50,9 @@ const Navbar = () => {
             link.name === 'Services' ? (
               <div
                 key={link.name}
-                className="relative group"
-                onMouseEnter={() => setServicesOpen(true)}
-                onMouseLeave={() => setServicesOpen(false)}
+                className="relative"
+                onMouseEnter={handleMouseEnter}
+                onMouseLeave={handleMouseLeave}
               >
                 <span className="relative text-white hover:text-[#c2831f] font-medium transition duration-300 cursor-pointer after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:scale-x-0 hover:after:scale-x-100 after:bg-[#c2831f] after:transition-transform after:duration-300 after:origin-left flex items-center">
                   {link.name}
@@ -60,20 +65,22 @@ const Navbar = () => {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                   </svg>
                 </span>
-                {servicesOpen && (
-                  <div className="absolute top-full left-0 mt-2 bg-black/70 backdrop-blur-lg rounded-lg shadow-lg py-2 w-56 border border-white/10">
-                    {services.map((item) => (
-                      <Link
-                        key={item.name}
-                        to={item.to}
-                        className="relative flex items-center space-x-2 px-4 py-2 text-white hover:text-[#c2831f] transition duration-300 after:content-[''] after:absolute after:left-4 after:-bottom-1 after:h-[2px] after:w-[calc(100%-5rem)] after:scale-x-0 hover:after:scale-x-100 after:bg-[#c2831f] after:transition-transform after:duration-300 after:origin-left"
-                      >
-                        <span>{item.icon}</span>
-                        <span>{item.name}</span>
-                      </Link>
-                    ))}
-                  </div>
-                )}
+                <div
+                  className={`absolute top-full left-0 mt-2 bg-black/70 backdrop-blur-lg rounded-lg shadow-lg py-2 w-56 border border-white/10 transition-all duration-200 ease-in-out transform ${
+                    servicesOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'
+                  }`}
+                >
+                  {services.map((item) => (
+                    <Link
+                      key={item.name}
+                      to={item.to}
+                      className="relative flex items-center space-x-2 px-4 py-2 text-white hover:text-[#c2831f] transition duration-300 after:content-[''] after:absolute after:left-4 after:-bottom-1 after:h-[2px] after:w-[calc(100%-5rem)] after:scale-x-0 hover:after:scale-x-100 after:bg-[#c2831f] after:transition-transform after:duration-300 after:origin-left"
+                    >
+                      <span>{item.icon}</span>
+                      <span>{item.name}</span>
+                    </Link>
+                  ))}
+                </div>
               </div>
             ) : (
               <Link
@@ -89,7 +96,7 @@ const Navbar = () => {
           {/* Auth Buttons */}
           <a
             href="/signup"
-            className="bg-[#c2831f] text-white text-1xl px-4 py-2 rounded-xl hover:bg-[#c2831f] transition duration-300"
+            className="bg-[#c2831f] text-white text-1xl px-4 py-2 rounded-xl hover:bg-[#a96e1a] transition duration-300"
           >
             Sign Up
           </a>
@@ -112,14 +119,13 @@ const Navbar = () => {
       {/* Mobile Menu */}
       {menuOpen && (
         <div className="md:hidden bg-black/40 backdrop-blur-lg px-6 pb-6 shadow-lg space-y-4 border-t border-white/10">
-          {/* Nav Links */}
           <div className="space-y-3">
-            {links.map((link) => (
+            {links.map((link) =>
               link.name === 'Services' ? (
                 <div key={link.name}>
                   <button
                     onClick={() => setServicesOpen(!servicesOpen)}
-                    className="w-full flex justify-between items-center text-white text-lg font-medium hover:text-blue-400 transition duration-300"
+                    className="w-full flex justify-between items-center text-white text-lg font-medium hover:text-[#c2831f] transition duration-300"
                   >
                     {link.name}
                     <svg
@@ -150,20 +156,19 @@ const Navbar = () => {
                 <Link
                   key={link.name}
                   to={link.to}
-                  className="block text-white text-lg hover:text-blue-400 font-medium transition duration-300"
+                  className="block text-white text-lg hover:text-[#c2831f] font-medium transition duration-300"
                 >
                   {link.name}
                 </Link>
               )
-            ))}
+            )}
           </div>
 
-
-          {/* Buttons */}
+          {/* Auth Buttons */}
           <div className="space-y-3 pt-4">
             <a
               href="/signup"
-              className="block bg-[#c2831f] text-white text-center text-lg px-4 py-2 rounded-xl hover:bg-[#c2831f] transition duration-300"
+              className="block bg-[#c2831f] text-white text-center text-lg px-4 py-2 rounded-xl hover:bg-[#a96e1a] transition duration-300"
             >
               Sign Up
             </a>
@@ -176,8 +181,6 @@ const Navbar = () => {
           </div>
         </div>
       )}
-
-
     </nav>
   );
 };
