@@ -116,13 +116,46 @@ const Navbar = () => {
           {/* Nav Links */}
           <div className="space-y-3">
             {links.map((link) => (
-              <Link
-                key={link.name}
-                to={link.to}
-                className="block text-white text-lg hover:text-blue-400 font-medium transition duration-300"
-              >
-                {link.name}
-              </Link>
+              link.name === 'Services' ? (
+                <div key={link.name}>
+                  <button
+                    onClick={() => setServicesOpen(!servicesOpen)}
+                    className="w-full flex justify-between items-center text-white text-lg font-medium hover:text-blue-400 transition duration-300"
+                  >
+                    {link.name}
+                    <svg
+                      className={`ml-1 w-4 h-4 transition-transform duration-300 ${servicesOpen ? 'rotate-180' : 'rotate-0'}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {servicesOpen && (
+                    <div className="mt-2 space-y-2 pl-4">
+                      {services.map((item) => (
+                        <Link
+                          key={item.name}
+                          to={item.to}
+                          className="flex items-center space-x-2 text-white text-base hover:text-[#c2831f] transition duration-300"
+                        >
+                          <span>{item.icon}</span>
+                          <span>{item.name}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  key={link.name}
+                  to={link.to}
+                  className="block text-white text-lg hover:text-blue-400 font-medium transition duration-300"
+                >
+                  {link.name}
+                </Link>
+              )
             ))}
           </div>
 
