@@ -227,7 +227,7 @@ export default function Features() {
                   </div>
                   <div>
                     <img
-                      src="/public/AboutFeatures/Cloud.png?height=500&width=600&text=Cloud+Infrastructure"
+                      src="/AboutFeatures/Cloud.png?height=500&width=600&text=Cloud+Infrastructure"
                       alt="Cloud Infrastructure"
                       className="w-full border-white/20 hover:border-white/40 transition-all duration-500 hover:scale-105"
                     />
