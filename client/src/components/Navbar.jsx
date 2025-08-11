@@ -4,10 +4,8 @@ import { FaEnvelope, FaListAlt, FaPlug } from 'react-icons/fa';
 import { Link } from 'react-router-dom';
 
 const Navbar = () => {
-
   const [menuOpen, setMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
-
 
   const links = [
     { name: 'Home', to: '/' },
@@ -18,8 +16,6 @@ const Navbar = () => {
     { name: 'Contact', to: '/contact' },
   ];
 
-
-
   const services = [
     { name: 'Email Verification', icon: <FaEnvelope />, to: '/services/email-verification' },
     { name: 'Bulk Verification', icon: <FaListAlt />, to: '/services/bulk-verification' },
@@ -27,17 +23,13 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="fixed w-full z-10 bg-black/90 backdrop-blur-lg border-b border-white/10">
+    <nav className="fixed w-full z-50 bg-black/90 backdrop-blur-lg border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
 
         {/* Logo */}
-
-        <div className="text-2xl font-bold text-blue-600 tracking-wide w-45 ">
-          {/* <span className="animate-bounce inline-block">Bounce Core</span>  */}
-           <img src="./Logo/2.png" alt=""  />
-
+        <div className="text-2xl font-bold text-blue-600 tracking-wide w-45">
+          <img src="./Logo/2.png" alt="Logo" />
         </div>
-
 
         {/* Desktop Links */}
         <div className="hidden md:flex space-x-8 items-center">
@@ -49,7 +41,7 @@ const Navbar = () => {
                 onMouseEnter={() => setServicesOpen(true)}
                 onMouseLeave={() => setServicesOpen(false)}
               >
-                <span className="relative text-white hover:text-[#c2831f] font-medium transition duration-300 cursor-pointer after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:scale-x-0 hover:after:scale-x-100 after:bg-[#c2831f] after:transition-transform after:duration-300 after:origin-left flex items-center">
+                <span className="relative text-white hover:text-[#c2831f] font-medium transition duration-600 cursor-pointer after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:scale-x-0 hover:after:scale-x-100 after:bg-[#c2831f] after:transition-transform after:duration-300 after:origin-left flex items-center">
                   {link.name}
                   <svg
                     className={`ml-1 w-4 h-4 transition-transform duration-300 ${servicesOpen ? 'rotate-180' : 'rotate-0'}`}
@@ -89,7 +81,7 @@ const Navbar = () => {
           {/* Auth Buttons */}
           <a
             href="/signup"
-            className="bg-[#c2831f] text-white text-1xl px-4 py-2 rounded-xl hover:bg-[#c2831f] transition duration-300"
+            className="bg-[#c2831f] text-white text-1xl px-4 py-2 rounded-xl hover:bg-[#a86d1b] transition duration-300"
           >
             Sign Up
           </a>
@@ -112,14 +104,13 @@ const Navbar = () => {
       {/* Mobile Menu */}
       {menuOpen && (
         <div className="md:hidden bg-black/40 backdrop-blur-lg px-6 pb-6 shadow-lg space-y-4 border-t border-white/10">
-          {/* Nav Links */}
           <div className="space-y-3">
-            {links.map((link) => (
+            {links.map((link) =>
               link.name === 'Services' ? (
                 <div key={link.name}>
                   <button
                     onClick={() => setServicesOpen(!servicesOpen)}
-                    className="w-full flex justify-between items-center text-white text-lg font-medium hover:text-blue-400 transition duration-300"
+                    className="w-full flex justify-between items-center text-white text-lg font-medium hover:text-[#c2831f] transition duration-300"
                   >
                     {link.name}
                     <svg
@@ -150,34 +141,31 @@ const Navbar = () => {
                 <Link
                   key={link.name}
                   to={link.to}
-                  className="block text-white text-lg hover:text-blue-400 font-medium transition duration-300"
+                  className="block text-white text-lg hover:text-[#c2831f] font-medium transition duration-300"
                 >
                   {link.name}
                 </Link>
               )
-            ))}
+            )}
           </div>
 
-
-          {/* Buttons */}
+          {/* Auth Buttons */}
           <div className="space-y-3 pt-4">
             <a
               href="/signup"
-              className="block bg-[#c2831f] text-white text-center text-lg px-4 py-2 rounded-xl hover:bg-[#c2831f] transition duration-300"
+              className="block bg-[#c2831f] text-white text-center text-lg px-4 py-2 rounded-xl hover:bg-[#a86d1b] transition duration-300"
             >
               Sign Up
             </a>
             <a
               href="/login"
-              className="block border border-[#c2831f] text-white text-center text-lg px-4 py-2 rounded-xl hover:bg-white/10 transition duration-300"
+              className="block border border-[#c2831f] text-white text-center text-lg px-4 py-2 rounded-xl hover:bg-[#c2831f] transition duration-300"
             >
               Sign In
             </a>
           </div>
         </div>
       )}
-
-
     </nav>
   );
 };
