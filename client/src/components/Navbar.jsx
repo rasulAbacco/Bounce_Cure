@@ -23,7 +23,6 @@ const Navbar = () => {
     { name: 'Integrations', icon: <FaPlug />, to: '/services/integrations' },
   ];
 
-  // Desktop hover handlers
   const handleMouseEnter = () => {
     clearTimeout(closeTimeoutRef.current);
     setServicesOpen(true);
@@ -32,16 +31,16 @@ const Navbar = () => {
   const handleMouseLeave = () => {
     closeTimeoutRef.current = setTimeout(() => {
       setServicesOpen(false);
-    }, 200); // small delay to allow moving cursor
+    }, 200); // delay before closing
   };
 
   return (
     <nav className="fixed w-full z-10 bg-black/90 backdrop-blur-lg border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-        
+
         {/* Logo */}
         <div className="text-2xl font-bold text-blue-600 tracking-wide w-45">
-          <img src="./Logo/2.png" alt="Logo" />
+          <img src="./Logo/2.png" alt="" />
         </div>
 
         {/* Desktop Links */}
@@ -50,7 +49,7 @@ const Navbar = () => {
             link.name === 'Services' ? (
               <div
                 key={link.name}
-                className="relative"
+                className="relative group"
                 onMouseEnter={handleMouseEnter}
                 onMouseLeave={handleMouseLeave}
               >
@@ -66,7 +65,7 @@ const Navbar = () => {
                   </svg>
                 </span>
                 <div
-                  className={`absolute top-full left-0 mt-2 bg-black/70 backdrop-blur-lg rounded-lg shadow-lg py-2 w-56 border border-white/10 transition-all duration-200 ease-in-out transform ${
+                  className={`absolute top-full left-0 mt-2 bg-black/70 backdrop-blur-lg rounded-lg shadow-lg py-2 w-56 border border-white/10 transition-all duration-300 ease-in-out transform ${
                     servicesOpen ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-2 pointer-events-none'
                   }`}
                 >
@@ -96,7 +95,7 @@ const Navbar = () => {
           {/* Auth Buttons */}
           <a
             href="/signup"
-            className="bg-[#c2831f] text-white text-1xl px-4 py-2 rounded-xl hover:bg-[#a96e1a] transition duration-300"
+            className="bg-[#c2831f] text-white text-1xl px-4 py-2 rounded-xl hover:bg-[#c2831f] transition duration-300"
           >
             Sign Up
           </a>
@@ -125,7 +124,7 @@ const Navbar = () => {
                 <div key={link.name}>
                   <button
                     onClick={() => setServicesOpen(!servicesOpen)}
-                    className="w-full flex justify-between items-center text-white text-lg font-medium hover:text-[#c2831f] transition duration-300"
+                    className="w-full flex justify-between items-center text-white text-lg font-medium hover:text-blue-400 transition duration-300"
                   >
                     {link.name}
                     <svg
@@ -156,7 +155,7 @@ const Navbar = () => {
                 <Link
                   key={link.name}
                   to={link.to}
-                  className="block text-white text-lg hover:text-[#c2831f] font-medium transition duration-300"
+                  className="block text-white text-lg hover:text-blue-400 font-medium transition duration-300"
                 >
                   {link.name}
                 </Link>
@@ -164,11 +163,11 @@ const Navbar = () => {
             )}
           </div>
 
-          {/* Auth Buttons */}
+          {/* Buttons */}
           <div className="space-y-3 pt-4">
             <a
               href="/signup"
-              className="block bg-[#c2831f] text-white text-center text-lg px-4 py-2 rounded-xl hover:bg-[#a96e1a] transition duration-300"
+              className="block bg-[#c2831f] text-white text-center text-lg px-4 py-2 rounded-xl hover:bg-[#c2831f] transition duration-300"
             >
               Sign Up
             </a>
