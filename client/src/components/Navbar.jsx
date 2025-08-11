@@ -32,12 +32,9 @@ const Navbar = () => {
 
         {/* Logo */}
 
-        <div className="flex items-center justify-center h-40 w-30 md:h-20 md:w-20">
-          <img
-            src="./vamsi-4.png"
-            alt="Bounce Cure Logo"
-            className="h-full w-auto object-contain block"
-          />
+        <div className="text-2xl font-bold text-blue-600 tracking-wide w-45 ">
+          {/* <span className="animate-bounce inline-block">Bounce Core</span>  */}
+           <img src="./Logo/2.png" alt=""  />
 
         </div>
 
