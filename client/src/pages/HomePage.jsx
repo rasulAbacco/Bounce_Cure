@@ -419,11 +419,11 @@ const renderEmailActivity = () => (
         {/* Activity Items */}
         <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
           <div className="flex items-center">
-            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-4">
+            <div className="w-12 h-12 rounded-lg flex items-center justify-center mr-4">
               <TrendingUp className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <div className="font-medium">13,486,797</div>
+              <div className="font-medium text-black">13,486,797</div>
               <div className="text-sm text-gray-500">30-day active</div>
             </div>
           </div>
@@ -439,7 +439,7 @@ const renderEmailActivity = () => (
               <Activity className="h-6 w-6 text-green-600" />
             </div>
             <div>
-              <div className="font-medium">8,375,443</div>
+              <div className="font-medium text-black">8,375,443</div>
               <div className="text-sm text-gray-500">60-day active</div>
             </div>
           </div>
@@ -455,7 +455,7 @@ const renderEmailActivity = () => (
               <Users className="h-6 w-6 text-yellow-600" />
             </div>
             <div>
-              <div className="font-medium">2.4M</div>
+              <div className="font-medium text-black">2.4M</div>
               <div className="text-sm text-gray-500">90-day active</div>
             </div>
           </div>
@@ -544,7 +544,7 @@ const renderEmailActivity = () => (
             <Users className="h-6 w-6 text-purple-600" />
           </div>
           <div>
-            <div className="font-medium text-white">Demographics</div>
+            <div className="font-medium text-black">Demographics</div>
             <div className="text-sm text-gray-400">
               Age, gender, location analysis
             </div>
@@ -556,7 +556,7 @@ const renderEmailActivity = () => (
             <TrendingUp className="h-6 w-6 text-indigo-600" />
           </div>
           <div>
-            <div className="font-medium text-white">Firmographics</div>
+            <div className="font-medium text-black">Firmographics</div>
             <div className="text-sm text-gray-400">
               Company size, revenue, industry
             </div>
@@ -568,7 +568,7 @@ const renderEmailActivity = () => (
             <Activity className="h-6 w-6 text-pink-600" />
           </div>
           <div>
-            <div className="font-medium text-white">Technographics</div>
+            <div className="font-medium text-black">Technographics</div>
             <div className="text-sm text-gray-400">
               Technology usage and tools
             </div>
