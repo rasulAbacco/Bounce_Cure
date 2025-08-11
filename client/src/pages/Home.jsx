@@ -191,7 +191,7 @@ function Home() {
         {/* Left Side - Image */}
         <div className="flex justify-center">
           <img
-            src="../public/home/delivary.png"
+            src="/Home/delivary.png"
             alt="delivary"
             className="max-w-md w-full drop-shadow-lg"
           />
