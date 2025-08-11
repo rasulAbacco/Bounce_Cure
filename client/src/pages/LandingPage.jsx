@@ -3,7 +3,7 @@ import { Mail, Send, Zap, Globe, Shield, Cpu } from 'lucide-react';
 
 const LandingPage = () => {
   return (
-    <div className="min-h-screen bg-black text-white overflow-hidden relative lg:mt-[-160px]">
+    <div className="min-h-screen bg-black text-white overflow-hidden relative lg:mt-[-130px]">
       {/* Animated Background Circuit Board */}
       <div className="absolute inset-0 opacity-10">
         <svg className="w-full h-full" viewBox="0 0 1000 1000" preserveAspectRatio="none">
@@ -33,19 +33,19 @@ const LandingPage = () => {
 
       {/* Floating Geometric Shapes */}
       <div className="absolute inset-0 pointer-events-none">
-        <div className="absolute top-38 left-10 w-6 h-6 border-2 border-[#c2831f] rotate-45 animate-bounce" style={{ animationDelay: '1s' }}></div>
+        <div className="absolute top-32 lg:top-36 xl:top-38 left-10 w-6 h-6 border-2 border-[#c2831f] rotate-45 animate-bounce" style={{ animationDelay: '1s' }}></div>
         <div className="absolute top-40 right-20 w-4 h-4 bg-[#c2831f] rounded-full animate-pulse" style={{ animationDelay: '2s' }}></div>
-        <div className="absolute bottom-40 left-20 w-8 h-8 border border-[#c2831f] animate-spin" style={{ animationDuration: '8s' }}></div>
-        <div className="absolute bottom-60 right-10 w-5 h-5 bg-gradient-to-r from-[#c2831f] to-transparent rotate-45 animate-bounce" style={{ animationDelay: '1.5s' }}></div>
+        <div className="absolute bottom-36 lg:bottom-40 left-20 w-8 h-8 border border-[#c2831f] animate-spin" style={{ animationDuration: '8s' }}></div>
+        <div className="absolute bottom-56 lg:bottom-60 right-10 w-5 h-5 bg-gradient-to-r from-[#c2831f] to-transparent rotate-45 animate-bounce" style={{ animationDelay: '1.5s' }}></div>
       </div>
 
-      <div className="container mx-auto px-4 sm:px-6 lg:px-8 py-12 relative z-10">
-        <div className="flex flex-col lg:flex-row items-center justify-between min-h-screen gap-10 lg:gap-0">
+      <div className="container mx-auto px-4 sm:px-6 lg:px-8 xl:px-12 py-12 lg:py-16 relative z-10">
+        <div className="flex flex-col lg:flex-row items-center justify-between min-h-screen gap-18 xl:gap-0">
           
           {/* Left Content */}
-        <div className="w-full lg:w-1/2 space-y-8 lg:ml-15 px-4 sm:px-6 lg:px-0 mt-[50px]">
+          <div className="w-full lg:w-1/2 space-y-8 lg:ml-10 xl:ml-15 px-4 sm:px-6 lg:px-0 mt-[50px]">
             <div className="space-y-6 text-center lg:text-left">
-              <h1 className="text-2xl sm:text-3xl lg:text-5xl font-bold leading-tight">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold leading-tight">
                 <span className="text-[#c2831f] block animate-fade-in-up">
                   Real-Time Email Verification
                 </span>
@@ -82,18 +82,18 @@ const LandingPage = () => {
           </div>
 
           {/* Right Visual Content */}
-          <div className="w-full lg:w-1/2 mt-12 lg:mt-0 flex justify-center lg:mr-13 px-4 sm:px-6 lg:px-0">
+          <div className="w-full lg:w-1/2 mt-12 lg:mt-0 flex justify-center lg:mr-13 xl:ml-20 px-4 sm:px-6 lg:px-0">
             <div className="relative">
               <div className="relative transform rotate-6 hover:rotate-3 transition-transform duration-700 animate-float mt-10 sm:mt-15">
                 
                 {/* Primary Email Device */}
-                <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-[#c2831f] rounded-2xl p-6 shadow-2xl backdrop-blur-sm relative overflow-hidden w-full lg:w-[28rem] lg:h-[24rem] sm:w-96 h-72 sm:h-80">
+                <div className="bg-gradient-to-br from-gray-900 to-black border-2 border-[#c2831f] rounded-2xl p-6 shadow-2xl backdrop-blur-sm relative overflow-hidden w-full sm:w-96 lg:w-[26rem] xl:w-[28rem] lg:h-[22rem] xl:h-[24rem]">
                   <div className="absolute inset-0 bg-gradient-to-r from-[#c2831f] to-transparent opacity-20 animate-pulse"></div>
 
                   <div className="relative z-10 space-y-10 sm:space-y-17">
                     <div className="flex items-center space-x-2 mb-4">
                       <Mail className="w-6 h-6 text-[#c2831f]" />
-                      <div className="text-sm text-gray-300"> Email Varify</div>
+                      <div className="text-sm text-gray-300"> Email Verify</div>
                     </div>
 
                     <div className="space-y-2">

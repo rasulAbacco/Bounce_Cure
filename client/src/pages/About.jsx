@@ -13,18 +13,15 @@ export default function About() {
         <div className=" text-white font-sans min-h-screen overflow-hidden">
 
           {/* Hero Section */}
-          <section className="text-center px-4 sm:px-6 lg:px-8 relative flex flex-col justify-start pt-16 sm:pt-12 lg:pt-8 pb-12 bg-black overflow-hidden">
+          <section className="text-center px-4 sm:px-6 lg:px-8 relative flex flex-col justify-start pt-16 sm:pt-12 lg:pt-8 pb-12 overflow-hidden">
             {/* Animated Background Elements */}
-            <div className="absolute w-50 h-50 bg-white opacity-5 rounded-full blur-3xl -top-20 -left-20 animate-pulse"></div>
-            <div className="absolute w-50 h-50 bg-white opacity-3 rounded-full blur-3xl -bottom-20 -right-20 animate-pulse delay-1000"></div>
-            <div className="absolute w-36 h-36 bg-white opacity-2 rounded-full blur-2xl top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 animate-ping"></div>
-
+           
             {/* Floating Particles */}
             <div className="absolute inset-0 pointer-events-none">
               {[...Array(20)].map((_, i) => (
                 <div
                   key={i}
-                  className="absolute w-1 h-1 bg-white rounded-full opacity-30"
+                  className="absolute w-1 h-1  rounded-full opacity-30"
                   style={{
                     left: `${Math.random() * 100}%`,
                     top: `${Math.random() * 100}%`,
@@ -45,7 +42,7 @@ export default function About() {
               </p>
               <Link
                 to="/get-started"
-                className="group inline-flex items-center bg-white text-[#c2831f] px-6 sm:px-8 py-3 sm:py-4 rounded-full font-medium hover:bg-black hover:text-[#c2831f] border-2 border-white transition-all duration-300 hover:scale-105 hover:shadow-2xl mb-8 lg:mb-0"
+                className="group inline-flex items-center bg-black text-[#c2831f] px-6 sm:px-8 py-3 sm:py-4 rounded-full font-medium hover:bg-black hover:text-[#c2831f] border-2 border-white transition-all duration-300 hover:scale-105 hover:shadow-2xl mb-8 lg:mb-0"
               >
                 Get Started
                 <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-2 transition-transform duration-300" />
@@ -56,7 +53,7 @@ export default function About() {
 
 
           {/* Stats Section */}
-          <section className="py-8 px-4 bg-gradient-to-r from-gray-900 to-black">
+          <section>
             <div className="max-w-6xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-6 text-center">
               {[
                 { number: "99.9%", label: "Accuracy Rate", icon: <Target className="w-8 h-8 mx-auto mb-2 text-[#c2831f]" /> },
@@ -137,7 +134,7 @@ export default function About() {
 
 
           {/* Core Values - Updated to match dark theme */}
-          <section className="bg-gradient-to-b from-black to-gray-900 py-16 px-4 relative">
+          <section>
 
             <div className="relative z-10">
               <div className="text-center mb-16">
@@ -186,7 +183,7 @@ export default function About() {
           </section>
 
           {/* Technology Section */}
-          <section className="py-16 px-4 bg-gradient-to-b from-black to-gray-900">
+          <section className="py-18 px-4 ">
             <div className="max-w-6xl mx-auto">
               <div className="text-center mb-16">
                 <h2 className="text-4xl font-bold mb-4">Cutting-Edge Technology</h2>
@@ -235,7 +232,7 @@ export default function About() {
           </section>
 
           {/* Why Choose Us */}
-          <section className="py-16 px-4 text-center bg-gradient-to-r from-gray-900 via-black to-gray-900">
+          <section className="py-16 px-4 text-center">
             <div className="max-w-6xl mx-auto">
               <h2 className="text-5xl font-bold mb-4">Why Choose Us?</h2>
               <p className="text-gray-400 mb-16 text-xl">Experience the difference with our premium features</p>
@@ -310,7 +307,7 @@ export default function About() {
           </section>
 
           {/* Final CTA - Updated to match dark theme */}
-          <section className="text-center py-17 px-4 bg-gradient-to-r from-gray-900 via-black to-gray-900 relative overflow-hidden">
+          <section className="text-center py-17 px-4 relative overflow-hidden">
 
             <div className="relative z-10">
               <div className="mb-8">
