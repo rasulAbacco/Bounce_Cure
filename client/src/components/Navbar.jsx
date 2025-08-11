@@ -28,7 +28,7 @@ const Navbar = () => {
 
         {/* Logo */}
         <div className="text-2xl font-bold text-blue-600 tracking-wide w-45">
-          <img src="./Logo/2.png" alt="Logo" />
+          <img src="../Logo/2.png" alt="Logo" />
         </div>
 
         {/* Desktop Links (visible only on lg and above) */}
@@ -42,7 +42,7 @@ const Navbar = () => {
                 >
                   {link.name}
                   <svg
-                    className={`ml-1 w-4 h-4 transition-transform duration-300 ${servicesOpen ? 'rotate-180' : 'rotate-0'}`}
+                    className={`ml-1 w-4 h-4 transition-transform duration-600 ${servicesOpen ? 'rotate-180' : 'rotate-0'}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
