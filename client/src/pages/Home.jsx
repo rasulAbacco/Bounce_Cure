@@ -163,7 +163,7 @@ function Home() {
           {/* Right side - Dashboard Preview */}
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="rounded-lg shadow-lg overflow-hidden">
-              <img src="../public/Home/email.png" alt="Mail Verification" />
+              <img src="/Home/email.png" alt="Mail Verification" />
             </div>
           </div>
         </div>
@@ -191,7 +191,7 @@ function Home() {
         {/* Left Side - Image */}
         <div className="flex justify-center">
           <img
-            src="../public/home/delivary.png"
+            src="/home/delivary.png"
             alt="delivary"
             className="max-w-md w-full drop-shadow-lg"
           />
