@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Upload, CheckCircle, XCircle, AlertTriangle, Shield, BarChart2, FileText, Users, Zap } from "lucide-react";
 import PageLayout from "../components/PageLayout";
-import {Link} from 'react-router-dom'
+import { Link } from 'react-router-dom'
 const BulkVerification = () => {
     const [emails, setEmails] = useState([]);
     const [results, setResults] = useState(null);
@@ -122,13 +122,29 @@ const BulkVerification = () => {
                 </section>
 
                 {/* Extra Sections */}
-                <section className="bg-gradient-to-r from-purple-500 to-pink-500 p-8 rounded-3xl text-center shadow-2xl">
-                    <h2 className="text-3xl font-bold mb-4">Integrate With Your Workflow</h2>
-                    <p className="mb-6">Connect with Mailchimp, SendGrid, HubSpot, and more.</p>
-                    <Link to="/services/integrations" className="bg-white text-black font-bold py-3 px-6 rounded-xl hover:scale-105 transition-all">
+                <section className="relative p-8 rounded-3xl text-center shadow-2xl 
+    bg-black/30 backdrop-blur-lg border border-white/20 overflow-hidden group">
+
+                    {/* Animated shiny border */}
+                    <div className="absolute inset-0 rounded-3xl border-[2px] border-transparent 
+        bg-gradient-to-r from-transparent via-white/20 to-transparent 
+        animate-shine pointer-events-none"></div>
+
+                    <h2 className="text-3xl font-bold mb-4 text-white">
+                        Integrate With Your Workflow
+                    </h2>
+                    <p className="mb-6 text-white/80">
+                        Connect with Mailchimp, SendGrid, HubSpot, and more.
+                    </p>
+
+                    <Link
+                        to="/services/integrations"
+                        className="bg-white text-black font-bold py-3 px-6 rounded-xl 
+        hover:scale-105 transition-all">
                         View Integrations
                     </Link>
                 </section>
+
 
                 {/* Call to Action */}
                 <section className="bg-white/5 p-8 rounded-3xl border border-white/10 shadow-xl text-center">

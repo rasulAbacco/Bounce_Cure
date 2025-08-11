@@ -28,7 +28,7 @@ const Navbar = () => {
 
         {/* Logo */}
         <div className="text-2xl font-bold text-blue-600 tracking-wide w-45">
-          <img src="./Logo/2.png" alt="Logo" />
+          <img src="../Logo/2.png" alt="Logo" />
         </div>
 
         {/* Desktop Links */}
@@ -44,7 +44,7 @@ const Navbar = () => {
                 <span className="relative text-white hover:text-[#c2831f] font-medium transition duration-600 cursor-pointer after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:scale-x-0 hover:after:scale-x-100 after:bg-[#c2831f] after:transition-transform after:duration-300 after:origin-left flex items-center">
                   {link.name}
                   <svg
-                    className={`ml-1 w-4 h-4 transition-transform duration-300 ${servicesOpen ? 'rotate-180' : 'rotate-0'}`}
+                    className={`ml-1 w-4 h-4 transition-transform duration-600 ${servicesOpen ? 'rotate-180' : 'rotate-0'}`}
                     fill="none"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
