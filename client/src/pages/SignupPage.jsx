@@ -38,26 +38,26 @@ const ModernSignup = () => {
 
     return (
         <PageLayout>
-            <div className="min-h-screen bg-black flex w-[100vw]">
+            <div className="min-h-screen bg-black mt-[2%] flex flex-col md:flex-row w-full">
                 {/* Animated Background Elements */}
                 <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute -top-40 -right-40 w-80 h-80 bg-white rounded-full mix-blend-difference filter blur-xl opacity-5 animate-pulse"></div>
-                    <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white rounded-full mix-blend-difference filter blur-xl opacity-5 animate-pulse"></div>
-                    <div className="absolute top-40 left-40 w-60 h-60 bg-white rounded-full mix-blend-difference filter blur-xl opacity-5 animate-pulse"></div>
+                    <div className="absolute -top-40 -right-40 w-80 h-80 bg-white rounded-full mix-blend-difference filter blur-xl opacity-5 animate-pulse hidden sm:block"></div>
+                    <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white rounded-full mix-blend-difference filter blur-xl opacity-5 animate-pulse hidden sm:block"></div>
+                    <div className="absolute top-40 left-40 w-60 h-60 bg-white rounded-full mix-blend-difference filter blur-xl opacity-5 animate-pulse hidden sm:block"></div>
                 </div>
 
                 {/* Left Side - Form */}
-                <div className="flex-1 flex items-center justify-center p-8 relative z-10">
-                    <div className="w-full max-w-md">
+                <div className="flex-1 flex items-center justify-center p-6 sm:p-8 relative z-10">
+                    <div className="w-full max-w-md md:max-w-lg">
                         {/* Logo and Header */}
-                        <div className="text-center mb-8">
+                        <div className="text-center mt-20 mb-8">
                             <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl mb-6 transform hover:scale-110 transition-transform duration-300">
                                 <Mail className="w-8 h-8 text-black" />
                             </div>
-                            <h1 className="text-4xl font-bold text-white mb-2">
+                            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
                                 Bounce Cure
                             </h1>
-                            <p className="text-gray-400 text-lg">
+                            <p className="text-gray-400 text-base sm:text-lg">
                                 Create your free account in seconds
                             </p>
                             <div className="w-20 h-1 bg-white mx-auto mt-4 rounded-full"></div>
@@ -89,10 +89,9 @@ const ModernSignup = () => {
 
                         {/* Form */}
                         <div className="space-y-4">
-                            <div className="grid grid-cols-2 gap-4">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="relative group">
-                                    <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'firstName' ? 'text-white' : 'text-gray-400'
-                                        }`} />
+                                    <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'firstName' ? 'text-white' : 'text-gray-400'}`} />
                                     <input
                                         type="text"
                                         name="firstName"
@@ -105,8 +104,7 @@ const ModernSignup = () => {
                                     />
                                 </div>
                                 <div className="relative group">
-                                    <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'lastName' ? 'text-white' : 'text-gray-400'
-                                        }`} />
+                                    <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'lastName' ? 'text-white' : 'text-gray-400'}`} />
                                     <input
                                         type="text"
                                         name="lastName"
@@ -121,8 +119,7 @@ const ModernSignup = () => {
                             </div>
 
                             <div className="relative group">
-                                <Mail className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'email' ? 'text-white' : 'text-gray-400'
-                                    }`} />
+                                <Mail className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'email' ? 'text-white' : 'text-gray-400'}`} />
                                 <input
                                     type="email"
                                     name="email"
@@ -136,8 +133,7 @@ const ModernSignup = () => {
                             </div>
 
                             <div className="relative group">
-                                <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'password' ? 'text-white' : 'text-gray-400'
-                                    }`} />
+                                <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'password' ? 'text-white' : 'text-gray-400'}`} />
                                 <input
                                     type="password"
                                     name="password"
@@ -171,18 +167,18 @@ const ModernSignup = () => {
                 </div>
 
                 {/* Right Side - Benefits */}
-                <div className="flex-1 flex items-center justify-center p-8 relative z-10">
+                <div className="flex-1 flex items-center justify-center p-6 sm:p-8 relative z-10">
                     <div className="w-full max-w-lg">
-                        <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl">
+                        <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl">
                             <div className="text-center mb-8">
                                 <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-2 mb-4 border border-white/20">
                                     <Shield className="w-5 h-5 text-white" />
-                                    <span className="text-white font-medium">Premium Business Account</span>
+                                    <span className="text-white font-medium text-sm sm:text-base">Premium Business Account</span>
                                 </div>
-                                <h3 className="text-2xl font-bold text-white mb-2">
+                                <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">
                                     Unlock Premium Features
                                 </h3>
-                                <p className="text-gray-300">
+                                <p className="text-gray-300 text-sm sm:text-base">
                                     Get everything you need to validate emails at scale
                                 </p>
                             </div>
@@ -197,7 +193,7 @@ const ModernSignup = () => {
                                         <div className="text-white group-hover:scale-110 transition-transform duration-300">
                                             {benefit.icon}
                                         </div>
-                                        <span className="group-hover:translate-x-1 transition-transform duration-300">
+                                        <span className="group-hover:translate-x-1 transition-transform duration-300 text-sm sm:text-base">
                                             {benefit.text}
                                         </span>
                                     </div>
@@ -205,14 +201,14 @@ const ModernSignup = () => {
                             </div>
 
                             <div className="border-t border-white/10 pt-6">
-                                <p className="text-white font-semibold mb-4 text-center">
+                                <p className="text-white font-semibold mb-4 text-center text-sm sm:text-base">
                                     Trusted by 400,000+ clients worldwide
                                 </p>
-                                <div className="flex justify-center items-center gap-6">
+                                <div className="flex flex-wrap justify-center items-center gap-4 sm:gap-6">
                                     {companies.map((company, index) => (
                                         <div
                                             key={index}
-                                            className="font-bold text-lg text-gray-300 hover:text-white hover:scale-110 transition-all duration-300 cursor-default"
+                                            className="font-bold text-base sm:text-lg text-gray-300 hover:text-white hover:scale-110 transition-all duration-300 cursor-default"
                                         >
                                             {company.name}
                                         </div>
@@ -221,18 +217,18 @@ const ModernSignup = () => {
                             </div>
 
                             <div className="mt-6 text-center">
-                                <div className="inline-flex items-center gap-2 text-gray-400 bg-white/5 rounded-full px-4 py-2 border border-white/10">
+                                <div className="inline-flex items-center gap-2 text-gray-400 bg-white/5 rounded-full px-4 py-2 border border-white/10 text-xs sm:text-sm">
                                     <Clock className="w-4 h-4" />
-                                    <span className="text-sm">Setup takes less than 2 minutes</span>
+                                    <span>Setup takes less than 2 minutes</span>
                                 </div>
                             </div>
                         </div>
 
                         {/* Decorative Elements */}
-                        <div className="absolute top-10 right-10 w-32 h-32 border border-white/10 rounded-full animate-pulse"></div>
-                        <div className="absolute bottom-10 left-10 w-24 h-24 border border-white/5 rounded-full animate-pulse"></div>
-                        <div className="absolute top-1/2 left-0 w-2 h-20 bg-white/20 rounded-full"></div>
-                        <div className="absolute top-1/4 right-0 w-1 h-32 bg-white/10 rounded-full"></div>
+                        <div className="absolute top-10 right-10 w-32 h-32 border border-white/10 rounded-full animate-pulse hidden sm:block"></div>
+                        <div className="absolute bottom-10 left-10 w-24 h-24 border border-white/5 rounded-full animate-pulse hidden sm:block"></div>
+                        <div className="absolute top-1/2 left-0 w-2 h-20 bg-white/20 rounded-full hidden sm:block"></div>
+                        <div className="absolute top-1/4 right-0 w-1 h-32 bg-white/10 rounded-full hidden sm:block"></div>
                     </div>
                 </div>
             </div>
