@@ -45,7 +45,7 @@ const LandingPage = () => {
           {/* Left Content */}
           <div className="w-full lg:w-1/2 space-y-8 lg:ml-10 xl:ml-15 px-4 sm:px-6 lg:px-0 mt-[50px]">
             <div className="space-y-6 text-center lg:text-left">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold leading-tight">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-4xl font-bold leading-tight">
                 <span className="text-[#c2831f] block animate-fade-in-up">
                   Real-Time Email Verification
                 </span>
