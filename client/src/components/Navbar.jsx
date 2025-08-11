@@ -31,17 +31,15 @@ const Navbar = () => {
           <img src="./Logo/2.png" alt="Logo" />
         </div>
 
-        {/* Desktop Links */}
-        <div className="hidden md:flex space-x-8 items-center">
+        {/* Desktop Links (visible only on lg and above) */}
+        <div className="hidden lg:flex space-x-8 items-center">
           {links.map((link) =>
             link.name === 'Services' ? (
-              <div
-                key={link.name}
-                className="relative group"
-                onMouseEnter={() => setServicesOpen(true)}
-                onMouseLeave={() => setServicesOpen(false)}
-              >
-                <span className="relative text-white hover:text-[#c2831f] font-medium transition duration-600 cursor-pointer after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:scale-x-0 hover:after:scale-x-100 after:bg-[#c2831f] after:transition-transform after:duration-300 after:origin-left flex items-center">
+              <div key={link.name} className="relative group">
+                <button
+                  onClick={() => setServicesOpen(!servicesOpen)}
+                  className="relative text-white hover:text-[#c2831f] font-medium transition duration-600 cursor-pointer after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full after:scale-x-0 hover:after:scale-x-100 after:bg-[#c2831f] after:transition-transform after:duration-300 after:origin-left flex items-center"
+                >
                   {link.name}
                   <svg
                     className={`ml-1 w-4 h-4 transition-transform duration-300 ${servicesOpen ? 'rotate-180' : 'rotate-0'}`}
@@ -51,7 +49,7 @@ const Navbar = () => {
                   >
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                   </svg>
-                </span>
+                </button>
                 {servicesOpen && (
                   <div className="absolute top-full left-0 mt-2 bg-black/70 backdrop-blur-lg rounded-lg shadow-lg py-2 w-56 border border-white/10">
                     {services.map((item) => (
@@ -93,17 +91,17 @@ const Navbar = () => {
           </a>
         </div>
 
-        {/* Mobile Menu Toggle */}
-        <div className="md:hidden">
+        {/* Mobile & Tablet Menu Toggle (visible below lg) */}
+        <div className="lg:hidden">
           <button onClick={() => setMenuOpen(!menuOpen)} className="text-white">
             {menuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Menu */}
+      {/* Mobile & Tablet Menu */}
       {menuOpen && (
-        <div className="md:hidden bg-black/40 backdrop-blur-lg px-6 pb-6 shadow-lg space-y-4 border-t border-white/10">
+        <div className="lg:hidden bg-black/40 backdrop-blur-lg px-6 pb-6 shadow-lg space-y-4 border-t border-white/10">
           <div className="space-y-3">
             {links.map((link) =>
               link.name === 'Services' ? (
