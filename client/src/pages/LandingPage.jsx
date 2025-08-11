@@ -1,5 +1,5 @@
 import React from 'react';
-import { Mail, Send, Zap, Globe, Shield, Cpu } from 'lucide-react';
+import { Mail, Send, Zap, Globe, Shield, Cpu, CheckCircle, MailOpen, } from 'lucide-react';
 
 const LandingPage = () => {
   return (
@@ -45,7 +45,7 @@ const LandingPage = () => {
           {/* Left Content */}
           <div className="w-full lg:w-1/2 space-y-8 lg:ml-10 xl:ml-15 px-4 sm:px-6 lg:px-0 mt-[50px]">
             <div className="space-y-6 text-center lg:text-left">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold leading-tight">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-4xl font-bold leading-tight">
                 <span className="text-[#c2831f] block animate-fade-in-up">
                   Real-Time Email Verification
                 </span>
@@ -156,6 +156,14 @@ const LandingPage = () => {
 
         <div className="absolute bottom-10 left-20 w-2 h-2 bg-[#c2831f] rounded-full animate-slide-right" style={{ animationDelay: '0.7s' }}></div> 
         <div className="absolute bottom-28 left-2 w-1.5 h-1.5 bg-[#c2831f] rounded-full animate-slide-right" style={{ animationDelay: '1.5s' }}></div> 
+            
+          <Mail className="absolute bottom-4 left-40 w-4 h-4 text-[#c2831f] animate-slide-right" style={{ animationDelay: '0.5s' }} />
+          <MailOpen className="absolute bottom-14 left-56 w-4 h-4 text-[#c2831f] animate-slide-right" style={{ animationDelay: '1s' }} />
+          <Send className="absolute bottom-20 left-72 w-4 h-4 text-[#c2831f] animate-slide-right" style={{ animationDelay: '1.5s' }} />
+          <Shield className="absolute bottom-12 left-88 w-5 h-5 text-[#c2831f] animate-slide-right" style={{ animationDelay: '2s' }} />
+          <CheckCircle className="absolute bottom-24 left-[28rem] w-4 h-4 text-[#c2831f] animate-slide-right" style={{ animationDelay: '2.5s' }} />
+          <Zap className="absolute bottom-8 left-[34rem] w-4 h-4 text-[#c2831f] animate-slide-right" style={{ animationDelay: '3s' }} />
+          <Globe className="absolute bottom-16 left-[40rem] w-4 h-4 text-[#c2831f] animate-slide-right" style={{ animationDelay: '3.5s' }} />
 
       </div>
 
