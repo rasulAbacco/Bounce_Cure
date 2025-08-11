@@ -27,14 +27,18 @@ const Navbar = () => {
   ];
 
   return (
-    <nav className="fixed w-full z-50 bg-black/40 backdrop-blur-lg border-b border-white/10">
+    <nav className="fixed w-full z-10 bg-black/90 backdrop-blur-lg border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
 
         {/* Logo */}
-        <div className="text-2xl font-bold text-blue-600 tracking-wide w-45 ">
-          {/* <span className="animate-bounce inline-block">Bounce Core</span>  */}
-           <img src="./Logo/1.png" alt=""  />
+        <div className="flex items-center justify-center h-40 w-30 md:h-20 md:w-20">
+          <img
+            src="./vamsi-4.png"
+            alt="Bounce Cure Logo"
+            className="h-full w-auto object-contain block"
+          />
         </div>
+
 
         {/* Desktop Links */}
         <div className="hidden md:flex space-x-8 items-center">
@@ -108,33 +112,72 @@ const Navbar = () => {
 
       {/* Mobile Menu */}
       {menuOpen && (
-        <div className="md:hidden bg-black/40 backdrop-blur-lg px-6 pb-6 shadow-lg space-y-4 text-[86px] border-t border-white/10">
-          {links.map((link) => (
-            <Link
-              key={link.name}
-              to={link.to}
-              className="block text-white hover:text-blue-400 font-medium transition duration-300"
-            >
-              {link.name}
-            </Link>
-          ))}
-        <a
-          href="/signup"
-          className="block bg-gray-500/80 text-white text-center 
-                    text-9xl
-                    px-4 py-2 rounded-xl hover:bg-blue-400/90 transition duration-300"
-        >
-          Sign Up
-        </a>
+        <div className="md:hidden bg-black/40 backdrop-blur-lg px-6 pb-6 shadow-lg space-y-4 border-t border-white/10">
+          {/* Nav Links */}
+          <div className="space-y-3">
+            {links.map((link) => (
+              link.name === 'Services' ? (
+                <div key={link.name}>
+                  <button
+                    onClick={() => setServicesOpen(!servicesOpen)}
+                    className="w-full flex justify-between items-center text-white text-lg font-medium hover:text-blue-400 transition duration-300"
+                  >
+                    {link.name}
+                    <svg
+                      className={`ml-1 w-4 h-4 transition-transform duration-300 ${servicesOpen ? 'rotate-180' : 'rotate-0'}`}
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {servicesOpen && (
+                    <div className="mt-2 space-y-2 pl-4">
+                      {services.map((item) => (
+                        <Link
+                          key={item.name}
+                          to={item.to}
+                          className="flex items-center space-x-2 text-white text-base hover:text-[#c2831f] transition duration-300"
+                        >
+                          <span>{item.icon}</span>
+                          <span>{item.name}</span>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Link
+                  key={link.name}
+                  to={link.to}
+                  className="block text-white text-lg hover:text-blue-400 font-medium transition duration-300"
+                >
+                  {link.name}
+                </Link>
+              )
+            ))}
+          </div>
 
-          <a
-            href="/login"
-            className="block border border-white text-white text-center px-4 py-2 rounded-xl hover:bg-white/10 transition duration-300"
-          >
-            Sign In
-          </a>
+          {/* Buttons */}
+          <div className="space-y-3 pt-4">
+            <a
+              href="/signup"
+              className="block bg-[#c2831f] text-white text-center text-lg px-4 py-2 rounded-xl hover:bg-[#c2831f] transition duration-300"
+            >
+              Sign Up
+            </a>
+            <a
+              href="/login"
+              className="block border border-[#c2831f] text-white text-center text-lg px-4 py-2 rounded-xl hover:bg-white/10 transition duration-300"
+            >
+              Sign In
+            </a>
+          </div>
         </div>
       )}
+
+
     </nav>
   );
 };
