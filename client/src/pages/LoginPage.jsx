@@ -56,7 +56,7 @@ const ModernLogin = () => {
 
     return (
         <PageLayout>
-            <div className="min-h-screen bg-black flex w-[100vw]">
+            <div className="min-h-screen bg-black flex flex-col md:flex-row w-full">
                 {/* Animated Background Elements */}
                 <div className="absolute inset-0 overflow-hidden">
                     <div className="absolute -top-40 -right-40 w-80 h-80 bg-white rounded-full mix-blend-difference filter blur-xl opacity-3 animate-pulse"></div>
@@ -64,56 +64,55 @@ const ModernLogin = () => {
                     <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white rounded-full mix-blend-difference filter blur-xl opacity-2 animate-pulse"></div>
                 </div>
 
-                {/* Left Side - Welcome & Stats */}
-                <div className="flex-1 flex items-center justify-center p-8 relative z-10">
-                    <div className="w-full max-w-lg">
+                {/* Left Side */}
+                <div className="flex-1 flex items-center justify-center p-6 sm:p-8 relative z-10 mt-[20%]">
+                    <div className="w-full max-w-lg text-center md:text-left">
                         {/* Welcome Section */}
-                        <div className="mb-12">
-                            <div className="inline-flex items-center justify-center w-20 h-20 bg-white rounded-3xl mb-8 transform hover:scale-110 transition-transform duration-300">
-                                <Mail className="w-10 h-10 text-[#dea923]" />
+                        <div className="mb-8 sm:mb-12">
+                            <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-3xl mb-6 sm:mb-8 transform hover:scale-110 transition-transform duration-300">
+                                <Mail className="w-8 h-8 sm:w-10 sm:h-10 text-[#dea923]" />
                             </div>
-                            <h1 className="text-5xl font-bold text-[#c2831f] mb-4 leading-tight">
+                            <h1 className="text-3xl sm:text-5xl font-bold text-[#c2831f] mb-3 sm:mb-4 leading-tight">
                                 Welcome Back to
                                 <br />
                                 <span className="block mt-2">Bounce Cure</span>
                             </h1>
-                            <p className="text-xl text-gray-300 leading-relaxed">
+                            <p className="text-base sm:text-xl text-gray-300 leading-relaxed">
                                 The world's most trusted email validation platform. Continue your journey with precision and reliability.
                             </p>
                         </div>
 
                         {/* Stats Grid */}
-                        <div className="grid grid-cols-2 gap-4 mb-8">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-8">
                             {stats.map((stat, index) => (
                                 <div
                                     key={index}
-                                    className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 hover:bg-white/10 transition-all duration-300 group"
+                                    className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/10 hover:bg-white/10 transition-all duration-300 group"
                                 >
                                     <div className="text-[#c2831f] group-hover:scale-110 transition-transform duration-300 mb-3">
                                         {stat.icon}
                                     </div>
-                                    <div className="text-2xl font-bold text-white mb-1">{stat.number}</div>
+                                    <div className="text-xl sm:text-2xl font-bold text-white mb-1">{stat.number}</div>
                                     <div className="text-gray-400 text-sm">{stat.label}</div>
                                 </div>
                             ))}
                         </div>
 
                         {/* Testimonial Carousel */}
-                        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-6 border border-white/10 relative overflow-hidden">
+                        <div className="bg-white/5 backdrop-blur-sm rounded-2xl p-4 sm:p-6 border border-white/10 relative overflow-hidden">
                             <div className="absolute top-4 right-4">
                                 <div className="flex gap-2">
                                     {testimonials.map((_, index) => (
                                         <div
                                             key={index}
-                                            className={`w-2 h-2 rounded-full transition-all duration-300 ${index === currentTestimonial ? 'bg-white' : 'bg-white/20'
-                                                }`}
+                                            className={`w-2 h-2 rounded-full transition-all duration-300 ${index === currentTestimonial ? 'bg-white' : 'bg-white/20'}`}
                                         />
                                     ))}
                                 </div>
                             </div>
 
                             <div className="transition-all duration-500 ease-in-out">
-                                <p className="text-white text-lg mb-4 italic">
+                                <p className="text-white text-base sm:text-lg mb-4 italic">
                                     "{testimonials[currentTestimonial].quote}"
                                 </p>
                                 <div className="text-gray-300">
@@ -122,31 +121,27 @@ const ModernLogin = () => {
                                 </div>
                             </div>
                         </div>
-
-                        {/* Decorative Elements */}
-                        <div className="absolute top-20 left-20 w-24 h-24 border border-white/5 rounded-full animate-pulse"></div>
-                        <div className="absolute bottom-20 right-20 w-16 h-16 border border-white/10 rounded-full animate-pulse"></div>
                     </div>
                 </div>
 
-                {/* Right Side - Login Form */}
-                <div className="flex-1 flex items-center justify-center p-8 relative z-10">
+                {/* Right Side */}
+                <div className="flex-1 flex items-center justify-center p-6 sm:p-8 relative z-10">
                     <div className="w-full max-w-md">
-                        <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-2xl">
+                        <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl">
                             {/* Header */}
-                            <div className="text-center mb-8">
-                                <h2 className="text-3xl font-bold text-[#c2831f] mb-2">
+                            <div className="text-center mb-6 sm:mb-8">
+                                <h2 className="text-2xl sm:text-3xl font-bold text-[#c2831f] mb-2">
                                     Sign In
                                 </h2>
-                                <p className="text-gray-300">
+                                <p className="text-gray-300 text-sm sm:text-base">
                                     Access your email validation dashboard
                                 </p>
-                                <div className="w-16 h-1 bg-white mx-auto mt-4 rounded-full"></div>
+                                <div className="w-12 sm:w-16 h-1 bg-white mx-auto mt-3 sm:mt-4 rounded-full"></div>
                             </div>
 
                             {/* Google Button */}
                             <button
-                                className="w-full bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl py-3 px-4 text-white font-medium flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all duration-300 mb-6 group"
+                                className="w-full bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl py-2 sm:py-3 px-4 text-white font-medium flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all duration-300 mb-6 group"
                                 onMouseEnter={() => setIsHovered(true)}
                                 onMouseLeave={() => setIsHovered(false)}
                             >
@@ -169,10 +164,9 @@ const ModernLogin = () => {
                             </div>
 
                             {/* Login Form */}
-                            <div className="space-y-6">
+                            <div className="space-y-4 sm:space-y-6">
                                 <div className="relative group">
-                                    <Mail className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'email' ? 'text-white' : 'text-gray-400'
-                                        }`} />
+                                    <Mail className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'email' ? 'text-white' : 'text-gray-400'}`} />
                                     <input
                                         type="email"
                                         name="email"
@@ -181,13 +175,12 @@ const ModernLogin = () => {
                                         onChange={handleInputChange}
                                         onFocus={() => setFocusedField('email')}
                                         onBlur={() => setFocusedField('')}
-                                        className="w-full bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
+                                        className="w-full bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl py-2 sm:py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
                                     />
                                 </div>
 
                                 <div className="relative group">
-                                    <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'password' ? 'text-white' : 'text-gray-400'
-                                        }`} />
+                                    <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'password' ? 'text-white' : 'text-gray-400'}`} />
                                     <input
                                         type={showPassword ? 'text' : 'password'}
                                         name="password"
@@ -196,7 +189,7 @@ const ModernLogin = () => {
                                         onChange={handleInputChange}
                                         onFocus={() => setFocusedField('password')}
                                         onBlur={() => setFocusedField('')}
-                                        className="w-full bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl py-3 pl-10 pr-12 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
+                                        className="w-full bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl py-2 sm:py-3 pl-10 pr-12 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
                                     />
                                     <button
                                         type="button"
@@ -208,7 +201,7 @@ const ModernLogin = () => {
                                 </div>
 
                                 {/* Remember Me & Forgot Password */}
-                                <div className="flex items-center justify-between">
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
                                     <label className="flex items-center gap-2 cursor-pointer group">
                                         <div className="relative">
                                             <input
@@ -217,8 +210,7 @@ const ModernLogin = () => {
                                                 onChange={(e) => setRememberMe(e.target.checked)}
                                                 className="sr-only"
                                             />
-                                            <div className={`w-5 h-5 border-2 border-white/20 rounded transition-all duration-300 ${rememberMe ? 'bg-white border-white' : 'group-hover:border-white/40'
-                                                }`}>
+                                            <div className={`w-5 h-5 border-2 border-white/20 rounded transition-all duration-300 ${rememberMe ? 'bg-white border-white' : 'group-hover:border-white/40'}`}>
                                                 {rememberMe && (
                                                     <CheckCircle className="w-3 h-3 text-black absolute top-0.5 left-0.5" />
                                                 )}
@@ -240,7 +232,7 @@ const ModernLogin = () => {
                                         e.preventDefault();
                                         console.log('Login submitted:', formData);
                                     }}
-                                    className="w-full bg-[#c2831f] text-black font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-white/25 hover:bg-gray-100 flex items-center justify-center gap-2 group"
+                                    className="w-full bg-[#c2831f] text-black font-bold py-2 sm:py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-white/25 hover:bg-gray-100 flex items-center justify-center gap-2 group"
                                 >
                                     <span>Sign In</span>
                                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
@@ -248,7 +240,7 @@ const ModernLogin = () => {
                             </div>
 
                             {/* Sign Up Link */}
-                            <p className="text-center text-gray-400 mt-6">
+                            <p className="text-center text-gray-400 mt-6 text-sm sm:text-base">
                                 Don't have an account?{' '}
                                 <a href="/signup" className="text-[#c2831f] hover:text-gray-300 transition-colors duration-300 underline font-medium">
                                     Create free account
@@ -258,15 +250,11 @@ const ModernLogin = () => {
 
                         {/* Security Badge */}
                         <div className="mt-6 text-center">
-                            <div className="inline-flex items-center gap-2 text-gray-400 bg-white/5 rounded-full px-4 py-2 border border-white/10">
+                            <div className="inline-flex items-center gap-2 text-gray-400 bg-white/5 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 border border-white/10 text-xs sm:text-sm">
                                 <Shield className="w-4 h-4" />
-                                <span className="text-sm">256-bit SSL secured</span>
+                                <span>256-bit SSL secured</span>
                             </div>
                         </div>
-
-                        {/* Decorative Elements */}
-                        <div className="absolute top-10 right-10 w-20 h-20 border border-white/5 rounded-full animate-pulse"></div>
-                        <div className="absolute bottom-10 left-10 w-12 h-12 border border-white/10 rounded-full animate-pulse"></div>
                     </div>
                 </div>
             </div>

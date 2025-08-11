@@ -139,7 +139,7 @@ const Footer = () => {
           {/* Logo */}
           <div className="text-center mb-12">
             <div className="inline-flex items-center justify-center w-46 h-16 rounded-full mb-4 hover:scale-110 transition-transform duration-300">
-              <img src="./rasul-1.png" alt="Icon" className="object-contain" />
+              <img src="../rasul-1.png" alt="Icon" className="object-contain" />
             </div>
           </div>
 
