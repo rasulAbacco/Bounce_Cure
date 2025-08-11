@@ -27,7 +27,7 @@ const PageLayout = ({ children }) => {
             {/* Foreground Content */}
             <div className="relative z-10 flex flex-col min-h-screen">
                 <Navbar />
-                <main style={{ paddingTop: '7%' }} className="flex-grow">
+                <main style={{ paddingTop: '5%' }} className="flex-grow">
                     {children}
                 </main>
                 <Footer />
