@@ -1,7 +1,5 @@
 import Navbar from "../components/Navbar";
-import { CheckCircle } from "lucide-react"; // icon
-
-import React, { useState } from "react";
+import React, { useState, useEffect  } from "react";
 import {
   Mail,
   Phone,
@@ -13,14 +11,51 @@ import {
   Zap,
   Target,
   TrendingUp,
+  ArrowRight,
+  CheckCircle,
 } from "lucide-react";
 import Footer from "../components/Footer";
 import Home from "./Home";
 import PageLayout from "../components/PageLayout";
-import homeImg from "../assets/home-img.png";
+import LandingPage from "./LandingPage";
+
+import CountUp from "react-countup";
+import { useInView } from "react-intersection-observer";
 
 function HomePage() {
   const [activeTab, setActiveTab] = useState("email");
+
+     const [count, setCount] = useState(0);
+
+  useEffect(() => {
+    let start = 0;
+    const end = 200; // final value
+    const duration = 2000; // animation duration in ms
+    const stepTime = Math.abs(Math.floor(duration / end));
+
+    const timer = setInterval(() => {
+      start += 1;
+      setCount(start);
+      if (start === end) clearInterval(timer);
+    }, stepTime);
+
+    return () => clearInterval(timer);
+  }, []);
+
+
+    const stats = [
+    { number: 99.7, suffix: "%", label: "accuracy rate" },
+    { number: 2, suffix: " billion", label: "verifications per month" },
+    { number: 200, suffix: "+ billion", label: "emails validated" },
+  ];
+
+  const { ref, inView } = useInView({
+    triggerOnce: true, // run only once
+    threshold: 0.2,    // 20% visible before triggering
+  });
+
+ 
+
 
   const tabs = [
     {
@@ -224,21 +259,13 @@ function HomePage() {
           </div>
         </div>
 
-        <button className="group inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
+        <button className="group inline-flex items-center px-6 py-3 cursor-pointer bg-[#c2831f] text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
           Learn more
-          <svg
-            className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17 8l4 4m0 0l-4 4m4-4H3"
-            />
-          </svg>
+          <ArrowRight
+            className="ml-2 h-5 text-20 group-hover:translate-x-1 transition-transform"
+            strokeWidth={2}
+            
+          />
         </button>
       </div>
     </div>
@@ -248,7 +275,7 @@ function HomePage() {
   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
     {/* Left Side - Phone Data Table */}
     <div className="rounded-xl shadow-lg overflow-hidden border border-gray-100">
-      <div className="p-6 bg-[#c2831f]">
+      <div className="p-6 ">
         <h4 className="text-xl font-semibold text-white flex items-center">
           <Phone className="h-6 w-6 mr-2" />
           Phone Validation Results
@@ -354,7 +381,7 @@ function HomePage() {
         </div>
       </div>
 
-      <button className="group inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
+      <button className="group inline-flex items-center px-6 py-3 bg-[#c2831f] text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
         Learn More
         <svg
           className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
@@ -482,7 +509,7 @@ const renderEmailActivity = () => (
         </div>
       </div>
 
-      <button className="group inline-flex items-center px-6 py-3 bg-gradient-to-r from-red-600 to-red-700 text-white font-semibold rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
+      <button className="group inline-flex items-center px-6 py-3 bg-[#c2831f] text-white font-semibold rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
         Learn More
         <svg
           className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
@@ -588,7 +615,7 @@ const renderEmailActivity = () => (
         </div>
       </div>
 
-      <button className="group inline-flex items-center px-6 py-3 bg-gradient-to-r from-purple-600 to-purple-700 text-white font-semibold rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
+      <button className="group inline-flex items-center px-6 py-3 bg-[#c2831f] text-white font-semibold rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
         Learn More
         <svg
           className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
@@ -736,7 +763,7 @@ const renderPostalValidation = () => (
         </div>
       </div>
 
-      <button className="group inline-flex items-center px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
+      <button className="group inline-flex items-center px-6 py-3  bg-[#c2831f] text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
         Learn More
         <svg
           className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
@@ -773,10 +800,14 @@ const renderPostalValidation = () => (
     }
   };
 
+
   return (
     <PageLayout>
-      <section className=" py-16 px-6 lg:px-20 flex flex-col lg:flex-row  items-center justify-between">
-        {/* Left Image Section */}
+
+      <LandingPage/>
+{/* 
+    <section className=" py-16 px-6 lg:px-20 flex flex-col lg:flex-row  items-center justify-between">
+
         <div className="w-full lg:w-1/2 mb-12 lg:mb-0">
           <img
             src={homeImg}
@@ -785,20 +816,19 @@ const renderPostalValidation = () => (
           />
         </div>
 
-        {/* Right Text Section */}
+       
         <div className="w-full lg:w-1/2 text-center lg:text-left mt-5">
-          {/* Icon + Label */}
+        
           <div className="flex items-center justify-center lg:justify-start mb-3 text-blue-600 font-semibold">
             <CheckCircle className="w-5 h-5 mr-2" />
             Verify
           </div>
 
-          {/* Title */}
+          
           <h2 className="text-3xl lg:text-4xl font-bold text-[#c2831f] mb-4">
             Real-Time Email Verification
           </h2>
-
-          {/* Expanded Description */}
+ 
           <p className="text-gray-600 text-lg mb-4 max-w-xl text-white">
             Ensure every email you collect is valid, deliverable, and safe to
             use—right at the point of entry. Say goodbye to fake or mistyped
@@ -809,7 +839,7 @@ const renderPostalValidation = () => (
             with just a few lines of code.
           </p>
 
-          {/* Feature List */}
+         
           <ul className="text-left text-white mb-6 space-y-3 max-w-md mx-auto lg:mx-0">
             <li className="flex items-start">
               <CheckCircle className="w-5 h-5 text-green-500 mt-1 mr-2" />
@@ -825,15 +855,18 @@ const renderPostalValidation = () => (
             </li>
           </ul>
 
-          {/* CTA Button */}
+           
           <button className="bg-blue-600 hover:bg-blue-700 transition-all text-white font-semibold px-6 py-3 rounded-md shadow-lg">
             Try it Free
           </button>
         </div>
-      </section>
+      </section> */}
 
+ 
+ 
+ {/* EmailOversight */}
       <div className="min-h-screen ">
-        {/* Header */}
+       
         <div className=" shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="text-center">
@@ -844,7 +877,7 @@ const renderPostalValidation = () => (
                 </h1>
               </div>
               <h2 className="text-3xl font-bold text-[#c2831f] mb-4">
-                200+ Billion Emails Verified and Counting
+                {count}+ Billion Emails Verified and Counting
               </h2>
               <p className="text-lg text-white max-w-4xl mx-auto leading-relaxed">
                 EmailOversight provides a smarter way to validate emails through
@@ -864,25 +897,28 @@ const renderPostalValidation = () => (
         {/* Navigation Tabs */}
         <div className=" shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex overflow-x-auto scrollbar-hide ml-4 sm:ml-6 md:ml-8 lg:ml-12 gap-4">
+            <div className="flex overflow-x-auto scrollbar-hide ml-4 sm:ml-6 md:ml-8 lg:ml-25 gap-4">
               {tabs.map((tab) => {
                 const IconComponent = tab.icon;
                 return (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center px-6 py-4 whitespace-nowrap border-b-2 font-medium text-sm transition-all duration-200 ${activeTab === tab.id
-                        ? "border-blue-500 text-blue-600 bg-blue-50"
-
-                        : "border-transparent text-[#c2831f] hover:text-gray-700 hover:border-gray-300 hover:bg-gray-50"
-                    }`}
+                    className={`flex items-center px-6 py-4 whitespace-nowrap border-b-2 font-medium text-sm transition-all duration-200 
+                      ${activeTab === tab.id
+                        ? "border-[#c2831f] text-[#c2831f] bg-opacity-160 backdrop-blur-md shadow-md cursor-pointer"
+                        : "border-transparent hover:cursor-pointer"
+                      }`}
+                    style={{
+                      borderRadius: "8px", // optional rounded look
+                    }}
                   >
                     <IconComponent
-                      className={`h-5 w-5 mr-2 ${activeTab === tab.id ? "text-blue-600" : "text-gray-400"
-                        }`}
+                      className={`h-5 w-5 mr-2 ${activeTab === tab.id ? "text-[#c2831f]" : "text-gray-400"}`}
                     />
                     {tab.label}
                   </button>
+
                 );
               })}
             </div>
@@ -895,40 +931,84 @@ const renderPostalValidation = () => (
         </div>
       </div>
 
-      {/* -------- */}
+      {/* ----end---- */}
 
-      
-<div className="py-12"> 
-  <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
-
-    {[ // Mapping for easier repetition (optional)
-      { number: "99.7%", label: "accuracy rate" },
-      { number: "2 billion", label: "verifications per month" },
-      { number: "200+ billion", label: "emails validated" },
-    ].map(({ number, label }, idx) => (
-      <div
-        key={idx}
-        className="rounded-2xl p-10 text-center transition-all duration-300 hover:shadow-2xl"
-        style={{
-          background: "rgba(255, 255, 255, 0.1)",      // translucent white
-          boxShadow: "0 4px 30px rgba(255, 255, 255, 0.1)",  // subtle soft shadow
-          backdropFilter: "blur(10px)",                 // blur effect
-          WebkitBackdropFilter: "blur(10px)",           // for Safari support
-          border: "1px solid rgba(255, 255, 255, 0.3)", // subtle border
-        }}
-      >
-        <p
-          className="text-4xl font-bold text-[#c2831f]"
-           
-        >
-          {number}
-        </p>
-        <p className="text-base text-white mt-3">{label}</p>
+      {/* --- conts numbers ---- */}
+    {/* <div className="py-12"> 
+      <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
+        {[
+          { number: "99.7%", label: "accuracy rate" },
+          { number: "2 billion", label: "verifications per month" },
+          { number: "200+ billion", label: "emails validated" },
+        ].map(({ number, label }, idx) => (
+          <div
+            key={idx}
+            className="group rounded-2xl p-10 text-center transition-all duration-300 transform hover:-translate-y-2 hover:scale-105"
+            style={{
+              background: "rgba(255, 255, 255, 0.1)",
+              boxShadow: "0 4px 30px rgba(255, 255, 255, 0.1)",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+              border: "1px solid rgba(255, 255, 255, 0.3)",
+            }}
+            
+            onMouseLeave={(e) => {
+              e.currentTarget.style.boxShadow =
+                "0 4px 30px rgba(255, 255, 255, 0.1)"; // reset
+            }}
+          >
+            <p className="text-4xl font-bold text-[#c2831f] transition-transform duration-300 group-hover:scale-125">
+              {number}
+            </p>
+            <p className="text-base text-white mt-3 transition-transform duration-300 group-hover:scale-110">
+              {label}
+            </p>
+          </div>
+        ))}
       </div>
-    ))}
+    </div> */}
 
-  </div>
-</div>
+
+ <div className="py-12">
+      <div
+        ref={ref}
+        className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8"
+      >
+        {stats.map(({ number, suffix, label }, idx) => (
+          <div
+            key={idx}
+            className="group rounded-2xl p-10 text-center transition-all duration-300 transform hover:-translate-y-2 hover:scale-105"
+            style={{
+              background: "rgba(255, 255, 255, 0.1)",
+              boxShadow: "0 4px 30px rgba(255, 255, 255, 0.1)",
+              backdropFilter: "blur(10px)",
+              WebkitBackdropFilter: "blur(10px)",
+              border: "1px solid rgba(255, 255, 255, 0.3)",
+            }}
+          >
+            <p className="text-4xl font-bold text-[#c2831f] transition-transform duration-300 group-hover:scale-125">
+              {inView ? (
+                <CountUp
+                  start={0}
+                  end={number}
+                  duration={2.5}
+                  decimals={number % 1 !== 0 ? 1 : 0} // show decimal for 99.7
+                />
+              ) : (
+                0
+              )}
+              {suffix}
+            </p>
+            <p className="text-base text-white mt-3 transition-transform duration-300 group-hover:scale-110">
+              {label}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+
+  
+
 
 
 
