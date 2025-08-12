@@ -12,6 +12,7 @@ import Contact from './components/Contact';
 import About from './pages/About';
 import Features from './pages/Features';
 import BulkVerification from './pages/BulkVerification';
+import Chatbot from './pages/Chatbot';
 
 function App() {
   return (
@@ -31,10 +32,10 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/services/bulk-verification" element={<BulkVerification />} />
-
+      
       </Routes>
 
-
+<Chatbot />
     </Router>
   );
 }
