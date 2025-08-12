@@ -1,9 +1,14 @@
 
-import React from 'react'
+import React,  { useState }  from 'react'
 import { FaTwitter, FaFacebookF, FaLinkedinIn, FaGithub } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import { GoHeartFill } from "react-icons/go";
+
+
 
 const Footer = () => {
+    const [liked, setLiked] = useState(false);
+
   return (
     <div className="bg-gray-50">
       <footer className="relative bg-black text-white overflow-hidden">
@@ -162,26 +167,34 @@ const Footer = () => {
             ))}
           </div>
 
-          {/* Navigation */}
-          <nav className="flex flex-wrap justify-center gap-8 text-lg">
-            {["Home", "About", "Services", "Team", "Contact"].map((label) => (
-              <a
-                key={label}
-                href="#"
-                className="relative group font-medium hover:text-gray-300 transition-all duration-300"
-              >
-                {label}
-                <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white group-hover:w-full transition-all duration-300"></span>
-              </a>
-            ))}
-          </nav>
+         {/* Navigation */}
+        <nav className="flex flex-wrap justify-center gap-8 text-lg">
+          {[
+            { label: "Home", path: "/" },
+            { label: "About", path: "/about" },
+            { label: "Integrations", path: "/services/integrations" },
+            { label: "FAQ", path: "/faq" },
+            { label: "Contact", path: "/contact" },
+          ].map(({ label, path }) => (
+            <a
+              key={label}
+              href={path}
+              className="relative group font-medium hover:text-gray-300 transition-all duration-300"
+            >
+              {label}
+              <span className="absolute bottom-0 left-0 w-0 h-0.5 bg-white group-hover:w-full transition-all duration-300"></span>
+            </a>
+          ))}
+        </nav>
+
 
           {/* Divider */}
           <div className="w-full h-px bg-gradient-to-r from-transparent via-white/30 to-transparent mt-8"></div>
 
           {/* Copyright */}
-          <div className="text-center text-black/70 text-sm mt-4 tracking-wide">
-            ©2025 Online Tutorials | All Rights Reserved | Crafted with ❤️
+         <div className="text-center text-black text-sm tracking-wide">
+            ©2025 Bounce Cure | All Rights Reserved | Crafted with
+            <GoHeartFill className="inline text-red-500 ml-1 text-lg" />
           </div>
         </div>
 
