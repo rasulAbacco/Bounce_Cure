@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 
-const Sidebar = ({ isOpen, toggleSidebar }) => {
+const Sidebar = ({ isOpen, toggleSidebar, pageName }) => {
     const location = useLocation(); // get current path
 
     const menuItems = [
@@ -33,8 +33,7 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
             <div className={`fixed left-0 top-0 h-full w-65 bg-white/10 backdrop-blur-lg border-r border-white/10 transform transition-transform duration-300 ease-in-out z-30 ${isOpen ? 'translate-x-0' : '-translate-x-full'}`}>
                 <div className="flex items-center justify-between p-6 border-b border-white/10">
                     <div className="flex items-center space-x-3 mt-[32%]">
-                        <div className="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                            <Mail className="w-5 h-5 text-white" />
+                        <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center shadow-[0_4px_10px_rgba(255,215,0,0.7)]">                            <Mail className="w-5 h-5 text-white" />
                         </div>
                         <span className="text-xl font-bold text-white">B@unce Cure</span>
                     </div>
@@ -56,9 +55,12 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                                 <li key={item.id}>
                                     <Link
                                         to={item.path}
-                                        onClick={toggleSidebar} // close sidebar on mobile
+                                        onClick={() => {
+                                            pageName(item.label); // Notify parent of page change
+                                            toggleSidebar(); // close sidebar on mobile
+                                        }} // close sidebar on mobile
                                         className={`w-full flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${isActive
-                                            ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 text-white border border-blue-500/30'
+                                            ? 'bg-black/30 backdrop-blur-md border border-white/30 rounded-lg text-white p-2 bg-gradient-to-r from-yellow-400 /20 via-yellow-300/10 to-yellow-400/20'
                                             : 'text-gray-300 hover:bg-white/10 hover:text-white'
                                             }`}
                                     >
@@ -72,10 +74,9 @@ const Sidebar = ({ isOpen, toggleSidebar }) => {
                 </nav>
 
                 <div className="absolute bottom-4 left-4 right-4">
-                    <div className="bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 rounded-lg p-4">
+                    <div className="bg-black/30 backdrop-blur-md border border-white/30 rounded-lg text-white p-2 bg-gradient-to-r from-yellow-400 /20 via-yellow-300/10 to-yellow-400/20">
                         <div className="flex items-center space-x-3">
-                            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                                <Wrench className="w-5 h-5 text-white" />
+                            <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center shadow-[0_4px_10px_rgba(255,215,0,0.7)]">                                <Wrench className="w-5 h-5 text-white" />
                             </div>
                             <div>
                                 <p className="text-white text-sm font-medium">Upgrade Plan</p>
