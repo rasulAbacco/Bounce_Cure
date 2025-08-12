@@ -102,17 +102,17 @@ function HomePage() {
         stats: "10+ Billion Records Enriched",
       },
     },
-    {
-      id: "postal",
-      label: "Postal Validation",
-      icon: MapPin,
-      content: {
-        title: "Postal Validation",
-        description:
-          "Validate and standardize postal addresses worldwide. Ensure accurate delivery with address correction and geolocation services for improved mail deliverability.",
-        stats: "75+ Billion Addresses Verified",
-      },
-    },
+    // {
+    //   id: "postal",
+    //   label: "Postal Validation",
+    //   icon: MapPin,
+    //   content: {
+    //     title: "Postal Validation",
+    //     description:
+    //       "Validate and standardize postal addresses worldwide. Ensure accurate delivery with address correction and geolocation services for improved mail deliverability.",
+    //     stats: "75+ Billion Addresses Verified",
+    //   },
+    // },
   ];
 
   const activeTabData = tabs.find((tab) => tab.id === activeTab);
@@ -793,8 +793,8 @@ const renderPostalValidation = () => (
         return renderEmailActivity();
       case "enrichment":
         return renderDataEnrichment();
-      case "postal":
-        return renderPostalValidation();
+      // case "postal":
+      //   return renderPostalValidation();
       default:
         return renderEmailValidation();
     }
@@ -896,7 +896,7 @@ const renderPostalValidation = () => (
         {/* Navigation Tabs */}
         <div className=" shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex overflow-x-auto scrollbar-hide ml-4 sm:ml-6 md:ml-8 lg:ml-25 gap-4">
+            <div className="flex overflow-x-auto scrollbar-hide ml-4 sm:ml-6 md:ml-8 lg:ml-45 gap-4">
               {tabs.map((tab) => {
                 const IconComponent = tab.icon;
                 return (
