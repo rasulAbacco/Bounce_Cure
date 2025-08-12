@@ -1,8 +1,7 @@
 import React, { useState, useEffect, useRef } from "react";
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faPaperPlane, faRobot, faUser } from "@fortawesome/free-solid-svg-icons";
-import "../styles/Chatbot.css"; // External styles for clean code
 import { HiChatBubbleLeftRight } from "react-icons/hi2";
+import { FaPaperPlane, FaRobot, FaUser } from "react-icons/fa";
+import "../styles/Chatbot.css";
 
 const ChatBot = () => {
   const [messages, setMessages] = useState([
@@ -101,13 +100,13 @@ const ChatBot = () => {
 
     // ---------------- GREETINGS ----------------
     {
-      keywords: ["hi", "hello","hlo", "hey", "good morning", "good afternoon", "good evening", "how are you", "yo", "hiya", "sup", "greetings", "morning", "afternoon", "evening", "hello there", "hi there", "hey there", "nice to meet you", "pleased to meet you", "what’s up", "wassup", "good day", "long time no see", "hey buddy", "hi friend", "hi team", "bonjour", "hola", "namaste", "welcome", "start chat", "initiate chat", "start conversation", "open chat", "begin chat"],
+      keywords: ["hi", "hello", "hey", "good morning", "good afternoon", "good evening", "how are you", "yo", "hiya", "sup", "greetings", "morning", "afternoon", "evening", "hello there", "hi there", "hey there", "nice to meet you", "pleased to meet you", "what’s up", "wassup", "good day", "long time no see", "hey buddy", "hi friend", "hi team", "bonjour", "hola", "namaste", "welcome", "start chat", "initiate chat", "start conversation", "open chat", "begin chat"],
       answer: "Hello there! 👋 Welcome to BounceCure. How can I help you today?"
     },
 
     // ---------------- COMPANY INFO ----------------
     {
-      keywords: ["what is bouncecure","Bounce Cure","BounceCure","bouncecure", "tell me about bouncecure", "who are you", "about company", "about your company", "about us", "company profile", "company details", "about bounce cure", "who built this", "when was bouncecure founded", "history", "background", "mission", "vision", "our journey", "our story", "company intro", "founders", "team info", "team details", "company origin", "what do you do", "company overview", "business model", "brand story", "brand history", "when started"],
+      keywords: ["what is bouncecure", "tell me about bouncecure", "who are you", "about company", "about your company", "about us", "company profile", "company details", "about bounce cure", "who built this", "when was bouncecure founded", "history", "background", "mission", "vision", "our journey", "our story", "company intro", "founders", "team info", "team details", "company origin", "what do you do", "company overview", "business model", "brand story", "brand history", "when started"],
       answer: "BounceCure is a cutting-edge email verification and campaign optimization platform founded in 2023. We help businesses improve deliverability, reduce bounces, and protect sender reputation."
     },
 
@@ -161,6 +160,7 @@ const ChatBot = () => {
 
   ];
 
+
   const findAnswer = (userText) => {
     const text = userText.toLowerCase();
     for (let pair of qaPairs) {
@@ -189,8 +189,7 @@ const ChatBot = () => {
     <>
       {/* Floating Button */}
       <div className="chat-float-button" onClick={() => setIsOpen(!isOpen)}>
-      <HiChatBubbleLeftRight />
-
+        <HiChatBubbleLeftRight />
       </div>
 
       {/* Chat Window */}
@@ -201,7 +200,7 @@ const ChatBot = () => {
             {messages.map((msg, i) => (
               <div key={i} className={`message-row ${msg.sender}`}>
                 <div className="icon">
-                  <FontAwesomeIcon icon={msg.sender === "bot" ? faRobot : faUser} />
+                  {msg.sender === "bot" ? <FaRobot /> : <FaUser />}
                 </div>
                 <div className={`message-bubble ${msg.sender}`}>
                   {msg.text}
@@ -220,7 +219,7 @@ const ChatBot = () => {
               placeholder="Type your message..."
             />
             <button onClick={sendMessage}>
-              <FontAwesomeIcon icon={faPaperPlane} />
+              <FaPaperPlane />
             </button>
           </div>
         </div>
