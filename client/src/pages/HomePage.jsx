@@ -102,17 +102,17 @@ function HomePage() {
         stats: "10+ Billion Records Enriched",
       },
     },
-    {
-      id: "postal",
-      label: "Postal Validation",
-      icon: MapPin,
-      content: {
-        title: "Postal Validation",
-        description:
-          "Validate and standardize postal addresses worldwide. Ensure accurate delivery with address correction and geolocation services for improved mail deliverability.",
-        stats: "75+ Billion Addresses Verified",
-      },
-    },
+    // {
+    //   id: "postal",
+    //   label: "Postal Validation",
+    //   icon: MapPin,
+    //   content: {
+    //     title: "Postal Validation",
+    //     description:
+    //       "Validate and standardize postal addresses worldwide. Ensure accurate delivery with address correction and geolocation services for improved mail deliverability.",
+    //     stats: "75+ Billion Addresses Verified",
+    //   },
+    // },
   ];
 
   const activeTabData = tabs.find((tab) => tab.id === activeTab);
@@ -303,7 +303,7 @@ function HomePage() {
           </thead>
           <tbody className="divide-y divide-gray-200">
             <tr className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-4 text-sm font-medium text-white hover:text-gray-700">
+              <td className="px-4 py-4 text-sm font-medium text-gray-700">
                 571-286-7111
               </td>
               <td className="px-4 py-4 text-sm text-gray-700">Michael</td>
@@ -315,7 +315,7 @@ function HomePage() {
               <td className="px-4 py-4 text-sm text-gray-700 font-medium">98</td>
             </tr>
             <tr className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-4 text-sm font-medium text-white hover:text-gray-700">
+              <td className="px-4 py-4 text-sm font-medium text-gray-700">
                 517-555-4444
               </td>
               <td className="px-4 py-4 text-sm text-gray-700">Sarah</td>
@@ -327,7 +327,7 @@ function HomePage() {
               <td className="px-4 py-4 text-sm text-gray-700 font-medium">85</td>
             </tr>
             <tr className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-4 text-sm font-medium text-white hover:text-gray-700">
+              <td className="px-4 py-4 text-sm font-medium text-gray-700">
                 971-808-5555
               </td>
               <td className="px-4 py-4 text-sm text-gray-700">David</td>
@@ -793,8 +793,8 @@ const renderPostalValidation = () => (
         return renderEmailActivity();
       case "enrichment":
         return renderDataEnrichment();
-      case "postal":
-        return renderPostalValidation();
+      // case "postal":
+      //   return renderPostalValidation();
       default:
         return renderEmailValidation();
     }
@@ -896,7 +896,7 @@ const renderPostalValidation = () => (
         {/* Navigation Tabs */}
         <div className=" shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex overflow-x-auto scrollbar-hide ml-4 sm:ml-6 md:ml-8 lg:ml-25 gap-4">
+            <div className="flex overflow-x-auto scrollbar-hide ml-4 sm:ml-6 md:ml-8 lg:ml-45 gap-4">
               {tabs.map((tab) => {
                 const IconComponent = tab.icon;
                 return (
