@@ -13,6 +13,7 @@ import About from './pages/About';
 import Features from './pages/Features';
 import BulkVerification from './pages/BulkVerification';
 import Dashboard from './pages/Dashboard/Dashboard';
+import FaqSection from './pages/FAQSection';
 
 function App() {
   return (
@@ -32,7 +33,7 @@ function App() {
         <Route path="/contact" element={<Contact />} />
         <Route path="/pricing" element={<Pricing />} />
         <Route path="/services/bulk-verification" element={<BulkVerification />} />
-
+        <Route path="/faq" element={<FaqSection />} />
 
         <Route path="/dashboard" element={<Dashboard />} />
 

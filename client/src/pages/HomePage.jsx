@@ -303,7 +303,7 @@ function HomePage() {
           </thead>
           <tbody className="divide-y divide-gray-200">
             <tr className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-4 text-sm font-medium text-white hover:text-gray-700">
+              <td className="px-4 py-4 text-sm font-medium text-gray-700">
                 571-286-7111
               </td>
               <td className="px-4 py-4 text-sm text-gray-700">Michael</td>
@@ -315,7 +315,7 @@ function HomePage() {
               <td className="px-4 py-4 text-sm text-gray-700 font-medium">98</td>
             </tr>
             <tr className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-4 text-sm font-medium text-white hover:text-gray-700">
+              <td className="px-4 py-4 text-sm font-medium text-gray-700">
                 517-555-4444
               </td>
               <td className="px-4 py-4 text-sm text-gray-700">Sarah</td>
@@ -327,7 +327,7 @@ function HomePage() {
               <td className="px-4 py-4 text-sm text-gray-700 font-medium">85</td>
             </tr>
             <tr className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-4 text-sm font-medium text-white hover:text-gray-700">
+              <td className="px-4 py-4 text-sm font-medium text-gray-700">
                 971-808-5555
               </td>
               <td className="px-4 py-4 text-sm text-gray-700">David</td>
