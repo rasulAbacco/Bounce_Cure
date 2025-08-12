@@ -17,21 +17,13 @@
     "@heroicons/react": "^2.2.0",
     "@tailwindcss/vite": "^4.1.11",
     "aos": "^2.3.4",
-
-
-    "axios": "^1.11.0",
-
-    "chart.js": "^4.5.0",
-
-
     "axios": "^1.11.0",
     "chart.js": "^4.5.0",
-
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
-    "internmap": "^2.0.3",
     "file-saver": "^2.0.5",
+    "internmap": "^2.0.3",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.537.0",
