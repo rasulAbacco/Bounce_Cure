@@ -10,10 +10,10 @@ const DashboardLayout = ({ children, pageName = "Dashboard" }) => {
     };
 
     return (
-        <div className="min-h-screen h-[100vh] bg-black text-white flex">
+        <div className="min-h-screen w-full bg-black text-white flex">
             <Sidebar isOpen={sidebarOpen} toggleSidebar={toggleSidebar} />
 
-            <div className="flex-1 flex flex-col">
+            <div className="flex-1 w-full flex flex-col">
                 <TopNavbar toggleSidebar={toggleSidebar} pageName={pageName} />
                 <main className="flex-1 overflow-y-auto">
                     {children}
