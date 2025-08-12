@@ -371,7 +371,7 @@ const Verification = () => {
 const styles = {
   page: {
 
-    marginTop: "6%",
+    marginTop: "7%",
     padding: "30px 60px",
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
     backgroundColor: "#000",
