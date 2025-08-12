@@ -126,7 +126,7 @@ const FreeValidation = () => {
                     </section>
 
                     {/* Section 7 - Call to Action */}
-                    <section className="bg-gradient-to-r from-purple-500 to-pink-500 rounded-3xl p-8 text-center shadow-2xl">
+                    <section className="bg-white/10 backdrop-blur-xl border border-white/40 rounded-3xl p-8 text-center shadow-2xl">
                         <h2 className="text-3xl font-bold mb-4">Start Validating Emails Today</h2>
                         <p className="text-white/90 mb-6">Sign up now and get 100 free validations.</p>
                         <Link to="/signup" className="bg-white text-black font-bold py-3 px-6 rounded-xl hover:scale-105 transition-all duration-300">
