@@ -1,24 +1,61 @@
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield, Zap, Users, CheckCircle } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
-
+import { useNavigate } from "react-router-dom";
 const ModernLogin = () => {
+
+    const navigate = useNavigate();
     const [formData, setFormData] = useState({
-        email: '',
-        password: ''
+        email: "",
+        password: ""
     });
+
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        console.log("Login submitted:", formData);
+
+        try {
+            const res = await fetch(`http://localhost:5000/api/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData)
+            });
+
+            console.log("Status code:", res.status);
+
+            const data = await res.json().catch(err => {
+                console.error("JSON parse error:", err);
+                return {};
+            });
+
+            console.log("Response data:", data);
+
+            if (res.status === 200) {
+                localStorage.setItem("token", data.token);
+                alert("Login successful!");
+                navigate("/dashboard");
+            } else {
+                alert(data.message || "Login failed");
+            }
+        } catch (err) {
+            console.error("Error:", err);
+            alert("Something went wrong!");
+        }
+    };
+
+
+
 
     const [focusedField, setFocusedField] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
 
-    const handleInputChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
-    };
+
 
     const stats = [
         { icon: <Users className="w-6 h-6" />, number: "400K+", label: "Active Users" },
@@ -172,27 +209,27 @@ const ModernLogin = () => {
                                         name="email"
                                         placeholder="Email Address"
                                         value={formData.email}
-                                        onChange={handleInputChange}
+                                        onChange={handleChange}
                                         onFocus={() => setFocusedField('email')}
                                         onBlur={() => setFocusedField('')}
                                         className="w-full bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl py-2 sm:py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
                                     />
                                 </div>
 
-                                <div className="relative group">
+                                <div className="relative group" onSubmit={handleSubmit}>
                                     <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'password' ? 'text-white' : 'text-gray-400'}`} />
                                     <input
                                         type={showPassword ? 'text' : 'password'}
                                         name="password"
                                         placeholder="Password"
                                         value={formData.password}
-                                        onChange={handleInputChange}
+                                        onChange={handleChange}
                                         onFocus={() => setFocusedField('password')}
                                         onBlur={() => setFocusedField('')}
                                         className="w-full bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl py-2 sm:py-3 pl-10 pr-12 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
                                     />
                                     <button
-                                        type="button"
+                                        type="submit"
                                         onClick={() => setShowPassword(!showPassword)}
                                         className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-300"
                                     >
@@ -227,16 +264,16 @@ const ModernLogin = () => {
                                 </div>
 
                                 {/* Sign In Button */}
+                                {/* Sign In Button */}
                                 <button
-                                    onClick={(e) => {
-                                        e.preventDefault();
-                                        console.log('Login submitted:', formData);
-                                    }}
+                                    type="submit"
+                                    onClick={handleSubmit} // ✅ call handleSubmit
                                     className="w-full bg-[#c2831f] text-black font-bold py-2 sm:py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-white/25 hover:bg-gray-100 flex items-center justify-center gap-2 group"
                                 >
                                     <span>Sign In</span>
                                     <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
                                 </button>
+
                             </div>
 
                             {/* Sign Up Link */}
