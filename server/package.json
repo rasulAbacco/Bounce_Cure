@@ -3,20 +3,25 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node server.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "description": "",
   "dependencies": {
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
+    "email-deep-validator": "^3.3.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
     "multer": "^2.0.2",
     "openai": "^5.12.2",
-    "pg": "^8.16.3"
-  }
+    "p-limit": "^6.2.0",
+    "papaparse": "^5.5.3",
+    "pg": "^8.16.3",
+    "xlsx": "^0.18.5"
+  },
+  "description": ""
 }
