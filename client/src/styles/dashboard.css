@@ -1,0 +1,11 @@
+.dash-notification {
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE 10+ */
+}
+
+/* For Chrome, Edge, Safari */
+.dash-notification::-webkit-scrollbar {
+    display: none;
+}

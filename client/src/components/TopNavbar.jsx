@@ -12,8 +12,7 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
     ];
 
     return (
-        <nav className="bg-white/5 backdrop-blur-lg border-b border-white/10 px-6 py-4 flex items-center justify-between relative z-30">
-            {/* Left Section */}
+        <nav className="fixed top-0 left-0 right-0 bg-white/5 backdrop-blur-lg border-b border-white/10 px-6 py-4 flex items-center justify-between z-50 mb-[5%]">            {/* Left Section */}
             <div className="flex items-center space-x-4">
                 <button
                     onClick={toggleSidebar}
