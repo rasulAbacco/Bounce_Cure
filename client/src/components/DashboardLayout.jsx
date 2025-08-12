@@ -36,6 +36,8 @@ const DashboardLayout = ({ children }) => {
     };
 
     return (
+
+ 
         <div className="min-h-screen bg-black text-white flex">
             <Sidebar
                 isOpen={sidebarOpen}
@@ -44,6 +46,7 @@ const DashboardLayout = ({ children }) => {
             />
 
             <div className="flex-1 flex flex-col w-full">
+>
                 <TopNavbar toggleSidebar={toggleSidebar} pageName={pageName} />
                 <main className="flex-1 overflow-y-auto">{children}</main>
             </div>
