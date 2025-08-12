@@ -17,11 +17,7 @@
     "@heroicons/react": "^2.2.0",
     "@tailwindcss/vite": "^4.1.11",
     "aos": "^2.3.4",
-<<<<<<< HEAD
-    "axios": "^1.11.0",
-=======
     "chart.js": "^4.5.0",
->>>>>>> de9464cdbd3f1c9eab3d077282a3ed9d97051597
     "cors": "^2.8.5",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
