@@ -10,7 +10,7 @@ app.use(cors());
 app.use(express.json());
 
 // Use routes
-app.use('/', verificationRoutes);
+app.use('/verification', verificationRoutes);
 
 // Test route
 app.get('/', (req, res) => {
