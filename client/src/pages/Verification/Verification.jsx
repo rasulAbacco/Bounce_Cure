@@ -19,7 +19,7 @@ const Verification = () => {
   const verifySingle = async () => {
     if (!singleEmail) return alert("Enter an email");
     try {
-      const res = await axios.post("http://localhost:5000/verify-single", {
+      const res = await axios.post("http://localhost:5000/verification/verify-single", {
         email: singleEmail,
       });
       setSingleResult(res.data);
@@ -37,7 +37,7 @@ const Verification = () => {
     formData.append("file", file);
 
     try {
-      const res = await axios.post("http://localhost:5000/verify-bulk", formData, {
+      const res = await axios.post("http://localhost:5000/verification/verify-bulk", formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -66,10 +66,9 @@ const Verification = () => {
       XLSX.utils.book_append_sheet(wb, ws, "Results");
       XLSX.writeFile(wb, `verification_results.${format}`);
     } else if (format === "txt") {
-      const blob = new Blob(
-        [data.map((r) => `${r.email} - ${r.status}`).join("\n")],
-        { type: "text/plain;charset=utf-8" }
-      );
+      const blob = new Blob([data.map((r) => `${r.email} - ${r.status}`).join("\n")], {
+        type: "text/plain;charset=utf-8",
+      });
       saveAs(blob, "verification_results.txt");
     } else if (format === "json") {
       const blob = new Blob([JSON.stringify(data, null, 2)], {
@@ -77,181 +76,172 @@ const Verification = () => {
       });
       saveAs(blob, "verification_results.json");
     }
+
     setDownloadDropdownOpen(false);
   };
 
   const viewingBatch = bulkHistory.find((batch) => batch.id === viewingBatchId);
-
   const filteredResults =
     viewingBatch && filter !== "all"
       ? viewingBatch.results.filter((r) => r.status === filter)
       : viewingBatch
-        ? viewingBatch.results
-        : [];
+      ? viewingBatch.results
+      : [];
 
   return (
     <DashboardLayout>
-      <div style={styles.page}>
+      <div className="bg-black text-gray-200 font-sans mt-[2%] px-4 sm:px-6 lg:px-16 py-10 max-w-[1400px] mx-auto">
         {/* Tabs */}
-        <div style={styles.tabContainer}>
-          <button
-            style={activeTab === "single" ? styles.activeTabBtn : styles.tabBtn}
-            onClick={() => setActiveTab("single")}
-          >
-            Single Verification
-          </button>
-          <button
-            style={activeTab === "bulk" ? styles.activeTabBtn : styles.tabBtn}
-            onClick={() => setActiveTab("bulk")}
-          >
-            Bulk Verification
-          </button>
+        <div className="flex flex-wrap mt-15 justify-center gap-3 mb-6">
+          {["single", "bulk"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab)}
+              className={`${
+                activeTab === tab
+                  ? "bg-white text-yellow-700 border-2 border-yellow-600 shadow-md font-bold"
+                  : "bg-transparent text-gray-200 border border-yellow-600 font-semibold"
+              } px-6 py-2 rounded-md transition-all duration-300 w-full sm:w-[300px] text-center`}
+            >
+              {tab === "single" ? "Single Verification" : "Bulk Verification"}
+            </button>
+          ))}
         </div>
 
-        {/* Single Tab */}
+        {/* SINGLE VERIFICATION */}
         {activeTab === "single" && (
           <div>
-            <h2 style={styles.sectionTitle}>Single Email Verification</h2>
-            <div style={{ marginBottom: "20px" }}>
+            <h2 className="text-xl font-bold border-b border-gray-600 pb-2 mb-5">
+              Single Email Verification
+            </h2>
+
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-6">
               <input
                 type="email"
                 value={singleEmail}
                 onChange={(e) => setSingleEmail(e.target.value)}
                 placeholder="Enter email"
-                style={{ ...styles.input, color: "#c2831f", fontWeight: "bold" }}
+                className="bg-[#111] text-yellow-600 font-bold px-4 py-2 rounded-md border border-gray-600 w-full sm:w-80"
               />
-              <button onClick={verifySingle} style={{ ...styles.verifyBtn, color: "#c2831f" }}>
+              <button
+                onClick={verifySingle}
+                className="bg-white text-yellow-700 font-bold px-4 py-2 rounded-md hover:bg-gray-100"
+              >
                 Verify
               </button>
             </div>
+
             {singleResult && (
-              <div style={{ marginBottom: "40px" }}>
+              <div className="mb-8">
                 <strong>{singleResult.email}</strong> -{" "}
-                <span style={styles.statusBadge(singleResult.status)}>
+                <span
+                  className={`inline-block px-3 py-1 rounded-full text-sm font-bold text-white ${
+                    singleResult.status === "valid"
+                      ? "bg-green-600"
+                      : singleResult.status === "invalid"
+                      ? "bg-red-600"
+                      : "bg-yellow-500"
+                  }`}
+                >
                   {singleResult.status.toUpperCase()}
                 </span>
               </div>
             )}
 
-            {/* Single Verification History */}
-            <div style={styles.historySection}>
-              <h3 style={styles.sectionTitle}>Single Verification History</h3>
-              {singleHistory.length === 0 ? (
-                <p>No single verification history.</p>
-              ) : (
-                <table style={styles.table}>
+            <h3 className="text-lg font-bold border-b border-gray-600 pb-2 mb-4">
+              Single Verification History
+            </h3>
+
+            {singleHistory.length === 0 ? (
+              <p>No single verification history.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse mb-6 min-w-[500px]">
                   <thead>
-                    <tr>
-                      <th style={{ ...styles.th, color: "#c2831f" }}>Email</th>
-                      <th style={{ ...styles.th, color: "#c2831f" }}>Status</th>
+                    <tr className="bg-[#111]">
+                      <th className="text-left px-4 py-3 text-yellow-600 text-sm font-bold border-b border-gray-700">
+                        Email
+                      </th>
+                      <th className="text-left px-4 py-3 text-yellow-600 text-sm font-bold border-b border-gray-700">
+                        Status
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
                     {singleHistory.map((item, idx) => (
                       <tr key={idx}>
-                        <td style={styles.td}>{item.email}</td>
-                        <td style={styles.td}>
-                          <span style={styles.statusBadge(item.status)}>{item.status}</span>
+                        <td className="px-4 py-3 border-b border-gray-800">{item.email}</td>
+                        <td className="px-4 py-3 border-b border-gray-800">
+                          <span
+                            className={`inline-block px-3 py-1 rounded-full text-sm font-bold text-white ${
+                              item.status === "valid"
+                                ? "bg-green-600"
+                                : item.status === "invalid"
+                                ? "bg-red-600"
+                                : "bg-yellow-500"
+                            }`}
+                          >
+                            {item.status}
+                          </span>
                         </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
-              )}
-            </div>
+              </div>
+            )}
           </div>
         )}
 
-        {/* Bulk Tab */}
+        {/* BULK VERIFICATION */}
         {activeTab === "bulk" && (
           <div>
-            <h2 style={styles.sectionTitle}>Bulk Email Verification</h2>
+            <h2 className="text-xl font-bold border-b border-gray-600 pb-2 mb-4">
+              Bulk Email Verification
+            </h2>
 
-            <div style={styles.uploadSection}>
+            <div className="mb-6">
               <input
                 type="file"
                 accept=".csv,.xlsx,.txt"
                 onChange={handleBulkUpload}
-                style={{ ...styles.input, cursor: "pointer", color: "#c2831f", backgroundColor: "#000" }}
+                className="bg-black text-yellow-600 border border-gray-600 rounded-md px-4 py-2 w-full sm:w-[300px] cursor-pointer"
               />
             </div>
 
+            {/* Filters + Download */}
             {viewingBatch && (
               <>
-                <div
-                  style={{
-                    marginBottom: "20px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "20px",
-                    flexWrap: "wrap",
-                    position: "relative",
-                  }}
-                >
+                <div className="flex flex-wrap items-center gap-3 mb-6 relative">
                   {["all", "valid", "invalid", "risky"].map((f) => (
                     <button
                       key={f}
                       onClick={() => setFilter(f)}
-                      style={{
-                        ...styles.filterBtn(filter === f),
-                        color: "#fff",
-                        borderColor: "#c2831f",
-                      }}
+                      className={`px-4 py-2 rounded-md border ${
+                        filter === f
+                          ? "bg-gray-700 text-white"
+                          : "bg-transparent text-gray-400"
+                      } border-yellow-600 font-semibold min-w-[100px]`}
                     >
                       {f.charAt(0).toUpperCase() + f.slice(1)}
                     </button>
                   ))}
 
-                  {/* Single Download Icon */}
-                  <div style={{ position: "relative" }}>
+                  <div className="relative">
                     <button
                       onClick={() => setDownloadDropdownOpen((prev) => !prev)}
-                      style={{
-                        background: "transparent",
-                        border: "none",
-                        color: "#c2831f",
-                        cursor: "pointer",
-                        fontSize: "24px",
-                        padding: "4px 8px",
-                      }}
+                      className="text-yellow-600 text-2xl"
                       title={`Download ${filter} emails`}
-                      aria-label={`Download ${filter} emails`}
                     >
                       <HiOutlineDownload />
                     </button>
-
                     {downloadDropdownOpen && (
-                      <div
-                        style={{
-                          position: "absolute",
-                          top: "calc(100% + 6px)",
-                          right: 0,
-                          backgroundColor: "#111",
-                          border: "1px solid #444",
-                          borderRadius: "6px",
-                          boxShadow: "0 2px 6px rgba(0,0,0,0.8)",
-                          zIndex: 1000,
-                          minWidth: "140px",
-                        }}
-                      >
+                      <div className="absolute top-full right-0 mt-2 bg-[#111] border border-gray-700 rounded-md shadow-md z-50 w-[140px]">
                         {["csv", "xlsx", "txt", "json"].map((format) => (
                           <button
                             key={format}
                             onClick={() => downloadFile(format, filteredResults)}
-                            style={{
-                              display: "block",
-                              width: "100%",
-                              padding: "8px 12px",
-                              background: "transparent",
-                              border: "none",
-                              color: "#eee",
-                              textAlign: "left",
-                              cursor: "pointer",
-                              fontWeight: "600",
-                              fontSize: "14px",
-                            }}
-                            onMouseEnter={(e) => (e.target.style.backgroundColor = "#333")}
-                            onMouseLeave={(e) => (e.target.style.backgroundColor = "transparent")}
+                            className="w-full text-left px-4 py-2 text-sm font-semibold text-gray-200 hover:bg-gray-700"
                           >
                             Download {format.toUpperCase()}
                           </button>
@@ -262,21 +252,35 @@ const Verification = () => {
                 </div>
 
                 {/* Results Table */}
-                <div style={styles.resultsTable}>
+                <div className="overflow-x-auto mb-6">
                   {filteredResults.length > 0 ? (
-                    <table style={styles.table}>
+                    <table className="w-full border-collapse min-w-[500px]">
                       <thead>
-                        <tr>
-                          <th style={{ ...styles.th, color: "#c2831f" }}>Email</th>
-                          <th style={{ ...styles.th, color: "#c2831f" }}>Status</th>
+                        <tr className="bg-[#111]">
+                          <th className="text-left px-4 py-3 text-yellow-600 text-sm font-bold border-b border-gray-700">
+                            Email
+                          </th>
+                          <th className="text-left px-4 py-3 text-yellow-600 text-sm font-bold border-b border-gray-700">
+                            Status
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
                         {filteredResults.map((res, i) => (
                           <tr key={i}>
-                            <td style={styles.td}>{res.email}</td>
-                            <td style={styles.td}>
-                              <span style={styles.statusBadge(res.status)}>{res.status}</span>
+                            <td className="px-4 py-3 border-b border-gray-800">{res.email}</td>
+                            <td className="px-4 py-3 border-b border-gray-800">
+                              <span
+                                className={`inline-block px-3 py-1 rounded-full text-sm font-bold text-white ${
+                                  res.status === "valid"
+                                    ? "bg-green-600"
+                                    : res.status === "invalid"
+                                    ? "bg-red-600"
+                                    : "bg-yellow-500"
+                                }`}
+                              >
+                                {res.status}
+                              </span>
                             </td>
                           </tr>
                         ))}
@@ -289,240 +293,68 @@ const Verification = () => {
               </>
             )}
 
-            {/* Bulk History List BELOW results */}
-            <div style={styles.historySection}>
-              <h3 style={styles.sectionTitle}>Bulk Verification History</h3>
-              {bulkHistory.length === 0 ? (
-                <p>No bulk verification history.</p>
-              ) : (
-                <div>
-                  {bulkHistory.map((batch) => (
-                    <div
-                      key={batch.id}
-                      style={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        border: "1px solid #444",
-                        borderRadius: 6,
-                        color: "#c2831f",
-                        padding: 12,
-                        marginBottom: 12,
-                        backgroundColor:
-                          viewingBatchId === batch.id ? "#222" : "transparent",
-                        cursor: "pointer",
-                        transition: "background-color 0.3s ease",
-                      }}
-                      onClick={() => setViewingBatchId(batch.id)}
-                      onKeyDown={(e) => e.key === "Enter" && setViewingBatchId(batch.id)}
-                      role="button"
-                      tabIndex={0}
-                      aria-label={`View batch results for ${batch.filename}`}
-                    >
-                      <div>
-                        <strong>{batch.filename}</strong> <br />
-                        <small style={{ color: "#888" }}>{batch.timestamp}</small>
-                      </div>
-                      <div style={{ display: "flex", gap: 10 }}>
-                        <button
-                          style={styles.actionBtn}
-                          title="View Results"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setViewingBatchId(batch.id);
-                          }}
-                        >
-                          <FaEye />
-                        </button>
-                        <button
-                          style={styles.actionBtn}
-                          title="Edit Batch"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            alert("Edit functionality to be implemented");
-                          }}
-                        >
-                          <FaEdit />
-                        </button>
-                        <button
-                          style={styles.actionBtn}
-                          title="Delete Batch"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setBulkHistory((prev) => prev.filter((b) => b.id !== batch.id));
-                            if (viewingBatchId === batch.id) setViewingBatchId(null);
-                          }}
-                        >
-                          <FaTrash />
-                        </button>
-                      </div>
+            {/* Bulk History */}
+            <h3 className="text-lg font-bold border-b border-gray-600 pb-2 mb-4">
+              Bulk Verification History
+            </h3>
+            {bulkHistory.length === 0 ? (
+              <p>No bulk verification history.</p>
+            ) : (
+              <div className="space-y-4">
+                {bulkHistory.map((batch) => (
+                  <div
+                    key={batch.id}
+                    onClick={() => setViewingBatchId(batch.id)}
+                    className={`flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 border border-gray-700 rounded-md px-4 py-3 cursor-pointer transition-colors ${
+                      viewingBatchId === batch.id ? "bg-gray-800" : ""
+                    }`}
+                  >
+                    <div>
+                      <strong>{batch.filename}</strong>
+                      <div className="text-sm text-gray-400">{batch.timestamp}</div>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
+                    <div className="flex gap-2">
+                      <button
+                        className="text-yellow-600 hover:text-yellow-400"
+                        title="View"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setViewingBatchId(batch.id);
+                        }}
+                      >
+                        <FaEye />
+                      </button>
+                      <button
+                        className="text-yellow-600 hover:text-yellow-400"
+                        title="Edit"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          alert("Edit functionality to be implemented");
+                        }}
+                      >
+                        <FaEdit />
+                      </button>
+                      <button
+                        className="text-yellow-600 hover:text-red-500"
+                        title="Delete"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setBulkHistory((prev) => prev.filter((b) => b.id !== batch.id));
+                          if (viewingBatchId === batch.id) setViewingBatchId(null);
+                        }}
+                      >
+                        <FaTrash />
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
     </DashboardLayout>
   );
-};
-
-const styles = {
-  page: {
-
-    marginTop: "8%",
-    padding: "30px 60px",
-    fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
-    backgroundColor: "#000",
-    color: "#eee",
-    minHeight: "100vh",
-    maxWidth: 1400,
-    
-    userSelect: "none",
-  },
-  tabContainer: {
-    marginBottom: "20px",
-    display: "flex",
-    gap: "10px",
-    justifyContent: "center",
-  },
-  tabBtn: {
-    flex: "0 0 320px",
-    padding: "10px",
-    background: "transparent",
-    color: "#eee",
-    border: `1px solid #c2831f`,
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontWeight: "600",
-    transition: "all 0.3s ease",
-  },
-  activeTabBtn: {
-    flex: "0 0 340px",
-    padding: "10px",
-    background: "#fff",
-    color: "#c2831f",
-    border: `2px solid #c2831f`,
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontWeight: "700",
-    boxShadow: "0 0 8px #fff",
-    transition: "all 0.3s ease",
-  },
-
-  input: {
-    padding: "10px",
-    borderRadius: "6px",
-    border: "1px solid #444",
-    marginRight: "10px",
-    background: "#111",
-    color: "#eee",
-    fontSize: "16px",
-    transition: "border-color 0.3s ease",
-  },
-  verifyBtn: {
-    padding: "10px 16px",
-    background: "#fff",
-    color: "#000",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontWeight: "700",
-    transition: "background 0.3s ease",
-  },
-  sectionTitle: {
-    borderBottom: "2px solid #555",
-    paddingBottom: "8px",
-    marginBottom: "20px",
-    fontSize: "22px",
-    fontWeight: "700",
-  },
-  uploadSection: {
-    marginBottom: "30px",
-  },
-  filtersSection: {
-    marginBottom: "20px",
-    borderColor: "#fff",
-  },
-  downloadsSection: {
-    marginBottom: "30px",
-  },
-  resultsTable: {
-    marginBottom: "40px",
-  },
-  historySection: {
-    marginTop: "30px",
-  },
-  filterBtn: (active) => ({
-    padding: "6px 14px",
-    margin: "0 6px 10px 0",
-    background: active ? "#444" : "transparent",
-    color: active ? "#eee" : "#aaa",
-    border: `1px solid #444`,
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontWeight: "600",
-    transition: "all 0.3s ease",
-    minWidth: "120px",
-    textAlign: "center",
-  }),
-  downloadBtn: {
-    padding: "8px 14px",
-    margin: "0 8px 12px 0",
-    background: "#444",
-    color: "#eee",
-    border: "none",
-    borderRadius: "6px",
-    cursor: "pointer",
-    fontWeight: "600",
-    transition: "background 0.3s ease",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-  },
-  th: {
-    padding: "14px",
-    borderBottom: `2px solid #444`,
-    textAlign: "left",
-    background: "#111",
-    color: "#ccc",
-    fontWeight: "700",
-    fontSize: "16px",
-  },
-  td: {
-    padding: "14px",
-    borderBottom: `1px solid #222`,
-    color: "#ddd",
-    fontSize: "15px",
-  },
-  statusBadge: (status) => ({
-    padding: "5px 12px",
-    borderRadius: "12px",
-    color: "#fff",
-    background:
-      status === "valid"
-        ? "#28a745"
-        : status === "invalid"
-          ? "#dc3545"
-          : "#ffc107",
-    fontWeight: "700",
-    textTransform: "capitalize",
-    fontSize: "14px",
-    userSelect: "none",
-  }),
-  actionBtn: {
-    padding: "6px 10px",
-    margin: "0 4px",
-    border: `1px solid #444`,
-    borderRadius: "6px",
-    background: "transparent",
-    color: "#c2831f",
-    cursor: "pointer",
-    fontWeight: "700",
-    transition: "all 0.3s ease",
-  },
 };
 
 export default Verification;
