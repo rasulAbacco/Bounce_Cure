@@ -76,4 +76,11 @@ model OTPCode {
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
   expiresAt DateTime
+
+model Verification {
+  id        Int      @id @default(autoincrement())
+  email     String
+  status    String
+  checkedAt DateTime @default(now())
+
 }
