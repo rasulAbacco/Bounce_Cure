@@ -100,7 +100,7 @@ export default function Analytics() {
 
   return (
     <DashboardLayout>
-    <div className="min-h-screen text-white p-6 space-y-10">
+    <div className="min-h-screen text-white p-6 space-y-10 pt-30">
       {/* Heading */}
       {/* <h1 className="text-3xl font-bold text-[#c2831f] flex items-center gap-2">
         <BarChart className="w-7 h-7" /> Email Verification Analytics

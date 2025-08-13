@@ -97,7 +97,7 @@ const Automation = () => {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen text-white w-full px-4 sm:px-6 md:px-10 py-6 space-y-8">
+      <div className="min-h-screen text-white w-full px-4 sm:px-6 md:px-10 py-6 space-y-8 mt-20">
         {/* Header */}
         <div className="text-center">
           <h1 className="text-3xl sm:text-4xl font-bold text-[#c2831f] mb-2">
