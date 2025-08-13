@@ -17,7 +17,7 @@ app.use(cors());
 app.use(express.json());
 
 // Use routes
-app.use('/', verificationRoutes);
+app.use('/verification', verificationRoutes);
 app.use('/api/auth', authRoutes);
 
 // Test route
