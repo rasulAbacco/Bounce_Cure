@@ -86,8 +86,8 @@ const Verification = () => {
     viewingBatch && filter !== "all"
       ? viewingBatch.results.filter((r) => r.status === filter)
       : viewingBatch
-      ? viewingBatch.results
-      : [];
+        ? viewingBatch.results
+        : [];
 
   return (
     <DashboardLayout>
@@ -370,14 +370,15 @@ const Verification = () => {
 
 const styles = {
   page: {
-    marginTop: "5%",
+
+    marginTop: "8%",
     padding: "30px 60px",
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
     backgroundColor: "#000",
     color: "#eee",
     minHeight: "100vh",
     maxWidth: 1400,
-    margin: "0 auto",
+    
     userSelect: "none",
   },
   tabContainer: {
@@ -504,8 +505,8 @@ const styles = {
       status === "valid"
         ? "#28a745"
         : status === "invalid"
-        ? "#dc3545"
-        : "#ffc107",
+          ? "#dc3545"
+          : "#ffc107",
     fontWeight: "700",
     textTransform: "capitalize",
     fontSize: "14px",
