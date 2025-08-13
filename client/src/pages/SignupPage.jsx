@@ -111,7 +111,7 @@ const ModernSignup = () => {
                         <form className="space-y-4" onSubmit={handleSubmit}>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="relative group">
-                                    <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'firstName' ? 'text-white' : 'text-gray-400'}`} />
+                                    <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'firstName' ? 'text-white' : 'text-white'}`} />
                                     <input
                                         type="text"
                                         name="firstName"
@@ -120,8 +120,7 @@ const ModernSignup = () => {
                                         onChange={handleInputChange}
                                         onFocus={() => setFocusedField('firstName')}
                                         onBlur={() => setFocusedField('')}
-                                        className="w-full bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
-                                    />
+                                        className="w-full bg-white/5 bg-clip-padding border border-white/20 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300" />
                                 </div>
                                 <div className="relative group">
                                     <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'lastName' ? 'text-white' : 'text-gray-400'}`} />
@@ -133,7 +132,7 @@ const ModernSignup = () => {
                                         onChange={handleInputChange}
                                         onFocus={() => setFocusedField('lastName')}
                                         onBlur={() => setFocusedField('')}
-                                        className="w-full bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
+                                        className="w-full bg-white/5  border border-white/20 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
                                     />
                                 </div>
                             </div>
@@ -148,7 +147,7 @@ const ModernSignup = () => {
                                     onChange={handleInputChange}
                                     onFocus={() => setFocusedField('email')}
                                     onBlur={() => setFocusedField('')}
-                                    className="w-full bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
+                                    className="w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
                                 />
                             </div>
 
@@ -162,7 +161,7 @@ const ModernSignup = () => {
                                     onChange={handleInputChange}
                                     onFocus={() => setFocusedField('password')}
                                     onBlur={() => setFocusedField('')}
-                                    className="w-full bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
+                                    className="w-full bg-white/5  border border-white/20 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
                                 />
                             </div>
 
