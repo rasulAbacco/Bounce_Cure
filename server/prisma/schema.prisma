@@ -31,3 +31,10 @@ model Content {
   // Relation to User
   user User @relation(fields: [createdBy], references: [id])
 }
+
+model Verification {
+  id        Int      @id @default(autoincrement())
+  email     String
+  status    String
+  checkedAt DateTime @default(now())
+}
