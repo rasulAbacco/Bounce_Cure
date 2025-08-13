@@ -1,9 +1,10 @@
-const express = require('express');
-const multer = require('multer');
-const fs = require('fs');
-const XLSX = require('xlsx');
-const Papa = require('papaparse');
-const EmailValidator = require('email-deep-validator');
+// verificationRoutes.js
+import express from 'express';
+import multer from 'multer';
+import fs from 'fs';
+import XLSX from 'xlsx';
+import Papa from 'papaparse';
+import EmailValidator from 'email-deep-validator';
 
 const router = express.Router();
 const upload = multer({ dest: 'uploads/' });
@@ -92,4 +93,4 @@ router.post('/verify-bulk', upload.single('file'), async (req, res) => {
   }
 });
 
-module.exports = router;
+export default router;
