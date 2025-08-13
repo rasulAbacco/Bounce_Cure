@@ -370,14 +370,15 @@ const Verification = () => {
 
 const styles = {
   page: {
-    marginTop: "5%",
+
+    marginTop: "10%",
     padding: "30px 60px",
     fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
     backgroundColor: "#000",
     color: "#eee",
     minHeight: "100vh",
     maxWidth: 1400,
-    margin: "0 auto",
+    
     userSelect: "none",
   },
   tabContainer: {
