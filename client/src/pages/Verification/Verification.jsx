@@ -86,8 +86,8 @@ const Verification = () => {
     viewingBatch && filter !== "all"
       ? viewingBatch.results.filter((r) => r.status === filter)
       : viewingBatch
-      ? viewingBatch.results
-      : [];
+        ? viewingBatch.results
+        : [];
 
   return (
     <DashboardLayout>
@@ -504,8 +504,8 @@ const styles = {
       status === "valid"
         ? "#28a745"
         : status === "invalid"
-        ? "#dc3545"
-        : "#ffc107",
+          ? "#dc3545"
+          : "#ffc107",
     fontWeight: "700",
     textTransform: "capitalize",
     fontSize: "14px",
