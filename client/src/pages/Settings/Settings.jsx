@@ -68,10 +68,10 @@ function BackgroundSquares() {
           filter: drop-shadow(0 0 1px rgba(194, 131, 31, 0.4));
         }
         .horizontal-line {
-          height: 2px;
+          height: 1px;
           background-color: #c2831f; /* GOLD */
           width: 100%;
-          max-width: 960px;
+          max-width: 1000px;
           margin: 0 auto;
           border-radius: 1px;
         }
@@ -93,8 +93,8 @@ function BackgroundSquares() {
 
 function SectionNav({ sections, active, onSelect }) {
   return (
-    <nav className="max-w-5xl mx-20  mb-6 relative z-10">
-      <div className="flex gap-4 overflow-x-auto backdrop-blur-md border border-white/20 rounded-2xl p-3">
+    <nav className="max-w-4xl mx-auto relative z-10 mb-10">
+      <div className="flex gap-4 items-center justify-center overflow-x-auto backdrop-blur-md border border-white/20 rounded-2xl p-3">
         {sections.map(({ id, label, icon }) => (
           <button
             key={id}
@@ -115,6 +115,7 @@ function SectionNav({ sections, active, onSelect }) {
     </nav>
   );
 }
+
 
 function ApiKeyItem({ keyValue, onCopy, onDelete }) {
   return (
@@ -399,8 +400,8 @@ function BillingSection() {
           type="submit"
           disabled={!agreeTerms}
           className={`w-full py-3 rounded-md font-semibold text-white transition ${agreeTerms
-              ? "bg-[#ffa007] hover:bg-[#f38e01]"
-              : "bg-[#d9a54c] cursor-not-allowed"
+            ? "bg-[#ffa007] hover:bg-[#f38e01]"
+            : "bg-[#d9a54c] cursor-not-allowed"
             }`}
         >
           Submit Payment
@@ -565,14 +566,14 @@ export default function GlassSettings() {
         return <BillingSection />;
       case "danger":
         return (
-          <div className={`${glassCard} space-y-6 relative z-10 `}>
+          <div className={`${glassCard} space-y-6 relative `}>
             <h2 className="text-2xl font-bold text-red-600">Danger Zone</h2>
             <p>Delete your account here. This action is irreversible.</p>
             <button onClick={() => setShowDeleteModal(true)} className={btnDanger}>
               Delete Account
             </button>
             {showDeleteModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-70 flex flex-col justify-center items-center z-30 p-6">
+              <div className="fixed inset-0 bg-black bg-opacity-10  items-center z-30 p-6">
                 <div className="bg-black/90 p-6 rounded-xl max-w-md w-full text-white space-y-6 relative">
                   <button
                     className="absolute top-2 right-2 text-white/70 hover:text-white text-2xl font-bold"
