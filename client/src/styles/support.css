@@ -1,0 +1,247 @@
+.help-support-container {
+    min-height: 100vh;
+    padding: 3rem 1.5rem;
+    padding-left: 200px; /* Adjusted for sidebar */
+    margin-top: 20px;
+    transition: padding-left 0.3s ease;
+}
+
+.help-support-inner {
+    max-width: 1200px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 3rem;
+}
+
+/* FAQ Section */
+.faq-section {
+    padding: 2rem;
+    border-radius: 1rem;
+    border: 1px solid white;
+    color: #ffffff;
+}
+
+.faq-section h2 {
+    font-size: 2.5rem;
+    margin-bottom: 1rem;
+}
+
+.faq-section p {
+    color: #cbd5e1;
+    margin-bottom: 1.5rem;
+}
+
+.faq-item {
+    padding: 0.75rem;
+    border-radius: 0.5rem;
+    margin-bottom: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.faq-item summary {
+    cursor: pointer;
+    font-weight: 600;
+    color: white;
+}
+
+.faq-item p {
+    margin-top: 0.5rem;
+    font-size: 0.875rem;
+    color: #cbd5e1;
+}
+
+/* Support Cards Grid */
+.support-cards-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+}
+
+@media (min-width: 768px) {
+    .support-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2rem;
+    }
+}
+
+@media (min-width: 1024px) {
+    .support-cards-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 2.5rem;
+    }
+}
+
+.support-card {
+    padding: 1.5rem;
+    border-radius: 1rem;
+    border: 1px solid white;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    color: #ffffff;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.support-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 1rem;
+}
+
+.card-header h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+}
+
+.card-icon {
+    color: #c2831f;
+    font-size: 1.5rem;
+}
+
+.card-form input,
+.card-form textarea {
+    width: 100%;
+    padding: 0.5rem 1rem;
+    margin-bottom: 0.75rem;
+    border-radius: 0.5rem;
+    border: 1px solid #4b5563;
+    background: transparent;
+    color: #ffffff;
+    outline: none;
+}
+
+.card-form input:focus,
+.card-form textarea:focus {
+    border-color: white;
+}
+
+.card-form button,
+.card-button {
+    background-color: #c2831f;
+    color: white;
+    padding: 0.5rem 1rem;
+    font-weight: 600;
+    border-radius: 0.5rem;
+    text-align: center;
+    border: none;
+    cursor: pointer;
+    transition: background 0.3s ease;
+    width: 100%;
+}
+
+.card-form button:hover,
+.card-button:hover {
+    background-color: #b27210;
+}
+
+/* Mobile-friendly adjustments */
+@media (max-width: 768px) {
+    .help-support-container {
+        padding-left: 1rem; /* Remove sidebar padding on mobile */
+        padding-right: 1rem;
+    }
+
+    .faq-section h2 {
+        font-size: 2rem;
+    }
+
+    .card-header h3 {
+        font-size: 1.1rem;
+    }
+
+    .support-cards-grid {
+        grid-template-columns: 1fr;
+        gap: 1.2rem;
+    }
+
+    .card-form input,
+    .card-form textarea,
+    .card-form button,
+    .card-button {
+        font-size: 0.95rem;
+        padding: 0.6rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .faq-section h2 {
+        font-size: 1.75rem;
+    }
+
+    .card-header h3 {
+        font-size: 1rem;
+    }
+
+    .support-card {
+        padding: 1rem;
+    }
+
+    .card-form input,
+    .card-form textarea,
+    .card-form button,
+    .card-button {
+        font-size: 0.9rem;
+        padding: 0.5rem;
+    }
+}
+.popup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 50;
+}
+
+.popup-inner {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 0.75rem;
+    width: 300px;
+    text-align: center;
+}
+
+.popup-inner h2 {
+    font-size: 1.25rem;
+    margin-bottom: 1rem;
+}
+
+.email-options {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.email-options a {
+    padding: 0.5rem;
+    background: #f3f4f6;
+    border-radius: 0.5rem;
+    text-decoration: none;
+    color: #111827;
+    font-weight: 500;
+}
+
+.email-options a:hover {
+    background: #e5e7eb;
+}
+
+.cancel-button {
+    margin-top: 1rem;
+    padding: 0.5rem 1rem;
+    background: #d1d5db;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+}
+
+.cancel-button:hover {
+    background: #9ca3af;
+}
