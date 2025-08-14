@@ -43,7 +43,6 @@ model Content {
   user User @relation(fields: [createdBy], references: [id])
 }
 
-<<<<<<< HEAD
 model Session {
   id        Int      @id @default(autoincrement())
   userId    Int
@@ -77,11 +76,11 @@ model OTPCode {
   userId    Int
   user      User     @relation(fields: [userId], references: [id])
   expiresAt DateTime
-=======
+}
+
 model Verification {
   id        Int      @id @default(autoincrement())
   email     String
   status    String
   checkedAt DateTime @default(now())
->>>>>>> main
 }
