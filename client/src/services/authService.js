@@ -2,6 +2,16 @@
 import axios from "axios";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/auth";
+const token = localStorage.getItem('token'); // get JWT from localStorage
+
+const config = {
+    headers: {
+        Authorization: `Bearer ${token}`,
+    },
+    withCredentials: true, // if backend uses cookies
+};
+
+
 
 // Helper to get token
 const getAuthHeaders = () => {
@@ -101,14 +111,29 @@ export const logoutAllSessions = async () => {
     return res.data;
 };
 
-export const updateEmail = (email) => axios.put(`${API_URL}/update-email`, { email });
-export const updateName = (name) => axios.put(`${API_URL}/update-name`, { name });
+export const updateEmail = (email) => axios.put(`${API_URL}/update-email`, { email }, config);
+
+export const updateName = (name) => axios.put(`${API_URL}/update-name`, { name }, config);
+
 export const uploadProfileImage = (file) => {
     const formData = new FormData();
     formData.append('profileImage', file);
     return axios.put(`${API_URL}/upload-profile-image`, formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
+        ...config,
+        headers: { ...config.headers, 'Content-Type': 'multipart/form-data' },
     });
+};
+
+export const getUser = () => {
+    const token = localStorage.getItem("token");
+
+    const config = {
+        headers: {
+            Authorization: `Bearer ${token}`,
+        },
+    };
+
+    return axios.get(`${API_URL}/users/me`, config);
 };
 
 
@@ -128,5 +153,6 @@ export default {
     verify2FA,
     updateEmail,
     updateName,
-    uploadProfileImage
+    uploadProfileImage,
+    getUser
 };
