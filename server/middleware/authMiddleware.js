@@ -1,7 +1,10 @@
 // middleware/authMiddleware.js
 import jwt from "jsonwebtoken";
 
-export const protect = (req, res, next) => {
+// middleware/authMiddleware.js
+import { prisma } from "../prisma/prismaClient.js";
+
+export const protect = async (req, res, next) => {
     const authHeader = req.headers.authorization;
     const token = authHeader?.split(" ")[1];
 
@@ -12,14 +15,26 @@ export const protect = (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log("Decoded user (protect):", decoded);
-        req.user = decoded;
+        console.log("Decoded token:", decoded);
+
+        const user = await prisma.user.findUnique({
+            where: { id: Number(decoded.id) }, // ensure number type
+            select: { id: true, firstName: true, lastName: true, email: true }
+        });
+
+        if (!user) {
+            return res.status(401).json({ message: "User not found" });
+        }
+
+        req.user = user; // store full user object
         next();
     } catch (err) {
-        console.error("Token verification failed (protect):", err.message);
+        console.error("Token verification failed:", err.message);
         return res.status(401).json({ message: "Invalid token" });
     }
 };
+
+
 
 export const authMiddleware = (req, res, next) => {
     const authHeader = req.headers.authorization;
@@ -41,3 +56,4 @@ export const authMiddleware = (req, res, next) => {
         return res.status(401).json({ message: "Invalid or expired token" });
     }
 };
+

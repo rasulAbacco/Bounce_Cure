@@ -14,6 +14,40 @@ const ModernLogin = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+    // const handleSubmit = async (e) => {
+    //     e.preventDefault();
+    //     console.log("Login submitted:", formData);
+
+    //     try {
+    //         const res = await fetch(`http://localhost:5000/api/auth/login`, {
+    //             method: "POST",
+    //             headers: { "Content-Type": "application/json" },
+    //             body: JSON.stringify(formData)
+    //         });
+
+    //         const data = await res.json().catch(err => {
+    //             console.error("JSON parse error:", err);
+    //             return {};
+    //         });
+
+    //         console.log("Response data:", data);
+    //         console.log("Status code:", res.status);
+
+    //         if (res.status === 200) {
+    //             if (data.token) {
+    //                 localStorage.setItem("token", data.token); // only set if token exists
+    //             }
+    //             alert("Login successful!");
+    //             navigate("/dashboard");
+    //         } else {
+    //             alert(data.message || "Login failed");
+    //         }
+
+    //     } catch (err) {
+    //         console.error("Error:", err);
+    //         alert("Something went wrong!");
+    //     }
+    // };
     const handleSubmit = async (e) => {
         e.preventDefault();
         console.log("Login submitted:", formData);
@@ -33,13 +67,22 @@ const ModernLogin = () => {
             console.log("Response data:", data);
             console.log("Status code:", res.status);
 
-            if (res.status === 200) {
-                if (data.token) {
-                    localStorage.setItem("token", data.token); // only set if token exists
+            if (res.ok && data.token) {
+                // Store token securely (localStorage for now)
+                localStorage.setItem("token", data.token);
+
+                // Optional: store user info
+                if (data.user) {
+                    if (data.token) {
+                        localStorage.setItem("token", data.token); // ✅ Save token here
+                    }
                 }
-                alert("Login successful!");
+
+                console.log("Token saved, redirecting to dashboard...");
                 navigate("/dashboard");
             } else {
+                // Clear any old token to avoid using stale credentials
+                localStorage.removeItem("token");
                 alert(data.message || "Login failed");
             }
 
