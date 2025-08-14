@@ -1,42 +1,79 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
+import Select from "react-select";
 
 
-// SVG Icons as components
-const FaUser = (props) => (
-  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" {...props}>
-    <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+// Reusable rotating SVG wrapper (uses Tailwind's animate-spin and custom duration)
+const RotatingSvg = ({ className = "", children, ...props }) => (
+  <svg
+    className={`w-4 h-4 animate-spin ${className}`}
+    style={{ animationDuration: "18s" }} // slow spin
+    fill="currentColor"
+    viewBox="0 0 20 20"
+    {...props}
+  >
+    {children}
   </svg>
+);
+
+const FaUser = (props) => (
+  <RotatingSvg {...props}>
+    <path
+      fillRule="evenodd"
+      d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+      clipRule="evenodd"
+    />
+  </RotatingSvg>
 );
 const FaLock = (props) => (
-  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" {...props}>
-    <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
-  </svg>
+  <RotatingSvg {...props}>
+    <path
+      fillRule="evenodd"
+      d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+      clipRule="evenodd"
+    />
+  </RotatingSvg>
 );
 const FaBell = (props) => (
-  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" {...props}>
+  <RotatingSvg {...props}>
     <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-  </svg>
+  </RotatingSvg>
 );
 const FaKey = (props) => (
-  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" {...props}>
-    <path fillRule="evenodd" d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z" clipRule="evenodd" />
-  </svg>
+  <RotatingSvg {...props}>
+    <path
+      fillRule="evenodd"
+      d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z"
+      clipRule="evenodd"
+    />
+  </RotatingSvg>
 );
 const FaCreditCard = (props) => (
-  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" {...props}>
-    <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zm14 5H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z" clipRule="evenodd" />
-  </svg>
+  <RotatingSvg {...props}>
+    <path
+      fillRule="evenodd"
+      d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zm14 5H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"
+      clipRule="evenodd"
+    />
+  </RotatingSvg>
 );
 const FaExclamationTriangle = (props) => (
-  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" {...props}>
-    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-  </svg>
+  <RotatingSvg {...props}>
+    <path
+      fillRule="evenodd"
+      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+      clipRule="evenodd"
+    />
+  </RotatingSvg>
 );
 const FaPlus = (props) => (
-  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" {...props}>
-    <path fillRule="evenodd" d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z" clipRule="evenodd" />
-  </svg>
+  <RotatingSvg {...props}>
+    <path
+      fillRule="evenodd"
+      d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+      clipRule="evenodd"
+    />
+  </RotatingSvg>
 );
 
 // ---------- Dark Theme Glassmorphism Design Tokens (Tailwind) ----------
@@ -53,6 +90,14 @@ const TOKENS = {
 
   iconBtn: "p-2 bg-white/10 hover:bg-white/20 rounded-lg transition flex items-center justify-center cursor-pointer focus-visible:ring-2 focus-visible:ring-white/30",
 };
+
+
+const options = [
+  { value: "realtime", label: "Real-time" },
+  { value: "hourly", label: "Hourly" },
+  { value: "daily", label: "Daily Summary" },
+  { value: "weekly", label: "Weekly Summary" },
+];
 
 
 // ---------- Utility ----------
@@ -80,14 +125,23 @@ function BackgroundFX() {
 
   return (
     <>
+      {/* Floating blobs background */}
       <style>{`
-        @keyframes floaty {
-          0% { transform: translate3d(0,0,0) scale(1); opacity: .6; }
-          50% { transform: translate3d(10px,-20px,0) scale(1.05); opacity: .9; }
-          100% { transform: translate3d(0,0,0) scale(1); opacity: .6; }
-        }
-      `}</style>
-      <div className="fixed inset-0 -z-10 bg-[radial-gradient(1200px_800px_at_-20%_-10%,rgba(245,158,11,0.25),transparent),radial-gradient(1000px_600px_at_120%_110%,rgba(253,224,71,0.25),transparent)]" />
+    @keyframes floaty {
+      0% { transform: translate3d(0,0,0) scale(1); opacity: .6; }
+      50% { transform: translate3d(10px,-20px,0) scale(1.05); opacity: .9; }
+      100% { transform: translate3d(0,0,0) scale(1); opacity: .6; }
+    }
+    @keyframes moveSquares {
+      0% { background-position: 0 0, 0 0; }
+      100% { background-position: 40px 40px, 40px 40px; }
+    }
+  `}</style>
+
+      {/* Gradient layer */}
+      <div className="fixed inset-0 -z-20 bg-[radial-gradient(1200px_800px_at_-20%_-10%,rgba(245,158,11,0.25),transparent),radial-gradient(1000px_600px_at_120%_110%,rgba(253,224,71,0.25),transparent)]" />
+
+      {/* Floating blobs */}
       {blobs.map((b, i) => (
         <div
           key={i}
@@ -97,9 +151,10 @@ function BackgroundFX() {
             left: `${b.x}%`,
             width: `${b.s}vmin`,
             height: `${b.s}vmin`,
-            background: i % 2 === 0
-              ? "radial-gradient(circle at 30% 30%, rgba(245,158,11,.35), transparent 60%)"
-              : "radial-gradient(circle at 70% 70%, rgba(253,224,71,.35), transparent 60%)",
+            background:
+              i % 2 === 0
+                ? "radial-gradient(circle at 30% 30%, rgba(245,158,11,.35), transparent 60%)"
+                : "radial-gradient(circle at 70% 70%, rgba(253,224,71,.35), transparent 60%)",
             animation: `floaty ${b.d}s ease-in-out infinite alternate`,
           }}
         />
@@ -147,24 +202,32 @@ function SectionTabs({ sections, active, onChange }) {
             aria-controls={`panel-${id}`}
             onClick={() => onChange(id)}
             className={cls(
-              "flex items-center gap-2 px-3 py-2 rounded-xl whitespace-nowrap flex-shrink-0 transition-colors duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/30",
+              "flex items-center gap-2 px-3 py-2 rounded-xl whitespace-nowrap flex-shrink-0 transition-colors duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/30 relative overflow-hidden",
               active === id
-                ? "bg-[#c2831f] text-white shadow-lg"
+                ? "text-white shadow-lg before:absolute before:inset-0 before:bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.15)_0px,rgba(255,255,255,0.15)_10px,transparent_10px,transparent_20px),repeating-linear-gradient(-45deg,rgba(255,255,255,0.15)_0px,rgba(255,255,255,0.15)_10px,transparent_10px,transparent_20px)] before:bg-[#c2831f] before:bg-[length:40px_40px] before:animate-[moveSquares_3s_linear_infinite] z-10"
                 : "text-white/80 hover:text-white"
             )}
           >
-            {icon}
-            <span className="hidden sm:inline">{label}</span>
+            <span className="relative z-20">{icon}</span>
+            <span className="hidden sm:inline relative z-20">{label}</span>
           </button>
         ))}
       </div>
 
-      {/* Solid horizontal divider (more visible than the faint gradient) */}
+      {/* Divider */}
       <div className="mt-3 h-px w-full bg-[#c2831f]" aria-hidden="true" />
-      {/* If you prefer the subtle gradient instead, swap the line above with:
-          <div className="mt-3 h-px w-full bg-gradient-to-r from-transparent via-white/20 to-transparent" aria-hidden="true" />
-      */}
+
+      {/* Tailwind animation keyframes */}
+      <style>
+        {`
+      @keyframes moveSquares {
+        0% { background-position: 0 0, 0 0; }
+        100% { background-position: 40px 40px, 40px 40px; }
+      }
+    `}
+      </style>
     </nav>
+
   );
 }
 
@@ -238,30 +301,121 @@ function SecuritySection() {
 function NotificationsSection() {
   const [emailNotif, setEmailNotif] = useState(true);
   const [smsNotif, setSmsNotif] = useState(false);
+  const [pushNotif, setPushNotif] = useState(true);
+  const [inAppNotif, setInAppNotif] = useState(false);
   const [frequency, setFrequency] = useState("daily");
 
+  const options = [
+    { value: "instant", label: "Instant" },
+    { value: "daily", label: "Daily" },
+    { value: "weekly", label: "Weekly" }
+  ];
+
+  const ToggleButton = ({ active, onChange }) => (
+    <button
+      type="button"
+      onClick={() => onChange(!active)}
+      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
+        active ? "bg-gray-500 border-gray-500" : "bg-gray-700 border-gray-500"
+      }`}
+      
+    >
+      {active && (
+        <svg
+          className="w-4 h-4 text-white"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      )}
+    </button>
+  );
+
+  const handleSave = () => {
+    const preferences = {
+      email: emailNotif,
+      sms: smsNotif,
+      push: pushNotif,
+      inApp: inAppNotif,
+      frequency
+    };
+
+    // Example: Save to API
+    console.log("Saving preferences:", preferences);
+
+    // Simulate save with alert
+    alert("Preferences saved successfully!");
+  };
+
   return (
-    <div className={cls(TOKENS.card, "space-y-6")} id="panel-notifications" role="tabpanel">
+    <div
+      className={`${TOKENS.card} space-y-6`}
+      id="panel-notifications"
+      role="tabpanel"
+    >
       <h2 className="text-2xl font-bold text-[#c2831f]">Notifications</h2>
+
       <div className="flex items-center gap-3">
-        <input type="checkbox" checked={emailNotif} onChange={(e) => setEmailNotif(e.target.checked)} className="w-5 h-5 rounded" />
+        <ToggleButton active={emailNotif} onChange={setEmailNotif} />
         <span>Email Notifications</span>
       </div>
+
       <div className="flex items-center gap-3">
-        <input type="checkbox" checked={smsNotif} onChange={(e) => setSmsNotif(e.target.checked)} className="w-5 h-5 rounded" />
+        <ToggleButton active={smsNotif} onChange={setSmsNotif} />
         <span>SMS Notifications</span>
       </div>
-      <LabeledSelect label="Notification Frequency" value={frequency} onChange={(e) => setFrequency(e.target.value)}>
-        <option value="realtime" className="text-black">Real-time</option>
-        <option value="hourly" className="text-black">Hourly</option>
-        <option value="daily" className="text-black">Daily Summary</option>
-        <option value="weekly" className="text-black">Weekly Summary</option>
 
-      </LabeledSelect>
-      <button className={TOKENS.btnPrimary}>Save Preferences</button>
+      <div className="flex items-center gap-3">
+        <ToggleButton active={pushNotif} onChange={setPushNotif} />
+        <span>Push Notifications</span>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <ToggleButton active={inAppNotif} onChange={setInAppNotif} />
+        <span>In-App Notifications</span>
+      </div>
+
+      <Select
+        options={options}
+        value={options.find((o) => o.value === frequency)}
+        onChange={(opt) => setFrequency(opt.value)}
+        styles={{
+          control: (base) => ({
+            ...base,
+            backgroundColor: "rgba(255,255,255,0.05)",
+            borderColor: "rgba(255,255,255,0.1)",
+            color: "white"
+          }),
+          menu: (base) => ({
+            ...base,
+            backgroundColor: "black"
+          }),
+          option: (base, state) => ({
+            ...base,
+            backgroundColor: state.isFocused ? "#c2831f" : "black",
+            color: "white"
+          }),
+          singleValue: (base) => ({
+            ...base,
+            color: "white"
+          })
+        }}
+      />
+
+      <button className={TOKENS.btnPrimary} onClick={handleSave}>
+        Save Preferences
+      </button>
     </div>
   );
 }
+
+
+
+
+
 
 function ApiKeysSection() {
   const [keys, setKeys] = useState([{ id: 1, name: "Default Key", value: "sk-1234abcd...", created: "2025-08-01" }]);
@@ -358,7 +512,7 @@ function DangerSection() {
       id="panel-danger"
       role="tabpanel"
     >
-      <h2 className="text-2xl font-bold text-amber-400">Danger Zone</h2>
+      <h2 className="text-2xl font-bold text-[#c2831f]">Danger Zone</h2>
       <p className="text-white/80">
         Proceed with caution. These actions are irreversible.
       </p>
@@ -393,10 +547,12 @@ function DangerSection() {
 
 function Container({ children }) {
   return (
-    <div className="min-h-screen bg-[black] text-white">
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
       <BackgroundFX />
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">{children}</div>
-      <footer className="py-10 text-center text-white/50 text-sm">
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 relative z-10">
+        {children}
+      </div>
+      <footer className="py-10 text-center text-white/50 text-sm relative z-10">
         © {new Date().getFullYear()} NeoGlass • Settings
       </footer>
     </div>

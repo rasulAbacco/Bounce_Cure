@@ -7,6 +7,7 @@ import {
 } from "react-icons/fa";
 import DashboardLayout from "../../components/DashboardLayout";
 import "../../styles/support.css";
+import emailjs from "emailjs-com";
 
 export default function HelpAndSupport() {
     const [messageForm, setMessageForm] = useState({ name: "", message: "" });
@@ -22,17 +23,50 @@ export default function HelpAndSupport() {
         { q: "What is your refund policy?", a: "Refunds are offered within 14 days of payment for annual plans. Monthly plans are non-refundable." },
     ];
 
-    // Handlers
+    // Send message email
     const handleMessageSubmit = (e) => {
         e.preventDefault();
-        alert(`Message sent!\nName: ${messageForm.name}\nMessage: ${messageForm.message}`);
-        setMessageForm({ name: "", message: "" });
+        emailjs.send(
+            "service_xxxxxx", // Replace with your EmailJS service ID
+            "template_message", // Replace with your EmailJS template ID for messages
+            {
+                from_name: messageForm.name,
+                message: messageForm.message,
+                to_email: "jake.peralata.b2bleads@gmail.com", // Your inbox email
+            },
+            "public_xxxxxx" // Replace with your EmailJS public key
+        )
+        .then(() => {
+            alert("Message sent successfully!");
+            setMessageForm({ name: "", message: "" });
+        })
+        .catch((err) => {
+            console.error(err);
+            alert("Failed to send message. Please try again later.");
+        });
     };
 
+    // Send ticket email
     const handleTicketSubmit = (e) => {
         e.preventDefault();
-        alert(`Ticket submitted!\nSubject: ${ticketForm.subject}\nDescription: ${ticketForm.description}`);
-        setTicketForm({ subject: "", description: "" });
+        emailjs.send(
+            "service_xxxxxx", // Replace with your EmailJS service ID
+            "template_ticket", // Replace with your EmailJS template ID for tickets
+            {
+                subject: ticketForm.subject,
+                description: ticketForm.description,
+                to_email: "jake.peralata.b2bleads@gmail.com", // Your inbox email
+            },
+            "public_xxxxxx" // Replace with your EmailJS public key
+        )
+        .then(() => {
+            alert("Ticket submitted successfully!");
+            setTicketForm({ subject: "", description: "" });
+        })
+        .catch((err) => {
+            console.error(err);
+            alert("Failed to submit ticket. Please try again later.");
+        });
     };
 
     const handleChatClick = () => alert("Starting chat...");
@@ -68,7 +102,7 @@ export default function HelpAndSupport() {
                             <p>Reach out anytime — we'll respond within 24 hours.</p>
                             <a
                                 className="card-button"
-                                href="https://mail.google.com/mail/?view=cm&fs=1&to=vamsimohan2692000@gmail.com&su=Support%20Request&body=Hello,%0A%0AI%20need%20help%20with..."
+                                href="https://mail.google.com/mail/?view=cm&fs=1&to=your_email@example.com&su=Support%20Request&body=Hello,%0A%0AI%20need%20help%20with..."
                                 target="_blank"
                                 rel="noopener noreferrer"
                             >
