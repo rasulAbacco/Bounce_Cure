@@ -152,7 +152,7 @@ export default function PaymentPage() {
                 and <span className="underline text-white">Privacy Policy</span>.
               </label>
             </div>
-            <button className="w-full bg-[#d4af37] hover:bg-[#eac94d] text-black font-bold py-2 rounded transition">
+            <button className="w-full bg-[#d4af37] hover:bg-[#eac94d] text-black font-bold py-2 rounded transition cursor-pointer">
               Pay ${total}
             </button>
           </div>
