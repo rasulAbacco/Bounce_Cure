@@ -112,7 +112,7 @@ export default function PricingDash() {
                     support: "Priority Support",
                   })
                 }
-                className="mt-4 w-full bg-[#c2831f] text-black font-semibold py-2 rounded hover:bg-[#dba743]"
+                className="mt-4 w-full bg-[#c2831f] text-black font-semibold py-2 rounded hover:bg-[#dba743] cursor-pointer"
               >
                 Buy Now
               </button>
@@ -160,7 +160,7 @@ export default function PricingDash() {
 
                   <button
                     onClick={() => handleBuyNow(plan)}
-                    className="mt-5 w-full bg-[#c2831f] text-black font-semibold py-2 rounded hover:bg-[#dba743]"
+                    className="mt-5 w-full bg-[#c2831f] text-black font-semibold py-2 rounded hover:bg-[#dba743] cursor-pointer"
                   >
                     Buy Now
                   </button>
