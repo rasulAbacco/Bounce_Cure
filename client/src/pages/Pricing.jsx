@@ -1,11 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { Check, Mail, Users, TrendingUp } from 'lucide-react';
 import PageLayout from "../components/PageLayout";
+import { useNavigate } from "react-router-dom";
 
 const Pricing = () => {
   const [billingPeriod, setBillingPeriod] = useState('monthly');
   const [slots, setSlots] = useState(100);
   const [selectedIntegrations, setSelectedIntegrations] = useState([]);
+
+// for dashboard pricing page
+  const navigate = useNavigate();
 
   // Base pricing structure
   const basePricing = {
@@ -78,13 +82,13 @@ const Pricing = () => {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-[#c2831f] mb-4 mt-15">Pricing Calculator</h1>
+            <h1 className="text-6xl font-bold text-[#c2831f] mb-4 mt-8">Pricing Calculator</h1>
             <p className="text-xl text-gray-300">Calculate pricing based on your needs</p>
           </div>
 
           {/* Billing Period Selector */}
           <div className="flex justify-center mb-8">
-            <div className="bg-gray-900 rounded-xl p-2 shadow-lg border border-gray-700">
+            <div className="bg-gray-900 rounded-xl p-2 shadow-lg border border-gray-700 ">
               {[
                 { key: 'monthly', label: 'Monthly' },
                 { key: 'quarterly', label: 'Quarterly' },
@@ -93,7 +97,7 @@ const Pricing = () => {
                 <button
                   key={key}
                   onClick={() => setBillingPeriod(key)}
-                  className={`relative px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
+                  className={` cursor-pointer relative px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
                     billingPeriod === key
                       ? 'bg-[#c2831f] text-white shadow-md'
                       : 'text-gray-300 hover:text-white hover:bg-gray-800'
@@ -122,7 +126,7 @@ const Pricing = () => {
                 max="10000"
                 value={slots}
                 onChange={(e) => setSlots(parseInt(e.target.value) || 1)}
-                className="w-full px-4 py-3 border border-[#c2831f] rounded-lg text-lg font-semibold text-center text-white  focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent"
+                className="w-full px-4 py-3 border border-[#c2831f] rounded-lg text-lg font-semibold text-center text-white  focus:outline-none focus:ring-2 focus:ring-[#c2831f] focus:border-transparent"
                 style={{
                   WebkitAppearance: 'none',
                   MozAppearance: 'textfield',
@@ -203,9 +207,21 @@ const Pricing = () => {
                   </li>
                 </ul>
 
-                <button className="w-full bg-[#c2831f] text-white py-4 px-6 cursor-pointer rounded-xl font-semibold hover:bg-[#a87119] transition-colors duration-200">
+                <button
+                  onClick={() =>
+                    navigate("/pricingdash", {
+                      state: {
+                        planName: "Email Warm Up",
+                        planPrice: emailWarmUpPrice.toFixed(2),
+                        billingPeriod: formatPeriod()
+                      }
+                    })
+                  }
+                  className="w-full bg-[#c2831f] text-white py-4 px-6 rounded-xl font-semibold hover:bg-[#a87119] transition-colors duration-200"
+                >
                   Get Started
                 </button>
+
               </div>
             </div>
 
@@ -249,9 +265,21 @@ const Pricing = () => {
                   </li>
                 </ul>
 
-                <button className="w-full bg-[#c2831f] text-white py-4 cursor-pointer px-6 rounded-xl font-semibold hover:bg-[#a87119] transition-colors duration-200">
+                <button
+                  onClick={() =>
+                    navigate("/pricingdash", {
+                      state: {
+                        planName: "Pro Plan",
+                        planPrice: proPrice.toFixed(2),
+                        billingPeriod: formatPeriod()
+                      }
+                    })
+                  }
+                  className="w-full bg-[#c2831f] text-white py-4 px-6 rounded-xl font-semibold hover:bg-[#a87119] transition-colors duration-200"
+                >
                   Get Started
                 </button>
+
               </div>
             </div>
 
@@ -299,9 +327,21 @@ const Pricing = () => {
                   </li>
                 </ul>
 
-                <button className="w-full bg-[#c2831f] text-white py-4 cursor-pointer px-6 rounded-xl font-semibold hover:bg-[#a87119] transition-colors duration-200">
+                <button
+                  onClick={() =>
+                    navigate("/pricingdash", {
+                      state: {
+                        planName: "Growth Plan",
+                        planPrice: growthPrice.toFixed(2),
+                        billingPeriod: formatPeriod()
+                      }
+                    })
+                  }
+                  className="w-full bg-[#c2831f] text-white py-4 px-6 rounded-xl font-semibold hover:bg-[#a87119] transition-colors duration-200"
+                >
                   Get Started
                 </button>
+
               </div>
             </div>
           </div>
