@@ -2,23 +2,71 @@
 // import User from '../models/userModel.js';
 import fs from 'fs';
 
-export const updateEmail = async (req, res) => {
+
+// controllers/userController.js
+// export const getMe = async (req, res) => {
+//     try {
+//         const user = await prisma.user.findUnique({
+//             where: { id: req.user.id },
+//             select: {
+//                 id: true,
+//                 firstName: true,
+//                 lastName: true,
+//                 email: true,
+//                 createdAt: true
+//             }
+//         });
+
+//         if (!user) return res.status(404).json({ message: "User not found" });
+
+//         res.json(user);
+//     } catch (error) {
+//         console.error(error);
+//         res.status(500).json({ message: "Internal server error" });
+//     }
+// };
+
+
+// PUT /api/auth/users/update-name
+
+export const getMe = async (req, res) => {
     try {
-        const { email } = req.body;
-        const user = await User.findByIdAndUpdate(req.user.id, { email }, { new: true });
-        res.json({ message: 'Email updated', user });
+        res.json(req.user); // already selected fields
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error(error);
+        res.status(500).json({ message: "Internal server error" });
     }
 };
 
+
 export const updateName = async (req, res) => {
     try {
-        const { name } = req.body;
-        const user = await User.findByIdAndUpdate(req.user.id, { name }, { new: true });
-        res.json({ message: 'Name updated', user });
+        const { firstName, lastName } = req.body;
+        const updatedUser = await prisma.user.update({
+            where: { id: req.user.id },
+            data: { firstName, lastName },
+            select: { id: true, firstName: true, lastName: true, email: true }
+        });
+        res.json(updatedUser);
     } catch (error) {
-        res.status(500).json({ message: error.message });
+        console.error("Error updating name:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+// PUT /api/auth/users/update-email
+export const updateEmail = async (req, res) => {
+    try {
+        const { email } = req.body;
+        const updatedUser = await prisma.user.update({
+            where: { id: req.user.id },
+            data: { email },
+            select: { id: true, firstName: true, lastName: true, email: true }
+        });
+        res.json(updatedUser);
+    } catch (error) {
+        console.error("Error updating email:", error);
+        res.status(500).json({ message: "Server error" });
     }
 };
 
@@ -38,3 +86,5 @@ export const uploadProfileImage = async (req, res) => {
         res.status(500).json({ message: error.message });
     }
 };
+
+

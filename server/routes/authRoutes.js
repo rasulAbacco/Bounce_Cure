@@ -14,7 +14,12 @@ import {
     // getLoginLogs
 } from "../controllers/authController.js";
 import { testEmail } from "../controllers/authController.js";
-import { updateEmail, updateName, uploadProfileImage } from '../controllers/userController.js';
+import {
+    updateEmail,
+    updateName,
+    uploadProfileImage,
+    getMe
+} from '../controllers/userController.js';
 import multer from 'multer';
 const router = express.Router();
 
@@ -40,9 +45,12 @@ router.get("/test-email", testEmail);
 // authRoutes.js
 router.post("/enable-2fa", protect, enable2FA);
 router.post("/verify-2fa", protect, verify2FA);
+
+router.get('/users/me', protect, getMe); // ✅ add this
 router.put('/update-email', protect, updateEmail);
 router.put('/update-name', protect, updateName);
 router.put('/upload-profile-image', protect, upload.single('profileImage'), uploadProfileImage);
+
 
 
 export default router;
