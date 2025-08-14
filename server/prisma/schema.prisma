@@ -17,6 +17,17 @@ model User {
 
   // Inverse relation to Content
   contents Content[]
+
+  // Relations to auth features
+  sessions            Session[]
+  loginLogs           LoginLog[]
+  verificationTokens  EmailVerificationToken[]
+  otpCodes            OTPCode[]
+
+  // 2FA fields
+  twoFASecret    String?   // stores the secret key for TOTP
+  is2FAEnabled   Boolean   @default(false)
+  
 }
 
 model Content {
@@ -30,6 +41,41 @@ model Content {
 
   // Relation to User
   user User @relation(fields: [createdBy], references: [id])
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  device    String
+  ipAddress String
+  createdAt DateTime @default(now())
+}
+
+model LoginLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  device    String
+  ipAddress String
+  location  String?
+  createdAt DateTime @default(now())
+}
+
+model EmailVerificationToken {
+  id        Int      @id @default(autoincrement())
+  token     String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+}
+
+model OTPCode {
+  id        Int      @id @default(autoincrement())
+  code      String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
 }
 
 model Verification {
