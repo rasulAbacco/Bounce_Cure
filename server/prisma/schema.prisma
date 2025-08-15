@@ -15,8 +15,17 @@ model User {
   password  String
   createdAt DateTime @default(now())
 
-  // Inverse relation to Content
-  contents Content[]
+  contents           Content[]
+  sessions           Session[]
+  loginLogs          LoginLog[]
+  verificationTokens EmailVerificationToken[]
+  otpCodes           OTPCode[]
+
+
+  twoFASecret  String? 
+  is2FAEnabled Boolean @default(false)
+
+  profileImage Bytes? // <-- Add this
 
   // Relations to auth features
   sessions           Session[]
@@ -27,7 +36,9 @@ model User {
   // 2FA fields
   twoFASecret  String? // stores the secret key for TOTP
   is2FAEnabled Boolean @default(false)
+
 }
+
 
 model Content {
   id           Int      @id @default(autoincrement())
