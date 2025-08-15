@@ -83,3 +83,19 @@ model Verification {
   status    String
   checkedAt DateTime @default(now())
 }
+
+
+model SupportMessage {
+  id        Int      @id @default(autoincrement())
+  name      String
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model SupportTicket {
+  id          Int      @id @default(autoincrement())
+  subject     String
+  description String
+  status      String   @default("open")
+  createdAt   DateTime @default(now())
+}
