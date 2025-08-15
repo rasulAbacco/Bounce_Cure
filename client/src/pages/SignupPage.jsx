@@ -64,7 +64,7 @@ const ModernSignup = () => {
 
     return (
         <PageLayout>
-            <div className="min-h-screen bg-black mt-[2%] flex flex-col md:flex-row w-full">
+            <div className="min-h-screen mt-[2%] flex flex-col md:flex-row w-full">
                 <div className="absolute inset-0 overflow-hidden">
                     <div className="absolute -top-40 -right-40 w-80 h-80 bg-white rounded-full mix-blend-difference filter blur-xl opacity-5 animate-pulse hidden sm:block"></div>
                     <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white rounded-full mix-blend-difference filter blur-xl opacity-5 animate-pulse hidden sm:block"></div>
@@ -75,9 +75,9 @@ const ModernSignup = () => {
                     <div className="w-full max-w-md md:max-w-lg">
                         <div className="text-center mt-20 mb-8">
                             <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl mb-6 transform hover:scale-110 transition-transform duration-300">
-                                <Mail className="w-8 h-8 text-black" />
+                                <Mail className="w-8 h-8 text-[#c2831f] " />
                             </div>
-                            <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">
+                            <h1 className="text-3xl sm:text-4xl font-bold text-[#c2831f] mb-2">
                                 Bounce Cure
                             </h1>
                             <p className="text-gray-400 text-base sm:text-lg">
@@ -167,7 +167,7 @@ const ModernSignup = () => {
 
                             <button
                                 type="submit"
-                                className="w-full bg-white text-black font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-white/25 hover:bg-gray-100"
+                                className="w-full bg-[#c2831f] text-black font-bold py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-1xl hover:shadow-white/25 hover:bg-[#c2831f] cursor-pointer"
                             >
                                 Create Free Account
                             </button>
@@ -187,10 +187,10 @@ const ModernSignup = () => {
                         <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl">
                             <div className="text-center mb-8">
                                 <div className="inline-flex items-center gap-2 bg-white/10 rounded-full px-4 py-2 mb-4 border border-white/20">
-                                    <Shield className="w-5 h-5 text-white" />
-                                    <span className="text-white font-medium text-sm sm:text-base">Premium Business Account</span>
+                                    <Shield className="w-5 h-5 text-[#c2831f]" />
+                                    <span className="text-[#c2831f] font-medium text-sm sm:text-base">Premium Business Account</span>
                                 </div>
-                                <h3 className="text-xl sm:text-2xl font-bold text-white mb-2">
+                                <h3 className="text-xl sm:text-2xl font-bold text-[#c2831f] mb-2">
                                     Unlock Premium Features
                                 </h3>
                                 <p className="text-gray-300 text-sm sm:text-base">
