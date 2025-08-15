@@ -70,6 +70,11 @@ const ModernLogin = () => {
             if (res.ok && data.token) {
                 // Store token securely (localStorage for now)
                 localStorage.setItem("token", data.token);
+                
+                  if (data.user) {
+                        localStorage.setItem("userName", data.user.name || "");
+                        localStorage.setItem("userEmail", data.user.email || "");
+                    }
 
                 // Optional: store user info
                 if (data.user) {
@@ -80,6 +85,7 @@ const ModernLogin = () => {
 
                 console.log("Token saved, redirecting to dashboard...");
                 navigate("/dashboard");
+                window.location.reload();
             } else {
                 // Clear any old token to avoid using stale credentials
                 localStorage.removeItem("token");

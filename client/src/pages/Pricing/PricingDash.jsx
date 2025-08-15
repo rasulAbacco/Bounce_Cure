@@ -1,17 +1,21 @@
 import React, { useState } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
-import { Check, User, Mail, Headphones, CircleDot } from "lucide-react";
+import { User, Mail, Headphones, CircleDot, CircleCheckBig } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 export default function PricingDash() {
-  const contactOptions = [500, 1000, 2500, 5000];
-  const [selectedContacts, setSelectedContacts] = useState(500);
+  const contactOptions = [500, 1000, 2500, 5000, 10000, 15000, 20000];
+  
+  // Separate states for promo and plan cards
+  const [promoContacts, setPromoContacts] = useState(500);
+  const [cardContacts, setCardContacts] = useState(500);
+
   const navigate = useNavigate();
 
   const plans = [
     {
       name: "Email Warm Up",
-      price: 43.99,
+      price: 33.99,
       users: 1,
       emails: "3,000",
       support: "Basic Support",
@@ -19,7 +23,7 @@ export default function PricingDash() {
     },
     {
       name: "Pro Plan",
-      price: 57.5,
+      price: 80.5,
       users: 5,
       emails: "10,000",
       support: "Priority Support",
@@ -33,7 +37,7 @@ export default function PricingDash() {
     },
     {
       name: "Growth Plan",
-      price: 165.99,
+      price: 400.99,
       users: 10,
       emails: "50,000",
       support: "Premium Support",
@@ -46,17 +50,23 @@ export default function PricingDash() {
     },
   ];
 
-  const getUpdatedPrice = (basePrice) => {
-    const multiplier = selectedContacts / 500;
+  // Separate price calculators
+  const getUpdatedPromoPrice = (basePrice) => {
+    const multiplier = promoContacts / 500;
     return (basePrice * multiplier).toFixed(2);
   };
 
-  const handleBuyNow = (plan) => {
+  const getUpdatedCardPrice = (basePrice) => {
+    const multiplier = cardContacts / 500;
+    return (basePrice * multiplier).toFixed(2);
+  };
+
+  const handleBuyNow = (plan, contacts, priceFn) => {
     const selectedPlan = {
       name: plan.name,
       basePrice: plan.price,
-      price: getUpdatedPrice(plan.price),
-      contacts: selectedContacts,
+      price: priceFn(plan.price),
+      contacts: contacts,
     };
     navigate("/payment", { state: selectedPlan });
   };
@@ -65,8 +75,9 @@ export default function PricingDash() {
     <DashboardLayout>
       <div className="text-white min-h-screen py-10 px-4 mt-20">
         <div className="max-w-7xl mx-auto space-y-12">
+          
           {/* Promo Section */}
-          <div className="bg-[#1a1a1a] rounded-xl p-8 md:flex md:items-center md:justify-between shadow-xl">
+          <div className="rounded-xl p-8 md:flex md:items-center md:justify-between shadow-xl border-1">
             <div className="md:w-2/3">
               <h2 className="text-3xl font-bold text-[#c2831f] mb-4">
                 Try our Pro Plan for 50% off!
@@ -75,42 +86,40 @@ export default function PricingDash() {
                 Unlock advanced deliverability tools, AI insights, and priority support. Save 50% for 12 months and scale your outreach with confidence.
               </p>
               <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-sm text-white">
-                <li className="flex items-center gap-2"><Check size={16} className="text-[#c2831f]" /> AI Optimization & A/B Testing</li>
-                <li className="flex items-center gap-2"><Check size={16} className="text-[#c2831f]" /> Priority Support & Deliverability Boost</li>
-                <li className="flex items-center gap-2"><Check size={16} className="text-[#c2831f]" /> Unlimited Templates</li>
-                <li className="flex items-center gap-2"><Check size={16} className="text-[#c2831f]" /> Advanced Reporting Dashboard</li>
+                <li className="flex items-center gap-2"><CircleCheckBig size={16} className="text-[#c2831f]" /> AI Optimization & A/B Testing</li>
+                <li className="flex items-center gap-2"><CircleCheckBig size={16} className="text-[#c2831f]" /> Priority Support & Deliverability Boost</li>
+                <li className="flex items-center gap-2"><CircleCheckBig size={16} className="text-[#c2831f]" /> Unlimited Templates</li>
+                <li className="flex items-center gap-2"><CircleCheckBig size={16} className="text-[#c2831f]" /> Advanced Reporting Dashboard</li>
               </ul>
             </div>
 
-            <div className="bg-white text-black p-6 rounded-xl mt-8 md:mt-0 md:w-1/3 shadow-lg">
+            <div className="bg-gray-200 text-black p-6 rounded-xl mt-8 md:mt-0 md:w-1/3 shadow-lg">
               <h3 className="text-lg font-semibold">Pro Plan</h3>
               <p className="text-sm text-gray-600 mb-2">
-                Send up to <strong>{selectedContacts * 12}</strong> emails/month
+                Send up to <strong>{promoContacts * 12}</strong> emails/month
               </p>
 
               <label className="block text-sm font-medium text-gray-700 mt-2">Contacts</label>
               <select
                 className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm"
-                value={selectedContacts}
-                onChange={(e) => setSelectedContacts(Number(e.target.value))}
+                value={promoContacts}
+                onChange={(e) => setPromoContacts(Number(e.target.value))}
               >
                 {contactOptions.map((count) => (
                   <option key={count} value={count}>{count}</option>
                 ))}
               </select>
 
-              <div className="mt-4 text-xl font-bold">${getUpdatedPrice(57.5)}</div>
-              <p className="text-xs text-gray-500">Then ${getUpdatedPrice(115)} after 12 months</p>
+              <div className="mt-4 text-xl font-bold">${getUpdatedPromoPrice(37.5)}</div>
+              <p className="text-xs text-gray-500">Then ${getUpdatedPromoPrice(115)} after 12 months</p>
 
               <button
                 onClick={() =>
-                  handleBuyNow({
-                    name: "Pro Plan",
-                    price: 57.5,
-                    users: 5,
-                    emails: "10,000",
-                    support: "Priority Support",
-                  })
+                  handleBuyNow(
+                    { name: "Pro Plan", price: 37.5, users: 5, emails: "10,000", support: "Priority Support" },
+                    promoContacts,
+                    getUpdatedPromoPrice
+                  )
                 }
                 className="mt-4 w-full bg-[#c2831f] text-black font-semibold py-2 rounded hover:bg-[#dba743] cursor-pointer"
               >
@@ -121,7 +130,28 @@ export default function PricingDash() {
 
           {/* Plan Cards */}
           <div>
-            <h2 className="text-center text-2xl font-bold text-[#c2831f] mb-16">Choose Plans</h2>
+            {/* Header with title & select contact */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-10">
+              <h2 className="text-2xl font-bold text-[#c2831f] mb-4 md:mb-0">
+                Choose Plans
+              </h2>
+              <div className="flex items-center">
+                <label className="text-sm font-medium text-gray-300 mr-3">
+                  Select contact:
+                </label>
+                <select
+                  className="bg-[#1e1e1e] text-white border border-gray-600 rounded px-3 py-1 text-sm"
+                  value={cardContacts}
+                  onChange={(e) => setCardContacts(Number(e.target.value))}
+                >
+                  {contactOptions.map((count) => (
+                    <option key={count} value={count}>{count}</option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Plans grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {plans.map((plan) => (
                 <div
@@ -138,7 +168,7 @@ export default function PricingDash() {
 
                   <h3 className="text-xl font-semibold mb-1">{plan.name}</h3>
                   <p className="text-gray-400 text-sm mb-4">
-                    Billed monthly • ${getUpdatedPrice(plan.price)}
+                    Billed monthly • ${getUpdatedCardPrice(plan.price)}
                   </p>
 
                   <ul className="text-sm text-gray-300 mb-4 space-y-2 text-left">
@@ -159,7 +189,7 @@ export default function PricingDash() {
                   </div>
 
                   <button
-                    onClick={() => handleBuyNow(plan)}
+                    onClick={() => handleBuyNow(plan, cardContacts, getUpdatedCardPrice)}
                     className="mt-5 w-full bg-[#c2831f] text-black font-semibold py-2 rounded hover:bg-[#dba743] cursor-pointer"
                   >
                     Buy Now
@@ -167,20 +197,6 @@ export default function PricingDash() {
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Contact Selector (Bottom) */}
-          <div className="mt-12 text-center">
-            <label className="text-sm font-medium text-gray-300 mr-3">Select contact amount:</label>
-            <select
-              className="bg-[#1e1e1e] text-white border border-gray-600 rounded px-4 py-2 text-sm"
-              value={selectedContacts}
-              onChange={(e) => setSelectedContacts(Number(e.target.value))}
-            >
-              {contactOptions.map((count) => (
-                <option key={count} value={count}>{count}</option>
-              ))}
-            </select>
           </div>
 
           <p className="text-center text-xs text-gray-600 mt-8">
