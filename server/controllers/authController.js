@@ -148,7 +148,7 @@ export const getLoginLogs = async (req, res) => {
 export const sendVerificationEmail = async (req, res) => {
     const { email } = req.user;
     const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "15m" });
-    const link = `http://localhost:3000/verify-email?token=${token}`;
+    const link = `http://localhost:5000/verify-email?token=${token}`;
 
     await sendEmail(email, "Verify your email", `<a href="${link}">Verify Email</a>`);
     res.json({ message: "Verification email sent" });
@@ -172,51 +172,21 @@ export const verifyEmail = async (req, res) => {
 // Send OTP
 export const sendOTP = async (req, res) => {
     const { email } = req.user;
-    const otp = generateOTP();
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
     await prisma.user.update({
         where: { email },
         data: { otp }
     });
 
-    await sendEmail(email, "Your OTP Code", `<h1>${otp}</h1>`);
-    res.json({ message: "OTP sent" });
+    await sendEmail(email, "Your OTP Code", `<h1>Your OTP is: ${otp}</h1>`);
+    res.json({ message: "OTP sent to email" });
 };
 
+
+
+
 // Change password
-// export const changePassword = async (req, res) => {
-//     try {
-//         const { oldPassword, newPassword } = req.body;
-
-//         if (!oldPassword || !newPassword) {
-//             return res.status(400).json({ message: "Both old and new passwords are required" });
-//         }
-
-//         const user = await prisma.user.findUnique({ where: { id: req.user.id } });
-
-//         if (!user || !user.password) {
-//             return res.status(404).json({ message: "User not found or password missing" });
-//         }
-
-//         const isMatch = await bcrypt.compare(oldPassword, user.password);
-
-//         if (!isMatch) {
-//             return res.status(400).json({ message: "Old password incorrect" });
-//         }
-
-//         const hashed = await bcrypt.hash(newPassword, 10);
-//         await prisma.user.update({
-//             where: { id: user.id },
-//             data: { password: hashed }
-//         });
-
-//         res.json({ message: "Password changed successfully" });
-//     } catch (error) {
-//         console.error(error);
-//         res.status(500).json({ message: "Internal server error" });
-//     }
-// };
-
 export const changePassword = async (req, res) => {
     try {
         const { oldPassword, newPassword } = req.body;
@@ -306,7 +276,7 @@ export const verify2FA = async (req, res) => {
 
 
 
-// ✅ Fixed backend version of getSecurityLogs
+// Fixed backend version of getSecurityLogs
 export const getSecurityLogs = async (req, res) => {
 
     try {
@@ -356,5 +326,23 @@ export const testEmail = async (req, res) => {
     } catch (error) {
         console.error("Error sending email:", error);
         res.status(500).json({ error: "Failed to send email" });
+    }
+};
+
+
+
+export const verifyAuth = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) return res.status(401).json({ error: 'No token provided' });
+
+    const token = authHeader.split(' ')[1];
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (err) {
+        return res.status(403).json({ error: 'Invalid token' });
     }
 };
