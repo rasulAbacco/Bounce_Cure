@@ -10,7 +10,8 @@ import {
     enable2FA,
     getSecurityLogs,
     getActiveSessions,
-    verify2FA
+    verify2FA,
+    verifyAuth
     // getLoginLogs
 } from "../controllers/authController.js";
 import { testEmail } from "../controllers/authController.js";
@@ -18,16 +19,20 @@ import {
     updateEmail,
     updateName,
     uploadProfileImage,
-    getMe
+    getMe,
+    getProfileImage
 } from '../controllers/userController.js';
+
 import multer from 'multer';
 const router = express.Router();
 
+const storage = multer.memoryStorage(); // ← no need to save file to disk
+
 // Multer setup for image upload
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, 'uploads/'),
-    filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
-});
+// const storage = multer.diskStorage({
+//     destination: (req, file, cb) => cb(null, 'uploads/'),
+//     filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
+// });
 const upload = multer({ storage });
 
 router.post('/signup', signup);
@@ -51,6 +56,8 @@ router.put('/update-email', protect, updateEmail);
 router.put('/update-name', protect, updateName);
 router.put('/upload-profile-image', protect, upload.single('profileImage'), uploadProfileImage);
 
+router.post('/auth/send-verification-email', verifyAuth, sendVerificationEmail);
+router.get('/profile-image/:userId', getProfileImage);
 
 
 export default router;

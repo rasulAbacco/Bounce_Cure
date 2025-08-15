@@ -31,7 +31,7 @@ app.get('/', (req, res) => {
   res.send('Backend is running...');
 });
 
-app.use("/api/auth/users", authRoutes);
+app.use("/api/users", authRoutes);
 
 // Start server
 const PORT = process.env.PORT || 5000;

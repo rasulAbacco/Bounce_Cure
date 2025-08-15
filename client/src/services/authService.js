@@ -4,6 +4,13 @@ import axios from "axios";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/auth";
 const token = localStorage.getItem('token'); // get JWT from localStorage
 
+
+const API = axios.create({
+    baseURL: 'http://localhost:5000/api',
+    withCredentials: true, // optional if your backend uses cookies
+});
+
+
 const config = {
     headers: {
         Authorization: `Bearer ${token}`,
@@ -25,9 +32,18 @@ const getAuthHeaders = () => {
 };
 
 // ==================== Email Verification ====================
-export const sendVerificationLink = async () => {
-    const res = await axios.post(`${API_URL}/send-verification-email`, {}, getAuthHeaders());
-    return res.data;
+const sendVerificationLink = async () => {
+    const token = localStorage.getItem('token'); // or sessionStorage or however you store it
+
+    return await API.post(
+        '/auth/send-verification-email', // correct endpoint
+        {},
+        {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        }
+    );
 };
 
 export const verifyEmail = async (tokenOrOtp) => {
@@ -113,7 +129,8 @@ export const logoutAllSessions = async () => {
 
 export const updateEmail = (email) => axios.put(`${API_URL}/update-email`, { email }, config);
 
-export const updateName = (name) => axios.put(`${API_URL}/update-name`, { name }, config);
+export const updateName = ({ firstName, lastName }) =>
+    axios.put(`${API_URL}/update-name`, { firstName, lastName }, config);
 
 export const uploadProfileImage = (file) => {
     const formData = new FormData();
