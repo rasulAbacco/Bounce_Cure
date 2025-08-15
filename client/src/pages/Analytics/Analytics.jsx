@@ -129,14 +129,14 @@ export default function Analytics() {
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ">
           {[
             { title: "Total Sent", value: "5,000" },
             { title: "Open Rate", value: "65%" },
             { title: "Click Rate", value: "25%" },
             { title: "Conversions", value: "500" },
           ].map((stat, idx) => (
-            <div key={idx} className="bg-black border border-gray-800 p-4 rounded-xl shadow-lg">
+            <div key={idx} className="bg-black border border-gray-700 p-4 rounded-xl shadow-lg transition-all duration-200 hover:border-gray-100">
               <h3 className="text-sm text-gray-400">{stat.title}</h3>
               <p className="text-2xl font-bold text-[#c2831f]">{stat.value}</p>
             </div>
@@ -195,12 +195,12 @@ export default function Analytics() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart layout="vertical" data={funnelData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#333" />
-                  <XAxis type="number" stroke="#ccc" />
+                  <XAxis type="number" stroke="#080808ff" />
                   <YAxis type="category" dataKey="stage" stroke="#ccc" width={120} />
                   <Tooltip
                     contentStyle={{ backgroundColor: "#111", border: "none", color: "#fff" }}
                   />
-                  <Bar dataKey="value" fill="#c2831f" radius={[4, 4, 0, 0]} />
+                  <Bar dataKey="value" fill="#c2831f" barSize={20}  radius={[4, 4, 0, 0]} />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
