@@ -1,12 +1,22 @@
-import React, { useState } from 'react';
-import { Bell, Menu, Search, Settings, LogOut, User, X } from 'lucide-react';
-import { Link } from 'react-router-dom';
-import { useNavigate } from "react-router-dom";
+import React, { useState, useEffect } from 'react';
+import { Bell, Menu, Search, Settings, LogOut, User, X,  } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const TopNavbar = ({ toggleSidebar, pageName }) => {
     const [showProfileMenu, setShowProfileMenu] = useState(false);
     const [showNotifications, setShowNotifications] = useState(false);
     const [showMobileSearch, setShowMobileSearch] = useState(false);
+
+    const [userName, setUserName] = useState("");
+    const [userEmail, setUserEmail] = useState("");
+
+    useEffect(() => {
+        // Load user info from localStorage when navbar mounts
+        const name = localStorage.getItem("userName");
+        const email = localStorage.getItem("userEmail");
+        if (name) setUserName(name);
+        if (email) setUserEmail(email);
+    }, []);
 
     const notifications = [
         { id: 1, message: 'New campaign completed', time: '2 min ago', unread: true },
@@ -17,17 +27,18 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
     const navigate = useNavigate();
 
     const handleLogout = (e) => {
-        e.preventDefault(); // prevent immediate navigation
+        e.preventDefault();
         const confirmed = window.confirm("Are you sure you want to log out?");
         if (confirmed) {
-            // Perform logout logic here (e.g., clear tokens, user state)
-            navigate("/"); // Redirect to home page
+            localStorage.removeItem("token");
+            localStorage.removeItem("userName");
+            localStorage.removeItem("userEmail");
+            navigate("/");
         }
     };
 
     return (
         <div className="relative">
-            {/* Top Navbar */}
             <nav className="fixed top-0 left-0 right-0 bg-white/5 backdrop-blur-lg border-b border-white/10 px-4 sm:px-6 py-3 flex items-center justify-between z-50">
                 {/* Left Section */}
                 <div className="flex items-center space-x-2 sm:space-x-4">
@@ -102,14 +113,11 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
                             onClick={() => setShowProfileMenu(!showProfileMenu)}
                             className="flex items-center space-x-2 sm:space-x-3 text-white hover:bg-white/10 p-2 rounded-lg transition-colors"
                         >
-                            <img
-                                src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=40&h=40&fit=crop&crop=face"
-                                alt="Profile"
-                                className="w-8 h-8 rounded-full object-cover"
-                            />
+                             <User className="w-8 h-8 text-white" />
+
                             <div className="hidden md:block text-left">
-                                <p className="text-sm font-medium">John Doe</p>
-                                <p className="text-xs text-gray-400">john@example.com</p>
+                                {userName && <p className="text-sm font-medium ">{userName}</p>}
+                                {userEmail && <p className="text-xs text-[#c2831f]">{userEmail}</p>}
                             </div>
                         </button>
 
@@ -136,7 +144,7 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
                 </div>
             </nav>
 
-            {/* Mobile Search Bar (below navbar) */}
+            {/* Mobile Search Bar */}
             {showMobileSearch && (
                 <div className="fixed top-14 left-0 right-0 bg-white/10 mt-3 backdrop-blur-lg px-4 py-2 z-40 md:hidden">
                     <div className="relative">

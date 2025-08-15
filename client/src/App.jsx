@@ -57,7 +57,7 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/contacts" element={<Contacts />} />
         <Route path="/analytics" element={<Analytics />} />
-        <Route path="/builder" element={<Campaign />} />
+        <Route path="/email-campaign" element={<Campaign />} />
         <Route path="/automation" element={<Automation />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/auth" element={<UserAuthentication />} />

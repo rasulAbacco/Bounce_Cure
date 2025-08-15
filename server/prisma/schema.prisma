@@ -19,15 +19,14 @@ model User {
   contents Content[]
 
   // Relations to auth features
-  sessions            Session[]
-  loginLogs           LoginLog[]
-  verificationTokens  EmailVerificationToken[]
-  otpCodes            OTPCode[]
+  sessions           Session[]
+  loginLogs          LoginLog[]
+  verificationTokens EmailVerificationToken[]
+  otpCodes           OTPCode[]
 
   // 2FA fields
-  twoFASecret    String?   // stores the secret key for TOTP
-  is2FAEnabled   Boolean   @default(false)
-  
+  twoFASecret  String? // stores the secret key for TOTP
+  is2FAEnabled Boolean @default(false)
 }
 
 model Content {
