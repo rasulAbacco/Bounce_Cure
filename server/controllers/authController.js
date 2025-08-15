@@ -8,6 +8,7 @@ import { generateOTP } from "../utils/generateOTP.js";
 import { generateQRCode } from "../utils/generateQRCode.js";
 import speakeasy from 'speakeasy'; // for TOTP 2FA
 
+
 // Signup
 export const signup = async (req, res) => {
     try {
@@ -34,7 +35,10 @@ export const signup = async (req, res) => {
                 id: newUser.id,
                 firstName: newUser.firstName,
                 lastName: newUser.lastName,
-                email: newUser.email
+                email: newUser.email,
+                name: `${user.firstName} ${user.lastName}`.trim(),
+                email: user.email
+
             }
         });
     } catch (error) {
@@ -90,6 +94,8 @@ export const login = async (req, res) => {
                 id: user.id,
                 firstName: user.firstName,
                 lastName: user.lastName,
+                email: user.email,
+                name: `${user.firstName} ${user.lastName}`.trim(),
                 email: user.email
             }
         });

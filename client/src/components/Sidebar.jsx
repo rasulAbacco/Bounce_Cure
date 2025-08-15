@@ -11,7 +11,7 @@ const Sidebar = ({ isOpen, toggleSidebar, pageName }) => {
     const menuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
         { id: 'contacts', label: 'Contact Management', icon: Users, path: '/contacts' },
-        { id: 'builder', label: 'Email Campaign', icon: PenTool, path: '/builder' },
+        { id: 'builder', label: 'Email Campaign', icon: PenTool, path: '/email-campaign' },
         { id: 'automation', label: 'Automation', icon: Zap, path: '/automation' },
         { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics' },
         { id: 'verification', label: 'Email Verification', icon: UserCheck, path: '/verification' },
