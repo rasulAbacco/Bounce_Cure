@@ -5,7 +5,7 @@ import cors from 'cors';
 import authRoutes from './routes/authRoutes.js';
 import verificationRoutes from './routes/verificationRoutes.js';
 import { initEmail } from "./utils/emailService.js";
-
+import supportRoutes from "./routes/supportRoutes.js";
 // Load environment variables
 dotenv.config();
 
@@ -25,6 +25,7 @@ app.use(express.json());
 // Use routes
 app.use('/verification', verificationRoutes);
 app.use('/api/auth', authRoutes);
+app.use('/api/support', supportRoutes); 
 
 // Test route
 app.get('/', (req, res) => {
