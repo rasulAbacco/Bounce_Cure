@@ -15,24 +15,6 @@ const RotatingSvg = ({ className = "", children, ...props }) => (
   </svg>
 );
 
-// const FaUser = (props) => (
-//   <RotatingSvg {...props}>
-//     <path
-//       fillRule="evenodd"
-//       d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
-//       clipRule="evenodd"
-//     />
-//   </RotatingSvg>
-// );
-// const FaLock = (props) => (
-//   <RotatingSvg {...props}>
-//     <path
-//       fillRule="evenodd"
-//       d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
-//       clipRule="evenodd"
-//     />
-//   </RotatingSvg>
-// );
 const FaBell = (props) => (
   <RotatingSvg {...props}>
     <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
@@ -47,15 +29,6 @@ const FaKey = (props) => (
     />
   </RotatingSvg>
 );
-// const FaCreditCard = (props) => (
-//   <RotatingSvg {...props}>
-//     <path
-//       fillRule="evenodd"
-//       d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zm14 5H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"
-//       clipRule="evenodd"
-//     />
-//   </RotatingSvg>
-// );
 const FaExclamationTriangle = (props) => (
   <RotatingSvg {...props}>
     <path
@@ -65,15 +38,6 @@ const FaExclamationTriangle = (props) => (
     />
   </RotatingSvg>
 );
-// const FaPlus = (props) => (
-//   <RotatingSvg {...props}>
-//     <path
-//       fillRule="evenodd"
-//       d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
-//       clipRule="evenodd"
-//     />
-//   </RotatingSvg>
-// );
 
 // ---------- Dark Theme Glassmorphism Design Tokens (Tailwind) ----------
 const TOKENS = {
@@ -90,7 +54,6 @@ const TOKENS = {
   iconBtn: "p-2 bg-white/10 hover:bg-white/20 rounded-lg transition flex items-center justify-center cursor-pointer focus-visible:ring-2 focus-visible:ring-white/30",
 };
 
-
 const options = [
   { value: "realtime", label: "Real-time" },
   { value: "hourly", label: "Hourly" },
@@ -98,13 +61,10 @@ const options = [
   { value: "weekly", label: "Weekly Summary" },
 ];
 
-
 // ---------- Utility ----------
 const cls = (...xs) => xs.filter(Boolean).join(" ");
 
 const SECTIONS = [
-  // { id: "profile", label: "Profile", icon: <FaUser /> },
-  // { id: "security", label: "Security", icon: <FaLock /> },
   { id: "notifications", label: "Notifications", icon: <FaBell /> },
   { id: "apikeys", label: "API Keys", icon: <FaKey /> },
   { id: "danger", label: "Danger Zone", icon: <FaExclamationTriangle /> },
@@ -253,50 +213,6 @@ function LabeledSelect({ label, children, className, ...props }) {
 }
 
 // ---------- Sections ----------
-// function ProfileSection() {
-//   return (
-//     <div className={cls(TOKENS.card, "space-y-4")} id="panel-profile" role="tabpanel">
-//       <h2 className="text-2xl font-bold text-gold-400">Profile Settings</h2>
-//       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-//         <LabeledInput label="Full Name" placeholder="Ada Lovelace" />
-//         <LabeledInput label="Email Address" type="email" placeholder="ada@lovelace.dev" />
-//         <LabeledInput label="Username" placeholder="@ada" />
-//         <div className="flex flex-col">
-//           <span className="text-white/90 text-sm font-medium">Avatar</span>
-//           <input
-//             type="file"
-//             className={cls(
-//               TOKENS.input,
-//               "mt-1 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:bg-white/10 file:text-white file:border-0 file:hover:bg-white/20"
-//             )}
-//           />
-//         </div>
-//       </div>
-//       <div className="flex flex-col sm:flex-row gap-3">
-//         <button className={TOKENS.btnPrimary}>Save</button>
-//         <button className={TOKENS.btnSecondary}>Cancel</button>
-//       </div>
-//     </div>
-//   );
-// }
-
-// function SecuritySection() {
-//   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
-//   return (
-//     <div className={cls(TOKENS.card, "space-y-6")} id="panel-security" role="tabpanel">
-//       <h2 className="text-2xl font-bold text-[#c2831f]-400">Security</h2>
-//       <div className="space-y-4">
-//         <h3 className="text-lg font-semibold">Change Password</h3>
-//         <LabeledInput label="Current Password" type="password" placeholder="••••••••" />
-//         <LabeledInput label="New Password" type="password" placeholder="••••••••" />
-//         <LabeledInput label="Confirm New Password" type="password" placeholder="••••••••" />
-//         <button className={TOKENS.btnPrimary}>Update Password</button>
-//       </div>
-
-//     </div>
-//   );
-// }
-
 function NotificationsSection() {
   const [emailNotif, setEmailNotif] = useState(true);
   const [smsNotif, setSmsNotif] = useState(false);
@@ -409,10 +325,6 @@ function NotificationsSection() {
     </div>
   );
 }
-
-
-
-
 
 function ApiKeysSection() {
   const [keys, setKeys] = useState([{ id: 1, name: "Default Key", value: "sk-1234abcd...", created: "2025-08-01" }]);
@@ -557,14 +469,13 @@ function Container({ children }) {
 }
 
 export default function SettingsPage() {
-  const [active, setActive] = useState("profile");
+  // Default to Notifications now that Profile/Security are removed
+  const [active, setActive] = useState("notifications");
   return (
     <DashboardLayout>
       <Container>
         <SectionTabs sections={SECTIONS} active={active} onChange={setActive} />
         <main className="relative z-10 mt-6 grid grid-cols-1 gap-6">
-          {/* {active === "profile" && <ProfileSection />}
-          {active === "security" && <SecuritySection />} */}
           {active === "notifications" && <NotificationsSection />}
           {active === "apikeys" && <ApiKeysSection />}
           {active === "danger" && <DangerSection />}
