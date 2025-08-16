@@ -21,14 +21,11 @@ model User {
   verificationTokens EmailVerificationToken[]
   otpCodes           OTPCode[]
 
-
-  twoFASecret  String? 
+  twoFASecret  String?
   is2FAEnabled Boolean @default(false)
 
   profileImage Bytes? // <-- Add this
-
 }
-
 
 model Content {
   id           Int      @id @default(autoincrement())
@@ -84,7 +81,6 @@ model Verification {
   status    String
   checkedAt DateTime @default(now())
 }
-
 
 model SupportMessage {
   id        Int      @id @default(autoincrement())

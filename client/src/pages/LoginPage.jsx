@@ -16,6 +16,7 @@ const ModernLogin = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+<<<<<<< HEAD
     //     e.preventDefault();
     //     console.log("Login submitted:", formData);
 
@@ -49,6 +50,9 @@ const ModernLogin = () => {
     //         alert("Something went wrong!");
     //     }
     // };
+=======
+   
+>>>>>>> 34f2d398c992c090cbbf5fad808dbce009f180ac
     const handleSubmit = async (e) => {
         e.preventDefault();
         console.log("Login submitted:", formData);
