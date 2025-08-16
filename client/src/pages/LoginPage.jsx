@@ -16,7 +16,6 @@ const ModernLogin = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-    // const handleSubmit = async (e) => {
     //     e.preventDefault();
     //     console.log("Login submitted:", formData);
 
@@ -55,7 +54,7 @@ const ModernLogin = () => {
         console.log("Login submitted:", formData);
 
         try {
-            const res = await fetch(`${API_URL}/api/auth/login`, {
+            const res = await fetch(`${API_URL}/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)
