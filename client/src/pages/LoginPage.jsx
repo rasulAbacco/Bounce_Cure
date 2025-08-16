@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield, Zap, Users, CheckCircle } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { useNavigate } from "react-router-dom";
+const API_URL = import.meta.env.VITE_API_URL;
+
 const ModernLogin = () => {
 
     const navigate = useNavigate();
@@ -53,7 +55,7 @@ const ModernLogin = () => {
         console.log("Login submitted:", formData);
 
         try {
-            const res = await fetch(`http://localhost:5000/api/auth/login`, {
+            const res = await fetch(`${API_URL}/api/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)
@@ -70,11 +72,11 @@ const ModernLogin = () => {
             if (res.ok && data.token) {
                 // Store token securely (localStorage for now)
                 localStorage.setItem("token", data.token);
-                
-                  if (data.user) {
-                        localStorage.setItem("userName", data.user.name || "");
-                        localStorage.setItem("userEmail", data.user.email || "");
-                    }
+
+                if (data.user) {
+                    localStorage.setItem("userName", data.user.name || "");
+                    localStorage.setItem("userEmail", data.user.email || "");
+                }
 
                 // Optional: store user info
                 if (data.user) {
