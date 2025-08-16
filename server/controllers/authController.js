@@ -37,7 +37,8 @@ export const signup = async (req, res) => {
                 lastName: newUser.lastName,
                 email: newUser.email,
                 name: `${user.firstName} ${user.lastName}`.trim(),
-                email: user.email
+                email: user.email,
+                profileImage: user.profileImage || null
 
             }
         });
@@ -96,7 +97,9 @@ export const login = async (req, res) => {
                 lastName: user.lastName,
                 email: user.email,
                 name: `${user.firstName} ${user.lastName}`.trim(),
-                email: user.email
+                email: user.email,
+                profileImage: user.profileImage || null
+
             }
         });
     } catch (error) {
