@@ -29,46 +29,49 @@ import Analytics from './pages/Analytics/Analytics';
 import Support from './pages/Support/Support';
 import PricingDash from './pages/Pricing/PricingDash';
 import PaymentPage from './pages/Pricing/PaymentPage';
+import { UserProvider } from "./components/UserContext"; // import context
 
 
 function App() {
   return (
+    <UserProvider>
+      <Router>
 
-    <Router>
+        <Routes>
 
-      <Routes>
-
-        <Route path="/services/email-verification" element={<FreeValidation />} />
-        <Route path="/services/integrations" element={<IntegrationPage />} />
-        <Route path="/signup" element={<SignupPage />} />
-        <Route path="/login" element={<LoginPage />} />
-        <Route path="/forgot-password" element={<ForgotPassword />} />
-        <Route path="/" element={<HomePage />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/features" element={<Features />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route path="/payment" element={<PaymentPage />} />
-        <Route path="/services/bulk-verification" element={<BulkVerification />} />
+          <Route path="/services/email-verification" element={<FreeValidation />} />
+          <Route path="/services/integrations" element={<IntegrationPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/features" element={<Features />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/payment" element={<PaymentPage />} />
+          <Route path="/services/bulk-verification" element={<BulkVerification />} />
 
 
-        <Route path="/faq" element={<FaqSection />} />
+          <Route path="/faq" element={<FaqSection />} />
 
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/contacts" element={<Contacts />} />
-        <Route path="/analytics" element={<Analytics />} />
-        <Route path="/email-campaign" element={<Campaign />} />
-        <Route path="/automation" element={<Automation />} />
-        <Route path="/settings" element={<Settings />} />
-        <Route path="/auth" element={<UserAuthentication />} />
-        <Route path="/verification" element={<Verification />} />
-        <Route path="/support" element={<Support />} />
-        <Route path='/pricingdash' element={<PricingDash/>}/>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/contacts" element={<Contacts />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/email-campaign" element={<Campaign />} />
+          <Route path="/automation" element={<Automation />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/auth" element={<UserAuthentication />} />
+          <Route path="/verification" element={<Verification />} />
+          <Route path="/support" element={<Support />} />
+          <Route path='/pricingdash' element={<PricingDash/>}/>
 
-      </Routes>
+        </Routes>
 
-<Chatbot />
-    </Router>
+  <Chatbot />
+      </Router>
+    </UserProvider>
+    
   );
 }
 
