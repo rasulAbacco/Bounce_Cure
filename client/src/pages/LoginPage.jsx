@@ -1,10 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useContext  } from 'react';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield, Zap, Users, CheckCircle } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { useNavigate } from "react-router-dom";
+import { UserContext } from '../components/UserContext';// 👈 import UserContext
+
 const ModernLogin = () => {
 
     const navigate = useNavigate();
+      const { setUser } = useContext(UserContext); // 👈 get setUser from context
+
     const [formData, setFormData] = useState({
         email: "",
         password: ""
@@ -67,26 +71,24 @@ const ModernLogin = () => {
             console.log("Response data:", data);
             console.log("Status code:", res.status);
 
-            if (res.ok && data.token) {
-                // Store token securely (localStorage for now)
-                localStorage.setItem("token", data.token);
-                
-                  if (data.user) {
-                        localStorage.setItem("userName", data.user.name || "");
-                        localStorage.setItem("userEmail", data.user.email || "");
-                    }
+             if (res.ok && data.token) {
+        // ✅ keep saving token for auth
+        localStorage.setItem("token", data.token);
 
-                // Optional: store user info
-                if (data.user) {
-                    if (data.token) {
-                        localStorage.setItem("token", data.token); // ✅ Save token here
-                    }
-                }
+        if (data.user) {
+          // ✅ update context → Navbar updates instantly
+          setUser({
+            name: data.user.name || `${data.user.firstName} ${data.user.lastName}`,
+            email: data.user.email,
+            profileImage: data.user.profileImage
+            ? `http://localhost:5000/api/auth/profile-image/${data.user.id}?ts=${Date.now()}`
+            : ""
+          });
+        }
 
-                console.log("Token saved, redirecting to dashboard...");
-                navigate("/dashboard");
-                window.location.reload();
-            } else {
+        navigate("/dashboard"); // ✅ no need for window.location.reload()
+      } 
+            else {
                 // Clear any old token to avoid using stale credentials
                 localStorage.removeItem("token");
                 alert(data.message || "Login failed");

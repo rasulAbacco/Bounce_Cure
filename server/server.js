@@ -1,3 +1,5 @@
+
+
 // server.js
 import dotenv from 'dotenv';
 import express from 'express';
@@ -6,15 +8,19 @@ import authRoutes from './routes/authRoutes.js';
 import verificationRoutes from './routes/verificationRoutes.js';
 import { initEmail } from "./utils/emailService.js";
 import supportRoutes from "./routes/supportRoutes.js";
+import bodyParser from "body-parser";
 // Load environment variables
 dotenv.config();
 
-const app = express();
 
+/* Middlewares */
+app.use(cors());
+app.use(bodyParser.json());
+app.use(bodyParser.urlencoded({ extended: true }));
+/* Routes */
+app.use("/verification", verificationRoutes);
 
 initEmail();
-// Middleware
-// app.use(cors({ origin: process.env.CLIENT_URL || 'http://localhost:5173' }));
 
 app.use(cors({
   origin: "http://localhost:5173", // frontend URL
@@ -34,9 +40,7 @@ app.get('/', (req, res) => {
 
 app.use("/api/users", authRoutes);
 
-// Start server
-const PORT = process.env.PORT || 5000;
-
+/* Start */
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
 });
