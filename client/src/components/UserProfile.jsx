@@ -129,7 +129,7 @@ const UserProfile = () => {
                             </div>
                         </div>
                     </div>
-
+ 
                     {/* File Upload */}
                     <div className="mt-6 space-y-4">
                         <div className="relative">
