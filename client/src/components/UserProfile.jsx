@@ -13,7 +13,6 @@ const UserProfile = () => {
     const [loadingName, setLoadingName] = useState(false);
     const [loadingUpload, setLoadingUpload] = useState(false);
 
-
     useEffect(() => {
         const fetchUser = async () => {
             try {
@@ -21,24 +20,24 @@ const UserProfile = () => {
                 setUser(data);
                 setName(`${data.firstName} ${data.lastName}`);
                 setEmail(data.email);
-                // console.log('API_URL:', API_URL);
-                setPreview(
-                    data.profileImage
-                        ? `http://localhost:5000/api/auth/profile-image/${data.id}?ts=${Date.now()}`
-                        : ''
-                );
-                console.log('Image preview URL:', preview);
-                console.log('User data fetched:', data);
 
+                // If user has profile image, build URL and save to localStorage
+                if (data.profileImage) {
+                    const imageUrl = `http://localhost:5000/api/auth/profile-image/${data.id}?ts=${Date.now()}`;
+                    setPreview(imageUrl);
+                    localStorage.setItem("userProfileImage", imageUrl);
+                } else {
+                    setPreview('');
+                    localStorage.removeItem("userProfileImage");
+                }
+
+                console.log('User data fetched:', data);
             } catch (err) {
                 console.log('Error fetching user:', err.response?.data || err.message);
             }
         };
         fetchUser();
     }, []);
-
-
-
 
     const handleEmailUpdate = async () => {
         setLoadingEmail(true);
@@ -70,8 +69,6 @@ const UserProfile = () => {
         }
     };
 
-
-
     const handleFileChange = (e) => {
         const selectedFile = e.target.files[0];
         setFile(selectedFile);
@@ -84,6 +81,14 @@ const UserProfile = () => {
         try {
             const { data } = await uploadProfileImage(file);
             setUser(data.user);
+
+            // Build uploaded image URL
+            const imageUrl = `http://localhost:5000/api/auth/profile-image/${data.user.id}?ts=${Date.now()}`;
+            setPreview(imageUrl);
+
+            // Save uploaded image to localStorage
+            localStorage.setItem("userProfileImage", imageUrl);
+
             alert('Profile image uploaded!');
         } catch (err) {
             console.log('Upload error:', err.response?.data || err.message);
@@ -124,7 +129,7 @@ const UserProfile = () => {
                             </div>
                         </div>
                     </div>
-
+ 
                     {/* File Upload */}
                     <div className="mt-6 space-y-4">
                         <div className="relative">
