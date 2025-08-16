@@ -21,24 +21,11 @@ model User {
   verificationTokens EmailVerificationToken[]
   otpCodes           OTPCode[]
 
-
-  twoFASecret  String? 
+  twoFASecret  String?
   is2FAEnabled Boolean @default(false)
 
   profileImage Bytes? // <-- Add this
-
-  // Relations to auth features
-  sessions           Session[]
-  loginLogs          LoginLog[]
-  verificationTokens EmailVerificationToken[]
-  otpCodes           OTPCode[]
-
-  // 2FA fields
-  twoFASecret  String? // stores the secret key for TOTP
-  is2FAEnabled Boolean @default(false)
-
 }
-
 
 model Content {
   id           Int      @id @default(autoincrement())
@@ -94,7 +81,6 @@ model Verification {
   status    String
   checkedAt DateTime @default(now())
 }
-
 
 model SupportMessage {
   id        Int      @id @default(autoincrement())
