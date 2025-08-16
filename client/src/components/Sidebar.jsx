@@ -5,14 +5,13 @@ import {
     UserCheck, Home, X
 } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
-
 const Sidebar = ({ isOpen, toggleSidebar, pageName }) => {
     const location = useLocation(); // get current path
 
     const menuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard' },
         { id: 'contacts', label: 'Contact Management', icon: Users, path: '/contacts' },
-        { id: 'builder', label: 'Email Campaign', icon: PenTool, path: '/builder' },
+        { id: 'builder', label: 'Email Campaign', icon: PenTool, path: '/email-campaign' },
         { id: 'automation', label: 'Automation', icon: Zap, path: '/automation' },
         { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics' },
         { id: 'verification', label: 'Email Verification', icon: UserCheck, path: '/verification' },
@@ -79,7 +78,7 @@ const Sidebar = ({ isOpen, toggleSidebar, pageName }) => {
                             <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center shadow-[0_4px_10px_rgba(255,215,0,0.7)]">                                <Wrench className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                                <p className="text-white text-sm font-medium">Upgrade Plan</p>
+                                <p className="text-white text-sm font-medium"><Link to={'/pricingdash'}>Upgrade Plan</Link></p>
                                 <p className="text-gray-400 text-xs">Unlock premium features</p>
                             </div>
                         </div>
