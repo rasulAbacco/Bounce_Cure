@@ -9,13 +9,17 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
 
     const [userName, setUserName] = useState("");
     const [userEmail, setUserEmail] = useState("");
+    const [profileImage, setProfileImage] = useState("");
+
 
     useEffect(() => {
-        // Load user info from localStorage when navbar mounts
         const name = localStorage.getItem("userName");
         const email = localStorage.getItem("userEmail");
+        const img = localStorage.getItem("userProfileImage");
+
         if (name) setUserName(name);
         if (email) setUserEmail(email);
+        if (img) setProfileImage(img);
     }, []);
 
     const notifications = [
@@ -113,7 +117,17 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
                             onClick={() => setShowProfileMenu(!showProfileMenu)}
                             className="flex items-center space-x-2 sm:space-x-3 text-white hover:bg-white/10 p-2 rounded-lg transition-colors"
                         >
-                             <User className="w-8 h-8 text-white" />
+                            <div>
+                                {profileImage ? (
+                                    <img
+                                        src={profileImage}
+                                        alt="Profile"
+                                        className="w-8 h-8 rounded-full object-cover"
+                                    />
+                                ) : (
+                                    <User className="w-8 h-8 text-white" />
+                                )}
+                            </div>
 
                             <div className="hidden md:block text-left">
                                 {userName && <p className="text-sm font-medium ">{userName}</p>}
