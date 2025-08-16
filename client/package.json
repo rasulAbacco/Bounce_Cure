@@ -25,6 +25,7 @@
     "emailjs-com": "^3.2.0",
     "express": "^5.1.0",
     "file-saver": "^2.0.5",
+    "file-type": "^21.0.0",
     "framer-motion": "^12.23.12",
     "internmap": "^2.0.3",
     "jspdf": "^3.0.1",

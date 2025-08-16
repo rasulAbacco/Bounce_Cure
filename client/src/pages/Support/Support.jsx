@@ -183,7 +183,6 @@ export default function HelpAndSupport() {
 
                     {/* Support Cards Grid */}
                     <div className="support-cards-grid">
-
                         {/* Email Support */}
                         <div className="support-card">
                             <div className="card-header">
@@ -196,16 +195,23 @@ export default function HelpAndSupport() {
                                 href="#"
                                 onClick={(e) => {
                                     e.preventDefault();
+
+                                    const width = 600;
+                                    const height = 400;
+                                    const left = (window.screen.width / 2) - (width / 2);
+                                    const top = (window.screen.height / 2) - (height / 2);
+
                                     window.open(
                                         "https://mail.google.com/mail/?view=cm&to=abacco83@gmail.com&su=Support%20Request",
                                         "gmailComposeWindow",
-                                        "width=400,height=400"
+                                        `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,resizable=yes`
                                     );
                                 }}
                             >
                                 Email Us
                             </a>
                         </div>
+
 
 
                         {/* Contact Support Form */}
