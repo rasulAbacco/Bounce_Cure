@@ -1,505 +1,118 @@
-import React, { createContext, useContext, useState, useEffect } from "react";
-import DashboardLayout from "../../components/DashboardLayout";
+import React from 'react';
+import DashboardLayout from '../../components/DashboardLayout';
+import EmailVerification from '../../components/auth/EmailVerification';
+import ChangePassword from '../../components/auth/ChangePassword';
+import TwoFactorAuth from '../../components/auth/TwoFactorAuth';
+import SecurityLogs from '../../components/auth/SecurityLogs';
+import ActiveSessions from '../../components/auth/ActiveSessions';
+import UserProfile from '../../components/UserProfile';
+import { Shield, Lock } from 'lucide-react';
 
-const UserContext = createContext();
-
-function UserProvider({ children }) {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem("user");
-    if (savedUser) setUser(JSON.parse(savedUser));
-    setLoading(false);
-  }, []);
-
-  function saveUser(userData) {
-    setUser(userData);
-    localStorage.setItem("user", JSON.stringify(userData));
-  }
-
-  function login(email, password) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        const mockUser = {
-          email: "user@example.com",
-          name: "John Doe",
-          verified: false,
-        };
-
-        if (email === mockUser.email && password === "password123") {
-          if (!mockUser.verified) {
-            reject(
-              "Email not verified. Please verify your email before logging in."
-            );
-            return;
-          }
-          saveUser(mockUser);
-          resolve(mockUser);
-        } else {
-          reject("Invalid email or password");
-        }
-      }, 1000);
-    });
-  }
-
-  function register(name, email, password) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (!email.includes("@")) {
-          reject("Invalid email");
-        } else if (password.length < 6) {
-          reject("Password must be at least 6 characters");
-        } else {
-          const userData = { email, name, verified: false };
-          saveUser(userData);
-          resolve(userData);
-        }
-      }, 1000);
-    });
-  }
-
-  function forgotPassword(email) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (email.includes("@")) {
-          resolve("Password reset link sent to your email.");
-        } else {
-          reject("Please enter a valid email.");
-        }
-      }, 1000);
-    });
-  }
-
-  function sendVerificationEmail() {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve("Verification email sent! Please check your inbox.");
-      }, 1500);
-    });
-  }
-
-  function verifyEmail() {
-    if (user) {
-      const updatedUser = { ...user, verified: true };
-      saveUser(updatedUser);
-    }
-  }
-
-  function updateDetails(newName, newEmail) {
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (!newEmail.includes("@")) {
-          reject("Invalid email");
-          return;
-        }
-        const updatedUser = { ...user, name: newName };
-        if (newEmail !== user.email) {
-          updatedUser.email = newEmail;
-          updatedUser.verified = false;
-        }
-        saveUser(updatedUser);
-        resolve(updatedUser);
-      }, 1000);
-    });
-  }
-
-  function logout() {
-    setUser(null);
-    localStorage.removeItem("user");
-  }
-
-  return (
-    <UserContext.Provider
-      value={{
-        user,
-        login,
-        logout,
-        register,
-        forgotPassword,
-        loading,
-        sendVerificationEmail,
-        verifyEmail,
-        updateDetails,
-      }}
-    >
-      {children}
-    </UserContext.Provider>
-  );
-}
-
-function useUser() {
-  return useContext(UserContext);
-}
-
-// All forms shown simultaneously with tabs
-function Auth() {
-  const { user, logout, sendVerificationEmail, verifyEmail } = useUser();
-  const [activeTab, setActiveTab] = useState("login");
-  const [message, setMessage] = useState("");
-
-  // Email verification resend logic if logged in and unverified
-  const handleSendVerification = async () => {
-    setMessage("");
-    try {
-      const res = await sendVerificationEmail();
-      setMessage(res);
-      setTimeout(() => {
-        verifyEmail();
-        setMessage(
-          "Email verified successfully! Please logout and login again."
-        );
-      }, 3000);
-    } catch {
-      setMessage("Failed to send verification email.");
-    }
-  };
-
-  if (user) {
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-center bg-[#0a1a2f] px-6 py-10 text-white max-w-md mx-auto">
-        <h1 className="text-3xl mb-6 text-center">Welcome, {user.name}!</h1>
-
-        {!user.verified && (
-          <div className="mb-6 p-4 bg-yellow-600 rounded text-center w-full">
-            Your email is not verified.
-            <button
-              onClick={handleSendVerification}
-              className="ml-2 px-3 py-1 bg-[#EAA64D] rounded hover:bg-[#d18b3d] text-[#0a1a2f] font-semibold transition"
-            >
-              Send Verification Email
-            </button>
-            {message && <p className="mt-2 text-sm">{message}</p>}
-          </div>
-        )}
-
-        {user.verified && <ProfileUpdate onLogout={logout} />}
-
-        <button
-          onClick={logout}
-          className="mt-8 bg-[#EAA64D] px-6 py-2 rounded font-semibold text-[#0a1a2f] hover:bg-[#d18b3d] transition"
-        >
-          Logout
-        </button>
-      </div>
-    );
-  }
-
+const UserAuthentication = () => {
   return (
     <DashboardLayout>
-      <div className="min-h-screen px-6 py-10 text-white flex flex-col items-center">
-        <div className="max-w-4xl w-full bg-gradient-to-br from-[#12263f] to-[#0a1a2f] rounded-lg shadow-lg p-8 border border-white flex gap-8">
-          <nav className="flex flex-col gap-4 min-w-[150px]">
-            {["login", "register", "forgot", "profile"].map((tab) => (
-              <button
-                key={tab}
-                onClick={() => setActiveTab(tab)}
-                className={`py-2 px-4 rounded text-left hover:bg-[#154c7c] transition ${
-                  activeTab === tab ? "bg-[#EAA64D] text-[#0a1a2f]" : ""
-                }`}
-              >
-                {tab.charAt(0).toUpperCase() + tab.slice(1)}
-              </button>
-            ))}
-          </nav>
+      <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black mt-[5%]">
+        {/* Background Effects */}
+        <div className="fixed inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-20 left-20 w-96 h-96 bg-white/5 rounded-full blur-3xl opacity-20"></div>
+          <div className="absolute bottom-20 right-20 w-80 h-80 bg-gray-400/5 rounded-full blur-3xl opacity-30"></div>
+          <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-white/3 rounded-full blur-3xl opacity-25"></div>
+        </div>
 
-          <div className="flex-1">
-            <div className={`${activeTab === "login" ? "block" : "hidden"}`}>
-              <LoginForm />
+        <div className="relative z-10 p-6 lg:p-8 space-y-8 pt-20 lg:pt-8">
+          {/* Header Section */}
+          <div className="text-center lg:text-left mb-12">
+            <div className="inline-flex items-center gap-3 mb-4">
+              <div className="p-3 bg-white/5 rounded-xl backdrop-blur-sm">
+                <Shield className="w-8 h-8 text-white" />
+              </div>
+              <h1 className="text-4xl lg:text-5xl font-bold text-white">
+                Authentication & Security
+              </h1>
             </div>
-            <div className={`${activeTab === "register" ? "block" : "hidden"}`}>
-              <RegisterForm />
+            <p className="text-xl text-gray-400 max-w-2xl mx-auto lg:mx-0">
+              Manage your account security settings, monitor login activity, and protect your data with advanced authentication features.
+            </p>
+          </div>
+
+          {/* Security Stats Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-green-400/20 to-blue-400/20 rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
+              <div className="relative bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-green-500/10 rounded-lg">
+                    <Shield className="w-6 h-6 text-green-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">Account Status</h3>
+                    <p className="text-green-400 font-medium">Secure</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className={`${activeTab === "forgot" ? "block" : "hidden"}`}>
-              <ForgotPasswordForm />
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
+              <div className="relative bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-blue-500/10 rounded-lg">
+                    <Lock className="w-6 h-6 text-blue-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">2FA Status</h3>
+                    <p className="text-yellow-400 font-medium">Not Enabled</p>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className={`${activeTab === "profile" ? "block" : "hidden"}`}>
-              <ProfileUpdate onLogout={() => {}} />
+
+            <div className="relative group">
+              <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-400/20 to-pink-400/20 rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
+              <div className="relative bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+                <div className="flex items-center gap-3">
+                  <div className="p-2 bg-purple-500/10 rounded-lg">
+                    <Shield className="w-6 h-6 text-purple-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-white">Last Login</h3>
+                    <p className="text-gray-400 font-medium">Today</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content Grid */}
+          <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
+            <div className="space-y-8">
+              <UserProfile />
+              <EmailVerification />
+              <ChangePassword />
+            </div>
+            <div className="space-y-8">
+              <TwoFactorAuth />
+              <SecurityLogs />
+              <ActiveSessions />
+            </div>
+          </div>
+
+          {/* Footer Section */}
+          <div className="mt-16 text-center">
+            <div className="inline-block bg-black/20 border border-white/5 rounded-xl p-6">
+              <h3 className="text-lg font-semibold text-white mb-2">Need Help?</h3>
+              <p className="text-gray-400 text-sm">
+                If you're experiencing any issues with your account security, please contact our support team.
+              </p>
+              <button className="mt-4 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white rounded-lg transition-all duration-300">
+                Contact Support
+              </button>
             </div>
           </div>
         </div>
       </div>
     </DashboardLayout>
   );
-}
+};
 
-// Login Form
-function LoginForm() {
-  const { login } = useUser();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPass, setShowPass] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-    try {
-      await login(email, password);
-    } catch (err) {
-      setError(err);
-    }
-    setLoading(false);
-  }
-
-  return (
-    <>
-      <h2 className="text-2xl font-bold mb-6 text-white text-center">Login</h2>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="email"
-          required
-          placeholder="Email"
-          className="w-full px-4 py-2 rounded bg-[#0f2036] text-white border border-gray-600 focus:border-white outline-none"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="username"
-        />
-        <div className="relative">
-          <input
-            type={showPass ? "text" : "password"}
-            required
-            placeholder="Password"
-            className="w-full px-4 py-2 rounded bg-[#0f2036] text-white border border-gray-600 focus:border-white outline-none"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="current-password"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPass(!showPass)}
-            className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-200 transition"
-          >
-            {showPass ? "Hide" : "Show"}
-          </button>
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-[#EAA64D] hover:bg-[#d18b3d] text-[#0a1a2f] font-semibold py-2 rounded transition disabled:opacity-60"
-        >
-          {loading ? "Logging in..." : "Login"}
-        </button>
-      </form>
-    </>
-  );
-}
-
-// Register Form
-function RegisterForm() {
-  const { register } = useUser();
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [showPass, setShowPass] = useState(false);
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setError("");
-    setLoading(true);
-    try {
-      await register(name, email, password);
-    } catch (err) {
-      setError(err);
-    }
-    setLoading(false);
-  }
-
-  return (
-    <>
-      <h2 className="text-2xl font-bold mb-6 text-white text-center">Register</h2>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="text"
-          required
-          placeholder="Full Name"
-          className="w-full px-4 py-2 rounded bg-[#0f2036] text-white border border-gray-600 focus:border-white outline-none"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          autoComplete="name"
-        />
-        <input
-          type="email"
-          required
-          placeholder="Email"
-          className="w-full px-4 py-2 rounded bg-[#0f2036] text-white border border-gray-600 focus:border-white outline-none"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-        />
-        <div className="relative">
-          <input
-            type={showPass ? "text" : "password"}
-            required
-            placeholder="Password"
-            className="w-full px-4 py-2 rounded bg-[#0f2036] text-white border border-gray-600 focus:border-white outline-none"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            autoComplete="new-password"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPass(!showPass)}
-            className="absolute right-3 top-2.5 text-gray-400 hover:text-gray-200 transition"
-          >
-            {showPass ? "Hide" : "Show"}
-          </button>
-        </div>
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-[#EAA64D] hover:bg-[#d18b3d] text-[#0a1a2f] font-semibold py-2 rounded transition disabled:opacity-60"
-        >
-          {loading ? "Registering..." : "Register"}
-        </button>
-      </form>
-    </>
-  );
-}
-
-// Forgot Password Form
-function ForgotPasswordForm() {
-  const { forgotPassword } = useUser();
-  const [email, setEmail] = useState("");
-  const [message, setMessage] = useState("");
-  const [error, setError] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setError("");
-    setMessage("");
-    setLoading(true);
-    try {
-      const res = await forgotPassword(email);
-      setMessage(res);
-    } catch (err) {
-      setError(err);
-    }
-    setLoading(false);
-  }
-
-  return (
-    <div>
-      <h2 className="text-2xl font-bold mb-6 text-white text-center">
-        Forgot Password
-      </h2>
-      {error && <p className="text-red-500 mb-4">{error}</p>}
-      {message && <p className="text-green-500 mb-4">{message}</p>}
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <input
-          type="email"
-          required
-          placeholder="Enter your email"
-          className="w-full px-4 py-2 rounded bg-[#0f2036] text-white border border-gray-600 focus:border-white outline-none"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-[#EAA64D] hover:bg-[#d18b3d] text-[#0a1a2f] font-semibold py-2 rounded transition disabled:opacity-60"
-        >
-          {loading ? "Sending..." : "Send Reset Link"}
-        </button>
-      </form>
-    </div>
-  );
-}
-
-// Profile Update Form - fixed top bar with controlled inputs defaulted to current user info
-function ProfileUpdate({ onLogout }) {
-  const { user, updateDetails } = useUser();
-  const [name, setName] = useState(user?.name || "");
-  const [email, setEmail] = useState(user?.email || "");
-  const [error, setError] = useState("");
-  const [message, setMessage] = useState("");
-  const [loading, setLoading] = useState(false);
-
-  if (!user) {
-    return (
-      <div className="text-center p-4 text-gray-300">
-        Please log in to update your profile.
-      </div>
-    );
-  }
-
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setError("");
-    setMessage("");
-    setLoading(true);
-    try {
-      await updateDetails(name, email);
-      setMessage("Details updated successfully.");
-    } catch (err) {
-      setError(err);
-    }
-    setLoading(false);
-  }
-
-  return (
-    <div className="fixed top-0 left-0 w-full border-b border-white px-6 py-3 flex items-center justify-between shadow-lg z-50">
-      <form
-        onSubmit={handleSubmit}
-        className="flex items-center gap-4 max-w-4xl mx-auto w-full"
-      >
-        <input
-          type="text"
-          placeholder="Full Name"
-          className="px-3 py-1 rounded bg-[#0f2036] text-white border border-gray-600 focus:border-white outline-none w-40"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          autoComplete="name"
-          required
-        />
-        <input
-          type="email"
-          placeholder="Email"
-          className="px-3 py-1 rounded bg-[#0f2036] text-white border border-gray-600 focus:border-white outline-none w-56"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="email"
-          required
-        />
-        <button
-          type="submit"
-          disabled={loading}
-          className="bg-[#EAA64D] hover:bg-[#d18b3d] text-[#0a1a2f] font-semibold px-4 py-1 rounded transition disabled:opacity-60"
-        >
-          {loading ? "Updating..." : "Update"}
-        </button>
-        <button
-          type="button"
-          onClick={onLogout}
-          className="ml-auto bg-red-600 hover:bg-red-700 text-white font-semibold px-4 py-1 rounded transition"
-        >
-          Logout
-        </button>
-      </form>
-
-      {(error || message) && (
-        <div className="absolute top-full left-0 w-full max-w-4xl mx-auto mt-1 px-4 text-center text-sm">
-          {error && <p className="text-red-500">{error}</p>}
-          {message && <p className="text-green-500">{message}</p>}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// App wrapper
-export default function App() {
-  return (
-    <UserProvider>
-      <Auth />
-    </UserProvider>
-  );
-}
+export default UserAuthentication;

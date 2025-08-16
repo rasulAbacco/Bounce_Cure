@@ -2,7 +2,12 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { PrismaClient } from "@prisma/client";
 
-const prisma = new PrismaClient();
+import { prisma } from "../prisma/prismaClient.js";
+import { sendEmail } from "../utils/sendEmail.js";
+import { generateOTP } from "../utils/generateOTP.js";
+import { generateQRCode } from "../utils/generateQRCode.js";
+import speakeasy from 'speakeasy'; // for TOTP 2FA
+
 
 // Signup
 export const signup = async (req, res) => {
@@ -13,23 +18,15 @@ export const signup = async (req, res) => {
             return res.status(400).json({ message: "All fields are required" });
         }
 
-        // Check if user already exists
         const existingUser = await prisma.user.findUnique({ where: { email } });
         if (existingUser) {
             return res.status(400).json({ message: "Email already registered" });
         }
 
-        // Hash password
         const hashedPassword = await bcrypt.hash(password, 10);
 
-        // Create user
         const newUser = await prisma.user.create({
-            data: {
-                firstName,
-                lastName,
-                email,
-                password: hashedPassword
-            }
+            data: { firstName, lastName, email, password: hashedPassword }
         });
 
         res.status(201).json({
@@ -38,10 +35,12 @@ export const signup = async (req, res) => {
                 id: newUser.id,
                 firstName: newUser.firstName,
                 lastName: newUser.lastName,
-                email: newUser.email
+                email: newUser.email,
+                name: `${user.firstName} ${user.lastName}`.trim(),
+                email: user.email
+
             }
         });
-
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Internal server error" });
@@ -57,24 +56,36 @@ export const login = async (req, res) => {
             return res.status(400).json({ message: "Email and password are required" });
         }
 
-        // Find user
         const user = await prisma.user.findUnique({ where: { email } });
-        if (!user) {
+        if (!user || !(await bcrypt.compare(password, user.password))) {
             return res.status(400).json({ message: "Invalid email or password" });
         }
 
-        // Compare password
-        const isMatch = await bcrypt.compare(password, user.password);
-        if (!isMatch) {
-            return res.status(400).json({ message: "Invalid email or password" });
-        }
-
-        // Generate token
+        // Generate JWT
         const token = jwt.sign(
             { id: user.id, email: user.email },
             process.env.JWT_SECRET,
-            { expiresIn: "1h" }
+            { expiresIn: "7d" }
         );
+
+        // Create login log
+        await prisma.loginLog.create({
+            data: {
+                userId: user.id,
+                ipAddress: req.ip,
+                device: req.headers['user-agent'],
+                location: 'Unknown'
+            }
+        });
+
+        // Create session
+        await prisma.session.create({
+            data: {
+                userId: user.id,
+                ipAddress: req.ip,
+                device: req.headers['user-agent']
+            }
+        });
 
         res.status(200).json({
             message: "Login successful",
@@ -83,12 +94,261 @@ export const login = async (req, res) => {
                 id: user.id,
                 firstName: user.firstName,
                 lastName: user.lastName,
+                email: user.email,
+                name: `${user.firstName} ${user.lastName}`.trim(),
                 email: user.email
             }
         });
-
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+// Get login logs
+export const getLoginLogs = async (req, res) => {
+    try {
+        if (!req.user) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        const isAdmin = (req.user.role || "").toUpperCase() === "ADMIN";
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
+        const logs = await prisma.loginLog.findMany({
+            where: isAdmin ? {} : { userId: req.user.id },
+            orderBy: { createdAt: "desc" },
+            skip,
+            take: limit,
+            include: {
+                user: {
+                    select: { id: true, firstName: true, lastName: true, email: true }
+                }
+            }
+        });
+
+        const totalLogs = await prisma.loginLog.count({
+            where: isAdmin ? {} : { userId: req.user.id }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: "Login logs fetched successfully",
+            pagination: {
+                total: totalLogs,
+                page,
+                limit,
+                totalPages: Math.ceil(totalLogs / limit)
+            },
+            data: logs
+        });
+    } catch (error) {
+        console.error("Error fetching login logs:", error);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
+// Send verification email
+export const sendVerificationEmail = async (req, res) => {
+    const { email } = req.user;
+    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "15m" });
+    const link = `http://localhost:5000/verify-email?token=${token}`;
+
+    await sendEmail(email, "Verify your email", `<a href="${link}">Verify Email</a>`);
+    res.json({ message: "Verification email sent" });
+};
+
+// Verify email
+export const verifyEmail = async (req, res) => {
+    const { token } = req.query;
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        await prisma.user.update({
+            where: { email: decoded.email },
+            data: { isVerified: true }
+        });
+        res.json({ message: "Email verified successfully" });
+    } catch {
+        res.status(400).json({ message: "Invalid or expired token" });
+    }
+};
+
+// Send OTP
+export const sendOTP = async (req, res) => {
+    const { email } = req.user;
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    await prisma.user.update({
+        where: { email },
+        data: { otp }
+    });
+
+    await sendEmail(email, "Your OTP Code", `<h1>Your OTP is: ${otp}</h1>`);
+    res.json({ message: "OTP sent to email" });
+};
+
+
+
+
+// Change password
+export const changePassword = async (req, res) => {
+    try {
+        const { oldPassword, newPassword } = req.body;
+
+        if (!oldPassword || !newPassword) {
+            return res.status(400).json({ message: "Both old and new passwords are required" });
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+        if (!user || !user.password) {
+            return res.status(404).json({ message: "User not found or password missing" });
+        }
+
+        const isMatch = await bcrypt.compare(oldPassword, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: "Old password incorrect" });
+        }
+
+        const hashed = await bcrypt.hash(newPassword, 10);
+        await prisma.user.update({
+            where: { id: user.id },
+            data: { password: hashed }
+        });
+
+        res.json({ message: "Password changed successfully" });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+};
+
+
+
+// Enable 2FA
+// authController.js
+export const enable2FA = async (req, res) => {
+    try {
+        const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+        if (!user) return res.status(404).json({ message: 'User not found' });
+
+        // 1. Generate OTP
+        const otp = generateOTP();
+
+        // 2. Save OTP and expiration in DB
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                twoFASecret: otp, // temporary secret for verification
+            },
+        });
+
+        // 3. Generate QR code (optional)
+        const qrCodeDataURL = await generateQRCode(`YourApp:${user.email}?otp=${otp}`);
+
+        // 4. Return OTP & QR (frontend can display QR or send OTP via email)
+        res.json({ message: '2FA setup initiated', otp, qrCodeDataURL });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+export const verify2FA = async (req, res) => {
+    try {
+        const { otp } = req.body;
+        const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+        if (!user) return res.status(404).json({ message: 'User not found' });
+        if (user.twoFASecret !== otp) return res.status(400).json({ message: 'Invalid OTP' });
+
+        // OTP correct → enable 2FA
+        await prisma.user.update({
+            where: { id: user.id },
+            data: {
+                is2FAEnabled: true,
+                twoFASecret: null // clear temporary OTP
+            }
+        });
+
+        res.json({ message: '2FA enabled successfully' });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+
+
+// Fixed backend version of getSecurityLogs
+export const getSecurityLogs = async (req, res) => {
+
+    try {
+        if (!req.user) {
+            return res.status(401).json({ message: "Unauthorized" });
+        }
+
+        const logs = await prisma.loginLog.findMany({
+            where: { userId: req.user.id },
+            orderBy: { createdAt: "desc" }
+        });
+
+        res.status(200).json({ success: true, data: logs });
+    } catch (err) {
+        console.error("Error fetching security logs:", err);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
+// Get active sessions
+export const getActiveSessions = async (req, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+
+        const sessions = await prisma.session.findMany({
+            where: { userId: req.user.id }, // ✅ use req.user
+            orderBy: { createdAt: "desc" }
+        });
+
+        res.status(200).json({ success: true, data: sessions });
+    } catch (err) {
+        console.error("Error fetching sessions:", err);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
+
+export const testEmail = async (req, res) => {
+    try {
+        await sendEmail({
+            to: "user@example.com",
+            subject: "Test Email",
+            html: "<h1>Hello from Ethereal!</h1>",
+        });
+
+        res.status(200).json({ message: "Email sent successfully!" });
+    } catch (error) {
+        console.error("Error sending email:", error);
+        res.status(500).json({ error: "Failed to send email" });
+    }
+};
+
+
+
+export const verifyAuth = (req, res, next) => {
+    const authHeader = req.headers.authorization;
+
+    if (!authHeader) return res.status(401).json({ error: 'No token provided' });
+
+    const token = authHeader.split(' ')[1];
+
+    try {
+        const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        req.user = decoded;
+        next();
+    } catch (err) {
+        return res.status(403).json({ error: 'Invalid token' });
     }
 };

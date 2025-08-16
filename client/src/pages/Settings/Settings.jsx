@@ -1,626 +1,575 @@
-import React, { useEffect, useState, useRef } from "react";
-import {
-  FaUser,
-  FaLock,
-  FaBell,
-  FaKey,
-  FaCreditCard,
-  FaExclamationTriangle,
-  FaCopy,
-  FaPlus,
-  FaTrash,
-} from "react-icons/fa";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
+import Select from "react-select";
 
-const sections = [
-  { id: "profile", label: "Profile", icon: <FaUser /> },
-  { id: "security", label: "Security", icon: <FaLock /> },
+// Reusable rotating SVG wrapper (uses Tailwind's animate-spin and custom duration)
+const RotatingSvg = ({ className = "", children, ...props }) => (
+  <svg
+    className={`w-4 h-4 animate-spin ${className}`}
+    style={{ animationDuration: "18s" }} // slow spin
+    fill="currentColor"
+    viewBox="0 0 20 20"
+    {...props}
+  >
+    {children}
+  </svg>
+);
+
+// const FaUser = (props) => (
+//   <RotatingSvg {...props}>
+//     <path
+//       fillRule="evenodd"
+//       d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+//       clipRule="evenodd"
+//     />
+//   </RotatingSvg>
+// );
+// const FaLock = (props) => (
+//   <RotatingSvg {...props}>
+//     <path
+//       fillRule="evenodd"
+//       d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z"
+//       clipRule="evenodd"
+//     />
+//   </RotatingSvg>
+// );
+const FaBell = (props) => (
+  <RotatingSvg {...props}>
+    <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
+  </RotatingSvg>
+);
+const FaKey = (props) => (
+  <RotatingSvg {...props}>
+    <path
+      fillRule="evenodd"
+      d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z"
+      clipRule="evenodd"
+    />
+  </RotatingSvg>
+);
+// const FaCreditCard = (props) => (
+//   <RotatingSvg {...props}>
+//     <path
+//       fillRule="evenodd"
+//       d="M4 4a2 2 0 00-2 2v1h16V6a2 2 0 00-2-2H4zm14 5H2v5a2 2 0 002 2h12a2 2 0 002-2V9zM4 13a1 1 0 011-1h1a1 1 0 110 2H5a1 1 0 01-1-1zm5-1a1 1 0 100 2h1a1 1 0 100-2H9z"
+//       clipRule="evenodd"
+//     />
+//   </RotatingSvg>
+// );
+const FaExclamationTriangle = (props) => (
+  <RotatingSvg {...props}>
+    <path
+      fillRule="evenodd"
+      d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
+      clipRule="evenodd"
+    />
+  </RotatingSvg>
+);
+// const FaPlus = (props) => (
+//   <RotatingSvg {...props}>
+//     <path
+//       fillRule="evenodd"
+//       d="M10 3a1 1 0 011 1v5h5a1 1 0 110 2h-5v5a1 1 0 11-2 0v-5H4a1 1 0 110-2h5V4a1 1 0 011-1z"
+//       clipRule="evenodd"
+//     />
+//   </RotatingSvg>
+// );
+
+// ---------- Dark Theme Glassmorphism Design Tokens (Tailwind) ----------
+const TOKENS = {
+  card: "backdrop-blur-xl bg-black/30 border border-white/10 shadow-2xl rounded-2xl p-6 text-white w-full",
+
+  input: "w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:ring-2 focus:ring-[#c2831f]/70 placeholder-white/40 text-white",
+
+  btnPrimary: "px-4 py-2 rounded-xl text-white font-semibold shadow-md transition cursor-pointer bg-gradient-to-r from-[#c2831f] to-[#a66e19] hover:from-[#a66e19] hover:to-[#8f5c15] focus-visible:ring-2 focus-visible:ring-[#c2831f]/70",
+
+  btnSecondary: "px-4 py-2 rounded-xl text-white font-semibold transition cursor-pointer bg-white/10 hover:bg-white/20",
+
+  btnDanger: "px-4 py-2 rounded-xl text-white font-semibold shadow-md transition cursor-pointer bg-red-700/80 hover:bg-red-600/90 focus-visible:ring-2 focus-visible:ring-red-500/70",
+
+  iconBtn: "p-2 bg-white/10 hover:bg-white/20 rounded-lg transition flex items-center justify-center cursor-pointer focus-visible:ring-2 focus-visible:ring-white/30",
+};
+
+
+const options = [
+  { value: "realtime", label: "Real-time" },
+  { value: "hourly", label: "Hourly" },
+  { value: "daily", label: "Daily Summary" },
+  { value: "weekly", label: "Weekly Summary" },
+];
+
+
+// ---------- Utility ----------
+const cls = (...xs) => xs.filter(Boolean).join(" ");
+
+const SECTIONS = [
+  // { id: "profile", label: "Profile", icon: <FaUser /> },
+  // { id: "security", label: "Security", icon: <FaLock /> },
   { id: "notifications", label: "Notifications", icon: <FaBell /> },
   { id: "apikeys", label: "API Keys", icon: <FaKey /> },
-  { id: "billing", label: "Billing", icon: <FaCreditCard /> },
   { id: "danger", label: "Danger Zone", icon: <FaExclamationTriangle /> },
 ];
 
-const glassCard =
-  "backdrop-blur-md bg-black/10 border border-white/20 shadow-lg rounded-2xl p-6 text-white";
+// ---------- Background FX ----------
+function BackgroundFX() {
+  const blobs = useMemo(
+    () => Array.from({ length: 6 }, () => ({
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      s: 40 + Math.random() * 40,
+      d: 8 + Math.random() * 10,
+    })),
+    []
+  );
 
-const inputStyle =
-  "w-full px-4 py-2 rounded-lg bg-black/10 border border-white/20 focus:outline-none focus:ring-2 focus:ring-cyan-400";
-
-const btnSecondary =
-  "px-4 py-2 rounded-lg text-white font-semibold transition cursor-pointer bg-gray-500 hover:bg-gray-600";
-
-const btnDanger =
-  "px-4 py-2 rounded-lg text-white font-semibold shadow-md transition cursor-pointer bg-red-500 hover:bg-red-600";
-
-const iconBtn =
-  "p-2 bg-white/10 hover:bg-white/20 rounded-lg transition flex items-center justify-center cursor-pointer";
-
-function BackgroundSquares() {
-  const squares = Array.from({ length: 20 });
   return (
     <>
+      {/* Floating blobs background */}
       <style>{`
-        @keyframes floatMove {
-          0% {
-            transform: translate(0, 0) rotate(0deg);
-            opacity: 0.4;
-          }
-          50% {
-            transform: translate(10px, -10px) rotate(180deg);
-            opacity: 0.7;
-          }
-          100% {
-            transform: translate(0, 0) rotate(360deg);
-            opacity: 0.4;
-          }
-        }
-        .background-square {
-          position: absolute;
-          background-color: rgba(194, 131, 31, 0.15);
-          width: 15px;
-          height: 15px;
-          border-radius: 3px;
-          animation-name: floatMove;
-          animation-timing-function: ease-in-out;
-          animation-iteration-count: infinite;
-          animation-direction: alternate;
-          filter: drop-shadow(0 0 1px rgba(194, 131, 31, 0.4));
-        }
-        .horizontal-line {
-          height: 1px;
-          background-color: #c2831f; /* GOLD */
-          width: 100%;
-          max-width: 1000px;
-          margin: 0 auto;
-          border-radius: 1px;
-        }
-      `}</style>
-      {squares.map((_, i) => {
-        const style = {
-          top: `${Math.random() * 100}%`,
-          left: `${Math.random() * 100}%`,
-          animationDuration: `${5 + Math.random() * 10}s`,
-          animationDelay: `${Math.random() * 10}s`,
-          width: 8 + Math.random() * 12 + "px",
-          height: 8 + Math.random() * 12 + "px",
-        };
-        return <div key={i} className="background-square" style={style} />;
-      })}
+    @keyframes floaty {
+      0% { transform: translate3d(0,0,0) scale(1); opacity: .6; }
+      50% { transform: translate3d(10px,-20px,0) scale(1.05); opacity: .9; }
+      100% { transform: translate3d(0,0,0) scale(1); opacity: .6; }
+    }
+    @keyframes moveSquares {
+      0% { background-position: 0 0, 0 0; }
+      100% { background-position: 40px 40px, 40px 40px; }
+    }
+  `}</style>
+
+      {/* Gradient layer */}
+      <div className="fixed inset-0 -z-20 bg-[radial-gradient(1200px_800px_at_-20%_-10%,rgba(245,158,11,0.25),transparent),radial-gradient(1000px_600px_at_120%_110%,rgba(253,224,71,0.25),transparent)]" />
+
+      {/* Floating blobs */}
+      {blobs.map((b, i) => (
+        <div
+          key={i}
+          className="pointer-events-none fixed -z-10 rounded-full blur-3xl"
+          style={{
+            top: `${b.y}%`,
+            left: `${b.x}%`,
+            width: `${b.s}vmin`,
+            height: `${b.s}vmin`,
+            background:
+              i % 2 === 0
+                ? "radial-gradient(circle at 30% 30%, rgba(245,158,11,.35), transparent 60%)"
+                : "radial-gradient(circle at 70% 70%, rgba(253,224,71,.35), transparent 60%)",
+            animation: `floaty ${b.d}s ease-in-out infinite alternate`,
+          }}
+        />
+      ))}
     </>
   );
 }
 
-function SectionNav({ sections, active, onSelect }) {
+// ---------- Section Tabs ----------
+function SectionTabs({ sections, active, onChange }) {
+  const listRef = useRef(null);
+  const idx = sections.findIndex((s) => s.id === active);
+
+  function onKeyDown(e) {
+    if (!listRef.current) return;
+    const last = sections.length - 1;
+    let nextIdx = idx;
+    if (e.key === "ArrowRight") nextIdx = Math.min(last, idx + 1);
+    if (e.key === "ArrowLeft") nextIdx = Math.max(0, idx - 1);
+    if (e.key === "Home") nextIdx = 0;
+    if (e.key === "End") nextIdx = last;
+    if (nextIdx !== idx) {
+      e.preventDefault();
+      onChange(sections[nextIdx].id);
+      const btn = listRef.current.querySelectorAll("button")[nextIdx];
+      btn?.focus();
+    }
+  }
+
   return (
-    <nav className="max-w-4xl mx-auto relative z-10 mb-10">
-      <div className="flex gap-4 items-center justify-center overflow-x-auto backdrop-blur-md border border-white/20 rounded-2xl p-3">
+    <nav aria-label="Settings sections" className="relative z-10 mt-20">
+      {/* Tab list */}
+      <div
+        role="tablist"
+        aria-orientation="horizontal"
+        ref={listRef}
+        onKeyDown={onKeyDown}
+        className="flex justify-center gap-2 overflow-x-auto px-4 sm:px-0 backdrop-blur-xl border border-white/10 rounded-2xl py-3"
+      >
         {sections.map(({ id, label, icon }) => (
           <button
             key={id}
-            onClick={() => onSelect(id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg whitespace-nowrap flex-shrink-0 transition-colors duration-200 cursor-pointer ${active === id
-              ? "bg-yellow-600 text-white shadow-lg"
-              : "text-white/80 hover:text-white"
-              }`}
-            style={{ minWidth: 100 }}
-            aria-current={active === id ? "page" : undefined}
+            role="tab"
+            aria-selected={active === id}
+            aria-controls={`panel-${id}`}
+            onClick={() => onChange(id)}
+            className={cls(
+              "flex items-center gap-2 px-3 py-2 rounded-xl whitespace-nowrap flex-shrink-0 transition-colors duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/30 relative overflow-hidden",
+              active === id
+                ? "text-white shadow-lg before:absolute before:inset-0 before:bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.15)_0px,rgba(255,255,255,0.15)_10px,transparent_10px,transparent_20px),repeating-linear-gradient(-45deg,rgba(255,255,255,0.15)_0px,rgba(255,255,255,0.15)_10px,transparent_10px,transparent_20px)] before:bg-[#c2831f] before:bg-[length:40px_40px] before:animate-[moveSquares_3s_linear_infinite] z-10"
+                : "text-white/80 hover:text-white"
+            )}
           >
-            {icon}
-            <span className="hidden sm:inline">{label}</span>
+            <span className="relative z-20">{icon}</span>
+            <span className="hidden sm:inline relative z-20">{label}</span>
           </button>
         ))}
       </div>
-      <div className="horizontal-line" />
+
+      {/* Divider */}
+      <div className="mt-3 h-px w-full bg-[#c2831f]" aria-hidden="true" />
+
+      {/* Tailwind animation keyframes */}
+      <style>
+        {`
+      @keyframes moveSquares {
+        0% { background-position: 0 0, 0 0; }
+        100% { background-position: 40px 40px, 40px 40px; }
+      }
+    `}
+      </style>
     </nav>
+
   );
 }
 
-
-function ApiKeyItem({ keyValue, onCopy, onDelete }) {
+// ---------- Reusable Components ----------
+function LabeledInput({ label, hint, className, ...props }) {
   return (
-    <li className="flex justify-between items-center  bg-white/10 p-2 rounded-lg relative z-10">
-      <span className="truncate ">{keyValue}</span>
-      <div className="flex gap-2">
-        <button
-          onClick={() => onCopy(keyValue)}
-          className={iconBtn}
-          title="Copy API Key"
-        >
-          <FaCopy />
-        </button>
-        <button
-          onClick={() => onDelete(keyValue)}
-          className={`${iconBtn} bg-yellow-600 hover:bg-yellow-700 text-white`}
-          title="Delete API Key"
-        >
-          <FaTrash />
-        </button>
-      </div>
-    </li>
+    <label className="block">
+      <span className="text-white/90 text-sm font-medium">{label}</span>
+      <input {...props} className={cls(TOKENS.input, "mt-1", className)} />
+      {hint && <span className="text-white/50 text-xs mt-1 block">{hint}</span>}
+    </label>
   );
 }
 
+function LabeledSelect({ label, children, className, ...props }) {
+  return (
+    <label className="block">
+      <span className="text-white/90 text-sm font-medium">{label}</span>
+      <select {...props} className={cls(TOKENS.input, "mt-1", className)}>
+        {children}
+      </select>
+    </label>
+  );
+}
 
-function BillingSection() {
-  const [email, setEmail] = useState("user@example.com");
-  const [cardNumber, setCardNumber] = useState("");
-  const [expiry, setExpiry] = useState("");
-  const [cvc, setCvc] = useState("");
-  const [nameOnCard, setNameOnCard] = useState("");
-  const [billingAddress, setBillingAddress] = useState("");
-  const [country, setCountry] = useState("United States");
-  const [agreeTerms, setAgreeTerms] = useState(false);
+// ---------- Sections ----------
+// function ProfileSection() {
+//   return (
+//     <div className={cls(TOKENS.card, "space-y-4")} id="panel-profile" role="tabpanel">
+//       <h2 className="text-2xl font-bold text-gold-400">Profile Settings</h2>
+//       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+//         <LabeledInput label="Full Name" placeholder="Ada Lovelace" />
+//         <LabeledInput label="Email Address" type="email" placeholder="ada@lovelace.dev" />
+//         <LabeledInput label="Username" placeholder="@ada" />
+//         <div className="flex flex-col">
+//           <span className="text-white/90 text-sm font-medium">Avatar</span>
+//           <input
+//             type="file"
+//             className={cls(
+//               TOKENS.input,
+//               "mt-1 file:mr-3 file:py-2 file:px-3 file:rounded-lg file:bg-white/10 file:text-white file:border-0 file:hover:bg-white/20"
+//             )}
+//           />
+//         </div>
+//       </div>
+//       <div className="flex flex-col sm:flex-row gap-3">
+//         <button className={TOKENS.btnPrimary}>Save</button>
+//         <button className={TOKENS.btnSecondary}>Cancel</button>
+//       </div>
+//     </div>
+//   );
+// }
 
-  const [paymentHistory, setPaymentHistory] = useState([]);
+// function SecuritySection() {
+//   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
+//   return (
+//     <div className={cls(TOKENS.card, "space-y-6")} id="panel-security" role="tabpanel">
+//       <h2 className="text-2xl font-bold text-[#c2831f]-400">Security</h2>
+//       <div className="space-y-4">
+//         <h3 className="text-lg font-semibold">Change Password</h3>
+//         <LabeledInput label="Current Password" type="password" placeholder="••••••••" />
+//         <LabeledInput label="New Password" type="password" placeholder="••••••••" />
+//         <LabeledInput label="Confirm New Password" type="password" placeholder="••••••••" />
+//         <button className={TOKENS.btnPrimary}>Update Password</button>
+//       </div>
 
-  // Track how long user stayed on page (seconds)
-  const [sessionSeconds, setSessionSeconds] = useState(0);
-  const timerRef = useRef(null);
+//     </div>
+//   );
+// }
 
-  // Start timer on mount
-  useEffect(() => {
-    timerRef.current = setInterval(() => {
-      setSessionSeconds((s) => s + 1);
-    }, 1000);
-    return () => clearInterval(timerRef.current);
-  }, []);
+function NotificationsSection() {
+  const [emailNotif, setEmailNotif] = useState(true);
+  const [smsNotif, setSmsNotif] = useState(false);
+  const [pushNotif, setPushNotif] = useState(true);
+  const [inAppNotif, setInAppNotif] = useState(false);
+  const [frequency, setFrequency] = useState("daily");
 
-  const formatDuration = (seconds) => {
-    const h = Math.floor(seconds / 3600)
-      .toString()
-      .padStart(2, "0");
-    const m = Math.floor((seconds % 3600) / 60)
-      .toString()
-      .padStart(2, "0");
-    const s = (seconds % 60).toString().padStart(2, "0");
-    return `${h}:${m}:${s}`;
-  };
+  const options = [
+    { value: "instant", label: "Instant" },
+    { value: "daily", label: "Daily" },
+    { value: "weekly", label: "Weekly" }
+  ];
 
-  // Calculate next payment date (+1 month)
-  const calcNextPaymentDate = (date) => {
-    const next = new Date(date);
-    next.setMonth(next.getMonth() + 1);
-    return next.toLocaleDateString();
-  };
+  const ToggleButton = ({ active, onChange }) => (
+    <button
+      type="button"
+      onClick={() => onChange(!active)}
+      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${active ? "bg-gray-500 border-gray-500" : "bg-gray-700 border-gray-500"
+        }`}
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (!agreeTerms) {
-      alert("Please agree to the terms.");
-      return;
-    }
-    const now = new Date();
-    const newPayment = {
-      id: now.getTime(),
-      email,
-      cardNumber: cardNumber.replace(/\s/g, ""),
-      expiry,
-      // cvc removed here for security
-      nameOnCard,
-      billingAddress,
-      country,
-      submittedAt: now.toLocaleString(),
-      nextPaymentDate: calcNextPaymentDate(now),
-      sessionDuration: formatDuration(sessionSeconds),
+    >
+      {active && (
+        <svg
+          className="w-4 h-4 text-white"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="3"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+        </svg>
+      )}
+    </button>
+  );
+
+  const handleSave = () => {
+    const preferences = {
+      email: emailNotif,
+      sms: smsNotif,
+      push: pushNotif,
+      inApp: inAppNotif,
+      frequency
     };
-    setPaymentHistory((prev) => [newPayment, ...prev]);
 
-    alert("Payment submitted!");
+    // Example: Save to API
+    console.log("Saving preferences:", preferences);
 
-    // Reset form fields except email
-    setCardNumber("");
-    setExpiry("");
-    setCvc(""); // clear local cvc but NOT saved
-    setNameOnCard("");
-    setBillingAddress("");
-    setCountry("United States");
-    setAgreeTerms(false);
-    setSessionSeconds(0); // reset timer
-  };
-
-  // CSV download function with masked CVC
-  const downloadCSV = () => {
-    if (paymentHistory.length === 0) {
-      alert("No history to download");
-      return;
-    }
-    const headers = [
-      "Email",
-      "Card Number",
-      "Expiry",
-      "CVC",
-      "Name On Card",
-      "Billing Address",
-      "Country",
-      "Submitted At",
-      "Next Payment Date",
-      "Session Duration",
-    ];
-
-    const rows = paymentHistory.map((p) => [
-      p.email,
-      p.cardNumber,
-      p.expiry,
-      "***", // Masked CVC for security
-      p.nameOnCard,
-      `"${p.billingAddress.replace(/"/g, '""')}"`,
-      p.country,
-      p.submittedAt,
-      p.nextPaymentDate,
-      p.sessionDuration,
-    ]);
-
-    const csvContent =
-      [headers, ...rows]
-        .map((e) => e.join(","))
-        .join("\n");
-
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", "payment_history.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    // Simulate save with alert
+    alert("Preferences saved successfully!");
   };
 
   return (
-    <div className={glassCard + " max-w-4xl mx-auto"}>
-      <h2 className="text-2xl font-bold mb-6 text-yellow-600">Billing Information</h2>
-      <p className="mb-4 text-white">
-        Time spent on page: <strong>{formatDuration(sessionSeconds)}</strong>
+    <div
+      className={`${TOKENS.card} space-y-6`}
+      id="panel-notifications"
+      role="tabpanel"
+    >
+      <h2 className="text-2xl font-bold text-[#c2831f]">Notifications</h2>
+
+      <div className="flex items-center gap-3">
+        <ToggleButton active={emailNotif} onChange={setEmailNotif} />
+        <span>Email Notifications</span>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <ToggleButton active={smsNotif} onChange={setSmsNotif} />
+        <span>SMS Notifications</span>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <ToggleButton active={pushNotif} onChange={setPushNotif} />
+        <span>Push Notifications</span>
+      </div>
+
+      <div className="flex items-center gap-3">
+        <ToggleButton active={inAppNotif} onChange={setInAppNotif} />
+        <span>In-App Notifications</span>
+      </div>
+
+      <Select
+        options={options}
+        value={options.find((o) => o.value === frequency)}
+        onChange={(opt) => setFrequency(opt.value)}
+        styles={{
+          control: (base) => ({
+            ...base,
+            backgroundColor: "rgba(255,255,255,0.05)",
+            borderColor: "rgba(255,255,255,0.1)",
+            color: "white"
+          }),
+          menu: (base) => ({
+            ...base,
+            backgroundColor: "black"
+          }),
+          option: (base, state) => ({
+            ...base,
+            backgroundColor: state.isFocused ? "#c2831f" : "black",
+            color: "white"
+          }),
+          singleValue: (base) => ({
+            ...base,
+            color: "white"
+          })
+        }}
+      />
+
+      <button className={TOKENS.btnPrimary} onClick={handleSave}>
+        Save Preferences
+      </button>
+    </div>
+  );
+}
+
+
+
+
+
+function ApiKeysSection() {
+  const [keys, setKeys] = useState([{ id: 1, name: "Default Key", value: "sk-1234abcd...", created: "2025-08-01" }]);
+  function generateKey() {
+    const newKey = {
+      id: Date.now(),
+      name: `Key ${keys.length + 1}`,
+      value: "sk-" + Math.random().toString(36).slice(2),
+      created: new Date().toISOString().slice(0, 10),
+    };
+    setKeys((prev) => [...prev, newKey]);
+  }
+  function revokeKey(id) {
+    setKeys((prev) => prev.filter((k) => k.id !== id));
+  }
+  return (
+    <div className={cls(TOKENS.card, "space-y-6")} id="panel-apikeys" role="tabpanel">
+      <h2 className="text-2xl font-bold text-[#c2831f]">API Keys</h2>
+
+      <div>
+        <button
+          onClick={generateKey}
+          className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-white font-medium shadow-sm transition cursor-pointer bg-[#c2831f] hover:bg-[#a66e19] focus-visible:ring-2 focus-visible:ring-[#c2831f]/70"
+        >
+
+          Generate New Key
+        </button>
+
+
+      </div>
+
+      <div className="space-y-3">
+        {keys.map((key) => (
+          <div
+            key={key.id}
+            className="flex flex-col sm:flex-row sm:items-center justify-between bg-white/5 rounded-xl p-3 border border-white/10"
+          >
+            <div>
+              <div className="font-semibold">{key.name}</div>
+              <div className="text-white/60 text-sm">{key.value}</div>
+              <div className="text-white/40 text-xs">Created: {key.created}</div>
+            </div>
+            <button
+              onClick={() => revokeKey(key.id)}
+              className={cls(TOKENS.btnDanger, "mt-2 sm:mt-0")}
+            >
+              Revoke
+            </button>
+          </div>
+        ))}
+      </div>
+    </div>
+
+  );
+}
+
+function DangerSection() {
+  const [confirming, setConfirming] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const handleDeleteClick = async () => {
+    if (!confirming) {
+      setConfirming(true);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = await fetch("/api/delete-account", {
+        method: "DELETE",
+        credentials: "include", // send cookies/session if needed
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to delete account");
+      }
+
+      alert("Account permanently deleted");
+      window.location.href = "/goodbye"; // redirect after deletion
+    } catch (err) {
+      console.error(err);
+      alert("Error deleting account. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      className={cls(
+        TOKENS.card,
+        "space-y-4 border border-amber-700/50"
+      )}
+      id="panel-danger"
+      role="tabpanel"
+    >
+      <h2 className="text-2xl font-bold text-[#c2831f]">Danger Zone</h2>
+      <p className="text-white/80">
+        Proceed with caution. These actions are irreversible.
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-6 text-white">
-        <div>
-          <label htmlFor="email" className="block mb-1 font-semibold">
-            Email Address
-          </label>
-          <input
-            type="email"
-            id="email"
-            className={inputStyle}
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-          />
-        </div>
-
-        <div>
-          <label htmlFor="cardNumber" className="block mb-1 font-semibold">
-            Card Number
-          </label>
-          <input
-            type="text"
-            id="cardNumber"
-            maxLength={19}
-            placeholder="1234 5678 9012 3456"
-            className={inputStyle}
-            value={cardNumber}
-            onChange={(e) => setCardNumber(e.target.value)}
-            required
-          />
-        </div>
-
-        <div className="flex gap-4">
-          <div className="flex-1">
-            <label htmlFor="expiry" className="block mb-1 font-semibold">
-              Expiry Date (MM/YY)
-            </label>
-            <input
-              type="text"
-              id="expiry"
-              maxLength={5}
-              placeholder="MM/YY"
-              className={inputStyle}
-              value={expiry}
-              onChange={(e) => setExpiry(e.target.value)}
-              required
-            />
-          </div>
-          <div className="w-24">
-            <label htmlFor="cvc" className="block mb-1 font-semibold">
-              CVC
-            </label>
-            <input
-              type="text"
-              id="cvc"
-              maxLength={4}
-              placeholder="123"
-              className={inputStyle}
-              value={cvc}
-              onChange={(e) => setCvc(e.target.value)}
-              required
-            />
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="nameOnCard" className="block mb-1 font-semibold">
-            Name on Card
-          </label>
-          <input
-            type="text"
-            id="nameOnCard"
-            className={inputStyle}
-            value={nameOnCard}
-            onChange={(e) => setNameOnCard(e.target.value)}
-            required
-          />
-        </div>
-
-        <div>
-          <label htmlFor="billingAddress" className="block mb-1 font-semibold">
-            Billing Address
-          </label>
-          <textarea
-            id="billingAddress"
-            rows={3}
-            className={inputStyle}
-            value={billingAddress}
-            onChange={(e) => setBillingAddress(e.target.value)}
-            required
-          />
-        </div>
-
-        <div>
-          <label htmlFor="country" className="block mb-1 font-semibold">
-            Country
-          </label>
-          <select
-            id="country"
-            className={inputStyle}
-            value={country}
-            onChange={(e) => setCountry(e.target.value)}
-          >
-            <option style={{ color: "black" }}>United States</option>
-            <option style={{ color: "black" }}>India</option>
-            <option style={{ color: "black" }}>United Kingdom</option>
-            <option style={{ color: "black" }}>Canada</option>
-            <option style={{ color: "black" }}>Australia</option>
-          </select>
-        </div>
-
-        <label className="flex items-center gap-3 cursor-pointer select-none">
-          <input
-            type="checkbox"
-            checked={agreeTerms}
-            onChange={(e) => setAgreeTerms(e.target.checked)}
-            className="mr-3"
-            required
-          />
-          I agree to the{" "}
-          <a href="/terms" target="_blank" className="underline">
-            Terms and Conditions
-          </a>
-        </label>
-        <button
-          type="submit"
-          disabled={!agreeTerms}
-          className={`w-full py-3 rounded-md font-semibold text-white transition ${agreeTerms
-            ? "bg-[#ffa007] hover:bg-[#f38e01]"
-            : "bg-[#d9a54c] cursor-not-allowed"
-            }`}
+      {confirming ? (
+        <div
+          className="flex flex-col sm:flex-row gap-2 animate-fadeIn"
         >
-          Submit Payment
-        </button>
-
-      </form>
-
-      {/* Payment History */}
-      {paymentHistory.length > 0 && (
-        <div className="mt-10 text-white">
-          <h3 className="text-xl font-semibold mb-4">Payment History</h3>
           <button
-            onClick={downloadCSV}
-            className="mb-4 px-4 py-2 bg-yellow-700 hover:bg-yellow-700 rounded-md"
+            className={TOKENS.btnDanger}
+            onClick={handleDeleteClick}
+            disabled={loading}
           >
-            Download History (CSV)
+            {loading ? "Deleting..." : "Yes, delete"}
           </button>
-          <div className="overflow-x-auto max-h-64">
-            <table className="min-w-full table-auto border-collapse border border-gray-600 text-sm">
-              <thead>
-                <tr>
-                  <th className="border border-gray-600 px-2 py-1">Email</th>
-                  <th className="border border-gray-600 px-2 py-1">Card Number</th>
-                  <th className="border border-gray-600 px-2 py-1">Expiry</th>
-                  <th className="border border-gray-600 px-2 py-1">CVC</th>
-                  <th className="border border-gray-600 px-2 py-1">Name on Card</th>
-                  <th className="border border-gray-600 px-2 py-1">Billing Address</th>
-                  <th className="border border-gray-600 px-2 py-1">Country</th>
-                  <th className="border border-gray-600 px-2 py-1">Submitted At</th>
-                  <th className="border border-gray-600 px-2 py-1">Next Payment Date</th>
-                  <th className="border border-gray-600 px-2 py-1">Session Duration</th>
-                </tr>
-              </thead>
-              <tbody>
-                {paymentHistory.map((p) => (
-                  <tr key={p.id} className="odd:bg-gray-800 even:bg-gray-700">
-                    <td className="border border-gray-600 px-2 py-1">{p.email}</td>
-                    <td className="border border-gray-600 px-2 py-1">{p.cardNumber}</td>
-                    <td className="border border-gray-600 px-2 py-1">{p.expiry}</td>
-                    <td className="border border-gray-600 px-2 py-1">***</td> {/* masked CVC */}
-                    <td className="border border-gray-600 px-2 py-1">{p.nameOnCard}</td>
-                    <td className="border border-gray-600 px-2 py-1">{p.billingAddress}</td>
-                    <td className="border border-gray-600 px-2 py-1">{p.country}</td>
-                    <td className="border border-gray-600 px-2 py-1">{p.submittedAt}</td>
-                    <td className="border border-gray-600 px-2 py-1">{p.nextPaymentDate}</td>
-                    <td className="border border-gray-600 px-2 py-1">{p.sessionDuration}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <button
+            className="px-4 py-2 rounded bg-gray-600 text-white hover:bg-gray-500"
+            onClick={() => setConfirming(false)}
+            disabled={loading}
+          >
+            Cancel
+          </button>
         </div>
+      ) : (
+        <button className={TOKENS.btnDanger} onClick={handleDeleteClick}>
+          Delete Account
+        </button>
       )}
     </div>
   );
 }
 
-export default function GlassSettings() {
+function Container({ children }) {
+  return (
+    <div className="min-h-screen bg-black text-white relative overflow-hidden">
+      <BackgroundFX />
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 relative z-10">
+        {children}
+      </div>
+      <footer className="py-10 text-center text-white/50 text-sm relative z-10">
+        © {new Date().getFullYear()} NeoGlass • Settings
+      </footer>
+    </div>
+  );
+}
+
+export default function SettingsPage() {
   const [active, setActive] = useState("profile");
-  const [apiKeys, setApiKeys] = useState(["abc123xyz", "def456uvw"]);
-
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [confirmText, setConfirmText] = useState("");
-  const [deleting, setDeleting] = useState(false);
-
-  useEffect(() => {
-    const onKey = (e) => {
-      if (e.key === "Escape") setShowDeleteModal(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  const addApiKey = () => {
-    const newKey = Math.random().toString(36).substring(2, 15);
-    setApiKeys((prev) => [...prev, newKey]);
-  };
-
-  const deleteApiKey = (key) => {
-    setApiKeys((prev) => prev.filter((k) => k !== key));
-  };
-
-  const copyApiKey = (key) => {
-    navigator.clipboard.writeText(key);
-    alert("API Key copied!");
-  };
-
-  const performDeleteAccount = async () => {
-    setDeleting(true);
-    await new Promise((res) => setTimeout(res, 1200));
-    setDeleting(false);
-    setShowDeleteModal(false);
-    setConfirmText("");
-    alert("Account deleted (simulation). Redirect or cleanup here.");
-  };
-
-  const renderSection = () => {
-    switch (active) {
-      case "profile":
-        return (
-          <div className={`${glassCard} space-y-4 relative z-20`}>
-            <h2 className="text-2xl font-bold text-yellow-600">Profile Settings</h2>
-            <input className={inputStyle} placeholder="Full Name" />
-            <input className={inputStyle} placeholder="Email Address" type="email" />
-            <input className={inputStyle} type="file" />
-            <div className="flex gap-3">
-              <button className="px-4 py-2 rounded-lg text-white font-semibold shadow-md transition cursor-pointer bg-yellow-600 hover:bg-yellow-700">
-                Save
-              </button>
-              <button className="px-4 py-2 rounded-lg text-white font-semibold transition cursor-pointer bg-yellow-700 hover:bg-yellow-800">
-                Cancel
-              </button>
-            </div>
-          </div>
-        );
-      case "security":
-        return (
-          <div className={`${glassCard} space-y-4 relative z-20`}>
-            <h2 className="text-2xl font-bold text-yellow-600">Security Settings</h2>
-            <input className={inputStyle} placeholder="Current Password" type="password" />
-            <input className={inputStyle} placeholder="New Password" type="password" />
-            <label className="flex items-center gap-2 cursor-pointer text-yellow-600">
-              <input type="checkbox" className="cursor-pointer" /> Enable Two-Factor Authentication
-            </label>
-            <button className="px-4 py-2 rounded-lg text-white font-semibold shadow-md transition cursor-pointer bg-yellow-600 hover:bg-yellow-700">
-              Update Password
-            </button>
-          </div>
-        );
-      case "notifications":
-        return (
-          <div className={`${glassCard} space-y-4 relative z-20`}>
-            <h2 className="text-2xl font-bold">Notifications</h2>
-            {["Email", "SMS", "Push"].map((type) => (
-              <label key={type} className="flex items-center gap-2 cursor-pointer">
-                <input type="checkbox" className="cursor-pointer" /> {type} Notifications
-              </label>
-            ))}
-            <button className="px-4 py-2 rounded-lg text-white font-semibold shadow-md transition cursor-pointer bg-yellow-600 hover:bg-yellow-700">
-              Save Preferences
-            </button>
-          </div>
-        );
-      case "apikeys":
-        return (
-          <div className={`${glassCard} space-y-4 relative z-20`}>
-            <h2 className="text-2xl font-bold">API Keys</h2>
-            <ul className="space-y-2">
-              {apiKeys.map((key) => (
-                <ApiKeyItem key={key} keyValue={key} onCopy={copyApiKey} onDelete={deleteApiKey} />
-              ))}
-            </ul>
-            <button
-              onClick={addApiKey}
-              className="px-4 py-2 rounded-lg text-white font-semibold shadow-md transition cursor-pointer bg-yellow-600 hover:bg-yellow-700 flex items-center gap-2"
-            >
-              <FaPlus /> Generate New Key
-            </button>
-          </div>
-        );
-      case "billing":
-        return <BillingSection />;
-      case "danger":
-        return (
-          <div className={`${glassCard} space-y-6 relative `}>
-            <h2 className="text-2xl font-bold text-red-600">Danger Zone</h2>
-            <p>Delete your account here. This action is irreversible.</p>
-            <button onClick={() => setShowDeleteModal(true)} className={btnDanger}>
-              Delete Account
-            </button>
-            {showDeleteModal && (
-              <div className="fixed inset-0 bg-black bg-opacity-10  items-center z-30 p-6">
-                <div className="bg-black/90 p-6 rounded-xl max-w-md w-full text-white space-y-6 relative">
-                  <button
-                    className="absolute top-2 right-2 text-white/70 hover:text-white text-2xl font-bold"
-                    onClick={() => setShowDeleteModal(false)}
-                    aria-label="Close modal"
-                  >
-                    ×
-                  </button>
-                  <p>
-                    <strong>Warning:</strong> This action is irreversible. To delete your
-                    account, type <code>DELETE MY ACCOUNT</code> below and confirm.
-                  </p>
-                  <input
-                    type="text"
-                    className={inputStyle}
-                    placeholder="DELETE MY ACCOUNT"
-                    value={confirmText}
-                    onChange={(e) => setConfirmText(e.target.value)}
-                    autoFocus
-                  />
-                  <button
-                    disabled={confirmText !== "DELETE MY ACCOUNT" || deleting}
-                    onClick={performDeleteAccount}
-                    className={`w-full px-4 py-2 rounded-lg font-semibold transition ${confirmText === "DELETE MY ACCOUNT" && !deleting
-                      ? "bg-red-600 hover:bg-red-700"
-                      : "bg-red-900 cursor-not-allowed"
-                      } text-white`}
-                  >
-                    {deleting ? "Deleting..." : "Confirm Delete"}
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <DashboardLayout>
-      <BackgroundSquares />
-      <main className="relative z-20 min-h-screen text-white px-4 py-8 max-w-6xl mx-auto ">
-        <SectionNav sections={sections} active={active} onSelect={setActive} />
-        {renderSection()}
-      </main>
+      <Container>
+        <SectionTabs sections={SECTIONS} active={active} onChange={setActive} />
+        <main className="relative z-10 mt-6 grid grid-cols-1 gap-6">
+          {/* {active === "profile" && <ProfileSection />}
+          {active === "security" && <SecuritySection />} */}
+          {active === "notifications" && <NotificationsSection />}
+          {active === "apikeys" && <ApiKeysSection />}
+          {active === "danger" && <DangerSection />}
+        </main>
+      </Container>
     </DashboardLayout>
   );
 }

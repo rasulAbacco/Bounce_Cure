@@ -27,6 +27,8 @@ import UserAuthentication from './pages/UserAuthentication/UserAuthentication';
 import Verification from './pages/Verification/Verification';
 import Analytics from './pages/Analytics/Analytics';
 import Support from './pages/Support/Support';
+import PricingDash from './pages/Pricing/PricingDash';
+import PaymentPage from './pages/Pricing/PaymentPage';
 
 
 function App() {
@@ -46,6 +48,7 @@ function App() {
         <Route path="/features" element={<Features />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/pricing" element={<Pricing />} />
+        <Route path="/payment" element={<PaymentPage />} />
         <Route path="/services/bulk-verification" element={<BulkVerification />} />
 
 
@@ -54,12 +57,13 @@ function App() {
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/contacts" element={<Contacts />} />
         <Route path="/analytics" element={<Analytics />} />
-        <Route path="/builder" element={<Campaign />} />
+        <Route path="/email-campaign" element={<Campaign />} />
         <Route path="/automation" element={<Automation />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/auth" element={<UserAuthentication />} />
         <Route path="/verification" element={<Verification />} />
         <Route path="/support" element={<Support />} />
+        <Route path='/pricingdash' element={<PricingDash/>}/>
 
       </Routes>
 
