@@ -5,19 +5,19 @@ import authRoutes from './routes/authRoutes.js';
 import verificationRoutes from './routes/verificationRoutes.js';
 import supportRoutes from './routes/supportRoutes.js';
 import bodyParser from 'body-parser';
+import settingsRoutes from './routes/settingsRoutes.js';
+import verifySettingsAuth from './middleware/settingsMiddleware.js';
 
 dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// ✅ Correct CORS setup
 app.use(cors({
   origin: process.env.BASE_URL,
   credentials: true
 }));
 
-// Middlewares
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 app.use(express.json());
@@ -25,11 +25,12 @@ app.use(express.json());
 // Routes
 app.use('/verification', verificationRoutes);
 app.use('/api/auth', authRoutes);
-
 app.use('/api/support', supportRoutes);
 app.use('/api/users', authRoutes);
 
-// Test route
+// ✅ Protected settings route
+app.use('/api/settings', verifySettingsAuth, settingsRoutes);
+
 app.get('/', (req, res) => {
   res.send('Backend is running...');
 });
