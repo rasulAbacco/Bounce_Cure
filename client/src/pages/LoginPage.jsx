@@ -16,49 +16,13 @@ const ModernLogin = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-<<<<<<< HEAD
-    //     e.preventDefault();
-    //     console.log("Login submitted:", formData);
-
-    //     try {
-    //         const res = await fetch(`http://localhost:5000/api/auth/login`, {
-    //             method: "POST",
-    //             headers: { "Content-Type": "application/json" },
-    //             body: JSON.stringify(formData)
-    //         });
-
-    //         const data = await res.json().catch(err => {
-    //             console.error("JSON parse error:", err);
-    //             return {};
-    //         });
-
-    //         console.log("Response data:", data);
-    //         console.log("Status code:", res.status);
-
-    //         if (res.status === 200) {
-    //             if (data.token) {
-    //                 localStorage.setItem("token", data.token); // only set if token exists
-    //             }
-    //             alert("Login successful!");
-    //             navigate("/dashboard");
-    //         } else {
-    //             alert(data.message || "Login failed");
-    //         }
-
-    //     } catch (err) {
-    //         console.error("Error:", err);
-    //         alert("Something went wrong!");
-    //     }
-    // };
-=======
    
->>>>>>> 34f2d398c992c090cbbf5fad808dbce009f180ac
     const handleSubmit = async (e) => {
         e.preventDefault();
         console.log("Login submitted:", formData);
 
         try {
-            const res = await fetch(`${API_URL}/login`, {
+            const res = await fetch(`${API_URL}/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)
