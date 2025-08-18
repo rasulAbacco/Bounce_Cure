@@ -11,7 +11,8 @@ const ActiveSessions = () => {
         const fetchSessions = async () => {
             try {
                 const res = await authService.getActiveSessions();
-                setSessions(res.data);
+                console.log('Active sessions response:', res.data);
+                setSessions(res.data.data);
             } catch (err) {
                 console.error("Failed to fetch sessions:", err);
                 setError("Failed to load active sessions.");
