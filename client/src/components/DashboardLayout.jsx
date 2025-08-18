@@ -6,7 +6,7 @@ import TopNavbar from './TopNavbar';
 const pageNameMap = {
     '/dashboard': 'Dashboard',
     '/contacts': 'Contact Management',
-    '/builder': 'Email Campaign',
+    '/email-campaign': 'Email Campaign',
     '/automation': 'Automation',
     '/analytics': 'Analytics',
     '/verification': 'Email Verification',
@@ -37,7 +37,7 @@ const DashboardLayout = ({ children }) => {
 
     return (
         <div className="min-h-screen bg-black text-white flex">
-            
+
             <Sidebar
                 isOpen={sidebarOpen}
                 toggleSidebar={toggleSidebar}
