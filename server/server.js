@@ -12,7 +12,6 @@ import bodyParser from "body-parser";
 // Load environment variables
 dotenv.config();
 
-
 /* Middlewares */
 app.use(cors());
 app.use(bodyParser.json());
@@ -39,6 +38,7 @@ app.get('/', (req, res) => {
 });
 
 app.use("/api/users", authRoutes);
+
 
 /* Start */
 app.listen(PORT, () => {
