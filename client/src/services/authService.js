@@ -1,158 +1,81 @@
 // src/services/authService.js
-import axios from "axios";
+import axios from 'axios';
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api/auth";
-const token = localStorage.getItem('token'); // get JWT from localStorage
+const API_URL = import.meta.env.VITE_API_URL;
 
-
+// Create a reusable Axios instance
 const API = axios.create({
-    baseURL: 'http://localhost:5000/api',
-    withCredentials: true, // optional if your backend uses cookies
+    baseURL: API_URL,
+    withCredentials: true, // Needed if your backend uses cookies/sessions
 });
 
-
-const config = {
-    headers: {
-        Authorization: `Bearer ${token}`,
-    },
-    withCredentials: true, // if backend uses cookies
-};
-
-
-
-// Helper to get token
+// Token injector helper
 const getAuthHeaders = () => {
     const token = localStorage.getItem("token");
-    return {
-        headers: {
-            Authorization: `Bearer ${token}`
-        },
-        withCredentials: true
-    };
+    return token
+        ? { headers: { Authorization: `Bearer ${token}` }, withCredentials: true }
+        : { withCredentials: true };
 };
 
 // ==================== Email Verification ====================
-const sendVerificationLink = async () => {
-    const token = localStorage.getItem('token'); // or sessionStorage or however you store it
+export const sendVerificationLink = () => API.post('/auth/send-verification-email', {}, getAuthHeaders());
 
-    return await API.post(
-        '/auth/send-verification-email', // correct endpoint
-        {},
-        {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        }
-    );
-};
-
-export const verifyEmail = async (tokenOrOtp) => {
-    const res = await axios.post(`${API_URL}/verify-email`, { code: tokenOrOtp }, getAuthHeaders());
-    return res.data;
-};
+export const verifyEmail = (tokenOrOtp) =>
+    API.post('/verify-email', { code: tokenOrOtp }, getAuthHeaders());
 
 // ==================== Password Management ====================
-export const changePassword = (oldPassword, newPassword) => {
-    const token = localStorage.getItem('token'); // JWT if you have auth
-    return axios.post(
-        `${API_URL}/change-password`,
-        { oldPassword, newPassword },
-        {
-            headers: {
-                Authorization: `Bearer ${token}`, // optional if backend requires auth
-            },
-        }
-    );
-};
+export const changePassword = (oldPassword, newPassword) =>
+    API.post('/auth/change-password', { oldPassword, newPassword }, getAuthHeaders());
 
-export const forgotPassword = async (email) => {
-    const res = await axios.post(`${API_URL}/forgot-password`, { email });
-    return res.data;
-};
+export const forgotPassword = (email) =>
+    API.post('/auth/forgot-password', { email });
 
-export const resetPassword = async (token, newPassword) => {
-    const res = await axios.post(`${API_URL}/reset-password`, { token, newPassword });
-    return res.data;
-};
+export const resetPassword = (token, newPassword) =>
+    API.post('/auth/reset-password', { token, newPassword });
 
 // ==================== Two Factor Auth ====================
+export const enable2FA = () => API.post('/auth/enable-2fa', {}, getAuthHeaders());
 
-export const enable2FA = async () => {
-    const token = localStorage.getItem('token');
-    const res = await axios.post(`${API_URL}/enable-2fa`, {}, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.data;
-};
+export const verify2FA = (otp) => API.post('/auth/verify-2fa', { otp }, getAuthHeaders());
 
-export const verify2FA = async (otp) => {
-    const token = localStorage.getItem('token');
-    const res = await axios.post(`${API_URL}/verify-2fa`, { otp }, {
-        headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.data;
-};
+export const verifyTwoFactor = (otp) => API.post('/auth/2fa/verify', { otp }, getAuthHeaders());
 
-
-export const verifyTwoFactor = async (otp) => {
-    const res = await axios.post(`${API_URL}/2fa/verify`, { otp }, getAuthHeaders());
-    return res.data;
-};
-
-export const disableTwoFactor = async () => {
-    const res = await axios.post(`${API_URL}/2fa/disable`, {}, getAuthHeaders());
-    return res.data;
-};
+export const disableTwoFactor = () => API.post('/auth/2fa/disable', {}, getAuthHeaders());
 
 // ==================== Security & Sessions ====================
 export const getSecurityLogs = async () => {
-    const res = await axios.get(`${API_URL}/security-logs`, getAuthHeaders());
+    const res = await API.get('/auth/security-logs', getAuthHeaders());
     if (!res.data.success) throw new Error("Failed to fetch logs");
     return res.data.data;
 };
 
+export const getActiveSessions = () => API.get('/auth/active-sessions', getAuthHeaders());
 
-export const getActiveSessions = async () => {
-    const res = await axios.get(`${API_URL}/active-sessions`, getAuthHeaders());
-    return res.data;
-};
+export const logoutSession = (sessionId) =>
+    API.post('/auth/sessions/logout', { sessionId }, getAuthHeaders());
 
-export const logoutSession = async (sessionId) => {
-    const res = await axios.post(`${API_URL}/sessions/logout`, { sessionId }, getAuthHeaders());
-    return res.data;
-};
+export const logoutAllSessions = () => API.post('/auth/sessions/logout-all', {}, getAuthHeaders());
 
-export const logoutAllSessions = async () => {
-    const res = await axios.post(`${API_URL}/sessions/logout-all`, {}, getAuthHeaders());
-    return res.data;
-};
-
-export const updateEmail = (email) => axios.put(`${API_URL}/update-email`, { email }, config);
+// ==================== Profile ====================
+export const updateEmail = (email) =>
+    API.put('/auth/update-email', { email }, getAuthHeaders());
 
 export const updateName = ({ firstName, lastName }) =>
-    axios.put(`${API_URL}/update-name`, { firstName, lastName }, config);
+    API.put('/auth/update-name', { firstName, lastName }, getAuthHeaders());
 
 export const uploadProfileImage = (file) => {
     const formData = new FormData();
     formData.append('profileImage', file);
-    return axios.put(`${API_URL}/upload-profile-image`, formData, {
-        ...config,
-        headers: { ...config.headers, 'Content-Type': 'multipart/form-data' },
+    return API.put('/auth/upload-profile-image', formData, {
+        ...getAuthHeaders(),
+        headers: {
+            ...getAuthHeaders().headers,
+            'Content-Type': 'multipart/form-data',
+        },
     });
 };
 
-export const getUser = () => {
-    const token = localStorage.getItem("token");
-
-    const config = {
-        headers: {
-            Authorization: `Bearer ${token}`,
-        },
-    };
-
-    return axios.get(`${API_URL}/users/me`, config);
-};
-
+export const getUser = () => API.get('/auth/users/me', getAuthHeaders());
 
 export default {
     sendVerificationLink,
