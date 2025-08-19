@@ -52,14 +52,13 @@ export default function ConatctManagement() {
 useEffect(() => {
   const fetchData = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/overview");
-      console.log("API response:", res.data); // 👈 debug log
+      const res = await axios.get("http://localhost:5000/dashboard/overview");
       setStats(res.data.stats || []);
       setClients(res.data.clients || []);
       setActivities(res.data.activities || []);
-      setHistory(res.data.history || []);
+      setHistory(res.data.history || []); // ✅ comes from Verification table
     } catch (err) {
-      console.error("Fake API load failed", err);
+      console.error("Error loading dashboard", err); // ✅ fixed
     }
   };
   fetchData();
