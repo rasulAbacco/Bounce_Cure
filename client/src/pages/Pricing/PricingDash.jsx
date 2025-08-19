@@ -4,7 +4,7 @@ import { User, Mail, Headphones, CircleDot, CircleCheckBig } from "lucide-react"
 import { useNavigate } from "react-router-dom";
 
 export default function PricingDash() {
-  const contactOptions = [500, 1000, 2500, 5000, 10000, 15000, 20000];
+  const contactOptions = [1000, 2500, 5000, 10000, 15000, 20000];
   
   // Separate states for promo and plan cards
   const [promoContacts, setPromoContacts] = useState(500);
