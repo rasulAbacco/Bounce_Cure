@@ -11,7 +11,7 @@ import verifySettingsAuth from './middleware/settingsMiddleware.js';
 
 import dashboardCRM from './routes/dashboardCRM.js';
 import phoneRoutes from './routes/phoneRoutes.js';
-import sendGridWebhookRoutes from "./routes/sendGridWebhookRoutes.js";
+ 
 
 dotenv.config();
 
@@ -41,14 +41,8 @@ app.use('/verification', verificationRoutes);
 
 app.use('/api/support', supportRoutes);
 
-app.use('/api/users', authRoutes);
-
-
 // ✅ Protected settings route
 app.use('/api/settings', verifySettingsAuth, settingsRoutes);
-
-
-app.use("/api", sendGridWebhookRoutes);
 
 app.get('/', (req, res) => {
   res.send('Backend is running...');
