@@ -4,11 +4,14 @@ import cors from 'cors';
 import authRoutes from './routes/authRoutes.js';
 import verificationRoutes from './routes/verificationRoutes.js';
 import supportRoutes from './routes/supportRoutes.js';
+import supportMiddleware from "./middleware/supportMiddleware.js";
+import pushRoutes from "./routes/pushRoutes.js";
 import bodyParser from 'body-parser';
 import settingsRoutes from './routes/settingsRoutes.js';
 import verifySettingsAuth from './middleware/settingsMiddleware.js';
 import dashboardCRM from './routes/dashboardCRM.js';
-
+import phoneRoutes from './routes/phoneRoutes.js';
+import notificationsRoutes from "./routes/notificationsRoutes.js"; // ✅ if file is inside server/routes
 
 dotenv.config();
 
@@ -24,7 +27,6 @@ app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
 
 // ✅ Middlewares
-
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -34,10 +36,15 @@ app.use('/dashboard', dashboardCRM);
 app.use('/api/auth', authRoutes);
 app.use('/verification', verificationRoutes);
 
-app.use('/api/support', supportRoutes);
+// ✅ Support routes with middleware
+app.use('/api/support', supportMiddleware, supportRoutes);
 
 // ✅ Protected settings route
 app.use('/api/settings', verifySettingsAuth, settingsRoutes);
+
+//push notifications
+app.use("/api/push", pushRoutes);
+app.use("/notifications", notificationsRoutes);
 
 app.get('/', (req, res) => {
   res.send('Backend is running...');
