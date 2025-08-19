@@ -8,23 +8,13 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
+  password  String
+  createdAt DateTime  @default(now())
   firstName String
   lastName  String
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
-
-  contents           Content[]
-  sessions           Session[]
-  loginLogs          LoginLog[]
-  verificationTokens EmailVerificationToken[]
-  otpCodes           OTPCode[]
-
-  twoFASecret  String?
-  is2FAEnabled Boolean @default(false)
-
-  profileImage Bytes? // <-- Add this
+  contents  Content[]
 }
 
 model Content {
@@ -35,65 +25,20 @@ model Content {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   createdBy    Int
-
-  // Relation to User
-  user User @relation(fields: [createdBy], references: [id])
-}
-
-model Session {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  device    String
-  ipAddress String
-  createdAt DateTime @default(now())
-}
-
-model LoginLog {
-  id        Int      @id @default(autoincrement())
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  device    String
-  ipAddress String
-  location  String?
-  createdAt DateTime @default(now())
-}
-
-model EmailVerificationToken {
-  id        Int      @id @default(autoincrement())
-  token     String
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  expiresAt DateTime
-}
-
-model OTPCode {
-  id        Int      @id @default(autoincrement())
-  code      String
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  expiresAt DateTime
+  user         User     @relation(fields: [createdBy], references: [id])
 }
 
 model Verification {
-  id        Int      @id @default(autoincrement())
-  email     String
-  status    String
-  checkedAt DateTime @default(now())
+  id             Int      @id @default(autoincrement())
+  email          String
+  status         String
+  checkedAt      DateTime @default(now())
+  syntax_valid   Boolean?
+  domain_valid   Boolean?
+  mailbox_exists Boolean?
+  catch_all      Boolean?
+  disposable     Boolean?
+  role_based     Boolean?
+  greylisted     Boolean?
+  score          Int?
 }
-
-model SupportMessage {
-  id        Int      @id @default(autoincrement())
-  name      String
-  message   String
-  createdAt DateTime @default(now())
-}
-
-model SupportTicket {
-  id          Int      @id @default(autoincrement())
-  subject     String
-  description String
-  status      String   @default("open")
-  createdAt   DateTime @default(now())
-}
-
