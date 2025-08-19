@@ -195,10 +195,8 @@ export default class AdvancedVerifier {
         
         response += data.toString();
         const lines = response.split("\r\n");
-
         for (const line of lines) {
           if (!line.trim()) continue;
-
           if (line.startsWith("421") || line.startsWith("451") || 
               line.includes("try again") || line.includes("temporary failure") ||
               line.includes("greylisted") || line.includes("rate limit")) {
