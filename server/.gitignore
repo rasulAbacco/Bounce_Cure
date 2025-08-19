@@ -23,6 +23,3 @@ dist-ssr
 *.sln
 *.sw?
 
-# Local env files
-.env
-.env.*    # covers .env.local, .env.development etc.
