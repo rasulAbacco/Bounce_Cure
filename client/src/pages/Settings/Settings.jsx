@@ -381,6 +381,8 @@ function ApiKeysSection() {
   );
 }
 
+
+
 function DangerSection() {
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -393,9 +395,16 @@ function DangerSection() {
 
     setLoading(true);
     try {
-      const res = await fetch("/api/delete-account", {
+      // ✅ get token from localStorage (where you saved it on login)
+      const token = localStorage.getItem("token");
+
+      const res = await fetch("http://localhost:5000/api/settings/delete-account", {
         method: "DELETE",
-        credentials: "include", // send cookies/session if needed
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`, // ✅ pass JWT
+        },
+        credentials: "include",
       });
 
       if (!res.ok) {
@@ -403,7 +412,8 @@ function DangerSection() {
       }
 
       alert("Account permanently deleted");
-      window.location.href = "/goodbye"; // redirect after deletion
+      localStorage.removeItem("token"); // ✅ clear token after deletion
+      window.location.href = "/";
     } catch (err) {
       console.error(err);
       alert("Error deleting account. Please try again.");
@@ -414,10 +424,7 @@ function DangerSection() {
 
   return (
     <div
-      className={cls(
-        TOKENS.card,
-        "space-y-4 border border-amber-700/50"
-      )}
+      className={cls(TOKENS.card, "space-y-4 border border-amber-700/50")}
       id="panel-danger"
       role="tabpanel"
     >
@@ -427,9 +434,7 @@ function DangerSection() {
       </p>
 
       {confirming ? (
-        <div
-          className="flex flex-col sm:flex-row gap-2 animate-fadeIn"
-        >
+        <div className="flex flex-col sm:flex-row gap-2 animate-fadeIn">
           <button
             className={TOKENS.btnDanger}
             onClick={handleDeleteClick}
@@ -453,6 +458,8 @@ function DangerSection() {
     </div>
   );
 }
+
+
 
 function Container({ children }) {
   return (
