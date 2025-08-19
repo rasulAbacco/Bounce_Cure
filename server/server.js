@@ -11,8 +11,7 @@ import verifySettingsAuth from './middleware/settingsMiddleware.js';
 
 import dashboardCRM from './routes/dashboardCRM.js';
 import phoneRoutes from './routes/phoneRoutes.js';
-import sendGridWebhookRoutes from "./routes/sendGridWebhookRoutes.js";
-
+ 
 
 dotenv.config();
 
