@@ -13,7 +13,6 @@ export const sendEmail = async ({ to, subject, text, html }) => {
       html: html || `<p>${text}</p>`, // ensure html always exists
     });
 
-    console.log("Email sent:", data);
     return data;
   } catch (error) {
     console.error("Error sending email:", error);
