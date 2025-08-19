@@ -412,7 +412,7 @@ const Campaign = () => {
                     onClick={() => setActiveTab(tab)}
                     className={`px-4 py-2 rounded-lg capitalize ${activeTab === tab
                       ? 'bg-[#c2831f] text-white'
-                      : 'text-gray-100 hover:bg-gray-100'
+                      : 'text-gray-100'
                       }`}
                   >
                     {tab}
@@ -430,7 +430,7 @@ const Campaign = () => {
                     className="pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:border-[#c2831f] focus:outline-none"
                   />
                 </div>
-                <button className="px-4 py-2 border border-gray-200 rounded-lg flex items-center space-x-2 hover:bg-gray-50">
+                <button className="px-4 py-2 border border-gray-200 rounded-lg flex items-center space-x-2 focus:border-[#c2831f] focus:outline-none">
                   <Filter size={20} />
                   <span>Filter</span>
                 </button>
