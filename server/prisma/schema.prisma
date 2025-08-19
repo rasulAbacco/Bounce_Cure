@@ -14,7 +14,26 @@ model User {
   createdAt DateTime  @default(now())
   firstName String
   lastName  String
+
+
   contents  Content[]
+  email     String   @unique
+  password  String
+  createdAt DateTime @default(now())
+
+  contents           Content[]
+  sessions           Session[]
+  loginLogs          LoginLog[]
+  verificationTokens EmailVerificationToken[]
+  otpCodes           OTPCode[]
+  apiKeys            ApiKey[]
+  notificationSetting NotificationSetting?
+
+  twoFASecret  String?
+  is2FAEnabled Boolean @default(false)
+
+  profileImage Bytes? // <-- Add this
+
 }
 
 model Content {
@@ -42,3 +61,49 @@ model Verification {
   greylisted     Boolean?
   score          Int?
 }
+
+model SupportMessage {
+  id        Int      @id @default(autoincrement())
+  name      String
+  message   String
+  createdAt DateTime @default(now())
+}
+
+model SupportTicket {
+  id          Int      @id @default(autoincrement())
+  subject     String
+  description String
+  status      String   @default("open")
+  createdAt   DateTime @default(now())
+}
+
+model NotificationSetting {
+  id        Int      @id @default(autoincrement())
+  userId    Int      @unique
+  user      User     @relation(fields: [userId], references: [id])
+
+  email     Boolean  @default(true)
+  sms       Boolean  @default(false)
+  push      Boolean  @default(true)
+  inApp     Boolean  @default(false)
+  frequency String   @default("daily")
+}
+
+model ApiKey {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  revoked   Boolean  @default(false)
+
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model DeletedAccount {
+  id        Int      @id @default(autoincrement())
+  userEmail String
+  reason    String?
+  deletedAt DateTime @default(now())
+}
+
