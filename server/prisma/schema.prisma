@@ -78,10 +78,19 @@ model OTPCode {
 }
 
 model Verification {
-  id        Int      @id @default(autoincrement())
-  email     String
-  status    String
-  checkedAt DateTime @default(now())
+  id             Int      @id @default(autoincrement())
+  email          String
+  status         String
+  checkedAt      DateTime @default(now())
+  syntax_valid   Boolean?
+  domain_valid   Boolean?
+  mailbox_exists Boolean?
+  catch_all      Boolean?
+  disposable     Boolean?
+  role_based     Boolean?
+  greylisted     Boolean?
+  score          Int?     // <--- must be present
+  bounced        Boolean? @default(false)  // <--- must be present
 }
 
 model SupportMessage {
