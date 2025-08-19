@@ -30,6 +30,7 @@ import Support from './pages/Support/Support';
 import PricingDash from './pages/Pricing/PricingDash';
 import PaymentPage from './pages/Pricing/PaymentPage';
 import { UserProvider } from "./components/UserContext"; // import context
+import PhoneValidation from './pages/PhoneValidation/PhoneValidation';
 
 
 function App() {
@@ -65,6 +66,7 @@ function App() {
           <Route path="/verification" element={<Verification />} />
           <Route path="/support" element={<Support />} />
           <Route path='/pricingdash' element={<PricingDash/>}/>
+          <Route path='/phoneValidation' element={<PhoneValidation/>}/>
 
         </Routes>
 

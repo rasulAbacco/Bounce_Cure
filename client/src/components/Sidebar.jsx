@@ -18,10 +18,12 @@ const Sidebar = ({ isOpen, toggleSidebar, pageName }) => {
         { id: 'settings', label: 'Settings', icon: Cog, path: '/settings' },
         { id: 'auth', label: 'User Authentication', icon: Shield, path: '/auth' },
         { id: 'support', label: 'Help & Support', icon: HelpCircle, path: '/support' },
+        { id: 'phone', label: 'Phone Number Validation', icon: HelpCircle, path: '/phoneValidation' },
     ];
 
     return (
-        <>
+        
+        <div>
             {isOpen && (
                 <div
                     className="fixed inset-0 bg-black/50 z-20 lg:hidden"
@@ -72,7 +74,7 @@ const Sidebar = ({ isOpen, toggleSidebar, pageName }) => {
                     </ul>
                 </nav>
 
-                <div className="absolute bottom-4 left-4 right-4">
+                <div className="absolute bottom-4 left-4 right-4 mt-10">
                     <div className="bg-black/30 backdrop-blur-md border border-white/30 rounded-lg text-white p-2 bg-gradient-to-r from-yellow-400 /20 via-yellow-300/10 to-yellow-400/20">
                         <div className="flex items-center space-x-3">
                             <div className="w-10 h-10 bg-gradient-to-r from-yellow-400 to-yellow-600 rounded-lg flex items-center justify-center shadow-[0_4px_10px_rgba(255,215,0,0.7)]">                                <Wrench className="w-5 h-5 text-white" />
@@ -84,8 +86,9 @@ const Sidebar = ({ isOpen, toggleSidebar, pageName }) => {
                         </div>
                     </div>
                 </div>
+
             </div>
-        </>
+        </div>
     );
 };
 
