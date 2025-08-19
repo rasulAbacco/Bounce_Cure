@@ -4,14 +4,11 @@ import cors from 'cors';
 import authRoutes from './routes/authRoutes.js';
 import verificationRoutes from './routes/verificationRoutes.js';
 import supportRoutes from './routes/supportRoutes.js';
-
 import bodyParser from 'body-parser';
 import settingsRoutes from './routes/settingsRoutes.js';
 import verifySettingsAuth from './middleware/settingsMiddleware.js';
-
 import dashboardCRM from './routes/dashboardCRM.js';
-import phoneRoutes from './routes/phoneRoutes.js';
- 
+
 
 dotenv.config();
 
@@ -30,11 +27,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-// app.use('/api/otp', phoneOtp);
 
 // ✅ Routes
 app.use('/dashboard', dashboardCRM);
-app.use('/api/phone', phoneRoutes);
  
 app.use('/api/auth', authRoutes);
 app.use('/verification', verificationRoutes);
