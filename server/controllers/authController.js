@@ -36,9 +36,9 @@ export const signup = async (req, res) => {
                 firstName: newUser.firstName,
                 lastName: newUser.lastName,
                 email: newUser.email,
-                name: `${user.firstName} ${user.lastName}`.trim(),
-                email: user.email,
-                profileImage: user.profileImage || null
+                name: `${newUser.firstName} ${newUser.lastName}`.trim(),
+                email: newUser.email,
+                profileImage: newUser.profileImage || null
 
             }
         });
