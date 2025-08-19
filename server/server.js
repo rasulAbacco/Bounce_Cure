@@ -12,6 +12,7 @@ import verifySettingsAuth from './middleware/settingsMiddleware.js';
 import dashboardCRM from './routes/dashboardCRM.js';
 import phoneRoutes from './routes/phoneRoutes.js';
 import notificationsRoutes from "./routes/notificationsRoutes.js"; // ✅ if file is inside server/routes
+
 dotenv.config();
 
 const app = express();
@@ -31,7 +32,6 @@ app.use(express.urlencoded({ extended: true }));
 
 // ✅ Routes
 app.use('/dashboard', dashboardCRM);
-app.use('/api/phone', phoneRoutes);
  
 app.use('/api/auth', authRoutes);
 app.use('/verification', verificationRoutes);
