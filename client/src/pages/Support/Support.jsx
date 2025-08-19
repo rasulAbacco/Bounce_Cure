@@ -72,17 +72,29 @@ export default function HelpAndSupport() {
     const handleTicketSubmit = async (e) => {
         e.preventDefault();
         console.log("Sending ticket:", ticketForm);
+
         try {
+            const formData = new FormData();
+            formData.append("subject", ticketForm.subject);
+            formData.append("description", ticketForm.description);
+
+            if (ticketForm.screenshots) {
+                ticketForm.screenshots.forEach((file) => {
+                    formData.append("screenshots", file);
+                });
+            }
+
             const res = await fetch("http://localhost:5000/api/support/ticket", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(ticketForm),
+                body: formData, // ✅ no headers needed, browser sets multipart automatically
             });
+
             const data = await res.json();
             console.log("Response:", data);
+
             if (res.ok) {
                 alert(data.message);
-                setTicketForm({ subject: "", description: "" });
+                setTicketForm({ subject: "", description: "", screenshots: [] });
             } else {
                 alert(data.error || "Failed to submit ticket.");
             }
@@ -91,6 +103,7 @@ export default function HelpAndSupport() {
             alert("Something went wrong. Please try again later.");
         }
     };
+
 
     // ----- Animated background squares (Tailwind only, no external CSS changes) -----
     const squares = useMemo(() => {
@@ -241,30 +254,67 @@ export default function HelpAndSupport() {
                         </div>
 
                         {/* Raise Ticket Form */}
+                        {/* Raise Ticket Form */}
                         <div className="support-card">
                             <div className="card-header">
                                 <FaTicketAlt className="card-icon" />
                                 <h3>Raise Ticket</h3>
                             </div>
                             <p>Technical issue or account trouble? Submit a ticket.</p>
+
                             <form className="card-form" onSubmit={handleTicketSubmit}>
                                 <input
                                     type="text"
                                     placeholder="Subject"
                                     value={ticketForm.subject}
-                                    onChange={(e) => setTicketForm({ ...ticketForm, subject: e.target.value })}
+                                    onChange={(e) =>
+                                        setTicketForm({ ...ticketForm, subject: e.target.value })
+                                    }
                                     required
                                 />
+
                                 <textarea
                                     placeholder="Describe your issue"
                                     rows="3"
                                     value={ticketForm.description}
-                                    onChange={(e) => setTicketForm({ ...ticketForm, description: e.target.value })}
+                                    onChange={(e) =>
+                                        setTicketForm({ ...ticketForm, description: e.target.value })
+                                    }
                                     required
                                 />
+
+                                {/* Screenshot Upload */}
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={(e) =>
+                                        setTicketForm({
+                                            ...ticketForm,
+                                            screenshots: Array.from(e.target.files),
+                                        })
+                                    }
+                                />
+
+                                {/* Preview Uploaded Screenshots */}
+                                {ticketForm.screenshots?.length > 0 && (
+                                    <div className="screenshot-preview">
+                                        {ticketForm.screenshots.map((file, idx) => (
+                                            <img
+                                                key={idx}
+                                                src={URL.createObjectURL(file)}
+                                                alt="screenshot preview"
+                                                className="h-24 w-24 object-cover rounded border border-gray-300 mr-2 mb-2"
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+
                                 <button type="submit">Submit Ticket</button>
                             </form>
                         </div>
+
+
 
                         {/* Phone & Chat Support */}
                         <div className="support-card">
