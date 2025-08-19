@@ -8,15 +8,9 @@ datasource db {
 }
 
 model User {
-  id        Int       @id @default(autoincrement())
-  email     String    @unique
-  password  String
-  createdAt DateTime  @default(now())
+  id        Int      @id @default(autoincrement())
   firstName String
   lastName  String
-
-
-  contents  Content[]
   email     String   @unique
   password  String
   createdAt DateTime @default(now())
@@ -33,7 +27,6 @@ model User {
   is2FAEnabled Boolean @default(false)
 
   profileImage Bytes? // <-- Add this
-
 }
 
 model Content {
@@ -44,7 +37,44 @@ model Content {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   createdBy    Int
-  user         User     @relation(fields: [createdBy], references: [id])
+
+  // Relation to User
+  user User @relation(fields: [createdBy], references: [id])
+}
+
+model Session {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  device    String
+  ipAddress String
+  createdAt DateTime @default(now())
+}
+
+model LoginLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  device    String
+  ipAddress String
+  location  String?
+  createdAt DateTime @default(now())
+}
+
+model EmailVerificationToken {
+  id        Int      @id @default(autoincrement())
+  token     String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+}
+
+model OTPCode {
+  id        Int      @id @default(autoincrement())
+  code      String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
 }
 
 model Verification {
@@ -59,7 +89,8 @@ model Verification {
   disposable     Boolean?
   role_based     Boolean?
   greylisted     Boolean?
-  score          Int?
+  score          Int?     // <--- must be present
+  bounced        Boolean? @default(false)  // <--- must be present
 }
 
 model SupportMessage {
@@ -106,4 +137,3 @@ model DeletedAccount {
   reason    String?
   deletedAt DateTime @default(now())
 }
-
