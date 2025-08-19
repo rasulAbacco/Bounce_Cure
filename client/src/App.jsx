@@ -33,6 +33,9 @@ import { UserProvider } from "./components/UserContext"; // import context
 import NewCampaignWindow from './pages/Campaign/Components/NewCampaignWindow';
 import CreateCampaign from './pages/Campaign/pages/CreateCampaign'
 import EditorPage from './pages/Campaign/pages/EditorPage'
+import PhoneValidation from './pages/PhoneValidation/PhoneValidation';
+
+
 
 function App() {
   return (
@@ -67,6 +70,9 @@ function App() {
           <Route path="/verification" element={<Verification />} />
           <Route path="/support" element={<Support />} />
           <Route path='/pricingdash' element={<PricingDash />} />
+          <Route path='/pricingdash' element={<PricingDash/>}/>
+          <Route path='/phoneValidation' element={<PhoneValidation/>}/>
+
 
           <Route path='/new-campaign' element={<NewCampaignWindow />} />
           <Route path="/create" element={<CreateCampaign />} />
