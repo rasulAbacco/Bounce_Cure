@@ -71,8 +71,7 @@ function App() {
           <Route path="/auth" element={<UserAuthentication />} />
           <Route path="/verification" element={<Verification />} />
           <Route path="/support" element={<Support />} />
-          <Route path='/pricingdash' element={<PricingDash />} />
-          <Route path='/pricingdash' element={<PricingDash/>}/>
+          <Route path='/pricingdash' element={<PricingDash/>} />
           <Route path='/phoneValidation' element={<PhoneValidation/>}/>
 
 
