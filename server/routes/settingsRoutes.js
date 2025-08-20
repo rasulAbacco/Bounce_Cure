@@ -149,19 +149,16 @@ router.delete("/apikeys/:id", async (req, res) => {
 //
 // ---------------- Danger Zone (Delete Account) ----------------
 //
-// ---------------- Danger Zone (Delete Account) ----------------
 router.delete("/delete-account", async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user) return res.status(404).json({ error: "User not found" });
 
     await prisma.$transaction(async tx => {
-      await tx.inAppNotification.deleteMany({ where: { userId: req.userId } }).catch(() => {}); // 👈 FIX
       await tx.apiKey.deleteMany({ where: { userId: req.userId } }).catch(() => {});
       await tx.notificationSetting.deleteMany({ where: { userId: req.userId } }).catch(() => {});
       await tx.session.deleteMany({ where: { userId: req.userId } }).catch(() => {});
       await tx.loginLog.deleteMany({ where: { userId: req.userId } }).catch(() => {});
-      await tx.oTPCode.deleteMany({ where: { userId: req.userId } })
       await tx.content.deleteMany({ where: { createdBy: req.userId } }).catch(() => {});
       await tx.deletedAccount.create({ data: { userEmail: user.email } });
       await tx.user.delete({ where: { id: req.userId } });
@@ -179,6 +176,5 @@ router.delete("/delete-account", async (req, res) => {
     res.status(500).json({ error: "Failed to delete account" });
   }
 });
-
 
 export default router;
