@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
+import { useNotificationContext } from "../../components/NotificationContext";
 import Select from "react-select";
 
 // Reusable rotating SVG wrapper (uses Tailwind's animate-spin and custom duration)
@@ -14,6 +15,7 @@ const RotatingSvg = ({ className = "", children, ...props }) => (
     {children}
   </svg>
 );
+
 
 const FaBell = (props) => (
   <svg
@@ -232,9 +234,10 @@ function LabeledSelect({ label, children, className, ...props }) {
 
 // ---------- Sections ----------
 function NotificationsSection() {
+  const { preferences, setPreferences } = useNotificationContext();
   const [emailNotif, setEmailNotif] = useState(true);
   const [smsNotif, setSmsNotif] = useState(false);
-  const [pushNotif, setPushNotif] = useState(true);
+  const [pushNotif, setPushNotif] = useState(false);
   const [inAppNotif, setInAppNotif] = useState(false);
   const [frequency, setFrequency] = useState("daily");
 
@@ -267,11 +270,12 @@ function NotificationsSection() {
   );
 
   const handleSave = () => {
-    const preferences = {
+    setPreferences({
       email: emailNotif,
       sms: smsNotif,
       push: pushNotif,
       inApp: inAppNotif,
+<<<<<<< HEAD
       frequency,
     };
 
@@ -285,6 +289,10 @@ function NotificationsSection() {
         color: "#fff",
       },
     });
+=======
+    });
+    alert("Preferences saved successfully!");
+>>>>>>> main
   };
 
   return (
