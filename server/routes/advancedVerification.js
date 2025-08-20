@@ -175,7 +175,7 @@ export default class AdvancedVerifier {
       mailbox.exists = false;
     }
   } else {
-    mailbox.exists = false; // ✅ ← This ensures fallback when no MX
+    mailbox.exists = false; //  ← This ensures fallback when no MX
   }
 
   const data = {
