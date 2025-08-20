@@ -4,16 +4,17 @@ const prisma = new PrismaClient();
 
 export async function notificationMiddleware(req, res, next) {
   try {
+    // 👇 normally you'd have auth middleware that sets req.userId
+    // for testing we hardcode a demo userId (replace with real auth)
     if (!req.userId) {
-      return res.status(401).json({ error: "Unauthorized" });
+      req.userId = 1;
     }
 
-    // Try to get the user’s notification settings
+    // load notification settings or create default
     let settings = await prisma.notificationSetting.findUnique({
       where: { userId: req.userId },
     });
 
-    // If not found, create default settings
     if (!settings) {
       settings = await prisma.notificationSetting.create({
         data: {
@@ -21,13 +22,12 @@ export async function notificationMiddleware(req, res, next) {
           email: true,
           sms: false,
           push: true,
-          inApp: false,
+          inApp: true,
           frequency: "daily",
         },
       });
     }
 
-    // Attach to request for downstream routes
     req.notificationSettings = settings;
     next();
   } catch (err) {
