@@ -22,12 +22,13 @@ model User {
   otpCodes            OTPCode[]
   apiKeys             ApiKey[]
   notificationSetting NotificationSetting?
+  passwordResetTokens PasswordResetToken[] // 👈 add this
 
   twoFASecret  String?
   is2FAEnabled Boolean @default(false)
 
   profileImage       Bytes?
-  inAppNotifications InAppNotification[] // ✅ kept this
+  inAppNotifications InAppNotification[]
 }
 
 model Content {
@@ -38,9 +39,7 @@ model Content {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   createdBy    Int
-
-  // Relation to User
-  user User @relation(fields: [createdBy], references: [id])
+  user         User     @relation(fields: [createdBy], references: [id])
 }
 
 model Session {
@@ -90,14 +89,14 @@ model SupportMessage {
   name      String
   message   String
   createdAt DateTime @default(now())
-  userId    Int? // nullable
-  userEmail String? // nullable
+  userId    Int?
+  userEmail String?
 }
 
 model SupportTicket {
   id          Int           @id @default(autoincrement())
-  userId      Int? // now optional
-  userEmail   String? // now optional
+  userId      Int?
+  userEmail   String?
   subject     String
   description String
   files       SupportFile[]
@@ -121,7 +120,7 @@ model NotificationSetting {
 
   email     Boolean @default(true)
   sms       Boolean @default(false)
-  frequency String  @default("daily") // instant, daily, weekly
+  frequency String  @default("daily")
 }
 
 model InAppNotification {
@@ -151,3 +150,13 @@ model DeletedAccount {
   reason    String?
   deletedAt DateTime @default(now())
 }
+
+model PasswordResetToken {
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+  expiresAt DateTime
+}
+
+

@@ -275,24 +275,8 @@ function NotificationsSection() {
       sms: smsNotif,
       push: pushNotif,
       inApp: inAppNotif,
-<<<<<<< HEAD
-      frequency,
-    };
-
-    console.log("Saving preferences:", preferences);
-
-    // ✅ Instead of alert
-    toast.success("Preferences saved successfully!", {
-      duration: 4000,
-      style: {
-        background: "#333",
-        color: "#fff",
-      },
-    });
-=======
     });
     alert("Preferences saved successfully!");
->>>>>>> main
   };
 
   return (
