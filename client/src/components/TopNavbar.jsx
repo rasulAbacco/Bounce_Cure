@@ -10,8 +10,10 @@ import {
 } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { UserContext } from "./UserContext";
+import { useNotificationContext } from "./NotificationContext";
 
 const TopNavbar = ({ toggleSidebar, pageName }) => {
+  const { preferences, allNotifications } = useNotificationContext();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
@@ -19,11 +21,9 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
   const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
 
-  const notifications = [
-    { id: 1, message: "New campaign completed", time: "2 min ago", unread: true },
-    { id: 2, message: "Contact import finished", time: "1 hour ago", unread: true },
-    { id: 3, message: "Weekly report ready", time: "3 hours ago", unread: false },
-  ];
+  
+// ✅ Filter notifications based on preferences
+  const notifications = allNotifications.filter((n) => preferences[n.type]);
 
   const handleLogout = () => {
     const confirmed = window.confirm("Are you sure you want to log out?");
@@ -77,12 +77,15 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
               className="relative text-white hover:bg-white/10 p-2 rounded-lg transition-colors"
             >
               <Bell className="w-5 h-5" />
-              {notifications.some((n) => n.unread) && (
-                <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full"></span>
+              {notifications.filter((n) => n.unread).length > 0 && (
+                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5">
+                  {/* {notifications.filter((n) => n.unread).length} */}
+                  {notifications.length}
+                </span>
               )}
             </button>
 
-            {showNotifications && (
+            {showNotifications && ( 
               <div className="absolute right-0 top-12 w-72 bg-gray-800/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-xl">
                 <div className="p-3 border-b border-white/10">
                   <h3 className="text-white font-semibold">Notifications</h3>

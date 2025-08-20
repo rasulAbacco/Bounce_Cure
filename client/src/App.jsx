@@ -34,12 +34,14 @@ import NewCampaignWindow from './pages/Campaign/Components/NewCampaignWindow';
 import CreateCampaign from './pages/Campaign/pages/CreateCampaign'
 import EditorPage from './pages/Campaign/pages/EditorPage'
 import PhoneValidation from './pages/PhoneValidation/PhoneValidation';
+import { NotificationProvider } from "./components/NotificationContext"; // ✅ add this
 
 
 
 function App() {
   return (
     <UserProvider>
+      <NotificationProvider>
       <Router>
 
         <Routes>
@@ -81,6 +83,7 @@ function App() {
 
         <Chatbot />
       </Router>
+      </NotificationProvider>
     </UserProvider>
 
   );
