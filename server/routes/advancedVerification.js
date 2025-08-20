@@ -2,7 +2,6 @@ import dns from "dns/promises";
 import disposableDomains from "./disposableDomains.js";
 import { SMTPClient } from "smtp-client";
 import crypto from "crypto";
-
 // Common role-based addresses
 const ROLE_BASED = [
   "info", "sales", "support", "admin", "contact", "billing", "help", "office",
@@ -22,6 +21,10 @@ export default class AdvancedVerifier {
     this.retryGreylist = retryGreylist;
     this.dnsCache = new Map();
   }
+
+  // all other methods here...
+
+
 
   validateSyntax(email) {
     const regex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/;
