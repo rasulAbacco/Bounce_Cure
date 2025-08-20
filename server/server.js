@@ -11,6 +11,8 @@ import settingsRoutes from './routes/settingsRoutes.js';
 import verifySettingsAuth from './middleware/settingsMiddleware.js';
 import dashboardCRM from './routes/dashboardCRM.js';
 import notificationsRoutes from "./routes/notificationsRoutes.js"; // ✅ if file is inside server/routes
+import forgotPasswordRoutes from "./routes/forgotPasswordRoute.js";
+import advancedVerificationRoute from "./routes/advancedVerification.js";
 
 dotenv.config();
 
@@ -31,9 +33,12 @@ app.use(express.urlencoded({ extended: true }));
 
 // ✅ Routes
 app.use('/dashboard', dashboardCRM);
- 
+
 app.use('/api/auth', authRoutes);
 app.use('/verification', verificationRoutes);
+
+app.use("/api", advancedVerificationRoute);
+app.use("/auth", forgotPasswordRoutes);
 
 // ✅ Support routes with middleware
 app.use('/api/support', supportMiddleware, supportRoutes);
@@ -41,7 +46,7 @@ app.use('/api/support', supportMiddleware, supportRoutes);
 // ✅ Protected settings route
 app.use('/api/settings', verifySettingsAuth, settingsRoutes);
 
-//push notifications
+// Push notifications
 app.use("/api/push", pushRoutes);
 app.use("/notifications", notificationsRoutes);
 
@@ -53,3 +58,4 @@ app.get('/', (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server started on port ${PORT}`);
 });
+
