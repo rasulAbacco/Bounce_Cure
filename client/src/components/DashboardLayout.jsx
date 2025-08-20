@@ -5,7 +5,7 @@ import TopNavbar from './TopNavbar';
 
 const pageNameMap = {
     '/dashboard': 'Dashboard',
-    '/contacts': 'Contact Management',
+    '/contacts': 'CRM ',
     '/email-campaign': 'Email Campaign',
     '/automation': 'Automation',
     '/analytics': 'Analytics',
@@ -13,6 +13,7 @@ const pageNameMap = {
     '/settings': 'Settings',
     '/auth': 'User Authentication',
     '/support': 'Help & Support',
+    '/pricingdash':'Pricing',
 };
 
 const DashboardLayout = ({ children }) => {
