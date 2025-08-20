@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import HomePage from './pages/HomePage';
-
 import FreeValidation from './pages/FreeValidation';
 import IntegrationPage from './pages/IntegrationPage';
 import SignupPage from './pages/SignupPage';
@@ -12,13 +11,9 @@ import Contact from './components/Contact';
 import About from './pages/About';
 import Features from './pages/Features';
 import BulkVerification from './pages/BulkVerification';
-
 import Chatbot from './pages/Chatbot';
-
 import Dashboard from './pages/Dashboard/Dashboard';
-
 import FaqSection from './pages/FAQSection';
-
 import Settings from './pages/Settings/Settings';
 import Contacts from './pages/ContactManagement/ConatctManagement';
 import Campaign from './pages/Campaign/Campaign';
@@ -29,12 +24,11 @@ import Analytics from './pages/Analytics/Analytics';
 import Support from './pages/Support/Support';
 import PricingDash from './pages/Pricing/PricingDash';
 import PaymentPage from './pages/Pricing/PaymentPage';
-import { UserProvider } from "./components/UserContext"; // import context
+import { UserProvider } from "./components/UserContext";
 import NewCampaignWindow from './pages/Campaign/Components/NewCampaignWindow';
-import CreateCampaign from './pages/Campaign/pages/CreateCampaign'
-import EditorPage from './pages/Campaign/pages/EditorPage'
+import CreateCampaign from './pages/Campaign/pages/CreateCampaign';
+import EditorPage from './pages/Campaign/pages/EditorPage';
 import PhoneValidation from './pages/PhoneValidation/PhoneValidation';
-
 import { Toaster } from 'react-hot-toast'; // ← add this
 
 function App() {
@@ -97,6 +91,7 @@ function App() {
 
         <Chatbot />
       </Router>
+
     </UserProvider>
   );
 }
