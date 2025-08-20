@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Shield, Calendar, MapPin, Monitor, Activity } from 'lucide-react';
 import authService from '../../services/authService';
+import toast from "react-hot-toast";
 
 const SecurityLogs = () => {
     const [logs, setLogs] = useState([]);
@@ -11,10 +12,16 @@ const SecurityLogs = () => {
         const fetchLogs = async () => {
             try {
                 const res = await authService.getSecurityLogs();
-                setLogs(res);
+
+                // ✅ Adjust if backend sends data wrapper
+                const logsData = res?.data?.data || res?.data || res;
+                setLogs(logsData);
+
+                toast.success("🔒 Security logs loaded")
             } catch (err) {
                 console.error("Failed to fetch security logs:", err);
                 setError("Unable to load security logs.");
+                toast.error("Failed to load security logs");
             } finally {
                 setLoading(false);
             }

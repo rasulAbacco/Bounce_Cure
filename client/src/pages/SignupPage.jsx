@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, User, CheckCircle, Shield, Zap, Globe, Clock, Phone } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { useNavigate } from "react-router-dom";
+import toast from "react-hot-toast";
 const ModernSignup = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
@@ -34,15 +35,16 @@ const ModernSignup = () => {
             // alert("Signup successful! Please check your email for verification.");
 
             if (res.status === 201) {
-                alert("Signup successful!");
+                toast.success("Signup successful! 🎉 Please check your email for verification.");
                 navigate("/login"); // Redirect to login
             } else {
-                alert(data.message || "Signup failed");
+                toast.error(data.message || "Signup failed ❌");
             }
 
 
         } catch (err) {
             console.error('Error submitting form:', err);
+            toast.error("Something went wrong!");
         }
     };
 

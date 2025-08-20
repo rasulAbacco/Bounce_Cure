@@ -4,7 +4,6 @@ import {
   getUserNotifications,
   markNotificationAsRead,
 } from "../services/notificationService.js";
-
 const router = express.Router();
 
 // POST /api/notifications/send

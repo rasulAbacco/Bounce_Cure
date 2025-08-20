@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { useNotificationContext } from "../../components/NotificationContext";
 import Select from "react-select";
+import { Toaster, toast } from "react-hot-toast";
 
 // Reusable rotating SVG wrapper (uses Tailwind's animate-spin and custom duration)
 const RotatingSvg = ({ className = "", children, ...props }) => (
@@ -18,28 +19,46 @@ const RotatingSvg = ({ className = "", children, ...props }) => (
 
 
 const FaBell = (props) => (
-  <RotatingSvg {...props}>
+  <svg
+    className="w-4 h-4"
+    fill="currentColor"
+    viewBox="0 0 20 20"
+    {...props}
+  >
     <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
-  </RotatingSvg>
+  </svg>
 );
+
 const FaKey = (props) => (
-  <RotatingSvg {...props}>
+  <svg
+    className="w-4 h-4"
+    fill="currentColor"
+    viewBox="0 0 20 20"
+    {...props}
+  >
     <path
       fillRule="evenodd"
       d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z"
       clipRule="evenodd"
     />
-  </RotatingSvg>
+  </svg>
 );
+
 const FaExclamationTriangle = (props) => (
-  <RotatingSvg {...props}>
+  <svg
+    className="w-4 h-4"
+    fill="currentColor"
+    viewBox="0 0 20 20"
+    {...props}
+  >
     <path
       fillRule="evenodd"
       d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
       clipRule="evenodd"
     />
-  </RotatingSvg>
+  </svg>
 );
+
 
 // ---------- Dark Theme Glassmorphism Design Tokens (Tailwind) ----------
 const TOKENS = {
@@ -49,7 +68,7 @@ const TOKENS = {
 
   btnPrimary: "px-4 py-2 rounded-xl text-white font-semibold shadow-md transition cursor-pointer bg-gradient-to-r from-[#c2831f] to-[#a66e19] hover:from-[#a66e19] hover:to-[#8f5c15] focus-visible:ring-2 focus-visible:ring-[#c2831f]/70",
 
-  btnSecondary: "px-4 py-2 rounded-xl text-white font-semibold transition cursor-pointer bg-white/10 hover:bg-white/20",
+  btnSecondary: "px-4 py-2 rounded-xl text-white font-semibold transition cursor-pointer bg-white/10 hover:bg_white/20",
 
   btnDanger: "px-4 py-2 rounded-xl text-white font-semibold shadow-md transition cursor-pointer bg-red-700/80 hover:bg-red-600/90 focus-visible:ring-2 focus-visible:ring-red-500/70",
 
@@ -75,12 +94,13 @@ const SECTIONS = [
 // ---------- Background FX ----------
 function BackgroundFX() {
   const blobs = useMemo(
-    () => Array.from({ length: 6 }, () => ({
-      x: Math.random() * 100,
-      y: Math.random() * 100,
-      s: 40 + Math.random() * 40,
-      d: 8 + Math.random() * 10,
-    })),
+    () =>
+      Array.from({ length: 6 }, () => ({
+        x: Math.random() * 100,
+        y: Math.random() * 100,
+        s: 40 + Math.random() * 40,
+        d: 8 + Math.random() * 10,
+      })),
     []
   );
 
@@ -188,7 +208,6 @@ function SectionTabs({ sections, active, onChange }) {
     `}
       </style>
     </nav>
-
   );
 }
 
@@ -226,7 +245,7 @@ function NotificationsSection() {
   const options = [
     { value: "instant", label: "Instant" },
     { value: "daily", label: "Daily" },
-    { value: "weekly", label: "Weekly" }
+    { value: "weekly", label: "Weekly" },
   ];
 
   const ToggleButton = ({ active, onChange }) => (
@@ -235,7 +254,6 @@ function NotificationsSection() {
       onClick={() => onChange(!active)}
       className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${active ? "bg-gray-500 border-gray-500" : "bg-gray-700 border-gray-500"
         }`}
-
     >
       {active && (
         <svg
@@ -257,16 +275,18 @@ function NotificationsSection() {
       sms: smsNotif,
       push: pushNotif,
       inApp: inAppNotif,
-    });
-    alert("Preferences saved successfully!");
+      frequency,
+    };
+
+    // Example: Save to API
+    console.log("Saving Preferences:", preferences);
+
+    // Toast instead of alert
+    toast.success("Preferences Saved Successfully!");
   };
 
   return (
-    <div
-      className={`${TOKENS.card} space-y-6`}
-      id="panel-notifications"
-      role="tabpanel"
-    >
+    <div className={`${TOKENS.card} space-y-6`} id="panel-notifications" role="tabpanel">
       <h2 className="text-2xl font-bold text-[#c2831f]">Notifications</h2>
 
       <div className="flex items-center gap-3">
@@ -298,21 +318,21 @@ function NotificationsSection() {
             ...base,
             backgroundColor: "rgba(255,255,255,0.05)",
             borderColor: "rgba(255,255,255,0.1)",
-            color: "white"
+            color: "white",
           }),
           menu: (base) => ({
             ...base,
-            backgroundColor: "black"
+            backgroundColor: "black",
           }),
           option: (base, state) => ({
             ...base,
             backgroundColor: state.isFocused ? "#c2831f" : "black",
-            color: "white"
+            color: "white",
           }),
           singleValue: (base) => ({
             ...base,
-            color: "white"
-          })
+            color: "white",
+          }),
         }}
       />
 
@@ -322,9 +342,10 @@ function NotificationsSection() {
     </div>
   );
 }
-
 function ApiKeysSection() {
-  const [keys, setKeys] = useState([{ id: 1, name: "Default Key", value: "sk-1234abcd...", created: "2025-08-01" }]);
+  const [keys, setKeys] = useState([
+    { id: 1, name: "Default Key", value: "sk-1234abcd...", created: "2025-08-01" },
+  ]);
   function generateKey() {
     const newKey = {
       id: Date.now(),
@@ -333,9 +354,11 @@ function ApiKeysSection() {
       created: new Date().toISOString().slice(0, 10),
     };
     setKeys((prev) => [...prev, newKey]);
+    toast.success("New API Key Generated");
   }
   function revokeKey(id) {
     setKeys((prev) => prev.filter((k) => k.id !== id));
+    toast("Key Revoked", { icon: "🗝️" });
   }
   return (
     <div className={cls(TOKENS.card, "space-y-6")} id="panel-apikeys" role="tabpanel">
@@ -346,11 +369,8 @@ function ApiKeysSection() {
           onClick={generateKey}
           className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-white font-medium shadow-sm transition cursor-pointer bg-[#c2831f] hover:bg-[#a66e19] focus-visible:ring-2 focus-visible:ring-[#c2831f]/70"
         >
-
           Generate New Key
         </button>
-
-
       </div>
 
       <div className="space-y-3">
@@ -374,11 +394,8 @@ function ApiKeysSection() {
         ))}
       </div>
     </div>
-
   );
 }
-
-
 
 function DangerSection() {
   const [confirming, setConfirming] = useState(false);
@@ -392,28 +409,44 @@ function DangerSection() {
 
     setLoading(true);
     try {
-      // ✅ get token from localStorage (where you saved it on login)
       const token = localStorage.getItem("token");
 
-      const res = await fetch("http://localhost:5000/api/settings/delete-account", {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`, // ✅ pass JWT
-        },
-        credentials: "include",
-      });
+      await toast.promise(
+        (async () => {
+          const res = await fetch("http://localhost:5000/api/settings/delete-account", {
+            method: "DELETE",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${token}`,
+            },
+            credentials: "include",
+          });
 
-      if (!res.ok) {
-        throw new Error("Failed to delete account");
-      }
+          if (!res.ok) {
+            // Try to read server message
+            let message = "Failed to Delete Account!";
+            try {
+              const data = await res.json();
+              message = data?.message || message;
+            } catch (_) { }
+            throw new Error(message);
+          }
 
-      alert("Account permanently deleted");
-      localStorage.removeItem("token"); // ✅ clear token after deletion
-      window.location.href = "/";
+          return res;
+        })(),
+        {
+          loading: "Deleting account...",
+          success: "Account permanently deleted",
+          error: (err) => err?.message || "Error deleting account. Please try again.",
+        }
+      );
+
+      localStorage.removeItem("token");
+      setTimeout(() => {
+        window.location.href = "/";
+      }, 800);
     } catch (err) {
       console.error(err);
-      alert("Error deleting account. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -426,17 +459,11 @@ function DangerSection() {
       role="tabpanel"
     >
       <h2 className="text-2xl font-bold text-[#c2831f]">Danger Zone</h2>
-      <p className="text-white/80">
-        Proceed with caution. These actions are irreversible.
-      </p>
+      <p className="text-white/80">Proceed with caution. These actions are irreversible.</p>
 
       {confirming ? (
         <div className="flex flex-col sm:flex-row gap-2 animate-fadeIn">
-          <button
-            className={TOKENS.btnDanger}
-            onClick={handleDeleteClick}
-            disabled={loading}
-          >
+          <button className={TOKENS.btnDanger} onClick={handleDeleteClick} disabled={loading}>
             {loading ? "Deleting..." : "Yes, delete"}
           </button>
           <button
@@ -456,15 +483,12 @@ function DangerSection() {
   );
 }
 
-
-
 function Container({ children }) {
   return (
     <div className="min-h-screen bg-black text-white relative overflow-hidden">
+
       <BackgroundFX />
-      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 relative z-10">
-        {children}
-      </div>
+      <div className="max-w-5xl mx-auto px-4 sm:px-6 py-8 relative z-10">{children}</div>
       <footer className="py-10 text-center text-white/50 text-sm relative z-10">
         © {new Date().getFullYear()} NeoGlass • Settings
       </footer>

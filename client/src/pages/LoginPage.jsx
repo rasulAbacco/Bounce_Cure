@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield, Zap, Users, CheckCircle } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { useNavigate } from "react-router-dom";
+import toast from 'react-hot-toast';
 const API_URL = import.meta.env.VITE_API_URL;
 
 const ModernLogin = () => {
@@ -16,7 +17,7 @@ const ModernLogin = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
-   
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         console.log("Login submitted:", formData);
@@ -51,19 +52,19 @@ const ModernLogin = () => {
                         localStorage.setItem("token", data.token); // ✅ Save token here
                     }
                 }
-
+                toast.success("Login successful 🎉");
                 console.log("Token saved, redirecting to dashboard...");
                 navigate("/dashboard");
                 window.location.reload();
             } else {
                 // Clear any old token to avoid using stale credentials
                 localStorage.removeItem("token");
-                alert(data.message || "Login failed");
+                toast.error(data.message || "Login failed");
             }
 
         } catch (err) {
             console.error("Error:", err);
-            alert("Something went wrong!");
+            toast.error("Something went wrong!");
         }
     };
 
