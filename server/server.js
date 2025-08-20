@@ -10,7 +10,10 @@ import bodyParser from 'body-parser';
 import settingsRoutes from './routes/settingsRoutes.js';
 import verifySettingsAuth from './middleware/settingsMiddleware.js';
 import dashboardCRM from './routes/dashboardCRM.js';
+<<<<<<< HEAD
 
+=======
+>>>>>>> aca678db40c045f2ecc650b2fe7ce4b35fb79469
 import notificationsRoutes from "./routes/notificationsRoutes.js"; // ✅ if file is inside server/routes
 
 dotenv.config();
