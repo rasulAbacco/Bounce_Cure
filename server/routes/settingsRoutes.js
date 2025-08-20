@@ -149,6 +149,7 @@ router.delete("/apikeys/:id", async (req, res) => {
 //
 // ---------------- Danger Zone (Delete Account) ----------------
 //
+// ---------------- Danger Zone (Delete Account) ----------------
 router.delete("/delete-account", async (req, res) => {
   try {
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
@@ -180,5 +181,6 @@ router.delete("/delete-account", async (req, res) => {
     res.status(500).json({ error: "Failed to delete account" });
   }
 });
+
 
 export default router;

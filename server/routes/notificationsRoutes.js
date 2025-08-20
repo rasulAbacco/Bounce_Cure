@@ -7,17 +7,14 @@ import {
 
 const router = express.Router();
 
-// POST /notifications/send
+// POST /api/notifications/send
 router.post("/send", async (req, res) => {
   try {
     const { userId, subject, message } = req.body;
-
     if (!userId || !subject || !message) {
       return res.status(400).json({ error: "Missing required fields" });
     }
-
     await sendNotification(userId, { subject, message });
-
     res.json({ success: true, message: "Notification sent" });
   } catch (error) {
     console.error("Error sending notification:", error);
@@ -25,11 +22,10 @@ router.post("/send", async (req, res) => {
   }
 });
 
-// GET /notifications/:userId
-router.get("/:userId", async (req, res) => {
+// GET /api/notifications
+router.get("/", async (req, res) => {
   try {
-    const { userId } = req.params;
-    const notifications = await getUserNotifications(Number(userId));
+    const notifications = await getUserNotifications(req.userId);
     res.json(notifications);
   } catch (error) {
     console.error("Error fetching notifications:", error);
@@ -37,7 +33,7 @@ router.get("/:userId", async (req, res) => {
   }
 });
 
-// PATCH /notifications/read/:id
+// PATCH /api/notifications/read/:id
 router.patch("/read/:id", async (req, res) => {
   try {
     const { id } = req.params;
