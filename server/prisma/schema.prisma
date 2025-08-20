@@ -15,18 +15,19 @@ model User {
   password  String
   createdAt DateTime @default(now())
 
-  contents           Content[]
-  sessions           Session[]
-  loginLogs          LoginLog[]
-  verificationTokens EmailVerificationToken[]
-  otpCodes           OTPCode[]
-  apiKeys            ApiKey[]
+  contents            Content[]
+  sessions            Session[]
+  loginLogs           LoginLog[]
+  verificationTokens  EmailVerificationToken[]
+  otpCodes            OTPCode[]
+  apiKeys             ApiKey[]
   notificationSetting NotificationSetting?
 
   twoFASecret  String?
   is2FAEnabled Boolean @default(false)
 
-  profileImage Bytes? // <-- Add this
+  profileImage       Bytes?
+  inAppNotifications InAppNotification[] // ✅ kept this
 }
 
 model Content {
@@ -78,19 +79,10 @@ model OTPCode {
 }
 
 model Verification {
-  id             Int      @id @default(autoincrement())
-  email          String
-  status         String
-  checkedAt      DateTime @default(now())
-  syntax_valid   Boolean?
-  domain_valid   Boolean?
-  mailbox_exists Boolean?
-  catch_all      Boolean?
-  disposable     Boolean?
-  role_based     Boolean?
-  greylisted     Boolean?
-  score          Int?     // <--- must be present
-  bounced        Boolean? @default(false)  // <--- must be present
+  id        Int      @id @default(autoincrement())
+  email     String
+  status    String
+  checkedAt DateTime @default(now())
 }
 
 model SupportMessage {
@@ -98,26 +90,48 @@ model SupportMessage {
   name      String
   message   String
   createdAt DateTime @default(now())
+  userId    Int? // nullable
+  userEmail String? // nullable
 }
 
 model SupportTicket {
-  id          Int      @id @default(autoincrement())
+  id          Int           @id @default(autoincrement())
+  userId      Int? // now optional
+  userEmail   String? // now optional
   subject     String
   description String
-  status      String   @default("open")
-  createdAt   DateTime @default(now())
+  files       SupportFile[]
+  createdAt   DateTime      @default(now())
+}
+
+model SupportFile {
+  id        Int           @id @default(autoincrement())
+  filename  String
+  mimetype  String
+  data      Bytes
+  createdAt DateTime      @default(now())
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id])
+  ticketId  Int
 }
 
 model NotificationSetting {
-  id        Int      @id @default(autoincrement())
-  userId    Int      @unique
-  user      User     @relation(fields: [userId], references: [id])
+  id     Int  @id @default(autoincrement())
+  userId Int  @unique
+  user   User @relation(fields: [userId], references: [id])
 
-  email     Boolean  @default(true)
-  sms       Boolean  @default(false)
-  push      Boolean  @default(true)
-  inApp     Boolean  @default(false)
-  frequency String   @default("daily")
+  email     Boolean @default(true)
+  sms       Boolean @default(false)
+  frequency String  @default("daily") // instant, daily, weekly
+}
+
+model InAppNotification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model ApiKey {
@@ -127,8 +141,8 @@ model ApiKey {
   createdAt DateTime @default(now())
   revoked   Boolean  @default(false)
 
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
 }
 
 model DeletedAccount {

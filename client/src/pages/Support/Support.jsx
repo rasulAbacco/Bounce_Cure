@@ -1,14 +1,30 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 import { FaEnvelope, FaTicketAlt, FaPhoneAlt, FaComments } from "react-icons/fa";
 import DashboardLayout from "../../components/DashboardLayout";
 import "../../styles/support.css";
-import { Pointer } from "lucide-react";
 
 export default function HelpAndSupport() {
     const [messageForm, setMessageForm] = useState({ name: "", message: "" });
-    const [ticketForm, setTicketForm] = useState({ subject: "", description: "" });
+    const [ticketForm, setTicketForm] = useState({
+        subject: "",
+        description: "",
+        userId: "",
+        userEmail: "",
+        screenshots: []
+    });
 
-    // Tracks which FAQ is open
+    // Load user info (id, email) from localStorage/session on mount
+    useEffect(() => {
+        const user = JSON.parse(localStorage.getItem("user")); // adjust if your app stores differently
+        if (user) {
+            setTicketForm((prev) => ({
+                ...prev,
+                userId: user.id || "",
+                userEmail: user.email || ""
+            }));
+        }
+    }, []);
+
     const [openIndex, setOpenIndex] = useState(null);
 
     const faqs = [
@@ -39,86 +55,108 @@ export default function HelpAndSupport() {
         {
             q: "What is your refund policy?",
             a: "For annual plans, we offer full refunds within 14 days of payment. Monthly plans are non-refundable."
-        },
+        }
     ];
 
     const toggleFAQ = (index) => {
         setOpenIndex(openIndex === index ? null : index);
     };
 
-    const handleMessageSubmit = async (e) => {
-        e.preventDefault();
-        console.log("Sending message:", messageForm);
-        try {
-            const res = await fetch("http://localhost:5000/api/support/message", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(messageForm),
-            });
-            const data = await res.json();
-            console.log("Response:", data);
-            if (res.ok) {
-                alert(data.message);
-                setMessageForm({ name: "", message: "" });
-            } else {
-                alert(data.error || "Failed to send message.");
-            }
-        } catch (err) {
-            console.error(err);
-            alert("Something went wrong. Please try again later.");
-        }
-    };
+const handleMessageSubmit = async (e) => {
+  e.preventDefault();
 
-    const handleTicketSubmit = async (e) => {
-        e.preventDefault();
-        console.log("Sending ticket:", ticketForm);
+  try {
+    const token = localStorage.getItem("token");
+    const user = JSON.parse(localStorage.getItem("user")); // 👈 load user (id, email)
 
-        try {
-            const formData = new FormData();
-            formData.append("subject", ticketForm.subject);
-            formData.append("description", ticketForm.description);
+    const res = await fetch("http://localhost:5000/api/support/message", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`, // 👈 send JWT
+      },
+      body: JSON.stringify({
+        name: messageForm.name,
+        message: messageForm.message,
+        userId: user?.id || "",       // 👈 include user id
+        userEmail: user?.email || "", // 👈 include user email
+      }),
+    });
 
-            if (ticketForm.screenshots) {
-                ticketForm.screenshots.forEach((file) => {
-                    formData.append("screenshots", file);
-                });
-            }
+    const data = await res.json();
 
-            const res = await fetch("http://localhost:5000/api/support/ticket", {
-                method: "POST",
-                body: formData, // ✅ no headers needed, browser sets multipart automatically
-            });
-
-            const data = await res.json();
-            console.log("Response:", data);
-
-            if (res.ok) {
-                alert(data.message);
-                setTicketForm({ subject: "", description: "", screenshots: [] });
-            } else {
-                alert(data.error || "Failed to submit ticket.");
-            }
-        } catch (err) {
-            console.error(err);
-            alert("Something went wrong. Please try again later.");
-        }
-    };
+    if (res.ok) {
+      alert(data.message);
+      setMessageForm({ name: "", message: "" });
+    } else {
+      alert(data.error || "Failed to send message.");
+    }
+  } catch (err) {
+    console.error("❌ handleMessageSubmit error:", err);
+    alert("Something went wrong. Please try again later.");
+  }
+};
 
 
-    // ----- Animated background squares (Tailwind only, no external CSS changes) -----
+   const handleTicketSubmit = async (e) => {
+  e.preventDefault();
+
+  const formData = new FormData();
+  formData.append("subject", ticketForm.subject);
+  formData.append("description", ticketForm.description);
+
+  // Files (screenshots)
+  if (ticketForm.screenshots && ticketForm.screenshots.length > 0) {
+    for (let i = 0; i < ticketForm.screenshots.length; i++) {
+      formData.append("files", ticketForm.screenshots[i]); 
+      // 👆 must match backend field: "files" OR "screenshots"
+    }
+  }
+
+  try {
+    const token = localStorage.getItem("token"); // 👈 where JWT is stored
+
+    const res = await fetch("http://localhost:5000/api/support/ticket", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`, // 👈 REQUIRED
+      },
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    if (res.ok) {
+      alert(data.message);
+      setTicketForm({
+        subject: "",
+        description: "",
+        screenshots: [],
+      });
+    } else {
+      alert(data.error || "Failed to submit ticket.");
+    }
+  } catch (err) {
+    console.error(err);
+    alert("Something went wrong. Please try again later.");
+  }
+};
+
+
+    // ----- Animated background -----
     const squares = useMemo(() => {
         return Array.from({ length: 12 }).map(() => ({
-            size: 16 + Math.floor(Math.random() * 40), // 16–56px
-            left: Math.random() * 100,                  // 0–100 vw
-            delay: Math.random() * 12,                  // 0–12s
-            dur: 14 + Math.random() * 16,               // 14–30s
-            start: -10 - Math.random() * 25             // -10 to -35 vh (below)
+            size: 16 + Math.floor(Math.random() * 40),
+            left: Math.random() * 100,
+            delay: Math.random() * 12,
+            dur: 14 + Math.random() * 16,
+            start: -10 - Math.random() * 25
         }));
     }, []);
 
     return (
         <DashboardLayout>
-            {/* Animated Background (no layout/logic changes) */}
+            {/* Animated Background */}
             <div
                 className="fixed inset-0 -z-10 overflow-hidden pointer-events-none"
                 aria-hidden="true"
@@ -133,12 +171,11 @@ export default function HelpAndSupport() {
                             left: `${sq.left}%`,
                             bottom: `${sq.start}vh`,
                             animation: `floatUp ${sq.dur}s linear infinite`,
-                            animationDelay: `${sq.delay}s`,
+                            animationDelay: `${sq.delay}s`
                         }}
                     />
                 ))}
 
-                {/* Keyframes live right here so no external CSS edits are needed */}
                 <style>{`
                   @keyframes floatUp {
                     0% { transform: translateY(0) rotate(0deg); opacity: 1; }
@@ -149,7 +186,6 @@ export default function HelpAndSupport() {
 
             <div className="help-support-container">
                 <div className="help-support-inner">
-
                     {/* FAQ Section */}
                     <div className="faq-section">
                         <h2>Help & Support</h2>
@@ -170,7 +206,7 @@ export default function HelpAndSupport() {
                                             border: "none",
                                             background: "transparent",
                                             textAlign: "left",
-                                            fontSize: "16px",
+                                            fontSize: "16px"
                                         }}
                                     >
                                         <span>{q}</span>
@@ -183,13 +219,12 @@ export default function HelpAndSupport() {
                                             opacity: openIndex === i ? 1 : 0,
                                             overflow: "hidden",
                                             transition: "all 0.3s ease",
-                                            padding: openIndex === i ? "10px 15px" : "0 15px",
+                                            padding: openIndex === i ? "10px 15px" : "0 15px"
                                         }}
                                     >
                                         <p>{a}</p>
                                     </div>
                                 </div>
-
                             ))}
                         </div>
                     </div>
@@ -208,12 +243,10 @@ export default function HelpAndSupport() {
                                 href="#"
                                 onClick={(e) => {
                                     e.preventDefault();
-
                                     const width = 600;
                                     const height = 400;
                                     const left = (window.screen.width / 2) - (width / 2);
                                     const top = (window.screen.height / 2) - (height / 2);
-
                                     window.open(
                                         "https://mail.google.com/mail/?view=cm&to=abacco83@gmail.com&su=Support%20Request",
                                         "gmailComposeWindow",
@@ -224,8 +257,6 @@ export default function HelpAndSupport() {
                                 Email Us
                             </a>
                         </div>
-
-
 
                         {/* Contact Support Form */}
                         <div className="support-card">
@@ -239,21 +270,24 @@ export default function HelpAndSupport() {
                                     type="text"
                                     placeholder="Your Name"
                                     value={messageForm.name}
-                                    onChange={(e) => setMessageForm({ ...messageForm, name: e.target.value })}
+                                    onChange={(e) =>
+                                        setMessageForm({ ...messageForm, name: e.target.value })
+                                    }
                                     required
                                 />
                                 <textarea
                                     placeholder="Your Message"
                                     rows="3"
                                     value={messageForm.message}
-                                    onChange={(e) => setMessageForm({ ...messageForm, message: e.target.value })}
+                                    onChange={(e) =>
+                                        setMessageForm({ ...messageForm, message: e.target.value })
+                                    }
                                     required
                                 />
                                 <button type="submit">Send Message</button>
                             </form>
                         </div>
 
-                        {/* Raise Ticket Form */}
                         {/* Raise Ticket Form */}
                         <div className="support-card">
                             <div className="card-header">
@@ -291,7 +325,7 @@ export default function HelpAndSupport() {
                                     onChange={(e) =>
                                         setTicketForm({
                                             ...ticketForm,
-                                            screenshots: Array.from(e.target.files),
+                                            screenshots: Array.from(e.target.files)
                                         })
                                     }
                                 />
@@ -314,8 +348,6 @@ export default function HelpAndSupport() {
                             </form>
                         </div>
 
-
-
                         {/* Phone & Chat Support */}
                         <div className="support-card">
                             <div className="card-header">
@@ -323,7 +355,8 @@ export default function HelpAndSupport() {
                                 <h3>Phone & Chat Support</h3>
                             </div>
                             <p>
-                                <strong>Phone:</strong> <a href="tel:+1234567890">+1 234 567 890</a>
+                                <strong>Phone:</strong>{" "}
+                                <a href="tel:+1234567890">+1 234 567 890</a>
                             </p>
                             <p>
                                 <strong>Live Chat:</strong> Available 9am - 9pm (Mon – Fri)
@@ -331,7 +364,8 @@ export default function HelpAndSupport() {
                             <button
                                 className="card-button"
                                 onClick={() => {
-                                    const url = "https://wa.me/1234567890?text=Hello,%20I%20need%20support";
+                                    const url =
+                                        "https://wa.me/1234567890?text=Hello,%20I%20need%20support";
                                     window.open(
                                         url,
                                         "WhatsAppBusinessChat",
@@ -342,7 +376,6 @@ export default function HelpAndSupport() {
                                 Start Chat
                             </button>
                         </div>
-
                     </div>
                 </div>
             </div>
