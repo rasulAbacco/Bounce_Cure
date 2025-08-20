@@ -30,10 +30,12 @@ import CreateCampaign from './pages/Campaign/pages/CreateCampaign';
 import EditorPage from './pages/Campaign/pages/EditorPage';
 import PhoneValidation from './pages/PhoneValidation/PhoneValidation';
 import { Toaster } from 'react-hot-toast'; // ← add this
+import { NotificationProvider } from "./components/NotificationContext"; 
 
 function App() {
   return (
     <UserProvider>
+    <NotificationProvider>
       <Router>
         {/* Global toaster available on all pages */}
         <Toaster
@@ -81,9 +83,8 @@ function App() {
           <Route path="/auth" element={<UserAuthentication />} />
           <Route path="/verification" element={<Verification />} />
           <Route path="/support" element={<Support />} />
+          <Route path='/phoneValidation' element={<PhoneValidation/>}/>
           <Route path='/pricingdash' element={<PricingDash />} />
-          <Route path='/pricingdash' element={<PricingDash />} />
-          <Route path='/phoneValidation' element={<PhoneValidation />} />
           <Route path='/new-campaign' element={<NewCampaignWindow />} />
           <Route path="/create" element={<CreateCampaign />} />
           <Route path="/editor/:id" element={<EditorPage />} />
@@ -91,7 +92,7 @@ function App() {
 
         <Chatbot />
       </Router>
-
+     </NotificationProvider>
     </UserProvider>
   );
 }
