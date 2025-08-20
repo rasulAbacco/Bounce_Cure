@@ -37,7 +37,7 @@ export default function PricingDash() {
     },
     {
       name: "Growth Plan",
-      price: 400.99,
+      price: 199.99,
       users: 10,
       emails: "50,000",
       support: "Premium Support",
