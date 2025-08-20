@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Lock, Eye, EyeOff, Key } from 'lucide-react';
 import authService from '../../services/authService';
+import toast from "react-hot-toast";
 
 const ChangePassword = () => {
     const [oldPassword, setOldPassword] = useState('');
@@ -11,21 +12,21 @@ const ChangePassword = () => {
 
     const handleSubmit = async () => {
         if (!oldPassword || !newPassword) {
-            alert("Please enter both current and new passwords.");
+            toast.error("⚠️ Please enter both current and new passwords.");
             return;
         }
 
         setIsLoading(true);
         try {
             await authService.changePassword(oldPassword, newPassword);
-            alert('Password changed successfully!');
+            toast.success("Password changed successfully!");
             setOldPassword('');
             setNewPassword('');
         } catch (error) {
             if (error.response) {
-                alert(error.response.data.message || 'Failed to change password');
+                toast.error(error.response.data.message || '❌ Failed to change password');
             } else {
-                alert('Network error');
+                toast.error('🌐 Network error');
             }
         } finally {
             setIsLoading(false);
