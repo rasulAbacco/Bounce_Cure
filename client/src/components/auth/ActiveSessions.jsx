@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import authService from '../../services/authService';
 import { Monitor, LogOut, MapPin } from 'lucide-react';
-
+import toast from "react-hot-toast";
 const ActiveSessions = () => {
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -16,6 +16,7 @@ const ActiveSessions = () => {
             } catch (err) {
                 console.error("Failed to fetch sessions:", err);
                 setError("Failed to load active sessions.");
+                toast.error("Failed to load active sessions ❌");
             } finally {
                 setLoading(false);
             }
@@ -28,9 +29,10 @@ const ActiveSessions = () => {
         try {
             await authService.logoutSession(id);
             setSessions(prev => prev.filter(s => s.id !== id));
+            toast.success("Session logged out ✅");
         } catch (err) {
             console.error("Failed to logout session:", err);
-            alert("Could not log out session. Please try again.");
+            toast.error("Could not log out session. Please try again ❌");
         }
     };
 

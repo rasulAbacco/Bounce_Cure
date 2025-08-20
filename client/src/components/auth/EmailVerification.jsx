@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { MailCheck, MailWarning, Mail, Send, CheckCircle, AlertTriangle } from 'lucide-react';
 import authService from '../../services/authService';
-
+import toast from "react-hot-toast";
 const EmailVerification = () => {
     const [status, setStatus] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -10,9 +10,9 @@ const EmailVerification = () => {
         setLoading(true);
         try {
             await authService.sendVerificationLink();
-            alert('Verification email sent!');
+            toast.success("Verification email sent!");
         } catch (error) {
-            alert('Failed to send verification email. Please try again.');
+            toast.error('Failed to send verification email. Please try again.');
         } finally {
             setLoading(false);
         }

@@ -7,6 +7,7 @@ import {
 } from "../services/authService.js";
 import { User, Mail, Camera, Upload, Edit3, Check } from "lucide-react";
 import { UserContext } from "./UserContext"; // 👈 import context
+import toast from "react-hot-toast";
 
 const API_URL = import.meta.env.VITE_API_URL;
 
@@ -44,8 +45,10 @@ const UserProfile = () => {
         }
 
         console.log("User data fetched:", data);
+        toast.success("User Data Fetched")
       } catch (err) {
         console.log("Error fetching user:", err.response?.data || err.message);
+        toast.error("Error Fetching User")
       }
     };
     fetchUser();
@@ -59,9 +62,10 @@ const UserProfile = () => {
         ...prev,
         email: data.email,
       }));
-      alert("Email updated!");
+      toast.success("Email updated!");
     } catch (err) {
       console.log("Email update error:", err.response?.data || err.message);
+      toast.error("Email Update Error!")
     } finally {
       setLoadingEmail(false);
     }
@@ -80,9 +84,10 @@ const UserProfile = () => {
       }));
 
       setName(`${data.firstName} ${data.lastName}`);
-      alert("Name updated!");
+      toast.success("Name Updated!");
     } catch (err) {
       console.log("Name update error:", err.response?.data || err.message);
+      toast.error("Name Update Error")
     } finally {
       setLoadingName(false);
     }
@@ -108,9 +113,10 @@ const UserProfile = () => {
         profileImage: imageUrl,
       }));
 
-      alert("Profile image uploaded!");
+      toast.success("Profile Image Uploaded!");
     } catch (err) {
       console.log("Upload error:", err.response?.data || err.message);
+      toast.error("Image Upload Error")
     } finally {
       setLoadingUpload(false);
     }

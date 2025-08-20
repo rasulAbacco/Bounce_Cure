@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ShieldCheck, QrCode, Smartphone, Key, CheckCircle } from 'lucide-react';
 import authService from '../../services/authService';
-
+import toast from 'react-hot-toast';
 const TwoFactorAuth = () => {
     const [enabled, setEnabled] = useState(false);
     const [qrCode, setQrCode] = useState('');
@@ -14,11 +14,11 @@ const TwoFactorAuth = () => {
         try {
             const res = await authService.enable2FA();
             setQrCode(res.qrCodeDataURL);
-            alert("OTP has been sent to your registered email address. Please check your inbox.");
+            toast.success("OTP has been sent to your registered email address. Please check your inbox.");
             setEnabled(true);
         } catch (err) {
             console.error(err);
-            alert('Failed to enable 2FA');
+            toast.error('Failed to enable 2FA');
         } finally {
             setLoading(false);
         }
@@ -27,20 +27,20 @@ const TwoFactorAuth = () => {
     // Verify OTP entered by user
     const handleVerify = async () => {
         if (!otp) {
-            alert('Please enter the OTP');
+            toast.error('Please enter the OTP');
             return;
         }
 
         setLoading(true);
         try {
             await authService.verify2FA(otp);
-            alert('2FA Enabled Successfully!');
+            toast.success('2FA Enabled Successfully!');
             setOtp('');
             setQrCode('');
             setEnabled(false);
         } catch (err) {
             console.error(err);
-            alert('Invalid OTP');
+            toast.error('Invalid OTP');
         } finally {
             setLoading(false);
         }
