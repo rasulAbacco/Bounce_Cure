@@ -13,7 +13,7 @@ import dashboardCRM from './routes/dashboardCRM.js';
 import notificationsRoutes from "./routes/notificationsRoutes.js"; // ✅ if file is inside server/routes
 import forgotPasswordRoutes from "./routes/forgotPasswordRoute.js";
 import advancedVerificationRoute from "./routes/advancedVerification.js";
-
+import passwordRoutes from "./routes/passwordRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -30,6 +30,10 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // ✅ Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+
+// Mount routes
+app.use("/api/auth", passwordRoutes);
 
 // ✅ Routes
 app.use('/dashboard', dashboardCRM);
