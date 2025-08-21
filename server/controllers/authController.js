@@ -159,9 +159,21 @@ export const sendVerificationEmail = async (req, res) => {
     const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "15m" });
     const link = `${process.env.BASE_URL}/verify-email?token=${token}`;
 
-    await sendEmail(email, "Verify your email", `<a href="${link}">Verify Email</a>`);
-    res.json({ message: "Verification email sent" });
+    try {
+        await sendEmail({
+            to: email,
+            subject: "Verify your email",
+            text: `Click this link to verify: ${link}`,
+            html: `<a href="${link}">Verify Email</a>`
+        });
+
+        res.json({ message: "Verification email sent" });
+    } catch (error) {
+        console.error("Email sending failed:", error);
+        res.status(500).json({ message: "Failed to send verification email" });
+    }
 };
+
 
 // Verify email
 export const verifyEmail = async (req, res) => {
@@ -178,24 +190,7 @@ export const verifyEmail = async (req, res) => {
     }
 };
 
-// Send OTP
-export const sendOTP = async (user) => {
-    const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // Store OTP with expiry (preferable with a separate OTP model)
-    await prisma.oTPCode.create({
-        data: {
-            code: otp,
-            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
-            userId: user.id,
-        },
-    });
-
-    await sendEmail(user.email, "Your OTP Code", `Your OTP is: ${otp}`);
-
-
-    return otp;
-};
 
 
 // Change password
@@ -249,6 +244,31 @@ export const enable2FA = async (req, res) => {
         console.error('Enable 2FA error:', error);
         res.status(500).json({ error: 'Server error' });
     }
+};
+
+// Send OTP
+export const sendOTP = async (user) => {
+    const otp = Math.floor(100000 + Math.random() * 900000).toString();
+
+    // Store OTP with expiry (preferable with a separate OTP model)
+    await prisma.oTPCode.create({
+        data: {
+            code: otp,
+            expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
+            userId: user.id,
+        },
+    });
+
+    await sendEmail({
+        to: user.email,
+        subject: "Your OTP Code",
+        text: `Your OTP is: ${otp}`,
+        html: `<p>Your OTP is: <strong>${otp}</strong></p>`,
+    });
+
+
+
+    return otp;
 };
 
 export const verify2FA = async (req, res) => {
@@ -314,7 +334,6 @@ export const getActiveSessions = async (req, res) => {
         const sessions = await prisma.session.findMany({
             where: { userId: req.user.id },
             orderBy: { createdAt: "desc" },
-            take: 5,  // <-- limits to 4 rows
         });
 
         res.status(200).json({ success: true, data: sessions });
@@ -323,6 +342,46 @@ export const getActiveSessions = async (req, res) => {
         res.status(500).json({ success: false, message: "Internal server error" });
     }
 };
+
+export const createSession = async (req, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+
+        const { device, ipAddress } = req.body;
+
+        // fetch all sessions of this user
+        const existingSessions = await prisma.session.findMany({
+            where: { userId: req.user.id },
+            orderBy: { createdAt: "asc" }, // oldest first
+        });
+
+        if (existingSessions.length >= 3) {
+            // delete the oldest one
+            await prisma.session.delete({
+                where: { id: existingSessions[0].id },
+            });
+        }
+
+        // create new session
+        const newSession = await prisma.session.create({
+            data: {
+                userId: req.user.id,
+                device: device || "Unknown Device",
+                ipAddress: ipAddress || "N/A",
+            },
+        });
+
+        res.status(201).json({ success: true, data: newSession });
+    } catch (err) {
+        console.error("Error creating session:", err);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
+
+
+
+
 
 
 export const verifyAuth = (req, res, next) => {
