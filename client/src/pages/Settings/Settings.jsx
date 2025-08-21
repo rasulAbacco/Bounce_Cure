@@ -219,6 +219,7 @@ function NotificationsSection() {
       inApp: inAppNotif,
       frequency,
     });
+
     // Example: Save to API
     console.log("Saving Preferences:", preferences);
 
