@@ -21,38 +21,70 @@ const UserProfile = () => {
   const [loadingName, setLoadingName] = useState(false);
   const [loadingUpload, setLoadingUpload] = useState(false);
 
+  // useEffect(() => {
+  //   const fetchUser = async () => {
+  //     try {
+  //       const { data } = await getUser();
+
+  //       // const imageUrl = data.profileImage
+  //       //   ? `${API_URL}/auth/profile-image/${data.id}?ts=${Date.now()}`
+  //       //   : "";
+
+  //       setUser({
+  //         name: `${data.firstName} ${data.lastName}`,
+  //         email: data.email,
+  //         profileImage: data.profileImage,
+  //       });
+
+  //       setName(`${data.firstName} ${data.lastName}`);
+  //       setEmail(data.email);
+
+  //       setPreview(data.profileImage);
+
+  //       console.log("User data fetched:", data);
+  //       toast.success("User Data Fetched");
+  //     } catch (err) {
+  //       console.log("Error fetching user:", err.response?.data || err.message);
+  //       toast.error("Error Fetching User");
+  //     }
+  //   };
+
+  //   fetchUser();
+  // }, [setUser]);
+
+
   useEffect(() => {
     const fetchUser = async () => {
       try {
         const { data } = await getUser();
+
+        const imageSrc = data.profileImage
+          ? data.profileImage.startsWith("data:image")
+            ? data.profileImage // ✅ base64 from backend
+            : `${API_URL}/auth/profile-image/${data.id}?ts=${Date.now()}` // ✅ normal URL
+          : "";
+
         setUser({
           name: `${data.firstName} ${data.lastName}`,
           email: data.email,
-          profileImage: data.profileImage
-            ? `http://localhost:5000/api/auth/profile-image/${data.id}?ts=${Date.now()}`
-            : "",
+          profileImage: imageSrc,
         });
 
         setName(`${data.firstName} ${data.lastName}`);
         setEmail(data.email);
-
-        if (data.profileImage) {
-          setPreview(
-            `http://localhost:5000/api/auth/profile-image/${data.id}?ts=${Date.now()}`
-          );
-        } else {
-          setPreview("");
-        }
+        setPreview(imageSrc);
 
         console.log("User data fetched:", data);
-        toast.success("User Data Fetched")
+        toast.success("User Data Fetched");
       } catch (err) {
         console.log("Error fetching user:", err.response?.data || err.message);
-        toast.error("Error Fetching User")
+        toast.error("Error Fetching User");
       }
     };
+
     fetchUser();
   }, [setUser]);
+
 
   const handleEmailUpdate = async () => {
     setLoadingEmail(true);
@@ -92,35 +124,37 @@ const UserProfile = () => {
       setLoadingName(false);
     }
   };
-
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
+    if (!selectedFile) return;
+
     setFile(selectedFile);
+
+    // Show instant local preview (no wait)
     setPreview(URL.createObjectURL(selectedFile));
   };
 
   const handleUpload = async () => {
     if (!file) return alert("Select a file first");
     setLoadingUpload(true);
+
     try {
       const { data } = await uploadProfileImage(file);
 
-      const imageUrl = `http://localhost:5000/api/auth/profile-image/${data.user.id}?ts=${Date.now()}`;
-      setPreview(imageUrl);
-
-      setUser((prev) => ({
-        ...prev,
-        profileImage: imageUrl,
-      }));
-
       toast.success("Profile Image Uploaded!");
+
+      // 🔥 refresh user data immediately
+      await getUser();
     } catch (err) {
       console.log("Upload error:", err.response?.data || err.message);
-      toast.error("Image Upload Error")
+      toast.error("Image Upload Error");
     } finally {
       setLoadingUpload(false);
     }
   };
+
+
+
 
   return (
     <div className="relative group">
