@@ -31,6 +31,10 @@ import EditorPage from './pages/Campaign/pages/EditorPage';
 import PhoneValidation from './pages/PhoneValidation/PhoneValidation';
 import { Toaster } from 'react-hot-toast'; // ← add this
 import { NotificationProvider } from "./components/NotificationContext"; 
+import ContactsPage from'./pages/ContactManagement/pages/ContactsPage';
+import Leads from './pages/ContactManagement/pages/Leads';
+import Deals from './pages/ContactManagement/pages/Deals';
+import Tasks from './pages/ContactManagement/pages/Tasks';
 
 function App() {
   return (
@@ -88,6 +92,13 @@ function App() {
           <Route path='/new-campaign' element={<NewCampaignWindow />} />
           <Route path="/create" element={<CreateCampaign />} />
           <Route path="/editor/:id" element={<EditorPage />} />
+          <Route path="/" element={<Dashboard />} />
+
+          <Route path="/leads" element={<Leads />} />
+          <Route path="/contactsPage" element={<ContactsPage />} />
+          <Route path="/deals" element={<Deals />} />
+          <Route path="/tasks" element={<Tasks />} />
+
         </Routes>
 
         <Chatbot />
