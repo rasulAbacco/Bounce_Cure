@@ -30,39 +30,42 @@ import CreateCampaign from './pages/Campaign/pages/CreateCampaign';
 import EditorPage from './pages/Campaign/pages/EditorPage';
 import PhoneValidation from './pages/PhoneValidation/PhoneValidation';
 import { Toaster } from 'react-hot-toast'; // ← add this
+
 import { NotificationProvider } from "./components/NotificationContext"; 
 import ContactsPage from'./pages/ContactManagement/pages/ContactsPage';
 import Leads from './pages/ContactManagement/pages/Leads';
 import Deals from './pages/ContactManagement/pages/Deals';
 import Tasks from './pages/ContactManagement/pages/Tasks';
+import ResetPasswordPage from './pages/ResetPasswordPage';
+
 
 function App() {
   return (
     <UserProvider>
-    <NotificationProvider>
-      <Router>
-        {/* Global toaster available on all pages */}
-        <Toaster
-          position="top-right"
-          containerStyle={{
-            zIndex: 999999,
-            marginTop: "70px",
-          }}
-          toastOptions={{
-            duration: 3500,
-            style: {
-              background: 'rgba(15, 23, 42, 0.85)', // dark glass
-              fontSize: "16px",
-              fontWeight:"600",
-              color: '#fff',
-              border: '1px solid rgba(255,255,255,0.12)',
-              backdropFilter: 'blur(10px)',
-              borderRadius: '12px'
-            },
-            success: { iconTheme: { primary: '#22c55e', secondary: '#0f172a' } },
-            error: { iconTheme: { primary: '#ef4444', secondary: '#0f172a' } },
-          }}
-        />
+      <NotificationProvider>
+        <Router>
+          {/* Global toaster available on all pages */}
+          <Toaster
+            position="top-right"
+            containerStyle={{
+              zIndex: 999999,
+              marginTop: "70px",
+            }}
+            toastOptions={{
+              duration: 3500,
+              style: {
+                background: 'rgba(15, 23, 42, 0.85)', // dark glass
+                fontSize: "16px",
+                fontWeight: "600",
+                color: '#fff',
+                border: '1px solid rgba(255,255,255,0.12)',
+                backdropFilter: 'blur(10px)',
+                borderRadius: '12px'
+              },
+              success: { iconTheme: { primary: '#22c55e', secondary: '#0f172a' } },
+              error: { iconTheme: { primary: '#ef4444', secondary: '#0f172a' } },
+            }}
+          />
 
         <Routes>
           <Route path="/services/email-verification" element={<FreeValidation />} />
@@ -92,8 +95,6 @@ function App() {
           <Route path='/new-campaign' element={<NewCampaignWindow />} />
           <Route path="/create" element={<CreateCampaign />} />
           <Route path="/editor/:id" element={<EditorPage />} />
-          <Route path="/" element={<Dashboard />} />
-
           <Route path="/leads" element={<Leads />} />
           <Route path="/contactsPage" element={<ContactsPage />} />
           <Route path="/deals" element={<Deals />} />
@@ -101,9 +102,9 @@ function App() {
 
         </Routes>
 
-        <Chatbot />
-      </Router>
-     </NotificationProvider>
+          <Chatbot />
+        </Router>
+      </NotificationProvider>
     </UserProvider>
   );
 }

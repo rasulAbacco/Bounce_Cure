@@ -1,7 +1,7 @@
 // authRoutes.js
 import express from 'express';
 import { signup, login } from '../controllers/authController.js';
-import { protect, authMiddleware } from "../middleware/authMiddleware.js";
+import { protect, authMiddleware, logoutSession } from "../middleware/authMiddleware.js";
 import {
     sendVerificationEmail,
     verifyEmail,
@@ -33,8 +33,7 @@ const storage = multer.memoryStorage(); // ← no need to save file to disk
 //     destination: (req, file, cb) => cb(null, 'uploads/'),
 //     filename: (req, file, cb) => cb(null, `${Date.now()}-${file.originalname}`)
 // });
-const upload = multer({ storage });
-
+const upload = multer({ storage: multer.memoryStorage() });
 router.post('/signup', signup);
 router.post('/login', login);
 
@@ -59,5 +58,21 @@ router.put('/upload-profile-image', protect, upload.single('profileImage'), uplo
 router.post('/auth/send-verification-email', verifyAuth, sendVerificationEmail);
 router.get('/profile-image/:userId', getProfileImage);
 
+// get all sessions
+// router.get('/auth/active-sessions', authMiddleware, getActiveSessions);
+
+// logout one session
+router.delete('/sessions/:sessionId', authMiddleware, logoutSession);
+
+// logout all sessions
+router.delete('/auth/sessions', authMiddleware, async (req, res) => {
+    try {
+        await prisma.session.deleteMany({ where: { userId: req.user.id } });
+        res.json({ success: true, message: "All sessions logged out" });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+});
 
 export default router;

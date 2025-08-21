@@ -56,3 +56,19 @@ export const authMiddleware = (req, res, next) => {
     }
 };
 
+export const logoutSession = async (req, res) => {
+    try {
+        if (!req.user) return res.status(401).json({ message: "Unauthorized" });
+
+        const { sessionId } = req.params;
+
+        await prisma.session.delete({
+            where: { id: parseInt(sessionId, 10) }, // convert string -> Int
+        });
+
+        res.status(200).json({ success: true, message: "Session logged out" });
+    } catch (err) {
+        console.error("Error logging out session:", err);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
