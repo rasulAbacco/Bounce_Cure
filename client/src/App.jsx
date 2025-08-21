@@ -30,8 +30,14 @@ import CreateCampaign from './pages/Campaign/pages/CreateCampaign';
 import EditorPage from './pages/Campaign/pages/EditorPage';
 import PhoneValidation from './pages/PhoneValidation/PhoneValidation';
 import { Toaster } from 'react-hot-toast'; // ← add this
-import { NotificationProvider } from "./components/NotificationContext";
+
+import { NotificationProvider } from "./components/NotificationContext"; 
+import ContactsPage from'./pages/ContactManagement/pages/ContactsPage';
+import Leads from './pages/ContactManagement/pages/Leads';
+import Deals from './pages/ContactManagement/pages/Deals';
+import Tasks from './pages/ContactManagement/pages/Tasks';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+
 
 function App() {
   return (
@@ -61,36 +67,40 @@ function App() {
             }}
           />
 
-          <Routes>
-            <Route path="/services/email-verification" element={<FreeValidation />} />
-            <Route path="/services/integrations" element={<IntegrationPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
-            <Route path="/" element={<HomePage />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/features" element={<Features />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/pricing" element={<Pricing />} />
-            <Route path="/payment" element={<PaymentPage />} />
-            <Route path="/services/bulk-verification" element={<BulkVerification />} />
-            <Route path="/faq" element={<FaqSection />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/contacts" element={<Contacts />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/email-campaign" element={<Campaign />} />
-            <Route path="/automation" element={<Automation />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/auth" element={<UserAuthentication />} />
-            <Route path="/verification" element={<Verification />} />
-            <Route path="/support" element={<Support />} />
-            <Route path='/phoneValidation' element={<PhoneValidation />} />
-            <Route path='/pricingdash' element={<PricingDash />} />
-            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
-            <Route path='/new-campaign' element={<NewCampaignWindow />} />
-            <Route path="/create" element={<CreateCampaign />} />
-            <Route path="/editor/:id" element={<EditorPage />} />
-          </Routes>
+        <Routes>
+          <Route path="/services/email-verification" element={<FreeValidation />} />
+          <Route path="/services/integrations" element={<IntegrationPage />} />
+          <Route path="/signup" element={<SignupPage />} />
+          <Route path="/login" element={<LoginPage />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/" element={<HomePage />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/features" element={<Features />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/pricing" element={<Pricing />} />
+          <Route path="/payment" element={<PaymentPage />} />
+          <Route path="/services/bulk-verification" element={<BulkVerification />} />
+          <Route path="/faq" element={<FaqSection />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/contacts" element={<Contacts />} />
+          <Route path="/analytics" element={<Analytics />} />
+          <Route path="/email-campaign" element={<Campaign />} />
+          <Route path="/automation" element={<Automation />} />
+          <Route path="/settings" element={<Settings />} />
+          <Route path="/auth" element={<UserAuthentication />} />
+          <Route path="/verification" element={<Verification />} />
+          <Route path="/support" element={<Support />} />
+          <Route path='/phoneValidation' element={<PhoneValidation/>}/>
+          <Route path='/pricingdash' element={<PricingDash />} />
+          <Route path='/new-campaign' element={<NewCampaignWindow />} />
+          <Route path="/create" element={<CreateCampaign />} />
+          <Route path="/editor/:id" element={<EditorPage />} />
+          <Route path="/leads" element={<Leads />} />
+          <Route path="/contactsPage" element={<ContactsPage />} />
+          <Route path="/deals" element={<Deals />} />
+          <Route path="/tasks" element={<Tasks />} />
+
+        </Routes>
 
           <Chatbot />
         </Router>
