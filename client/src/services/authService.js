@@ -49,12 +49,16 @@ export const getSecurityLogs = async () => {
     return res.data.data;
 };
 
-export const getActiveSessions = () => API.get('/auth/active-sessions', getAuthHeaders());
+export const getActiveSessions = () =>
+    API.get('/auth/active-sessions', getAuthHeaders());
 
+// logout single session
 export const logoutSession = (sessionId) =>
-    API.post('/auth/sessions/logout', { sessionId }, getAuthHeaders());
+    API.delete(`/auth/sessions/${sessionId}`, getAuthHeaders());
 
-export const logoutAllSessions = () => API.post('/auth/sessions/logout-all', {}, getAuthHeaders());
+// logout all sessions
+export const logoutAllSessions = () =>
+    API.delete('/auth/sessions', getAuthHeaders());
 
 // ==================== Profile ====================
 export const updateEmail = (email) =>

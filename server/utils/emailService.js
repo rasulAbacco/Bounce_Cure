@@ -7,7 +7,7 @@ export const sendEmail = async ({ to, subject, text, html }) => {
   try {
     const data = await resend.emails.send({
       from: "onboarding@resend.dev",
-      to,              // use passed value
+      to:"xemail.test.2025@gmail.com",              // use passed value
       subject,         // use passed value
       text,            // plain text fallback
       html: html || `<p>${text}</p>`, // ensure html always exists
