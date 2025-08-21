@@ -17,7 +17,7 @@ export const getMe = async (req, res) => {
                 firstName: true,
                 lastName: true,
                 email: true,
-                profileImage: true, // ✅ include this
+                profileImage: true, // binary buffer
             },
         });
 
@@ -25,7 +25,21 @@ export const getMe = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
-        res.json(user);
+        let profileImageBase64 = null;
+
+        if (user.profileImage) {
+            // Convert Prisma's Buffer (Uint8Array) to Base64
+            const buffer = Buffer.from(user.profileImage);
+            profileImageBase64 = `data:image/jpeg;base64,${buffer.toString("base64")}`;
+        }
+
+        res.json({
+            id: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            profileImage: profileImageBase64,
+        });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: "Internal server error" });
