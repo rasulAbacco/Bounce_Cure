@@ -219,6 +219,11 @@ function NotificationsSection() {
       inApp: inAppNotif,
       frequency,
     });
+    // Example: Save to API
+    console.log("Saving Preferences:", preferences);
+
+    // Toast instead of alert
+
     toast.success("Preferences Saved Successfully!");
   };
 
