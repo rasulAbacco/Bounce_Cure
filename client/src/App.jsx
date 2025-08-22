@@ -37,6 +37,8 @@ import Leads from './pages/ContactManagement/pages/Leads';
 import Deals from './pages/ContactManagement/pages/Deals';
 import Tasks from './pages/ContactManagement/pages/Tasks';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import Templets from './pages/Campaign/pages/Templets';
+import CanvasArea from './pages/Campaign/components/Editor/CanvasArea';
 
 
 function App() {
@@ -92,16 +94,18 @@ function App() {
           <Route path="/support" element={<Support />} />
           <Route path='/phoneValidation' element={<PhoneValidation/>}/>
           <Route path='/pricingdash' element={<PricingDash />} />
+
           <Route path='/new-campaign' element={<NewCampaignWindow />} />
           <Route path="/create" element={<CreateCampaign />} />
-          <Route path="/editor/:id" element={<EditorPage />} />
+          {/* <Route path="/editor/:id" element={<EditorPage />} /> */}
+          <Route path="/editor" element={<EditorPage />} />
           <Route path="/leads" element={<Leads />} />
           <Route path="/contactsPage" element={<ContactsPage />} />
           <Route path="/deals" element={<Deals />} />
           <Route path="/tasks" element={<Tasks />} />
-
+          <Route path="/templetes" element={<Templets />} />
+          <Route path="/canva" element={<CanvasArea />} />
         </Routes>
-
           <Chatbot />
         </Router>
       </NotificationProvider>
