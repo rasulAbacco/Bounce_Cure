@@ -8,9 +8,25 @@ import {
   Users,
   Clock,
 } from "lucide-react";
-import mailveri from "../assets/mailveri.png";
+ 
+import {
+  PieChart,
+  Pie,
+  Cell,
+  ResponsiveContainer,
+} from "recharts";
+import { CheckCircle2 } from "lucide-react";
+import { motion } from "framer-motion";
 
 function Home() {
+
+  const total = 57755;
+  const data = [
+    { name: "Valid", value: 45668, color: "#16a34a" },
+    { name: "Invalid", value: 3594, color: "#facc15" },
+    { name: "Catch-All", value: 5712, color: "#9333ea" },
+    { name: "Do Not Mail", value: 2552, color: "#f87171" },
+  ];
  return (
   <div className="text-white">
     <div className="min-h-screen">
@@ -163,7 +179,96 @@ function Home() {
           {/* Right side - Dashboard Preview */}
           <div className="bg-gray-50 rounded-lg p-4">
             <div className="rounded-lg shadow-lg overflow-hidden">
-              <img src="/Home/email.png" alt="Mail Verification" />
+              {/* <img src="/Home/email1.png" alt="Mail Verification" className="h-140 w-100"/> */}
+              
+              <div className="max-w-3xl mx-auto p-5 bg-white rounded-2xl shadow-lg">
+                    {/* Header */}
+                    <motion.div
+                      className="flex justify-between items-center mb-6"
+                      initial={{ opacity: 0, y: -20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                    >
+                      <h2 className="text-lg font-bold text-gray-800">
+                        Total Emails:
+                      </h2>
+                      <p className="text-xl font-semibold text-gray-900">{total}</p>
+                    </motion.div>
+
+                    {/* Bar Progress */}
+                    <div className="w-full bg-gray-200 rounded-full h-4 mb-6 overflow-hidden">
+                      <motion.div
+                        className="bg-green-600 h-4"
+                        initial={{ width: 0 }}
+                        animate={{ width: `${(45668 / total) * 100}%` }}
+                        transition={{ duration: 1 }}
+                      />
+                    </div>
+
+                    {/* Breakdown List */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      {data.map((item, i) => (
+                        <motion.div
+                          key={i}
+                          className="flex justify-between text-gray-700"
+                          initial={{ opacity: 0 }}
+                          animate={{ opacity: 1 }}
+                          transition={{ delay: i * 0.2 }}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span
+                              className="inline-block w-3 h-3 rounded-full"
+                              style={{ backgroundColor: item.color }}
+                            ></span>
+                            {item.name}:
+                          </span>
+                          <span className="font-medium">
+                            {item.value.toLocaleString()} (
+                            {((item.value / total) * 100).toFixed(0)}%)
+                          </span>
+                        </motion.div>
+                      ))}
+                    </div>
+
+                    {/* Circular Chart */}
+                    <div className="flex justify-center mb-6">
+                      <ResponsiveContainer width="100%" height={200}>
+                        <PieChart>
+                          <Pie
+                            data={data}
+                            innerRadius={50}
+                            outerRadius={80}
+                            dataKey="value"
+                            paddingAngle={3}
+                            animationDuration={1000}
+                          >
+                            {data.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={entry.color} />
+                            ))}
+                          </Pie>
+                        </PieChart>
+                      </ResponsiveContainer>
+                    </div>
+
+                    {/* Email Section */}
+                    <motion.div
+                      className="p-4 bg-green-50 border border-green-200 rounded-xl flex items-center gap-2"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 1 }}
+                    >
+                      <CheckCircle2 className="text-green-600" />
+                      <div>
+                        <p className="text-sm text-gray-500">Email</p>
+                        <p className="font-semibold text-gray-800">
+                          bouncecure@gmail.com
+                        </p>
+                        <p className="text-green-600 text-sm font-medium">
+                          ✅ Valid Email Address
+                        </p>
+                      </div>
+                    </motion.div>
+               </div>
+
             </div>
           </div>
         </div>
@@ -191,7 +296,7 @@ function Home() {
         {/* Left Side - Image */}
         <div className="flex justify-center">
           <img
-            src="/Home/delivary.png"
+            src="/Home/deliver.png"
             alt="delivary"
             className="max-w-md w-full drop-shadow-lg"
           />
