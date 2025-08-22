@@ -1,4 +1,22 @@
 import React, { useEffect, useState } from "react";
+import { MdRefresh } from "react-icons/md";
+import { FiEye, FiEdit, FiTrash2 } from "react-icons/fi";
+
+<div className="flex space-x-4">
+    <button className="text-yellow-400 hover:text-yellow-300">
+        <FiEye className="w-5 h-5" />
+    </button>
+
+    <button className="text-yellow-400 hover:text-yellow-300">
+        <FiEdit className="w-5 h-5" />
+    </button>
+
+    <button className="text-yellow-400 hover:text-yellow-300">
+        <FiTrash2 className="w-5 h-5" />
+    </button>
+</div>
+
+
 import { Link } from "react-router-dom";
 import { getCampaigns } from "../../../services/campaignService";
 import Button from "../Components/UI/Button";
@@ -12,6 +30,7 @@ import {
     MdAdd,
     MdAnalytics,
     MdDescription,
+
 } from "react-icons/md";
 import { useNavigate } from "react-router-dom";
 
@@ -68,9 +87,16 @@ const Dashboard = () => {
                 </div>
                 {/* <div className="flex space-x-3">
                     <Button variant="outline">Refresh</Button>
+                <div className="flex space-x-5 ">
+                    <MdRefresh
+                        className="w-8 h-8 mt-2 text-[#c2831f] hover:text-white cursor-pointer"
+                        onClick={() => window.location.reload()}
+                    />
+
                     <Link to="/create">
-                        <Button className="bg-yellow-500 text-black font-semibold">
-                            + New Campaign
+                        <Button className="bg-[#c2831f] text-black flex items-center px-4 py-2 text-sm font-medium gap-2 ">
+                            <MdAdd className="w-5 h-6 cursor-pointer" />
+                            <span>New Campaign</span>
                         </Button>
                     </Link>
                 </div> */}
@@ -179,22 +205,22 @@ const Dashboard = () => {
                             <h3 className="text-lg font-semibold mb-4 text-white">Quick Actions</h3>
                             <div className="grid grid-cols-2 gap-4">
                                 <Link to="/create">
-                                <div className="border border-yellow-400 hover:bg-yellow-500/10 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-yellow-400 cursor-pointer">
-                                    <MdCampaign className="text-xl mb-1" />
-                                    <span className="text-sm font-semibold">New Campaign</span>
-                                </div>
+                                    <div className="border border-yellow-400 hover:bg-yellow-300/20 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-yellow-400 cursor-pointer">
+                                        <MdCampaign className="text-xl mb-1" />
+                                        <span className="text-sm font-semibold">New Campaign</span>
+                                    </div>
                                 </Link>
                                 <Link to="/analytics">
-                                <div className="border border-blue-400 hover:bg-blue-500/10 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-blue-400 cursor-pointer">
-                                    <MdAnalytics className="text-xl mb-1" />
-                                    <span className="text-sm font-semibold">Analytics</span>
-                                </div></Link>
-                                
-                                <div className="border border-green-400 hover:bg-green-500/10 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-green-400 cursor-pointer">
+                                    <div className="border border-blue-400 hover:bg-blue-600/30 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-blue-400 cursor-pointer">
+                                        <MdAnalytics className="text-xl mb-1" />
+                                        <span className="text-sm font-semibold">Analytics</span>
+                                    </div></Link>
+
+                                <div className="border border-green-400 hover:bg-green-600/20 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-green-400 cursor-pointer">
                                     <MdPeople className="text-xl mb-1" />
                                     <span className="text-sm font-semibold">Contacts</span>
                                 </div>
-                                <div className="border border-orange-400 hover:bg-orange-500/10 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-orange-400 cursor-pointer">
+                                <div className="border border-orange-400 hover:bg-orange-500/20 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-orange-400 cursor-pointer">
                                     <MdDescription className="text-xl mb-1" />
                                     <span className="text-sm font-semibold">Templates</span>
                                 </div>
@@ -253,7 +279,24 @@ const Dashboard = () => {
 
             {activeTab === "campaigns" && (
                 <div className="bg-[#111] p-6 rounded-xl border border-gray-800">
-                    <h3 className="text-lg font-semibold mb-4">All Campaigns</h3>
+                    <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg mb-5 font-semibold">All Campaigns</h3>
+                        <div className="flex space-x-2">
+                            {["All", "Active", "Paused", "Completed", "Draft"].map((status) => (
+                                <button
+                                    key={status}
+                                    onClick={() => setFilter(status)}
+                                    className={`px-3 py-1 rounded-md text-sm font-medium ${filter === status
+                                        ? "bg-yellow-500 text-black"
+                                        : "bg-[#222] text-gray-400 hover:bg-[#333]"
+                                        }`}
+                                >
+                                    {status}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
                     {loading ? (
                         <p>Loading campaigns...</p>
                     ) : filteredCampaigns.length === 0 ? (
@@ -303,9 +346,19 @@ const Dashboard = () => {
                                             <td className="p-3">{c.clicks || 0}</td>
                                             <td className="p-3">{c.replies || 0}</td>
                                             <td className="p-3 flex space-x-2">
-                                                <button className="text-blue-400 hover:underline">View</button>
-                                                <button className="text-yellow-400 hover:underline">Edit</button>
-                                                <button className="text-red-400 hover:underline">Delete</button>
+                                                <div className="flex space-x-4">
+                                                    <button className="text-[#c2831f] hover:text-white transition-colors duration-200">
+                                                        <FiEye className="w-5 h-5" />
+                                                    </button>
+
+                                                    <button className="text-[#c2831f] hover:text-white transition-colors duration-200">
+                                                        <FiEdit className="w-5 h-5" />
+                                                    </button>
+
+                                                    <button className="text-[#c2831f] hover:text-white transition-colors duration-200">
+                                                        <FiTrash2 className="w-5 h-5" />
+                                                    </button>
+                                                </div>
                                             </td>
                                         </tr>
                                     ))}
@@ -318,12 +371,54 @@ const Dashboard = () => {
 
             {activeTab === "contacts" && (
                 <div className="bg-[#111] p-6 rounded-xl border border-gray-800">
-                    <h3 className="text-lg font-semibold mb-2">Contacts</h3>
-                    <p className="text-gray-400">
-                        Manage your subscribers and contact lists here.
+                    {/* Header */}
+                    <h3 className="text-xl font-bold mb-2 flex items-center">
+                        <MdPeople className="text-yellow-500 text-2xl mr-2" />
+                        Contact Management
+                    </h3>
+                    <p className="text-gray-400 mb-6">
+                        Manage your email subscribers and contact lists
                     </p>
+
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div className="bg-black p-6 rounded-lg border border-gray-800 text-center">
+                            <h2 className="text-3xl font-bold text-yellow-400">42,870</h2>
+                            <p className="text-gray-400 mt-2">Total Contacts</p>
+                        </div>
+                        <div className="bg-black p-6 rounded-lg border border-gray-800 text-center">
+                            <h2 className="text-3xl font-bold text-green-400">2,847</h2>
+                            <p className="text-gray-400 mt-2">Active Subscribers</p>
+                        </div>
+                        <div className="bg-black p-6 rounded-lg border border-gray-800 text-center">
+                            <h2 className="text-3xl font-bold text-orange-400">156</h2>
+                            <p className="text-gray-400 mt-2">Unsubscribed</p>
+                        </div>
+                    </div>
+
+                    {/* Buttons */}
+                    <div className="flex space-x-3 mb-8">
+                        <button className="flex items-center gap-2 bg-yellow-500 text-black px-4 py-2 rounded-md font-medium hover:bg-yellow-600 transition">
+                            <MdAdd className="w-5 h-5" />
+                            Add Contact
+                        </button>
+                        <button className="flex items-center gap-2 bg-black border border-gray-600 px-4 py-2 rounded-md font-medium hover:border-yellow-500 transition">
+                            <MdOpenInNew className="w-5 h-5" />
+                            Import CSV
+                        </button>
+                    </div>
+
+                    {/* Placeholder Table */}
+                    <div className="flex flex-col items-center justify-center py-12 border-t border-gray-800">
+                        <MdPeople className="text-4xl text-gray-500 mb-2" />
+                        <p className="text-gray-400">Contact management interface would go here</p>
+                        <p className="text-gray-500 text-sm">
+                            Add, edit, and organize your email subscribers
+                        </p>
+                    </div>
                 </div>
             )}
+
 
             {activeTab === "templates" && (
                 <div className="">
