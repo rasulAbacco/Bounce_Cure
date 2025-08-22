@@ -156,23 +156,29 @@ export const getLoginLogs = async (req, res) => {
 // Send verification email
 export const sendVerificationEmail = async (req, res) => {
     const { email } = req.user;
+
     const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "15m" });
     const link = `${process.env.BASE_URL}/verify-email?token=${token}`;
 
     try {
+        // 🛠 Make sure you're sending to the actual user's email
         await sendEmail({
-            to: email,
+            to: email, // ✅ Not hardcoded anymore
             subject: "Verify your email",
-            text: `Click this link to verify: ${link}`,
-            html: `<a href="${link}">Verify Email</a>`
+            text: `Click this link to verify your email: ${link}`,
+            html: `<p>Please verify your email by clicking the link below:</p>
+                   <a href="${link}">Verify Email</a>`
         });
 
+        console.log(`✅ Verification email sent to: ${email}`);
         res.json({ message: "Verification email sent" });
+
     } catch (error) {
-        console.error("Email sending failed:", error);
-        res.status(500).json({ message: "Failed to send verification email" });
+        console.error("❌ Email sending failed:", error);
+        res.status(500).json({ message: "Failed to send verification email", error: error.message });
     }
 };
+;
 
 
 // Verify email
