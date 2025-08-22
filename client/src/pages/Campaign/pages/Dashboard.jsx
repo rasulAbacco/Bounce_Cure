@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { getCampaigns } from "../../../services/campaignService";
 import Button from "../Components/UI/Button";
 import Layout from "../Components/Layout/Layout";
+import Templets from "./Templets";
 import {
     MdCampaign,
     MdPeople,
@@ -12,12 +13,17 @@ import {
     MdAnalytics,
     MdDescription,
 } from "react-icons/md";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
     const [campaigns, setCampaigns] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("All");
     const [activeTab, setActiveTab] = useState("dashboard");
+
+
+     const navigate = useNavigate();
+  const [showOptions, setShowOptions] = useState(false);
 
     useEffect(() => {
         getCampaigns()
@@ -60,14 +66,44 @@ const Dashboard = () => {
                         Complete email marketing management in one place
                     </p>
                 </div>
-                <div className="flex space-x-3">
+                {/* <div className="flex space-x-3">
                     <Button variant="outline">Refresh</Button>
                     <Link to="/create">
                         <Button className="bg-yellow-500 text-black font-semibold">
                             + New Campaign
                         </Button>
                     </Link>
-                </div>
+                </div> */}
+                 <div className="flex flex-col items-center justify-centertext-white">
+                    <Button
+                        onClick={() => setShowOptions(true)}
+                        className="bg-yellow-500 hover:bg-yellow-600 text-white px-6 py-3 rounded-xl"
+                    >
+                        New Campaign
+                    </Button>
+
+                    {showOptions && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+                        {/* Option 1 - Scratch */}
+                        <div
+                            onClick={() => navigate("/editor", { state: { template: null } })}
+                            className="cursor-pointer bg-gray-900 p-8 rounded-2xl hover:bg-gray-800 transition"
+                        >
+                            <h2 className="text-xl font-bold mb-2">Start from Scratch</h2>
+                            <p>Create a brand new design with empty canvas</p>
+                        </div>
+
+                        {/* Option 2 - Choose Template */}
+                        <div
+                            onClick={() => navigate("/templates")}
+                            className="cursor-pointer bg-gray-900 p-8 rounded-2xl hover:bg-gray-800 transition"
+                        >
+                            <h2 className="text-xl font-bold mb-2">Choose Template</h2>
+                            <p>Select from predefined templates</p>
+                        </div>
+                        </div>
+                    )}
+                 </div>
             </div>
 
             {/* Navigation Tabs */}
@@ -290,13 +326,11 @@ const Dashboard = () => {
             )}
 
             {activeTab === "templates" && (
-                <div className="bg-[#111] p-6 rounded-xl border border-gray-800">
-                    <h3 className="text-lg font-semibold mb-2">Templates</h3>
-                    <p className="text-gray-400">
-                        Pre-designed templates for email campaigns.
-                    </p>
+                <div className="">
+                    <Templets />
                 </div>
             )}
+
         </div>
 
     );
