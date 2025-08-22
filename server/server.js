@@ -41,11 +41,11 @@ app.use('/dashboard', dashboardCRM);
 app.use('/api/auth', authRoutes);
 app.use('/verification', verificationRoutes);
 
-app.use("/api", advancedVerificationRoute);
-app.use("/auth", forgotPasswordRoutes);
+app.use("/api/verification", advancedVerificationRoute);
+app.use("/auth", forgotPasswordRoutes);8
 
 // ✅ Support routes with middleware
-app.use('/api/support', supportMiddleware, supportRoutes);
+app.use('/api/support', supportRoutes);
 
 // ✅ Protected settings route
 app.use('/api/settings', verifySettingsAuth, settingsRoutes);
