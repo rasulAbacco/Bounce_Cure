@@ -401,7 +401,7 @@ export default function SettingsPage() {
         {activeSection === "apikeys" && <ApiKeysSection />}
         {activeSection === "danger" && <DangerSection />}
       </div>
-      <Toaster position="top-right" />
+      
     </DashboardLayout>
   );
 }
