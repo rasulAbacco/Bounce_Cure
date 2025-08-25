@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Mail, ArrowRight, Shield, Clock, CheckCircle, ArrowLeft, RefreshCw, Lock } from 'lucide-react';
 import PageLayout from '../components/PageLayout'; // Make sure this exists
-
+import toast from "react-hot-toast";
 const ModernForgotPassword = () => {
     const [email, setEmail] = useState('');
     const [step, setStep] = useState('request'); // 'request' or 'sent'
@@ -20,6 +20,8 @@ const ModernForgotPassword = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),
+                
+                
             });
 
             const data = await res.json();
@@ -28,9 +30,11 @@ const ModernForgotPassword = () => {
                 setStep('sent');
             } else {
                 setError(data.message || 'Something went wrong.');
+                toast.error('Something went wrong.')
             }
         } catch (err) {
             setError('Server error. Please try again later.');
+            toast.error('Server error. Please try again later.')
         } finally {
             setIsLoading(false);
         }

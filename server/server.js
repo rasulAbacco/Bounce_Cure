@@ -14,6 +14,7 @@ import notificationsRoutes from "./routes/notificationsRoutes.js"; // ✅ if fil
 import forgotPasswordRoutes from "./routes/forgotPasswordRoute.js";
 import advancedVerificationRoute from "./routes/advancedVerification.js";
 import passwordRoutes from "./routes/passwordRoutes.js";
+import contactRoutes from "./routes/contactRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -33,6 +34,9 @@ app.use(express.urlencoded({ extended: true }));
 
 
 // Mount routes
+app.use("/api/contacts", contactRoutes);
+
+// Mount routes
 app.use("/api/auth", passwordRoutes);
 
 // ✅ Routes
@@ -41,7 +45,7 @@ app.use('/dashboard', dashboardCRM);
 app.use('/api/auth', authRoutes);
 app.use('/verification', verificationRoutes);
 
-app.use("/api", advancedVerificationRoute);
+app.use("/api/verification", advancedVerificationRoute);
 app.use("/auth", forgotPasswordRoutes);
 
 // ✅ Support routes with middleware

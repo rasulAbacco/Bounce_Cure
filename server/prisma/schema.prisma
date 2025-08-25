@@ -23,12 +23,17 @@ model User {
   otpCodes            OTPCode[]
   apiKeys             ApiKey[]
   notificationSetting NotificationSetting?
-  passwordResetTokens PasswordResetToken[] // ✅ for reset password
-  inAppNotifications  InAppNotification[]
 
-  twoFASecret   String?
-  is2FAEnabled  Boolean @default(false)
-  profileImage  Bytes?
+  // FIXED: relation must have same name on both sides
+  passwordResetTokens PasswordResetToken[] @relation("UserTokens")
+
+  inAppNotifications InAppNotification[]
+  twoFASecret        String?
+  is2FAEnabled       Boolean             @default(false)
+  profileImage       Bytes?
+
+  // FIXED: back relation for Contact
+  contacts Contact[]
 }
 
 model Content {
@@ -78,10 +83,19 @@ model OTPCode {
 }
 
 model Verification {
-  id        Int      @id @default(autoincrement())
-  email     String
-  status    String
-  checkedAt DateTime @default(now())
+  id             String   @id @default(cuid())
+  email          String   @unique
+  status         String
+  score          Int
+  syntax_valid   Boolean
+  domain_valid   Boolean
+  mailbox_exists Boolean
+  catch_all      Boolean
+  disposable     Boolean
+  role_based     Boolean
+  greylisted     Boolean
+  error          String?
+  createdAt      DateTime @default(now())
 }
 
 model SupportMessage {
@@ -154,7 +168,23 @@ model DeletedAccount {
 model PasswordResetToken {
   id        Int      @id @default(autoincrement())
   token     String   @unique
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  // FIXED: userId must be Int (to match User.id)
+  userId Int
+  user   User @relation("UserTokens", fields: [userId], references: [id], onDelete: Cascade)
+
   expiresAt DateTime
+}
+
+model Contact {
+  id        Int      @id @default(autoincrement())
+  name      String
+  email     String   @unique
+  phone     String?
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  User      User?    @relation(fields: [userId], references: [id])
+  userId    Int?
 }
