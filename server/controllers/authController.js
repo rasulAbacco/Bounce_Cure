@@ -184,15 +184,32 @@ export const sendVerificationEmail = async (req, res) => {
 // Verify email
 export const verifyEmail = async (req, res) => {
     const { token } = req.query;
+
+    if (!token) {
+        return res.status(400).send("Missing verification token.");
+    }
+
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
+        const email = decoded?.email;
+
+        if (!email) {
+            return res.status(400).send("Invalid token payload.");
+        }
+
         await prisma.user.update({
-            where: { email: decoded.email },
-            data: { isVerified: true }
+            where: { email },
+            data: { isVerified: true },
         });
-        res.json({ message: "Email verified successfully" });
-    } catch {
-        res.status(400).json({ message: "Invalid or expired token" });
+
+        // ✅ Redirect to frontend success page
+        res.redirect(`${process.env.FRONTEND_URL}/email-verified`);
+
+    } catch (error) {
+        console.error("Email verification error:", error.message || error);
+
+        // ❌ Redirect to error page
+        res.redirect(`${process.env.FRONTEND_URL}/email-verification-failed`);
     }
 };
 

@@ -37,6 +37,7 @@ import Leads from './pages/ContactManagement/pages/Leads';
 import Deals from './pages/ContactManagement/pages/Deals';
 import Tasks from './pages/ContactManagement/pages/Tasks';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import VerifyEmail from "./pages/VerifyEmail";
 
 
 function App() {
@@ -99,7 +100,7 @@ function App() {
             <Route path="/contactsPage" element={<ContactsPage />} />
             <Route path="/deals" element={<Deals />} />
             <Route path="/tasks" element={<Tasks />} />
-
+            <Route path="/verify-email" element={<VerifyEmail />} />
           </Routes>
 
           <Chatbot />
