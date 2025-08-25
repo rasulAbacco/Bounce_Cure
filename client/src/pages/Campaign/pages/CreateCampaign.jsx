@@ -18,22 +18,23 @@ const CreateCampaign = () => {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         {/* Start from Scratch */}
                         <div
-                            onClick={() => navigate("/editor/new?scratch=true")}
-                            className="cursor-pointer border-2 border-yellow-500 rounded-xl p-8 text-center hover:shadow-lg transition"
+                        onClick={() => navigate("/canva", { state: { template: null } })}
+                        className="cursor-pointer border-2 border-yellow-500 rounded-xl p-8 text-center hover:shadow-lg transition"
                         >
-                            <div className="flex justify-center mb-4">
-                                <div className="w-14 h-14 flex items-center justify-center rounded-full bg-yellow-100">
-                                    <Plus className="text-yellow-600 w-7 h-7" />
-                                </div>
+                        <div className="flex justify-center mb-4">
+                            <div className="w-14 h-14 flex items-center justify-center rounded-full bg-yellow-100">
+                            <Plus className="text-yellow-600 w-7 h-7" />
                             </div>
-                            <h2 className="text-lg font-semibold mb-2">Start from Scratch</h2>
-                            <p className="text-gray-600 text-sm">
-                                Create a completely custom campaign with your own content and design
-                            </p>
-                            <p className="text-gray-400 text-xs mt-2">
-                                • Full customization • Advanced options
-                            </p>
                         </div>
+                        <h2 className="text-lg font-semibold mb-2">Start from Scratch</h2>
+                        <p className="text-gray-600 text-sm">
+                            Create a completely custom campaign with your own content and design
+                        </p>
+                        <p className="text-gray-400 text-xs mt-2">
+                            • Full customization • Advanced options
+                        </p>
+                        </div>
+
 
                         {/* Choose Template */}
                         <div

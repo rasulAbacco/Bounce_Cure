@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
 import EmailVerification from '../../components/auth/EmailVerification';
 import ChangePassword from '../../components/auth/ChangePassword';
@@ -9,6 +10,7 @@ import UserProfile from '../../components/UserProfile';
 import { Shield, Lock } from 'lucide-react';
 
 const UserAuthentication = () => {
+  const navigate = useNavigate();
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black mt-[5%]">
@@ -100,16 +102,20 @@ const UserAuthentication = () => {
                   <p className="text-gray-400 text-sm">
                     If you're experiencing any issues with your account security, please contact our support team.
                   </p>
-                  <button className="cursor-pointer mt-4 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white rounded-lg transition-all duration-300">
+                  <button
+                    onClick={() => navigate('/support')}
+                    className="cursor-pointer mt-4 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 hover:border-white/20 text-white rounded-lg transition-all duration-300"
+                  >
                     Contact Support
                   </button>
+
                 </div>
               </div>
             </div>
           </div>
 
           {/* Footer Section */}
-          
+
         </div>
       </div>
     </DashboardLayout>

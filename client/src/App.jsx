@@ -11,7 +11,7 @@ import Contact from './components/Contact';
 import About from './pages/About';
 import Features from './pages/Features';
 import BulkVerification from './pages/BulkVerification';
-import Chatbot from './pages/Chatbot';
+import Chatbot from './pages/ChatBot';
 import Dashboard from './pages/Dashboard/Dashboard';
 import FaqSection from './pages/FAQSection';
 import Settings from './pages/Settings/Settings';
@@ -29,14 +29,18 @@ import NewCampaignWindow from './pages/Campaign/Components/NewCampaignWindow';
 import CreateCampaign from './pages/Campaign/pages/CreateCampaign';
 import EditorPage from './pages/Campaign/pages/EditorPage';
 import PhoneValidation from './pages/PhoneValidation/PhoneValidation';
-import { Toaster } from 'react-hot-toast'; // ← add this
-
+import { Toaster } from 'react-hot-toast';
 import { NotificationProvider } from "./components/NotificationContext"; 
 import ContactsPage from'./pages/ContactManagement/pages/ContactsPage';
 import Leads from './pages/ContactManagement/pages/Leads';
 import Deals from './pages/ContactManagement/pages/Deals';
 import Tasks from './pages/ContactManagement/pages/Tasks';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import VerifyEmail from "./pages/VerifyEmail";
+import Templets from './pages/Campaign/pages/Templets';
+import CanvasArea from './pages/Campaign/components/Editor/CanvasArea';
+import AllTemplates from './pages/Campaign/pages/AllTemplats';
+import { useNavigate } from "react-router-dom";
 
 
 function App() {
@@ -44,7 +48,6 @@ function App() {
     <UserProvider>
       <NotificationProvider>
         <Router>
-          {/* Global toaster available on all pages */}
           <Toaster
             position="top-right"
             containerStyle={{
@@ -54,7 +57,7 @@ function App() {
             toastOptions={{
               duration: 3500,
               style: {
-                background: 'rgba(15, 23, 42, 0.85)', // dark glass
+                background: 'rgba(15, 23, 42, 0.85)',
                 fontSize: "16px",
                 fontWeight: "600",
                 color: '#fff',
@@ -67,45 +70,70 @@ function App() {
             }}
           />
 
-        <Routes>
-          <Route path="/services/email-verification" element={<FreeValidation />} />
-          <Route path="/services/integrations" element={<IntegrationPage />} />
-          <Route path="/signup" element={<SignupPage />} />
-          <Route path="/login" element={<LoginPage />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/" element={<HomePage />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/features" element={<Features />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/pricing" element={<Pricing />} />
-          <Route path="/payment" element={<PaymentPage />} />
-          <Route path="/services/bulk-verification" element={<BulkVerification />} />
-          <Route path="/faq" element={<FaqSection />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/contacts" element={<Contacts />} />
-          <Route path="/analytics" element={<Analytics />} />
-          <Route path="/email-campaign" element={<Campaign />} />
-          <Route path="/automation" element={<Automation />} />
-          <Route path="/settings" element={<Settings />} />
-          <Route path="/auth" element={<UserAuthentication />} />
-          <Route path="/verification" element={<Verification />} />
-          <Route path="/support" element={<Support />} />
-          <Route path='/phoneValidation' element={<PhoneValidation/>}/>
-          <Route path='/pricingdash' element={<PricingDash />} />
-          <Route path='/new-campaign' element={<NewCampaignWindow />} />
-          <Route path="/create" element={<CreateCampaign />} />
-          <Route path="/editor/:id" element={<EditorPage />} />
-          <Route path="/leads" element={<Leads />} />
-          <Route path="/contactsPage" element={<ContactsPage />} />
-          <Route path="/deals" element={<Deals />} />
-          <Route path="/tasks" element={<Tasks />} />
+          <Routes>
+            <Route path="/services/email-verification" element={<FreeValidation />} />
+            <Route path="/services/integrations" element={<IntegrationPage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/" element={<HomePage />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/features" element={<Features />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route path="/payment" element={<PaymentPage />} />
+            <Route path="/services/bulk-verification" element={<BulkVerification />} />
+            <Route path="/faq" element={<FaqSection />} />
+            <Route path="/dashboard" element={<Dashboard />} />
+            <Route path="/contacts" element={<Contacts />} />
+            <Route path="/analytics" element={<Analytics />} />
+            <Route path="/email-campaign" element={<Campaign />} />
+            <Route path="/automation" element={<Automation />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/auth" element={<UserAuthentication />} />
+            <Route path="/verification" element={<Verification />} />
+            <Route path="/support" element={<Support />} />
+            <Route path='/phoneValidation' element={<PhoneValidation/>}/>
+            <Route path='/pricingdash' element={<PricingDash />} />
+            <Route path='/new-campaign' element={<NewCampaignWindow />} />
+            <Route path="/create" element={<CreateCampaign />} />
+            <Route path="/editor" element={<EditorPage />} />
+            <Route path="/leads" element={<Leads />} />
+            <Route path="/contactsPage" element={<ContactsPage />} />
+            <Route path="/deals" element={<Deals />} />
+            <Route path="/tasks" element={<Tasks />} />
+            <Route path="/templetes" element={<Templets />} />
+            <Route path="/canva" element={<CanvasArea />} />
 
-        </Routes>
+            {/* ✅ Use Wrapper for AllTemplates */}
+            <Route path="/all-templates" element={<AllTemplatesWrapper />} />
+
+          </Routes>
 
           <Chatbot />
         </Router>
       </NotificationProvider>
     </UserProvider>
+  );
+}
+
+// ✅ Wrapper for AllTemplates
+function AllTemplatesWrapper() {
+  const navigate = useNavigate();
+
+  const handleNavigateToEditor = (template, templateData) => {
+    navigate("/editor", { state: { template, templateData } });
+  };
+
+  const handleNavigateBack = () => {
+    navigate("/email-campaign"); // go back to create campaign (you can change path)
+  };
+
+  return (
+    <AllTemplates 
+      onNavigateToEditor={handleNavigateToEditor} 
+      onNavigateBack={handleNavigateBack} 
+    />
   );
 }
 
