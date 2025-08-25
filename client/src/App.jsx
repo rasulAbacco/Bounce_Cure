@@ -105,6 +105,7 @@ function App() {
           <Route path="/tasks" element={<Tasks />} />
           <Route path="/templetes" element={<Templets />} />
           <Route path="/canva" element={<CanvasArea />} />
+        <Route path="/reset-password/:token" element={<ResetPasswordPage />} /> {/* ✅ added dynamic route */}
         </Routes>
           <Chatbot />
         </Router>
