@@ -6,8 +6,8 @@ import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { HiOutlineDownload } from "react-icons/hi";
 import DashboardLayout from "../../components/DashboardLayout";
 
+const VRI_URL = import.meta.env.VITE_VRI_URL;
 
-const API_URL = import.meta.env.VITE_VRI_URL;
 const Verification = () => {
   const [activeTab, setActiveTab] = useState("single");
   const [singleEmail, setSingleEmail] = useState("");
@@ -28,7 +28,7 @@ const Verification = () => {
     setLoadingSingle(true);
 
     try {
-      const res = await axios.post(`${API_URL}/verification/verify-single`, {
+      const res = await axios.post(`${VRI_URL}/verification/verify-single`, {
         email: singleEmail,
       });
 
@@ -69,7 +69,7 @@ const Verification = () => {
     }, 200);
 
     try {
-      const res = await axios.post(`${API_URL}/verification/verify-bulk`, formData, {
+      const res = await axios.post(`${VRI_URL}/verification/verify-bulk`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
