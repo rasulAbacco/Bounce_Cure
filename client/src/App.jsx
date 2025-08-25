@@ -30,7 +30,6 @@ import CreateCampaign from './pages/Campaign/pages/CreateCampaign';
 import EditorPage from './pages/Campaign/pages/EditorPage';
 import PhoneValidation from './pages/PhoneValidation/PhoneValidation';
 import { Toaster } from 'react-hot-toast'; // ← add this
-
 import { NotificationProvider } from "./components/NotificationContext";
 import ContactsPage from './pages/ContactManagement/pages/ContactsPage';
 import Leads from './pages/ContactManagement/pages/Leads';
@@ -38,6 +37,8 @@ import Deals from './pages/ContactManagement/pages/Deals';
 import Tasks from './pages/ContactManagement/pages/Tasks';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import VerifyEmail from "./pages/VerifyEmail";
+import Templets from './pages/Campaign/pages/Templets';
+import CanvasArea from './pages/Campaign/components/Editor/CanvasArea';
 
 
 function App() {
@@ -101,7 +102,9 @@ function App() {
             <Route path="/deals" element={<Deals />} />
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
-          </Routes>
+            <Route path="/templetes" element={<Templets />} />
+            <Route path="/canva" element={<CanvasArea />} />
+        </Routes>
 
           <Chatbot />
         </Router>
