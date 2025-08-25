@@ -6,10 +6,8 @@ import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { HiOutlineDownload } from "react-icons/hi";
 import DashboardLayout from "../../components/DashboardLayout";
 
-const VRI_URL = import.meta.env.VITE_VRI_URL;
-console.log('API URL from env:', VRI_URL);
-console.log('Request URL:', `${VRI_URL}/verification/verify-single`);
 
+const VRI_URL = import.meta.env.VITE_VRI_URL;
 const Verification = () => {
   const [activeTab, setActiveTab] = useState("single");
   const [singleEmail, setSingleEmail] = useState("");
@@ -156,7 +154,7 @@ const Verification = () => {
         <span
           className={`inline-block px-3 py-1 rounded-full text-sm font-bold text-white ${getStatusColor(result.status, result.score)}`}
         >
-          {result.status}
+          {result.status.toUpperCase()}
         </span>
         <span className="text-xs text-gray-400">({result.score}%)</span>
       </div>
@@ -380,7 +378,7 @@ const Verification = () => {
                             onClick={() => downloadFile(fmt, filteredResults)}
                             className="block px-4 py-2 w-full text-left hover:bg-gray-700 text-gray-200"
                           >
-                            Download {fmt}
+                            Download {fmt.toUpperCase()}
                           </button>
                         ))}
                       </div>
