@@ -154,7 +154,8 @@ const Verification = () => {
         <span
           className={`inline-block px-3 py-1 rounded-full text-sm font-bold text-white ${getStatusColor(result.status, result.score)}`}
         >
-          {result.status}.toUpperCase()
+          {(result.status || "").toUpperCase()}
+
         </span>
         <span className="text-xs text-gray-400">({result.score}%)</span>
       </div>
@@ -378,7 +379,7 @@ const Verification = () => {
                             onClick={() => downloadFile(fmt, filteredResults)}
                             className="block px-4 py-2 w-full text-left hover:bg-gray-700 text-gray-200"
                           >
-                            Download {fmt}.toUpperCase()
+                            Download {(fmt || "").toUpperCase()}
                           </button>
                         ))}
                       </div>
