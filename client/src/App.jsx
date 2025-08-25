@@ -11,7 +11,7 @@ import Contact from './components/Contact';
 import About from './pages/About';
 import Features from './pages/Features';
 import BulkVerification from './pages/BulkVerification';
-import Chatbot from './pages/ChatBot';
+import Chatbot from './pages/Chatbot';
 import Dashboard from './pages/Dashboard/Dashboard';
 import FaqSection from './pages/FAQSection';
 import Settings from './pages/Settings/Settings';
@@ -36,9 +36,6 @@ import Leads from './pages/ContactManagement/pages/Leads';
 import Deals from './pages/ContactManagement/pages/Deals';
 import Tasks from './pages/ContactManagement/pages/Tasks';
 import ResetPasswordPage from './pages/ResetPasswordPage';
-import VerifyEmail from "./pages/VerifyEmail";
-import Templets from './pages/Campaign/pages/Templets';
-import CanvasArea from './pages/Campaign/components/Editor/CanvasArea';
 
 
 function App() {
@@ -101,10 +98,8 @@ function App() {
             <Route path="/contactsPage" element={<ContactsPage />} />
             <Route path="/deals" element={<Deals />} />
             <Route path="/tasks" element={<Tasks />} />
-            <Route path="/verify-email" element={<VerifyEmail />} />
-            <Route path="/templetes" element={<Templets />} />
-            <Route path="/canva" element={<CanvasArea />} />
-        </Routes>
+
+          </Routes>
 
           <Chatbot />
         </Router>
