@@ -7,6 +7,8 @@ import { HiOutlineDownload } from "react-icons/hi";
 import DashboardLayout from "../../components/DashboardLayout";
 
 const VRI_URL = import.meta.env.VITE_VRI_URL;
+console.log('API URL from env:', VRI_URL);
+console.log('Request URL:', `${VRI_URL}/verification/verify-single`);
 
 const Verification = () => {
   const [activeTab, setActiveTab] = useState("single");
