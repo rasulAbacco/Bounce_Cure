@@ -1,9 +1,9 @@
 
 // src/pages/EditPage.jsx
 import React, { useState } from "react";
-import CanvasArea from "../components/Editor/CanvasArea";
-import Toolbox from "../components/Editor/Toolbox";
-import PropertiesPanel from "../components/Editor/PropertiesPanel";
+import CanvasArea from "../Components/Editor/CanvasArea";
+import Toolbox from "../Components/Editor/Toolbox";
+import PropertiesPanel from "../Components/Editor/PropertiesPanel";
 
 const EditPage = () => {
   // Shared state for pages
@@ -19,10 +19,10 @@ const EditPage = () => {
         type === "heading"
           ? "Heading"
           : type === "paragraph"
-          ? "Paragraph text"
-          : type === "button"
-          ? "Click Me"
-          : "",
+            ? "Paragraph text"
+            : type === "button"
+              ? "Click Me"
+              : "",
       src: type === "image" ? "" : null,
       x: 50,
       y: 50,

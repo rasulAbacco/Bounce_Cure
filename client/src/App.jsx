@@ -11,7 +11,7 @@ import Contact from './components/Contact';
 import About from './pages/About';
 import Features from './pages/Features';
 import BulkVerification from './pages/BulkVerification';
-import Chatbot from './pages/Chatbot';
+import Chatbot from './pages/ChatBot';
 import Dashboard from './pages/Dashboard/Dashboard';
 import FaqSection from './pages/FAQSection';
 import Settings from './pages/Settings/Settings';
