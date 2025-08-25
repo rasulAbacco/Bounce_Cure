@@ -154,7 +154,7 @@ const Verification = () => {
         <span
           className={`inline-block px-3 py-1 rounded-full text-sm font-bold text-white ${getStatusColor(result.status, result.score)}`}
         >
-          {result.status.toUpperCase()}
+          {result.status}.toUpperCase()
         </span>
         <span className="text-xs text-gray-400">({result.score}%)</span>
       </div>
@@ -229,8 +229,8 @@ const Verification = () => {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`${activeTab === tab
-                  ? "bg-white text-yellow-700 border-2 border-yellow-600 shadow-md font-bold"
-                  : "bg-transparent text-gray-200 border border-yellow-600 font-semibold"
+                ? "bg-white text-yellow-700 border-2 border-yellow-600 shadow-md font-bold"
+                : "bg-transparent text-gray-200 border border-yellow-600 font-semibold"
                 } px-6 py-2 rounded-md transition-all duration-300 w-full sm:w-[300px] text-center`}
             >
               {tab === "single" ? "Single Verification" : "Bulk Verification"}
@@ -256,8 +256,8 @@ const Verification = () => {
                 onClick={verifySingle}
                 disabled={loadingSingle}
                 className={`px-4 py-2 rounded-md font-bold ${loadingSingle
-                    ? "bg-gray-600 text-gray-300 cursor-not-allowed"
-                    : "bg-white text-yellow-700 hover:bg-gray-100"
+                  ? "bg-gray-600 text-gray-300 cursor-not-allowed"
+                  : "bg-white text-yellow-700 hover:bg-gray-100"
                   }`}
               >
                 {loadingSingle ? "Verifying..." : "Verify"}
@@ -378,7 +378,7 @@ const Verification = () => {
                             onClick={() => downloadFile(fmt, filteredResults)}
                             className="block px-4 py-2 w-full text-left hover:bg-gray-700 text-gray-200"
                           >
-                            Download {fmt.toUpperCase()}
+                            Download {fmt}.toUpperCase()
                           </button>
                         ))}
                       </div>
