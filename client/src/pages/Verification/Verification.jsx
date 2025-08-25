@@ -6,6 +6,8 @@ import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { HiOutlineDownload } from "react-icons/hi";
 import DashboardLayout from "../../components/DashboardLayout";
 
+
+const API_URL = import.meta.env.VITE_VRI_URL;
 const Verification = () => {
   const [activeTab, setActiveTab] = useState("single");
   const [singleEmail, setSingleEmail] = useState("");
@@ -22,11 +24,11 @@ const Verification = () => {
   // --- SINGLE VERIFICATION ---
   const verifySingle = async () => {
     if (!singleEmail) return alert("Enter an email");
-    
+
     setLoadingSingle(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/verification/verify-single", {
+      const res = await axios.post(`${API_URL}/verification/verify-single`, {
         email: singleEmail,
       });
 
@@ -67,7 +69,7 @@ const Verification = () => {
     }, 200);
 
     try {
-      const res = await axios.post("http://localhost:5000/verification/verify-bulk", formData, {
+      const res = await axios.post(`${API_URL}/verification/verify-bulk`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -105,7 +107,7 @@ const Verification = () => {
   // --- DOWNLOAD FUNCTION ---
   const downloadFile = (format, data) => {
     if (!data?.length) return alert("No results to download");
-    
+
     // Enhanced data for download with all verification details
     const enhancedData = data.map(r => ({
       email: r.email,
@@ -119,7 +121,7 @@ const Verification = () => {
       role_based: r.role_based ? 'Yes' : 'No',
       greylisted: r.greylisted ? 'Yes' : 'No'
     }));
-    
+
     if (["csv", "xlsx"].includes(format)) {
       const ws = XLSX.utils.json_to_sheet(enhancedData);
       const wb = XLSX.utils.book_new();
@@ -207,14 +209,14 @@ const Verification = () => {
   const filteredResults =
     viewingBatch && filter !== "all"
       ? viewingBatch.results.filter((r) => {
-          if (filter === "valid") return r.status === "valid";
-          if (filter === "invalid") return r.status === "invalid";
-          if (filter === "risky") return r.status === "risky";
-          if (filter === "disposable") return r.disposable;
-          if (filter === "role_based") return r.role_based;
-          if (filter === "catch_all") return r.catch_all;
-          return true;
-        })
+        if (filter === "valid") return r.status === "valid";
+        if (filter === "invalid") return r.status === "invalid";
+        if (filter === "risky") return r.status === "risky";
+        if (filter === "disposable") return r.disposable;
+        if (filter === "role_based") return r.role_based;
+        if (filter === "catch_all") return r.catch_all;
+        return true;
+      })
       : viewingBatch?.results || [];
 
   return (
@@ -226,11 +228,10 @@ const Verification = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`${
-                activeTab === tab
+              className={`${activeTab === tab
                   ? "bg-white text-yellow-700 border-2 border-yellow-600 shadow-md font-bold"
                   : "bg-transparent text-gray-200 border border-yellow-600 font-semibold"
-              } px-6 py-2 rounded-md transition-all duration-300 w-full sm:w-[300px] text-center`}
+                } px-6 py-2 rounded-md transition-all duration-300 w-full sm:w-[300px] text-center`}
             >
               {tab === "single" ? "Single Verification" : "Bulk Verification"}
             </button>
@@ -254,11 +255,10 @@ const Verification = () => {
               <button
                 onClick={verifySingle}
                 disabled={loadingSingle}
-                className={`px-4 py-2 rounded-md font-bold ${
-                  loadingSingle 
+                className={`px-4 py-2 rounded-md font-bold ${loadingSingle
                     ? "bg-gray-600 text-gray-300 cursor-not-allowed"
                     : "bg-white text-yellow-700 hover:bg-gray-100"
-                }`}
+                  }`}
               >
                 {loadingSingle ? "Verifying..." : "Verify"}
               </button>
@@ -355,9 +355,8 @@ const Verification = () => {
                     <button
                       key={f}
                       onClick={() => setFilter(f)}
-                      className={`px-4 py-2 rounded-md border text-sm ${
-                        filter === f ? "bg-gray-700 text-white" : "text-gray-400"
-                      } border-yellow-600`}
+                      className={`px-4 py-2 rounded-md border text-sm ${filter === f ? "bg-gray-700 text-white" : "text-gray-400"
+                        } border-yellow-600`}
                     >
                       {f.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
                     </button>
@@ -440,9 +439,8 @@ const Verification = () => {
                   <div
                     key={batch.id}
                     onClick={() => setViewingBatchId(batch.id)}
-                    className={`flex justify-between items-center p-4 border rounded-md cursor-pointer ${
-                      viewingBatchId === batch.id ? "bg-gray-800" : "border-gray-600"
-                    }`}
+                    className={`flex justify-between items-center p-4 border rounded-md cursor-pointer ${viewingBatchId === batch.id ? "bg-gray-800" : "border-gray-600"
+                      }`}
                   >
                     <div>
                       <strong>{batch.filename}</strong>
