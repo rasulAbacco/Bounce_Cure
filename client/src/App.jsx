@@ -110,30 +110,11 @@ function App() {
 
           </Routes>
 
+
           <Chatbot />
         </Router>
       </NotificationProvider>
     </UserProvider>
-  );
-}
-
-// ✅ Wrapper for AllTemplates
-function AllTemplatesWrapper() {
-  const navigate = useNavigate();
-
-  const handleNavigateToEditor = (template, templateData) => {
-    navigate("/editor", { state: { template, templateData } });
-  };
-
-  const handleNavigateBack = () => {
-    navigate("/email-campaign"); // go back to create campaign (you can change path)
-  };
-
-  return (
-    <AllTemplates 
-      onNavigateToEditor={handleNavigateToEditor} 
-      onNavigateBack={handleNavigateBack} 
-    />
   );
 }
 
