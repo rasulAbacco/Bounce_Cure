@@ -26,7 +26,7 @@ const BulkVerification = () => {
             <div className="min-h-screen bg-black text-white px-6 py-12 space-y-16">
                 {/* Header */}
                 <section className="text-center max-w-3xl mx-auto">
-                    <h1 className="text-4xl font-bold mb-4">Bulk Email Verification</h1>
+                    <h1 className="text-4xl font-bold mb-4 text-[#c2831f]">Bulk Email Verification</h1>
                     <p className="text-gray-400">
                         Validate your entire email list in one go. Upload your file and instantly identify valid, invalid, and risky addresses.
                     </p>
@@ -34,7 +34,7 @@ const BulkVerification = () => {
 
                 {/* Demo Upload */}
                 <section className="bg-white/5 p-8 rounded-3xl border border-white/10 text-center shadow-xl">
-                    <h2 className="text-2xl font-bold mb-4">Free Demo – No Login Required</h2>
+                    <h2 className="text-2xl font-bold mb-4 text-[#c2831f]">Free Demo – No Login Required</h2>
                     <p className="text-gray-400 mb-6">Upload a CSV file with up to 10 emails for a free check.</p>
                     <label className="cursor-pointer bg-white text-black px-6 py-3 rounded-xl font-bold inline-flex items-center gap-2 hover:scale-105 transition-all duration-300">
                         <Upload className="w-5 h-5" /> Upload CSV
@@ -86,7 +86,7 @@ const BulkVerification = () => {
 
                 {/* Why It’s Needed */}
                 <section className="bg-white/5 p-8 rounded-3xl border border-white/10 shadow-xl">
-                    <h2 className="text-2xl font-bold mb-6 text-center">Why Bulk Verification?</h2>
+                    <h2 className="text-2xl font-bold mb-6 text-center text-[#c2831f]">Why Bulk Verification?</h2>
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center">
                         {[
                             { icon: Shield, title: "Protect Reputation", desc: "Avoid blacklists by removing harmful addresses." },
@@ -104,7 +104,7 @@ const BulkVerification = () => {
 
                 {/* How It Works */}
                 <section>
-                    <h2 className="text-2xl font-bold mb-6 text-center">How Bulk Verification Works</h2>
+                    <h2 className="text-2xl font-bold mb-6 text-center text-[#c2831f]">How Bulk Verification Works</h2>
                     <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
                         {[
                             { icon: Upload, title: "Upload", desc: "Import your email list in CSV format." },
@@ -130,7 +130,7 @@ const BulkVerification = () => {
         bg-gradient-to-r from-transparent via-white/20 to-transparent 
         animate-shine pointer-events-none"></div>
 
-                    <h2 className="text-3xl font-bold mb-4 text-white">
+                    <h2 className="text-3xl font-bold mb-4 text-[#c2831f]">
                         Integrate With Your Workflow
                     </h2>
                     <p className="mb-6 text-white/80">
@@ -148,7 +148,7 @@ const BulkVerification = () => {
 
                 {/* Call to Action */}
                 <section className="bg-white/5 p-8 rounded-3xl border border-white/10 shadow-xl text-center">
-                    <h2 className="text-3xl font-bold mb-4">Start Cleaning Your Email List</h2>
+                    <h2 className="text-3xl font-bold mb-4 text-[#c2831f]">Start Cleaning Your Email List</h2>
                     <p className="text-gray-400 mb-6">Sign up now to validate thousands of emails instantly.</p>
                     <Link to="/signup" className="bg-white text-black font-bold py-3 px-6 rounded-xl hover:scale-105 transition-all">
                         Get Started

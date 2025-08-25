@@ -3,6 +3,8 @@ import { FaEnvelope, FaTicketAlt, FaPhoneAlt, FaComments } from "react-icons/fa"
 import DashboardLayout from "../../components/DashboardLayout";
 import "../../styles/support.css";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export default function HelpAndSupport() {
     const [messageForm, setMessageForm] = useState({ name: "", message: "" });
     const [ticketForm, setTicketForm] = useState({
@@ -62,85 +64,85 @@ export default function HelpAndSupport() {
         setOpenIndex(openIndex === index ? null : index);
     };
 
-const handleMessageSubmit = async (e) => {
-  e.preventDefault();
+    const handleMessageSubmit = async (e) => {
+        e.preventDefault();
 
-  try {
-    const token = localStorage.getItem("token");
-    const user = JSON.parse(localStorage.getItem("user")); // 👈 load user (id, email)
+        try {
+            const token = localStorage.getItem("token");
+            const user = JSON.parse(localStorage.getItem("user")); // 👈 load user (id, email)
 
-    const res = await fetch("http://localhost:5000/api/support/message", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`, // 👈 send JWT
-      },
-      body: JSON.stringify({
-        name: messageForm.name,
-        message: messageForm.message,
-        userId: user?.id || "",       // 👈 include user id
-        userEmail: user?.email || "", // 👈 include user email
-      }),
-    });
+            const res = await fetch(`${API_URL}/support/message`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`, // 👈 send JWT
+                },
+                body: JSON.stringify({
+                    name: messageForm.name,
+                    message: messageForm.message,
+                    userId: user?.id || "",       // 👈 include user id
+                    userEmail: user?.email || "", // 👈 include user email
+                }),
+            });
 
-    const data = await res.json();
+            const data = await res.json();
 
-    if (res.ok) {
-      alert(data.message);
-      setMessageForm({ name: "", message: "" });
-    } else {
-      alert(data.error || "Failed to send message.");
-    }
-  } catch (err) {
-    console.error("❌ handleMessageSubmit error:", err);
-    alert("Something went wrong. Please try again later.");
-  }
-};
+            if (res.ok) {
+                alert(data.message);
+                setMessageForm({ name: "", message: "" });
+            } else {
+                alert(data.error || "Failed to send message.");
+            }
+        } catch (err) {
+            console.error("❌ handleMessageSubmit error:", err);
+            alert("Something went wrong. Please try again later.");
+        }
+    };
 
 
-   const handleTicketSubmit = async (e) => {
-  e.preventDefault();
+    const handleTicketSubmit = async (e) => {
+        e.preventDefault();
 
-  const formData = new FormData();
-  formData.append("subject", ticketForm.subject);
-  formData.append("description", ticketForm.description);
+        const formData = new FormData();
+        formData.append("subject", ticketForm.subject);
+        formData.append("description", ticketForm.description);
 
-  // Files (screenshots)
-  if (ticketForm.screenshots && ticketForm.screenshots.length > 0) {
-    for (let i = 0; i < ticketForm.screenshots.length; i++) {
-      formData.append("files", ticketForm.screenshots[i]); 
-      // 👆 must match backend field: "files" OR "screenshots"
-    }
-  }
+        // Files (screenshots)
+        if (ticketForm.screenshots && ticketForm.screenshots.length > 0) {
+            for (let i = 0; i < ticketForm.screenshots.length; i++) {
+                formData.append("files", ticketForm.screenshots[i]);
+                // 👆 must match backend field: "files" OR "screenshots"
+            }
+        }
 
-  try {
-    const token = localStorage.getItem("token"); // 👈 where JWT is stored
+        try {
+            const token = localStorage.getItem("token"); // 👈 where JWT is stored
 
-    const res = await fetch("http://localhost:5000/api/support/ticket", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`, // 👈 REQUIRED
-      },
-      body: formData,
-    });
+            const res = await fetch(`${API_URL}/support/ticket`, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`, // 👈 REQUIRED
+                },
+                body: formData,
+            });
 
-    const data = await res.json();
+            const data = await res.json();
 
-    if (res.ok) {
-      alert(data.message);
-      setTicketForm({
-        subject: "",
-        description: "",
-        screenshots: [],
-      });
-    } else {
-      alert(data.error || "Failed to submit ticket.");
-    }
-  } catch (err) {
-    console.error(err);
-    alert("Something went wrong. Please try again later.");
-  }
-};
+            if (res.ok) {
+                alert(data.message);
+                setTicketForm({
+                    subject: "",
+                    description: "",
+                    screenshots: [],
+                });
+            } else {
+                alert(data.error || "Failed to submit ticket.");
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Something went wrong. Please try again later.");
+        }
+    };
 
 
     // ----- Animated background -----

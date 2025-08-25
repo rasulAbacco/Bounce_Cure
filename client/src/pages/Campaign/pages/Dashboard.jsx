@@ -21,6 +21,7 @@ import { Link } from "react-router-dom";
 import { getCampaigns } from "../../../services/campaignService";
 import Button from "../Components/UI/Button";
 import Layout from "../Components/Layout/Layout";
+import Templets from "./Templets";
 import {
     MdCampaign,
     MdPeople,
@@ -31,12 +32,17 @@ import {
     MdDescription,
 
 } from "react-icons/md";
+import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
     const [campaigns, setCampaigns] = useState([]);
     const [loading, setLoading] = useState(true);
     const [filter, setFilter] = useState("All");
     const [activeTab, setActiveTab] = useState("dashboard");
+
+
+     const navigate = useNavigate();
+  const [showOptions, setShowOptions] = useState(false);
 
     useEffect(() => {
         getCampaigns()
@@ -102,18 +108,85 @@ const Dashboard = () => {
                         Complete email marketing management in one place
                     </p>
                 </div>
-                <div className="flex space-x-5 ">
-                    <MdRefresh
-                        className="w-8 h-8 mt-2 text-[#c2831f] hover:text-white cursor-pointer"
-                        onClick={() => window.location.reload()}
-                    />
-                    <Link to="/create">
-                        <Button className="bg-[#c2831f] text-black flex items-center px-4 py-2 text-sm font-medium gap-2 ">
-                            <MdAdd className="w-5 h-6 cursor-pointer" />
-                            <span>New Campaign</span>
-                        </Button>
-                    </Link>
+                
+                 <div className="flex flex-row items-center justify-center text-white gap-5">
+                    {/* Top Row Actions */}
+                    <div className="flex space-x-3 cursor-pointer z-index">
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-500 text-[#c2831f] hover:text-white hover:border-yellow-500 transition"
+                        >
+                            <MdRefresh className="w-6 h-6" /> {/* adjust size here */}
+                        </button>
+                    </div>
+
+
+                    {/* New Campaign Button */}
+                    <Button
+                    onClick={() => setShowOptions(true)}
+                    className="text-white px-6 py-3 rounded-xl transition duration-200" 
+                    >
+                    New Campaign
+                    </Button>
+
+
+                    {/* Modal */}
+                    {showOptions && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center">
+                        {/* Background Blur Overlay */}
+                        <div
+                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                            onClick={() => setShowOptions(false)} // close on outside click
+                        ></div>
+
+                        {/* Modal Content */}
+                        <div className="relative bg-[#111] text-white rounded-2xl shadow-2xl p-8 w-[90%] max-w-3xl border border-gray-800 animate-fadeIn">
+                            {/* Close Button */}
+                            <button
+                            className="absolute top-4 right-4 text-gray-400 hover:text-white text-xl"
+                            onClick={() => setShowOptions(false)}
+                            >
+                            ✕
+                            </button>
+
+                            <h2 className="text-2xl font-bold mb-6 text-center">
+                            Create New Campaign
+                            </h2>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            {/* Option 1 - Scratch */}
+                            <div
+                                onClick={() => {
+                                setShowOptions(false);
+                                navigate("/editor", { state: { template: null } });
+                                }}
+                                className="cursor-pointer bg-gray-900 p-8 rounded-xl hover:bg-gray-800 transition flex flex-col items-center text-center"
+                            >
+                                <h3 className="text-xl font-semibold mb-2">Start from Scratch</h3>
+                                <p className="text-gray-400 text-sm">
+                                Create a brand new design with an empty canvas
+                                </p>
+                            </div>
+
+                            {/* Option 2 - Templates */}
+                            <div
+                                onClick={() => {
+                                setShowOptions(false);
+                                navigate("/all-templates");
+                                }}
+                                className="cursor-pointer bg-gray-900 p-8 rounded-xl hover:bg-gray-800 transition flex flex-col items-center text-center"
+                            >
+                                <h3 className="text-xl font-semibold mb-2">Choose Templates</h3>
+                                <p className="text-gray-400 text-sm">
+                                Select from predefined templates
+                                </p>
+                            </div>
+                            </div>
+                        </div>
+                        </div>
+                    )}
                 </div>
+
             </div>
 
             {/* Navigation Tabs */}
@@ -516,13 +589,11 @@ const Dashboard = () => {
                 </div>
             )}
             {activeTab === "templates" && (
-                <div className="bg-[#111] p-6 rounded-xl border border-gray-800">
-                    <h3 className="text-lg font-semibold mb-2">Templates</h3>
-                    <p className="text-gray-400">
-                        Pre-designed templates for email campaigns.
-                    </p>
+                <div className="">
+                    <Templets />
                 </div>
             )}
+
         </div>
 
     );

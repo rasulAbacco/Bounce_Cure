@@ -21,8 +21,8 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
   const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
 
-  
-// ✅ Filter notifications based on preferences
+
+  // ✅ Filter notifications based on preferences
   const notifications = allNotifications.filter((n) => preferences[n.type]);
 
   const handleLogout = () => {
@@ -85,8 +85,8 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
               )}
             </button>
 
-            {showNotifications && ( 
-              <div className="absolute right-0 top-12 w-72 bg-gray-800/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-xl">
+            {showNotifications && (
+              <div className="absolute right-0 top-12 w-72 bg-black backdrop-blur-lg border border-white/50 rounded-lg shadow-xl">
                 <div className="p-3 border-b border-white/10">
                   <h3 className="text-white font-semibold">Notifications</h3>
                 </div>
@@ -98,9 +98,8 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
                     >
                       <div className="flex items-start space-x-3">
                         <div
-                          className={`w-2 h-2 rounded-full mt-2 ${
-                            notification.unread ? "bg-blue-500" : "bg-gray-500"
-                          }`}
+                          className={`w-2 h-2 rounded-full mt-2 ${notification.unread ? "bg-blue-500" : "bg-gray-500"
+                            }`}
                         ></div>
                         <div className="flex-1">
                           <p className="text-sm text-white">{notification.message}</p>
@@ -115,7 +114,7 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
           </div>
 
           {/* Profile Menu */}
-          <div className="relative">
+          <div className="relative z-[999]">
             <button
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className="flex items-center space-x-2 sm:space-x-3 text-white hover:bg-white/10 p-2 rounded-lg transition-colors"
@@ -139,7 +138,7 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
             </button>
 
             {showProfileMenu && (
-              <div className="absolute right-0 top-14 bg-gray-800/95 backdrop-blur-lg border border-white/10 rounded-lg shadow-xl">
+              <div className="absolute right-3 w-[70%]  top-17 z-[999] bg-black backdrop-blur-lg border border-white/50 rounded-lg shadow-xl">
                 <div className="p-2">
                   <Link
                     to="/auth"
@@ -158,10 +157,10 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
                   <hr className="border-white/10 my-2" />
                   <button
                     onClick={handleLogout}
-                    className="w-full flex items-center space-x-2 text-red-400 hover:bg-white/10 p-2 rounded-lg transition-colors"
+                    className="w-full flex items-center space-x-2 text-red-600 hover:bg-white/10 p-2 rounded-lg transition-colors"
                   >
-                    <LogOut className="w-4 h-4" />
-                    <span>Logout</span>
+                    <LogOut className="w-4 h-4 font-bold" />
+                    <span className="font-bold" >Logout</span>
                   </button>
                 </div>
               </div>
