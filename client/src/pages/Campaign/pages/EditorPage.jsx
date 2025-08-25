@@ -1,9 +1,6 @@
-
 // src/pages/EditorPage.jsx
 import React, { useState, useRef, useEffect } from "react";
 import { useLocation } from 'react-router-dom';
-
-
 import CanvasArea from "../components/Editor/CanvasArea";
 import Toolbox from "../components/Editor/Toolbox";
 import PropertiesPanel from "../components/Editor/PropertiesPanel";
@@ -49,6 +46,7 @@ const EditorPage = () => {
   }, [template]);
 
   // Add element from Toolbox
+=
 const handleAddElement = (type) => {
   const newElement = {
     id: crypto.randomUUID(),
