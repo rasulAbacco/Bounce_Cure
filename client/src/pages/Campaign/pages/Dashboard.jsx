@@ -41,8 +41,8 @@ const Dashboard = () => {
     const [activeTab, setActiveTab] = useState("dashboard");
 
 
-     const navigate = useNavigate();
-  const [showOptions, setShowOptions] = useState(false);
+    const navigate = useNavigate();
+    const [showOptions, setShowOptions] = useState(false);
 
     useEffect(() => {
         getCampaigns()
@@ -76,7 +76,7 @@ const Dashboard = () => {
 
     return (
 
-        <div className="p-6 bg-black text-white min-h-screen">
+        <div className="p-6 bg-black text-white min-h-screen mt-[5%]">
             {/* Header */}
             <div className="flex justify-between items-center mb-8">
                 <div>
@@ -85,8 +85,8 @@ const Dashboard = () => {
                         Complete email marketing management in one place
                     </p>
                 </div>
-                
-                 <div className="flex flex-row items-center justify-center text-white gap-5">
+
+                <div className="flex flex-row items-center justify-center text-white gap-5">
                     {/* Top Row Actions */}
                     <div className="flex space-x-3 cursor-pointer z-index">
                         <button
@@ -100,66 +100,66 @@ const Dashboard = () => {
 
                     {/* New Campaign Button */}
                     <Button
-                    onClick={() => setShowOptions(true)}
-                    className="text-white px-6 py-3 rounded-xl transition duration-200" 
+                        onClick={() => setShowOptions(true)}
+                        className="text-white px-6 py-3 rounded-xl transition duration-200"
                     >
-                    New Campaign
+                        New Campaign
                     </Button>
 
 
                     {/* Modal */}
                     {showOptions && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center">
-                        {/* Background Blur Overlay */}
-                        <div
-                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                            onClick={() => setShowOptions(false)} // close on outside click
-                        ></div>
-
-                        {/* Modal Content */}
-                        <div className="relative bg-[#111] text-white rounded-2xl shadow-2xl p-8 w-[90%] max-w-3xl border border-gray-800 animate-fadeIn">
-                            {/* Close Button */}
-                            <button
-                            className="absolute top-4 right-4 text-gray-400 hover:text-white text-xl"
-                            onClick={() => setShowOptions(false)}
-                            >
-                            ✕
-                            </button>
-
-                            <h2 className="text-2xl font-bold mb-6 text-center">
-                            Create New Campaign
-                            </h2>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Option 1 - Scratch */}
+                            {/* Background Blur Overlay */}
                             <div
-                                onClick={() => {
-                                setShowOptions(false);
-                                navigate("/editor", { state: { template: null } });
-                                }}
-                                className="cursor-pointer bg-gray-900 p-8 rounded-xl hover:bg-gray-800 transition flex flex-col items-center text-center"
-                            >
-                                <h3 className="text-xl font-semibold mb-2">Start from Scratch</h3>
-                                <p className="text-gray-400 text-sm">
-                                Create a brand new design with an empty canvas
-                                </p>
-                            </div>
+                                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                                onClick={() => setShowOptions(false)} // close on outside click
+                            ></div>
 
-                            {/* Option 2 - Templates */}
-                            <div
-                                onClick={() => {
-                                setShowOptions(false);
-                                navigate("/all-templates");
-                                }}
-                                className="cursor-pointer bg-gray-900 p-8 rounded-xl hover:bg-gray-800 transition flex flex-col items-center text-center"
-                            >
-                                <h3 className="text-xl font-semibold mb-2">Choose Templates</h3>
-                                <p className="text-gray-400 text-sm">
-                                Select from predefined templates
-                                </p>
+                            {/* Modal Content */}
+                            <div className="relative bg-[#111] text-white rounded-2xl shadow-2xl p-8 w-[90%] max-w-3xl border border-gray-800 animate-fadeIn">
+                                {/* Close Button */}
+                                <button
+                                    className="absolute top-4 right-4 text-gray-400 hover:text-white text-xl"
+                                    onClick={() => setShowOptions(false)}
+                                >
+                                    ✕
+                                </button>
+
+                                <h2 className="text-2xl font-bold mb-6 text-center">
+                                    Create New Campaign
+                                </h2>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Option 1 - Scratch */}
+                                    <div
+                                        onClick={() => {
+                                            setShowOptions(false);
+                                            navigate("/editor", { state: { template: null } });
+                                        }}
+                                        className="cursor-pointer bg-gray-900 p-8 rounded-xl hover:bg-gray-800 transition flex flex-col items-center text-center"
+                                    >
+                                        <h3 className="text-xl font-semibold mb-2">Start from Scratch</h3>
+                                        <p className="text-gray-400 text-sm">
+                                            Create a brand new design with an empty canvas
+                                        </p>
+                                    </div>
+
+                                    {/* Option 2 - Templates */}
+                                    <div
+                                        onClick={() => {
+                                            setShowOptions(false);
+                                            navigate("/all-templates");
+                                        }}
+                                        className="cursor-pointer bg-gray-900 p-8 rounded-xl hover:bg-gray-800 transition flex flex-col items-center text-center"
+                                    >
+                                        <h3 className="text-xl font-semibold mb-2">Choose Templates</h3>
+                                        <p className="text-gray-400 text-sm">
+                                            Select from predefined templates
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
-                            </div>
-                        </div>
                         </div>
                     )}
                 </div>
