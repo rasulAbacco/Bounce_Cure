@@ -3,6 +3,9 @@ import { Mail, Lock, User, CheckCircle, Shield, Zap, Globe, Clock, Phone } from 
 import PageLayout from '../components/PageLayout';
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+
+const API_URL = import.meta.env.VITE_API_URL;
+
 const ModernSignup = () => {
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
@@ -25,7 +28,7 @@ const ModernSignup = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const res = await fetch('http://localhost:5000/api/auth/signup', {
+            const res = await fetch(`${API_URL}/auth/signup`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(formData)

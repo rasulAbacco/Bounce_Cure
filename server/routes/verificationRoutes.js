@@ -9,7 +9,7 @@ import path from "path";
 import { promisify } from "util";
 
 const router = express.Router();
-const verifier = new AdvancedVerifier({ 
+const verifier = new AdvancedVerifier({
   maxRetries: 5,
   dnsTimeout: 5000,
   smtpTimeout: 8000,
@@ -53,9 +53,9 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
         fs.createReadStream(filePath)
           .pipe(csvParser())
           .on("data", (row) => {
-            const e = row.email || row.Email || row.EMAIL || row.eMail || 
-                     row.E_Mail || row["Email Address"] || row["email_address"] ||
-                     row.mail || row.Mail || row.MAIL;
+            const e = row.email || row.Email || row.EMAIL || row.eMail ||
+              row.E_Mail || row["Email Address"] || row["email_address"] ||
+              row.mail || row.Mail || row.MAIL;
             if (e && typeof e === 'string' && e.trim()) {
               emails.push(e.trim().toLowerCase());
             }
@@ -64,22 +64,22 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
           .on("error", reject);
       });
 
-    // ---- Parse XLSX ----
+      // ---- Parse XLSX ----
     } else if (ext === ".xlsx") {
       const workbook = XLSX.readFile(filePath);
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
       rows.forEach((r) => {
-        const e = r.email || r.Email || r.EMAIL || r.eMail || 
-                 r.E_Mail || r["Email Address"] || r["email_address"] ||
-                 r.mail || r.Mail || r.MAIL;
+        const e = r.email || r.Email || r.EMAIL || r.eMail ||
+          r.E_Mail || r["Email Address"] || r["email_address"] ||
+          r.mail || r.Mail || r.MAIL;
         if (e && typeof e === 'string' && e.trim()) {
           emails.push(e.trim().toLowerCase());
         }
       });
 
-    // ---- Parse TXT ----
+      // ---- Parse TXT ----
     } else if (ext === ".txt") {
       const content = fs.readFileSync(filePath, "utf-8");
       const lines = content.split(/\r?\n/);
@@ -93,7 +93,7 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
         }
       });
 
-    // ---- Unsupported ----
+      // ---- Unsupported ----
     } else {
       await unlinkFile(filePath);
       return res.status(400).json({
@@ -127,11 +127,11 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
       const batchPromises = batch.map(async (email) => {
         try {
           const result = await verifier.verify(email);
-          
+
           if (result.status === 'valid') summary.valid++;
           else if (result.status === 'invalid') summary.invalid++;
           else if (result.status === 'risky') summary.risky++;
-          
+
           if (result.disposable) summary.disposable++;
           if (result.role_based) summary.role_based++;
           if (result.catch_all) summary.catch_all++;
@@ -157,7 +157,7 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
       });
 
       const batchResults = await Promise.allSettled(batchPromises);
-      
+
       for (const result of batchResults) {
         if (result.status === "fulfilled") {
           results.push(result.value);
@@ -193,22 +193,22 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
 
   } catch (err) {
     if (fs.existsSync(filePath)) await unlinkFile(filePath);
-    res.status(500).json({ 
-      error: "Bulk verification failed", 
-      details: err.message 
+    res.status(500).json({
+      error: "Bulk verification failed",
+      details: err.message
     });
   }
 });
 
 // --------- 3. Health Check Endpoint ----------
 router.get("/health", (req, res) => {
-  res.json({ 
-    status: "ok", 
+  res.json({
+    status: "ok",
     timestamp: new Date().toISOString(),
     version: "7-layer-advanced",
     features: [
       "syntax_validation",
-      "dns_mx_validation", 
+      "dns_mx_validation",
       "smtp_verification",
       "greylist_retry",
       "catch_all_detection",
