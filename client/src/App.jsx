@@ -35,7 +35,7 @@ import ContactsPage from'./pages/ContactManagement/pages/ContactsPage';
 import Leads from './pages/ContactManagement/pages/Leads';
 import Deals from './pages/ContactManagement/pages/Deals';
 import Tasks from './pages/ContactManagement/pages/Tasks';
-import ResetPasswordPage from './pages/ResetPasswordPage';=
+import ResetPasswordPage from './pages/ResetPasswordPage';
 import VerifyEmail from "./pages/VerifyEmail";
 import Templets from './pages/Campaign/pages/Templets';
 import CanvasArea from './pages/Campaign/components/Editor/CanvasArea';
