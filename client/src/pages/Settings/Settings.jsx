@@ -193,9 +193,8 @@ function NotificationsSection() {
     <button
       type="button"
       onClick={() => onChange(!active)}
-      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${
-        active ? "bg-gray-500 border-gray-500" : "bg-gray-700 border-gray-500"
-      }`}
+      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${active ? "bg-gray-500 border-gray-500" : "bg-gray-700 border-gray-500"
+        }`}
     >
       {active && (
         <svg
@@ -345,7 +344,7 @@ function DangerSection() {
             try {
               const data = await res.json();
               message = data?.message || message;
-            } catch (_) {}
+            } catch (_) { }
             throw new Error(message);
           }
 
@@ -401,7 +400,6 @@ export default function SettingsPage() {
         {activeSection === "apikeys" && <ApiKeysSection />}
         {activeSection === "danger" && <DangerSection />}
       </div>
-      <Toaster position="top-right" />
     </DashboardLayout>
   );
 }

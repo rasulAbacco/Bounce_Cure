@@ -11,7 +11,7 @@ import Contact from './components/Contact';
 import About from './pages/About';
 import Features from './pages/Features';
 import BulkVerification from './pages/BulkVerification';
-import Chatbot from './pages/Chatbot';
+import Chatbot from './pages/ChatBot';
 import Dashboard from './pages/Dashboard/Dashboard';
 import FaqSection from './pages/FAQSection';
 import Settings from './pages/Settings/Settings';
@@ -29,13 +29,16 @@ import NewCampaignWindow from './pages/Campaign/Components/NewCampaignWindow';
 import CreateCampaign from './pages/Campaign/pages/CreateCampaign';
 import EditorPage from './pages/Campaign/pages/EditorPage';
 import PhoneValidation from './pages/PhoneValidation/PhoneValidation';
+
 import { Toaster } from 'react-hot-toast';
 import { NotificationProvider } from "./components/NotificationContext"; 
 import ContactsPage from'./pages/ContactManagement/pages/ContactsPage';
+
 import Leads from './pages/ContactManagement/pages/Leads';
 import Deals from './pages/ContactManagement/pages/Deals';
 import Tasks from './pages/ContactManagement/pages/Tasks';
 import ResetPasswordPage from './pages/ResetPasswordPage';
+import VerifyEmail from "./pages/VerifyEmail";
 import Templets from './pages/Campaign/pages/Templets';
 import CanvasArea from './pages/Campaign/components/Editor/CanvasArea';
 import AllTemplates from './pages/Campaign/pages/AllTemplats';
@@ -95,7 +98,6 @@ function App() {
             <Route path="/support" element={<Support />} />
             <Route path='/phoneValidation' element={<PhoneValidation/>}/>
             <Route path='/pricingdash' element={<PricingDash />} />
-
             <Route path='/new-campaign' element={<NewCampaignWindow />} />
             <Route path="/create" element={<CreateCampaign />} />
             <Route path="/editor" element={<EditorPage />} />

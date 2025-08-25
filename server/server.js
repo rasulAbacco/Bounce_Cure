@@ -19,10 +19,27 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// app.use(cors({
+//   origin: process.env.BASE_URL,
+//   credentials: true,
+// }));
+
+const allowedOrigins = [
+  'http://localhost:5173',
+  'https://bouncecure.onrender.com'
+];
+
 app.use(cors({
-  origin: process.env.BASE_URL,
-  credentials: true,
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
 }));
+
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -41,11 +58,11 @@ app.use('/dashboard', dashboardCRM);
 app.use('/api/auth', authRoutes);
 app.use('/verification', verificationRoutes);
 
-app.use("/api", advancedVerificationRoute);
-app.use("/auth", forgotPasswordRoutes);
+app.use("/api/verification", advancedVerificationRoute);
+app.use("/auth", forgotPasswordRoutes); 8
 
 // ✅ Support routes with middleware
-app.use('/api/support', supportMiddleware, supportRoutes);
+app.use('/api/support', supportRoutes);
 
 // ✅ Protected settings route
 app.use('/api/settings', verifySettingsAuth, settingsRoutes);
