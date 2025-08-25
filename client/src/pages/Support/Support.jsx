@@ -3,6 +3,8 @@ import { FaEnvelope, FaTicketAlt, FaPhoneAlt, FaComments } from "react-icons/fa"
 import DashboardLayout from "../../components/DashboardLayout";
 import "../../styles/support.css";
 
+const API_URL = import.meta.env.VITE_API_URL;
+
 export default function HelpAndSupport() {
     const [messageForm, setMessageForm] = useState({ name: "", message: "" });
     const [ticketForm, setTicketForm] = useState({
@@ -69,7 +71,11 @@ export default function HelpAndSupport() {
             const token = localStorage.getItem("token");
             const user = JSON.parse(localStorage.getItem("user")); // 👈 load user (id, email)
 
+
             const res = await fetch("http://localhost:5000/api/support/message", {
+
+            const res = await fetch(`${API_URL}/support/message`, {
+
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -116,7 +122,11 @@ export default function HelpAndSupport() {
         try {
             const token = localStorage.getItem("token"); // 👈 where JWT is stored
 
+
             const res = await fetch("http://localhost:5000/api/support/ticket", {
+
+            const res = await fetch(`${API_URL}/support/ticket`, {
+
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${token}`, // 👈 REQUIRED

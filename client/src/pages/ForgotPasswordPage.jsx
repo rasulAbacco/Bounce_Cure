@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { Mail, ArrowRight, Shield, Clock, CheckCircle, ArrowLeft, RefreshCw, Lock } from 'lucide-react';
 import PageLayout from '../components/PageLayout'; // Make sure this exists
+
 import toast from "react-hot-toast";
+
+const API_URL = import.meta.env.VITE_API_URL;
+
 const ModernForgotPassword = () => {
     const [email, setEmail] = useState('');
     const [step, setStep] = useState('request'); // 'request' or 'sent'
@@ -16,7 +20,7 @@ const ModernForgotPassword = () => {
         setError('');
 
         try {
-            const res = await fetch('http://localhost:5000/api/auth/forgot-password', {
+            const res = await fetch(`${API_URL}/auth/forgot-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),
@@ -46,7 +50,7 @@ const ModernForgotPassword = () => {
         setError('');
 
         try {
-            const res = await fetch('http://localhost:5000/api/auth/forgot-password', {
+            const res = await fetch(`${API_URL}/auth/forgot-password`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),

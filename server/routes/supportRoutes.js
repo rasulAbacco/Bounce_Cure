@@ -4,6 +4,7 @@ import { prisma } from "../prisma/prismaClient.js";
 import { sendEmail } from "../utils/emailService.js";
 import { authMiddleware } from "../middleware/authMiddleware.js";
 import supportMiddleware from "../middleware/supportMiddleware.js";
+import jwt from "jsonwebtoken";
 
 const upload = multer();
 const router = express.Router();
@@ -61,7 +62,6 @@ router.post("/message", authMiddleware, supportMiddleware, async (req, res) => {
  */
 router.post(
   "/ticket",
-  authMiddleware,
   supportMiddleware,
   upload.fields([
     { name: "files", maxCount: 5 },
@@ -115,9 +115,7 @@ router.post(
 
       res.json({ success: true, message: "Ticket & files saved successfully!" });
     } catch (error) {
-      if (process.env.NODE_ENV === "development") {
-        console.error("❌ Error saving ticket:", error);
-      }
+      console.error("❌ Error saving ticket:", error);
       res.status(500).json({ error: "Failed to save ticket." });
     }
   }

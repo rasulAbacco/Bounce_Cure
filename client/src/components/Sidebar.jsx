@@ -18,7 +18,7 @@ const Sidebar = ({ isOpen, toggleSidebar, pageName }) => {
         { id: 'settings', label: 'Settings', icon: Cog, path: '/settings' },
         { id: 'auth', label: 'User Authentication', icon: Shield, path: '/auth' },
         { id: 'support', label: 'Help & Support', icon: HelpCircle, path: '/support' },
-        { id: 'phone', label: 'Phone Number Validation', icon: HelpCircle, path: '/phoneValidation' },
+        // { id: 'phone', label: 'Phone Number Validation', icon: HelpCircle, path: '/phoneValidation' },
     ];
 
     return (
