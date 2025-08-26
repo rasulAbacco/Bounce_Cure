@@ -41,6 +41,7 @@ import Templets from './pages/Campaign/pages/Templets';
 import CanvasArea from './pages/Campaign/components/Editor/CanvasArea';
 import AllTemplates from './pages/Campaign/pages/AllTemplats';
 import { useNavigate } from "react-router-dom";
+import SendCampaign from './pages/Campaign/pages/SendCampaign';
 
 
 function App() {
@@ -107,6 +108,7 @@ function App() {
 
             {/* ✅ Use Wrapper for AllTemplates */}
             <Route path="/all-templates" element={<AllTemplatesWrapper />} />
+            <Route path="/send-campaign" element={<SendCampaign />} />
 
           </Routes>
 
