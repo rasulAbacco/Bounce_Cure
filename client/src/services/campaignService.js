@@ -1,15 +1,14 @@
-// services/campaignService.js
+const API_URL = "http://localhost:5000/api";
 
 // Fetch all campaigns
 export const getCampaigns = async () => {
     try {
-        const response = await fetch("/api/campaigns");
+        const response = await fetch(`${API_URL}/campaigns`);
         if (!response.ok) throw new Error("Failed to load campaigns");
         return await response.json();
     } catch (error) {
         console.warn("Falling back to default campaigns:", error.message);
 
-        // Fallback default campaigns
         return [
             {
                 id: 1,
@@ -43,7 +42,7 @@ export const getCampaigns = async () => {
 
 // Delete campaign
 export const deleteCampaign = async (id) => {
-    const response = await fetch(`/api/campaigns/${id}`, {
+    const response = await fetch(`${API_URL}/campaigns/${id}`, {
         method: "DELETE",
     });
     if (!response.ok) throw new Error("Failed to delete campaign");
