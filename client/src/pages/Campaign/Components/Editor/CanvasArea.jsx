@@ -2,7 +2,6 @@
 import React, { useState, useRef } from "react";
 import { Rnd } from "react-rnd";
 import { Send } from 'lucide-react';
-
 import {
   Eye, X, Plus, Download, Play, Layers,
   Type, Square, Circle, Minus, Image, Video, Music,
@@ -11,7 +10,7 @@ import {
   Zap, Move, ZoomIn, RotateCcw,
   // Import all the icons we need for the icon elements
   Heart, Home, User, Settings, Mail, Check
-} from "lucide-react";
+} from 'lucide-react';
 
 export default function CanvasArea({
   pages,
@@ -23,17 +22,19 @@ export default function CanvasArea({
   setSelectedElement,
   updateElement,
   zoomLevel = 1,
-  showGrid = true
+  showGrid = true,
+  // Add new prop
+  canvasBackgroundColor = '#FFFFFF'
 }) {
   const [preview, setPreview] = useState(false);
   const canvasRef = useRef(null);
-
+  
   const addPage = () => {
     const newPage = { id: pages.length + 1, elements: [] };
     setPages([...pages, newPage]);
     setActivePage(pages.length);
   };
-
+  
   const deletePage = (pageIndex) => {
     if (pages.length > 1) {
       const updatedPages = pages.filter((_, index) => index !== pageIndex);
@@ -43,18 +44,18 @@ export default function CanvasArea({
       }
     }
   };
-
+  
   const handleElementClick = (elementId, e) => {
     e.stopPropagation();
     setSelectedElement(elementId);
   };
-
+  
   const handleCanvasClick = (e) => {
     if (e.target === canvasRef.current || e.target.closest('.canvas-background')) {
       setSelectedElement(null);
     }
   };
-
+  
   const handleElementUpdate = (elementId, newProps) => {
     updateElement(elementId, newProps);
     const updatedElements = pages[activePage].elements.map(el =>
@@ -62,19 +63,16 @@ export default function CanvasArea({
     );
     onUpdate(updatedElements);
   };
-
+  
   // Fixed and more robust icon rendering function
   const renderIcon = (element) => {
     // Debug: log the icon element
     console.log("Rendering icon element:", element);
-
     // Get the icon name from the element
     const iconName = element.name || element.iconName || 'Star';
     const color = element.color || element.style?.color || '#000000';
     const size = Math.min(element.width, element.height) * zoomLevel || 24 * zoomLevel;
-
     console.log("Icon details:", { iconName, color, size });
-
     // Create icon mapping with all possible variations
     const iconMap = {
       'star': Star,
@@ -95,10 +93,8 @@ export default function CanvasArea({
       'Settings': Settings,
       'Mail': Mail
     };
-
     // Get the icon component
     const IconComponent = iconMap[iconName];
-
     if (IconComponent) {
       console.log("Found icon component for:", iconName);
       return <IconComponent color={color} size={size} />;
@@ -123,10 +119,9 @@ export default function CanvasArea({
       );
     }
   };
-
+  
   const renderElement = (element) => {
     const isSelected = selectedElement === element.id;
-
     return (
       <Rnd
         key={element.id}
@@ -201,7 +196,6 @@ export default function CanvasArea({
                 )}
               </div>
             )}
-
           {/* Button Element */}
           {element.type === "button" && (
             <div
@@ -223,7 +217,6 @@ export default function CanvasArea({
               {element.content || "Click Me"}
             </div>
           )}
-
           {/* Shape Elements */}
           {element.type === "rectangle" && (
             <div
@@ -235,7 +228,6 @@ export default function CanvasArea({
               }}
             />
           )}
-
           {element.type === "circle" && (
             <div
               className="w-full h-full rounded-full"
@@ -245,7 +237,6 @@ export default function CanvasArea({
               }}
             />
           )}
-
           {element.type === "triangle" && (
             <div
               className="w-full h-full"
@@ -259,7 +250,6 @@ export default function CanvasArea({
               }}
             />
           )}
-
           {element.type === "star" && (
             <div className="w-full h-full flex items-center justify-center">
               <Star
@@ -270,7 +260,6 @@ export default function CanvasArea({
               />
             </div>
           )}
-
           {element.type === "hexagon" && (
             <div
               className="w-full h-full flex items-center justify-center"
@@ -280,7 +269,6 @@ export default function CanvasArea({
               }}
             />
           )}
-
           {element.type === "arrow" && (
             <div className="w-full h-full flex items-center justify-center">
               <ArrowRight
@@ -290,7 +278,6 @@ export default function CanvasArea({
               />
             </div>
           )}
-
           {/* Line Element */}
           {element.type === "line" && (
             <div
@@ -302,7 +289,6 @@ export default function CanvasArea({
               }}
             />
           )}
-
           {/* Image Element */}
           {element.type === "image" && (
             <img
@@ -315,7 +301,6 @@ export default function CanvasArea({
               }}
             />
           )}
-
           {/* Video Element */}
           {element.type === "video" && (
             <video
@@ -330,7 +315,6 @@ export default function CanvasArea({
               Your browser does not support the video tag.
             </video>
           )}
-
           {/* Audio Element */}
           {element.type === "audio" && (
             <div
@@ -346,7 +330,6 @@ export default function CanvasArea({
               </audio>
             </div>
           )}
-
           {/* Frame Element */}
           {element.type === "frame" && (
             <div
@@ -360,7 +343,6 @@ export default function CanvasArea({
               <span className="text-gray-400 text-sm">Frame</span>
             </div>
           )}
-
           {/* Interactive Elements */}
           {element.type === "input" && (
             <input
@@ -376,7 +358,6 @@ export default function CanvasArea({
               readOnly={!isSelected}
             />
           )}
-
           {element.type === "checkbox" && (
             <div className="w-full h-full flex items-center justify-center">
               <input
@@ -390,14 +371,12 @@ export default function CanvasArea({
               />
             </div>
           )}
-
           {/* Icon Element - Fixed */}
           {element.type === "icon" && (
             <div className="w-full h-full flex items-center justify-center">
               {renderIcon(element)}
             </div>
           )}
-
           {/* Selection Handles */}
           {isSelected && !preview && (
             <>
@@ -415,10 +394,9 @@ export default function CanvasArea({
       </Rnd>
     );
   };
-
+  
   return (
     <div className="flex-1 bg-gray-700 flex flex-col overflow-hidden">
-
       {/* Top Controls */}
       <div className="h-16 bg-gray-800 border-b border-gray-600 flex items-center justify-between px-6">
         {/* Page Tabs */}
@@ -449,7 +427,6 @@ export default function CanvasArea({
               </div>
             ))}
           </div>
-
           <button
             onClick={addPage}
             className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors shadow-lg"
@@ -458,21 +435,17 @@ export default function CanvasArea({
             Add Page
           </button>
         </div>
-
         {/* Right Controls */}
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 text-sm text-gray-300">
             <Layers size={16} />
             <span>{pages[activePage].elements.length} elements</span>
           </div>
-
           <div className="w-px h-6 bg-gray-600"></div>
-
           <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors">
             <Play size={16} />
             Animate
           </button>
-
           <button
             onClick={() => setPreview(!preview)}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${preview
@@ -492,7 +465,6 @@ export default function CanvasArea({
               </>
             )}
           </button>
-
           <button
             className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
             onClick={() => window.location.href = '/send-campaign'}  // Change to your target URL
@@ -500,20 +472,19 @@ export default function CanvasArea({
             <Send size={16} />
             Send
           </button>
-
         </div>
       </div>
-
       {/* Canvas Container */}
       <div className="flex-1 overflow-auto bg-gray-700 p-8" onClick={handleCanvasClick}>
         <div className="flex justify-center">
           <div
             ref={canvasRef}
-            className={`canvas-background relative bg-white shadow-2xl rounded-lg overflow-hidden ${preview ? '' : 'ring-1 ring-gray-400/20'
+            className={`canvas-background relative shadow-2xl rounded-lg overflow-hidden ${preview ? '' : 'ring-1 ring-gray-400/20'
               }`}
             style={{
               width: 800 * zoomLevel,
               height: 600 * zoomLevel,
+              backgroundColor: canvasBackgroundColor, // Apply the background color here
               backgroundImage: showGrid && !preview ? `
                 linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)
@@ -523,7 +494,6 @@ export default function CanvasArea({
           >
             {/* Edit Mode */}
             {!preview && pages[activePage].elements.map(element => renderElement(element))}
-
             {/* Preview Mode */}
             {preview && (
               <div className="p-8 h-full overflow-y-auto">
@@ -536,7 +506,6 @@ export default function CanvasArea({
                     </div>
                   </div>
                 )}
-
                 {pages[activePage].elements
                   .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
                   .map(element => (
@@ -571,7 +540,6 @@ export default function CanvasArea({
                             )}
                           </div>
                         )}
-
                       {element.type === "button" && (
                         <button
                           className="font-medium cursor-pointer"
@@ -588,7 +556,6 @@ export default function CanvasArea({
                           {element.content || "Click Me"}
                         </button>
                       )}
-
                       {element.type === "rectangle" && (
                         <div
                           style={{
@@ -600,7 +567,6 @@ export default function CanvasArea({
                           }}
                         />
                       )}
-
                       {element.type === "circle" && (
                         <div
                           className="rounded-full"
@@ -612,7 +578,6 @@ export default function CanvasArea({
                           }}
                         />
                       )}
-
                       {element.type === "triangle" && (
                         <div
                           style={{
@@ -625,7 +590,6 @@ export default function CanvasArea({
                           }}
                         />
                       )}
-
                       {element.type === "star" && (
                         <div className="flex items-center justify-center">
                           <Star
@@ -635,7 +599,6 @@ export default function CanvasArea({
                           />
                         </div>
                       )}
-
                       {element.type === "hexagon" && (
                         <div
                           className="flex items-center justify-center"
@@ -647,7 +610,6 @@ export default function CanvasArea({
                           }}
                         />
                       )}
-
                       {element.type === "arrow" && (
                         <div className="flex items-center justify-center">
                           <ArrowRight
@@ -656,7 +618,6 @@ export default function CanvasArea({
                           />
                         </div>
                       )}
-
                       {element.type === "line" && (
                         <div
                           style={{
@@ -666,7 +627,6 @@ export default function CanvasArea({
                           }}
                         />
                       )}
-
                       {element.type === "image" && (
                         <img
                           src={element.src}
@@ -680,7 +640,6 @@ export default function CanvasArea({
                           className="object-cover"
                         />
                       )}
-
                       {element.type === "video" && (
                         <video
                           controls
@@ -693,7 +652,6 @@ export default function CanvasArea({
                           <source src={element.src || ""} type="video/mp4" />
                         </video>
                       )}
-
                       {element.type === "audio" && (
                         <div
                           className="bg-gray-100 p-4 rounded"
@@ -707,7 +665,6 @@ export default function CanvasArea({
                           </audio>
                         </div>
                       )}
-
                       {element.type === "frame" && (
                         <div
                           className="border-2 border-dashed p-4 flex items-center justify-center"
@@ -722,7 +679,6 @@ export default function CanvasArea({
                           <span className="text-gray-400">Frame Content</span>
                         </div>
                       )}
-
                       {element.type === "input" && (
                         <input
                           type="text"
@@ -736,7 +692,6 @@ export default function CanvasArea({
                           }}
                         />
                       )}
-
                       {element.type === "checkbox" && (
                         <div className="flex items-center">
                           <input
@@ -749,7 +704,6 @@ export default function CanvasArea({
                           <span className="ml-2">Checkbox Option</span>
                         </div>
                       )}
-
                       {element.type === "icon" && (
                         <div className="flex items-center justify-center">
                           {renderIcon(element)}
@@ -759,7 +713,6 @@ export default function CanvasArea({
                   ))}
               </div>
             )}
-
             {/* Empty State */}
             {!preview && pages[activePage].elements.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

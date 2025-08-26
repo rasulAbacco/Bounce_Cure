@@ -8,7 +8,7 @@ import PropertiesPanel from "../components/Editor/PropertiesPanel";
 const EditorPage = () => {
   const location = useLocation();
   const template = location.state?.template;
-
+  
   // Shared state for pages
   const [pages, setPages] = useState([{ id: 1, elements: [] }]);
   const [activePage, setActivePage] = useState(0);
@@ -17,7 +17,10 @@ const EditorPage = () => {
   const [showGrid, setShowGrid] = useState(true);
   const [undoStack, setUndoStack] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
-
+  
+  // Add state for canvas background color
+  const [canvasBackgroundColor, setCanvasBackgroundColor] = useState('#FFFFFF');
+  
   // Load template if provided
   useEffect(() => {
     if (template && template.content) {
@@ -44,41 +47,40 @@ const EditorPage = () => {
       setPages(updatedPages);
     }
   }, [template]);
-
+  
   // Add element from Toolbox
-
-const handleAddElement = (type) => {
-  const newElement = {
-    id: crypto.randomUUID(),
-    type,
-    content: type === "heading" ? "Heading" : type === "paragraph" ? "Paragraph text" : type === "button" ? "Click Me" : "",
-    src: type === "image" ? "https://images.unsplash.com/photo-1557683316-973673baf926?w=300&h=200&fit=crop" : null,
-    x: 50 + Math.random() * 100,
-    y: 50 + Math.random() * 100,
-    width: type === "heading" || type === "paragraph" ? 200 : type === "image" ? 150 : 120,
-    height: type === "heading" ? 40 : type === "paragraph" ? 60 : type === "image" ? 100 : 40,
-    fontSize: type === "heading" ? 24 : 16,
-    fontFamily: 'Arial',
-    color: '#000000',
-    backgroundColor: 'transparent',
-    borderColor: '#000000',
-    borderWidth: type === "rectangle" || type === "circle" ? 2 : 0,
-    borderRadius: type === "button" ? 6 : type === "rectangle" ? 4 : 0,
-    rotation: 0,
-    opacity: 1,
-    fontWeight: 'normal',
-    fontStyle: 'normal',
-    textAlign: 'left',
-    textDecoration: 'none'
+  const handleAddElement = (type) => {
+    const newElement = {
+      id: crypto.randomUUID(),
+      type,
+      content: type === "heading" ? "Heading" : type === "paragraph" ? "Paragraph text" : type === "button" ? "Click Me" : "",
+      src: type === "image" ? "https://images.unsplash.com/photo-1557683316-973673baf926?w=300&h=200&fit=crop" : null,
+      x: 50 + Math.random() * 100,
+      y: 50 + Math.random() * 100,
+      width: type === "heading" || type === "paragraph" ? 200 : type === "image" ? 150 : 120,
+      height: type === "heading" ? 40 : type === "paragraph" ? 60 : type === "image" ? 100 : 40,
+      fontSize: type === "heading" ? 24 : 16,
+      fontFamily: 'Arial',
+      color: '#000000',
+      backgroundColor: 'transparent',
+      borderColor: '#000000',
+      borderWidth: type === "rectangle" || type === "circle" ? 2 : 0,
+      borderRadius: type === "button" ? 6 : type === "rectangle" ? 4 : 0,
+      rotation: 0,
+      opacity: 1,
+      fontWeight: 'normal',
+      fontStyle: 'normal',
+      textAlign: 'left',
+      textDecoration: 'none'
+    };
+    
+    const updatedPages = [...pages];
+    updatedPages[activePage].elements.push(newElement);
+    setPages(updatedPages);
+    setSelectedElement(newElement.id);
+    saveToUndoStack();
   };
   
-  const updatedPages = [...pages];
-  updatedPages[activePage].elements.push(newElement);
-  setPages(updatedPages);
-  setSelectedElement(newElement.id);
-  saveToUndoStack();
-};
-
   // Upload image
   const handleUploadImage = (src) => {
     const newElement = {
@@ -100,14 +102,14 @@ const handleAddElement = (type) => {
     setSelectedElement(newElement.id);
     saveToUndoStack();
   };
-
+  
   // Update elements after drag/resize/edit
   const handleUpdate = (updatedElements) => {
     const updatedPages = [...pages];
     updatedPages[activePage].elements = updatedElements;
     setPages(updatedPages);
   };
-
+  
   // Update single element
   const updateElement = (id, updates) => {
     const updatedPages = [...pages];
@@ -116,13 +118,13 @@ const handleAddElement = (type) => {
     );
     setPages(updatedPages);
   };
-
+  
   // Undo/Redo functionality
   const saveToUndoStack = () => {
     setUndoStack(prev => [...prev.slice(-19), JSON.parse(JSON.stringify(pages))]);
     setRedoStack([]);
   };
-
+  
   const undo = () => {
     if (undoStack.length > 0) {
       const previousState = undoStack[undoStack.length - 1];
@@ -132,7 +134,7 @@ const handleAddElement = (type) => {
       setSelectedElement(null);
     }
   };
-
+  
   const redo = () => {
     if (redoStack.length > 0) {
       const nextState = redoStack[0];
@@ -142,7 +144,7 @@ const handleAddElement = (type) => {
       setSelectedElement(null);
     }
   };
-
+  
   // Delete selected element
   const deleteElement = () => {
     if (selectedElement) {
@@ -155,7 +157,7 @@ const handleAddElement = (type) => {
       saveToUndoStack();
     }
   };
-
+  
   // Duplicate element
   const duplicateElement = () => {
     if (selectedElement) {
@@ -175,7 +177,7 @@ const handleAddElement = (type) => {
       }
     }
   };
-
+  
   return (
     <div className="flex h-screen bg-gray-900 text-white">
       {/* Toolbox */}
@@ -194,8 +196,11 @@ const handleAddElement = (type) => {
         setZoomLevel={setZoomLevel}
         showGrid={showGrid}
         setShowGrid={setShowGrid}
+        // Pass canvas background color and update function
+        canvasBackgroundColor={canvasBackgroundColor}
+        setCanvasBackgroundColor={setCanvasBackgroundColor}
       />
-
+      
       {/* Canvas */}
       <div className="flex-1 overflow-hidden">
         <CanvasArea
@@ -209,9 +214,11 @@ const handleAddElement = (type) => {
           updateElement={updateElement}
           zoomLevel={zoomLevel}
           showGrid={showGrid}
+          // Pass canvas background color
+          canvasBackgroundColor={canvasBackgroundColor}
         />
       </div>
-
+      
       {/* Properties Panel */}
       <PropertiesPanel
         elements={pages[activePage].elements}
