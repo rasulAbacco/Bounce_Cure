@@ -1,4 +1,3 @@
-// server/routes/contact.js
 import express from "express";
 import { PrismaClient } from "@prisma/client";
 import multer from "multer";
@@ -22,6 +21,7 @@ router.get("/stats", async (req, res) => {
 
     res.json({ total, active, unsubscribed });
   } catch (err) {
+    console.error("Stats error:", err);
     res.status(500).json({ error: "Failed to fetch stats" });
   }
 });
@@ -36,6 +36,7 @@ router.get("/", async (req, res) => {
     });
     res.json(contacts);
   } catch (err) {
+    console.error("Fetch all error:", err);
     res.status(500).json({ error: "Failed to fetch contacts" });
   }
 });
@@ -50,6 +51,7 @@ router.get("/:id", async (req, res) => {
     if (!contact) return res.status(404).json({ error: "Contact not found" });
     res.json(contact);
   } catch (err) {
+    console.error("Fetch single error:", err);
     res.status(400).json({ error: "Invalid request" });
   }
 });
@@ -58,9 +60,10 @@ router.get("/:id", async (req, res) => {
  * ➕ Add Contact
  */
 router.post("/", async (req, res) => {
-  const { name, email, phone, status } = req.body;
-  if (!name || !email)
+  const { name, email, phone, company, status } = req.body;
+  if (!name || !email) {
     return res.status(400).json({ error: "Name and email are required" });
+  }
 
   try {
     const contact = await prisma.contact.create({
@@ -68,25 +71,27 @@ router.post("/", async (req, res) => {
         name,
         email,
         phone: phone || null,
+        company: company || null,
         status:
           status && ["active", "unsubscribed"].includes(status)
             ? status
             : "active",
       },
     });
-    res.json(contact);
+    res.status(201).json(contact);
   } catch (err) {
+    console.error("Create error:", err);
     res.status(400).json({ error: err.message });
   }
 });
 
 /**
- * ✏️ Update Contact
+ * ✏️ Partial Update (PATCH)
  */
 router.patch("/:id", async (req, res) => {
   try {
     const id = parseInt(req.params.id);
-    const { name, email, phone, status } = req.body;
+    const { name, email, phone, company, status } = req.body;
 
     const updatedContact = await prisma.contact.update({
       where: { id },
@@ -94,6 +99,7 @@ router.patch("/:id", async (req, res) => {
         ...(name && { name }),
         ...(email && { email }),
         ...(phone && { phone }),
+        ...(company && { company }),
         ...(status &&
           ["active", "unsubscribed"].includes(status) && { status }),
       },
@@ -101,6 +107,40 @@ router.patch("/:id", async (req, res) => {
 
     res.json(updatedContact);
   } catch (err) {
+    console.error("Patch update error:", err);
+    res.status(400).json({ error: err.message });
+  }
+});
+
+/**
+ * ✏️ Full Update (PUT)
+ */
+router.put("/:id", async (req, res) => {
+  try {
+    const id = parseInt(req.params.id);
+    const { name, email, phone, company, status } = req.body;
+
+    if (!name || !email) {
+      return res.status(400).json({ error: "Name and email are required" });
+    }
+
+    const updatedContact = await prisma.contact.update({
+      where: { id },
+      data: {
+        name,
+        email,
+        phone: phone || null,
+        company: company || null,
+        status:
+          status && ["active", "unsubscribed"].includes(status)
+            ? status
+            : "active",
+      },
+    });
+
+    res.json(updatedContact);
+  } catch (err) {
+    console.error("Put update error:", err);
     res.status(400).json({ error: err.message });
   }
 });
@@ -114,12 +154,14 @@ router.delete("/:id", async (req, res) => {
     await prisma.contact.delete({ where: { id } });
     res.json({ message: "Contact deleted" });
   } catch (err) {
+    console.error("Delete error:", err);
     res.status(400).json({ error: err.message });
   }
 });
 
 /**
  * 📥 Import Contacts (CSV)
+ * Expected CSV Headers: name,email,phone,company,status
  */
 router.post("/import", upload.single("file"), async (req, res) => {
   if (!req.file) return res.status(400).json({ error: "No file uploaded" });
@@ -133,6 +175,7 @@ router.post("/import", upload.single("file"), async (req, res) => {
           name: row.name || "Unknown",
           email: row.email,
           phone: row.phone || null,
+          company: row.company || null,
           status:
             row.status && ["active", "unsubscribed"].includes(row.status)
               ? row.status
@@ -157,6 +200,7 @@ router.post("/import", upload.single("file"), async (req, res) => {
         fs.unlinkSync(req.file.path);
         res.json({ message: "Contacts imported", imported: results.length });
       } catch (err) {
+        console.error("Import error:", err);
         res.status(500).json({ error: "Failed to import contacts" });
       }
     });
