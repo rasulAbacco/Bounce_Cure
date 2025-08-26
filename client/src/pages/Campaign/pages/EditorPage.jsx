@@ -46,7 +46,7 @@ const EditorPage = () => {
   }, [template]);
 
   // Add element from Toolbox
-=
+
 const handleAddElement = (type) => {
   const newElement = {
     id: crypto.randomUUID(),
