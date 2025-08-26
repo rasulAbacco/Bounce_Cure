@@ -50,7 +50,7 @@ const Dashboard = () => {
         email: "",
         phone: "",
         company: "",
-        status: "",
+        status: "active",
     });
 
     // 📌 Fetch Contacts
@@ -81,7 +81,7 @@ const Dashboard = () => {
             if (!res.ok) throw new Error("Failed to add contact");
             await fetchContacts();
             setShowAddModal(false);
-            setNewContact({ name: "", email: "", phone: "", company: "", status: "" });
+            setNewContact({ name: "", email: "", phone: "", company: "", status: "active" });
         } catch (err) {
             console.error("Add contact error:", err);
         }
@@ -132,7 +132,7 @@ const Dashboard = () => {
     const totalOpens = campaigns.reduce((sum, c) => sum + (c.opens || 0), 0);
     const averageOpenRate =
         totalSent > 0 ? ((totalOpens / totalSent) * 100).toFixed(1) : "0";
-    const activeCampaigns = campaigns.filter((c) => c.status === "").length;
+    const activeCampaigns = campaigns.filter((c) => c.status === "active").length;
 
     const activities = [
         { id: 1, message: "Newsletter #45 sent to 2,500 subscribers", time: "2m ago" },
@@ -441,7 +441,7 @@ const Dashboard = () => {
                                         <tr key={c.id} className="border-b border-gray-800 hover:bg-[#1a1a1a]">
                                             <td className="p-3">{c.name}</td>
                                             <td className="p-3">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${c.status === ""
+                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${c.status === "active"
                                                     ? "bg-green-600"
                                                     : c.status === "paused"
                                                         ? "bg-yellow-600"
@@ -564,17 +564,15 @@ const Dashboard = () => {
                                             }
                                             className="w-full px-4 py-2 rounded-md bg-black border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500"
                                         />
-                                        <select
+                                        <input
+                                            type="text"
+                                            placeholder="Status"
                                             value={newContact.status}
                                             onChange={(e) =>
                                                 setNewContact({ ...newContact, status: e.target.value })
                                             }
                                             className="w-full px-4 py-2 rounded-md bg-black border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500"
-                                        >
-                                            <option value="active">Active</option>
-                                            
-                                        </select>
-
+                                        />
 
                                         <div className="flex justify-end space-x-3 pt-4">
                                             <button
