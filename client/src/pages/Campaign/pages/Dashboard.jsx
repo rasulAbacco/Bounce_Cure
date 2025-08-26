@@ -17,10 +17,9 @@ import { FiEye, FiEdit, FiTrash2 } from "react-icons/fi";
 </div>
 
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { getCampaigns } from "../../../services/campaignService";
 import Button from "../Components/UI/Button";
-import Layout from "../Components/Layout/Layout";
 import Templets from "./Templets";
 import {
     MdCampaign,
@@ -30,9 +29,7 @@ import {
     MdAdd,
     MdAnalytics,
     MdDescription,
-
 } from "react-icons/md";
-import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
     const [campaigns, setCampaigns] = useState([]);
@@ -40,18 +37,88 @@ const Dashboard = () => {
     const [filter, setFilter] = useState("All");
     const [activeTab, setActiveTab] = useState("dashboard");
 
-
     const navigate = useNavigate();
     const [showOptions, setShowOptions] = useState(false);
 
-    useEffect(() => {
-        getCampaigns()
-            .then((data) => {
-                setCampaigns(data);
-            })
-            .finally(() => setLoading(false));
-    }, []);
+    // 📌 Contacts state
+    const [contacts, setContacts] = useState([]);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedContact, setSelectedContact] = useState(null);
+    const [newContact, setNewContact] = useState({
+        name: "",
+        email: "",
+        phone: "",
+        company: "",
+        status: "",
+    });
 
+    // 📌 Fetch Contacts
+    const fetchContacts = async () => {
+        try {
+            const res = await fetch("http://localhost:5000/api/contacts");
+            const data = await res.json();
+            setContacts(data);
+        } catch (err) {
+            console.error("Fetch contacts error:", err);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === "contacts") {
+            fetchContacts();
+        }
+    }, [activeTab]);
+
+    // 📌 Handle Add Contact
+    const handleAddContact = async () => {
+        try {
+            const res = await fetch("http://localhost:5000/api/contacts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newContact),
+            });
+            if (!res.ok) throw new Error("Failed to add contact");
+            await fetchContacts();
+            setShowAddModal(false);
+            setNewContact({ name: "", email: "", phone: "", company: "", status: "" });
+        } catch (err) {
+            console.error("Add contact error:", err);
+        }
+    };
+
+    // 📌 Handle Edit Contact
+    const handleUpdateContact = async () => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/contacts/${selectedContact.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(selectedContact),
+            });
+            if (!res.ok) throw new Error("Failed to update contact");
+            await fetchContacts();
+            setShowEditModal(false);
+            setSelectedContact(null);
+        } catch (err) {
+            console.error("Update contact error:", err);
+        }
+    };
+
+    // 📌 Handle Delete Contact
+    const handleDeleteContact = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this contact?")) return;
+        try {
+            const res = await fetch(`http://localhost:5000/api/contacts/${id}`, {
+                method: "DELETE",
+            });
+            if (!res.ok) throw new Error("Failed to delete contact");
+            await fetchContacts();
+        } catch (err) {
+            console.error("Delete contact error:", err);
+        }
+    };
+
+    // Campaign stats
     const filteredCampaigns =
         filter === "All"
             ? campaigns
@@ -65,37 +132,27 @@ const Dashboard = () => {
     const totalOpens = campaigns.reduce((sum, c) => sum + (c.opens || 0), 0);
     const averageOpenRate =
         totalSent > 0 ? ((totalOpens / totalSent) * 100).toFixed(1) : "0";
-    const activeCampaigns = campaigns.filter((c) => c.status === "active").length;
+    const activeCampaigns = campaigns.filter((c) => c.status === "").length;
 
     const activities = [
-        { id: 1, message: "Newsletter #45 sent to 2,500 subscribers", time: "2 minutes ago" },
-        { id: 2, message: "Black Friday campaign achieved 67% open rate", time: "15 minutes ago" },
-        { id: 3, message: "125 new subscribers joined this hour", time: "1 hour ago" },
-        { id: 4, message: "Product Launch campaign completed successfully", time: "2 hours ago" },
+        { id: 1, message: "Newsletter #45 sent to 2,500 subscribers", time: "2m ago" },
+        { id: 2, message: "Black Friday campaign got 67% open rate", time: "15m ago" },
+        { id: 3, message: "125 new subscribers joined this hour", time: "1h ago" },
+        { id: 4, message: "Product Launch campaign completed", time: "2h ago" },
     ];
-    const handleView = (id) => {
-        // Redirect or open a view modal - example using React Router:
-        window.location.href = `/campaigns/${id}`;
-    };
 
-    const handleEdit = (id) => {
-        // Redirect to edit campaign page
-        window.location.href = `/campaigns/${id}/edit`;
-    };
-
+    // Campaign Actions
+    const handleView = (id) => (window.location.href = `/campaigns/${id}`);
+    const handleEdit = (id) => (window.location.href = `/campaigns/${id}/edit`);
     const handleDelete = (id) => {
         if (window.confirm("Are you sure you want to delete this campaign?")) {
-            // Call your API delete method (pseudo-code, update based on your real API)
-            // Example:
-            import('../../../services/campaignService').then(({ deleteCampaign }) => {
-                deleteCampaign(id).then(() => {
-                    setCampaigns((prev) => prev.filter((c) => c.id !== id));
-                });
+            import("../../../services/campaignService").then(({ deleteCampaign }) => {
+                deleteCampaign(id).then(() =>
+                    setCampaigns((prev) => prev.filter((c) => c.id !== id))
+                );
             });
         }
     };
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [contact, setContact] = useState({ name: "", email: "" });
 
     return (
 
@@ -384,7 +441,7 @@ const Dashboard = () => {
                                         <tr key={c.id} className="border-b border-gray-800 hover:bg-[#1a1a1a]">
                                             <td className="p-3">{c.name}</td>
                                             <td className="p-3">
-                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${c.status === "active"
+                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${c.status === ""
                                                     ? "bg-green-600"
                                                     : c.status === "paused"
                                                         ? "bg-yellow-600"
@@ -457,62 +514,67 @@ const Dashboard = () => {
                                     <form
                                         onSubmit={(e) => {
                                             e.preventDefault();
-                                            if (!contact.name || !contact.email || !contact.phone || !contact.company || status) {
+                                            if (
+                                                !newContact.name ||
+                                                !newContact.email ||
+                                                !newContact.phone ||
+                                                !newContact.company ||
+                                                !newContact.status
+                                            ) {
                                                 alert("Please fill in all fields.");
                                                 return;
                                             }
-                                            console.log("New Contact:", contact);
-                                            alert("Contact Added Successfully!");
-                                            setContact({ name: "", email: "", phone: "", company: "", status: "" });
-                                            setShowAddModal(false);
+                                            handleAddContact(); // <-- call backend
                                         }}
                                         className="space-y-4"
                                     >
                                         <input
                                             type="text"
                                             placeholder="Name"
-                                            value={contact.name}
+                                            value={newContact.name}
                                             onChange={(e) =>
-                                                setContact({ ...contact, name: e.target.value })
+                                                setNewContact({ ...newContact, name: e.target.value })
                                             }
                                             className="w-full px-4 py-2 rounded-md bg-black border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500"
                                         />
                                         <input
                                             type="email"
                                             placeholder="Email"
-                                            value={contact.email}
+                                            value={newContact.email}
                                             onChange={(e) =>
-                                                setContact({ ...contact, email: e.target.value })
+                                                setNewContact({ ...newContact, email: e.target.value })
                                             }
                                             className="w-full px-4 py-2 rounded-md bg-black border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500"
                                         />
                                         <input
                                             type="text"
                                             placeholder="Phone"
-                                            value={contact.phone}
+                                            value={newContact.phone}
                                             onChange={(e) =>
-                                                setContact({ ...contact, phone: e.target.value })
+                                                setNewContact({ ...newContact, phone: e.target.value })
                                             }
                                             className="w-full px-4 py-2 rounded-md bg-black border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500"
                                         />
                                         <input
                                             type="text"
                                             placeholder="Company"
-                                            value={contact.company}
+                                            value={newContact.company}
                                             onChange={(e) =>
-                                                setContact({ ...contact, company: e.target.value })
+                                                setNewContact({ ...newContact, company: e.target.value })
                                             }
                                             className="w-full px-4 py-2 rounded-md bg-black border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500"
                                         />
-                                        <input
-                                            type="text"
-                                            placeholder="Status"
-                                            value={contact.status}
+                                        <select
+                                            value={newContact.status}
                                             onChange={(e) =>
-                                                setContact({ ...contact, status: e.target.value })
+                                                setNewContact({ ...newContact, status: e.target.value })
                                             }
                                             className="w-full px-4 py-2 rounded-md bg-black border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500"
-                                        />
+                                        >
+                                            <option value="active">Active</option>
+                                            
+                                        </select>
+
 
                                         <div className="flex justify-end space-x-3 pt-4">
                                             <button
@@ -533,6 +595,7 @@ const Dashboard = () => {
                                 </div>
                             </div>
                         )}
+
                     </>
 
                     {/* Header */}
