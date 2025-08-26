@@ -39,7 +39,6 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import VerifyEmail from "./pages/VerifyEmail";
 import Templets from './pages/Campaign/pages/Templets';
 import CanvasArea from './pages/Campaign/components/Editor/CanvasArea';
-import AllTemplates from './pages/Campaign/pages/AllTemplats';
 import { useNavigate } from "react-router-dom";
 
 
@@ -105,8 +104,7 @@ function App() {
             <Route path="/templetes" element={<Templets />} />
             <Route path="/canva" element={<CanvasArea />} />
 
-            {/* ✅ Use Wrapper for AllTemplates */}
-            <Route path="/all-templates" element={<AllTemplatesWrapper />} />
+         
 
           </Routes>
 
