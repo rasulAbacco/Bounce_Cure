@@ -26,7 +26,10 @@ const Toolbox = ({
   zoomLevel,
   setZoomLevel,
   showGrid,
-  setShowGrid
+  setShowGrid,
+  // Add new props
+  canvasBackgroundColor,
+  setCanvasBackgroundColor
 }) => {
   const [activeTab, setActiveTab] = useState('elements');
   const [imageUrl, setImageUrl] = useState('');
@@ -91,7 +94,7 @@ const Toolbox = ({
     { name: 'Settings', icon: Settings },
     { name: 'Mail', icon: Mail }
   ];
-
+  
   const handleUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -102,18 +105,18 @@ const Toolbox = ({
       reader.readAsDataURL(file);
     }
   };
-
+  
   const handleUrlSubmit = () => {
     if (imageUrl.trim()) {
       onSelectStockImage(imageUrl);
       setImageUrl('');
     }
   };
-
+  
   const handleStockImageSelect = (imageSrc) => {
     onAddElement("image", { src: imageSrc });
   };
-
+  
   const handleColorSelect = (color) => {
     if (selectedElement) {
       const styleUpdates = {};
@@ -142,7 +145,7 @@ const Toolbox = ({
       });
     }
   };
-
+  
   const handleGradientSelect = (gradient) => {
     if (selectedElement) {
       const styleUpdates = {};
@@ -159,7 +162,7 @@ const Toolbox = ({
       });
     }
   };
-
+  
   const handlePatternSelect = (pattern) => {
     if (selectedElement) {
       const styleUpdates = {};
@@ -176,21 +179,21 @@ const Toolbox = ({
       });
     }
   };
-
+  
   const handleCustomColor = (e) => {
     handleColorSelect(e.target.value);
   };
-
-  const handleAddIcon = (iconName) => {
-  console.log("Adding icon:", iconName); // Debug log
   
-  onAddElement("icon", { 
-    name: iconName, // Ensure the name is set here
-    color: '#000000',
-    fontSize: 24
-  });
-};
-
+  const handleAddIcon = (iconName) => {
+    console.log("Adding icon:", iconName); // Debug log
+    
+    onAddElement("icon", { 
+      name: iconName, // Ensure the name is set here
+      color: '#000000',
+      fontSize: 24
+    });
+  };
+  
   const handleAnimationSelect = (animationId) => {
     if (selectedElement) {
       onUpdateElementStyle(selectedElement.id, { 
@@ -198,14 +201,19 @@ const Toolbox = ({
       });
     }
   };
-
+  
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
       ...prev,
       [section]: !prev[section]
     }));
   };
-
+  
+  // Add function to handle canvas background color change
+  const handleCanvasBackgroundChange = (color) => {
+    setCanvasBackgroundColor(color);
+  };
+  
   const tabs = [
     { id: 'elements', label: 'Elements', icon: Shapes },
     { id: 'images', label: 'Images', icon: FileImage },
@@ -213,7 +221,7 @@ const Toolbox = ({
     { id: 'animations', label: 'Animations', icon: Zap },
     { id: 'layers', label: 'Layers', icon: Layers }
   ];
-
+  
   return (
     <div className="w-80 bg-gray-800 border-r border-gray-700 flex flex-col h-full">
       {/* Header */}
@@ -612,6 +620,40 @@ const Toolbox = ({
         {/* Colors Tab */}
         {activeTab === 'colors' && (
           <div className="space-y-4">
+            {/* Page Background Section */}
+            <div>
+              <h3 className="text-sm font-medium text-gray-300 mb-3">Page Background</h3>
+              <div className="grid grid-cols-5 gap-3 mb-4">
+                {colorPalette.map((color, index) => (
+                  <button
+                    key={index}
+                    className={`w-10 h-10 rounded-lg border-2 hover:border-white transition-colors hover:scale-110 transform ${
+                      canvasBackgroundColor === color ? 'border-white ring-2 ring-blue-500' : 'border-gray-600'
+                    }`}
+                    style={{ backgroundColor: color }}
+                    onClick={() => handleCanvasBackgroundChange(color)}
+                    title={color}
+                  />
+                ))}
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="color"
+                  value={canvasBackgroundColor}
+                  onChange={(e) => handleCanvasBackgroundChange(e.target.value)}
+                  className="w-12 h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
+                  title="Custom background color"
+                />
+                <input
+                  type="text"
+                  value={canvasBackgroundColor}
+                  onChange={(e) => handleCanvasBackgroundChange(e.target.value)}
+                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="#FFFFFF"
+                />
+              </div>
+            </div>
+            
             {/* Instructions */}
             <div className="p-3 bg-gray-700 rounded-lg">
               <p className="text-xs text-gray-300">
