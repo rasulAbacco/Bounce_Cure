@@ -154,19 +154,22 @@ router.delete("/delete-account", async (req, res) => {
     const user = await prisma.user.findUnique({ where: { id: req.userId } });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    await prisma.$transaction(async tx => {
+    await prisma.$transaction(async (tx) => {
+      // Delete all related records first
+      await tx.passwordResetToken.deleteMany({ where: { userId: req.userId } });
       await tx.apiKey.deleteMany({ where: { userId: req.userId } });
       await tx.notificationSetting.deleteMany({ where: { userId: req.userId } });
       await tx.session.deleteMany({ where: { userId: req.userId } });
       await tx.loginLog.deleteMany({ where: { userId: req.userId } });
       await tx.oTPCode.deleteMany({ where: { userId: req.userId } });
       await tx.content.deleteMany({ where: { createdBy: req.userId } });
+
+      // Save deleted account record
       await tx.deletedAccount.create({ data: { userEmail: user.email } });
+
+      // Finally delete the user
       await tx.user.delete({ where: { id: req.userId } });
     });
-
-
-
 
     // 🔔 Send account deletion notification
     await sendNotification(req.userId, {

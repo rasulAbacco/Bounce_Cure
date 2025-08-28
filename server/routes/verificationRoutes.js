@@ -7,6 +7,10 @@ import XLSX from "xlsx";
 import fs from "fs";
 import path from "path";
 import { promisify } from "util";
+import { PrismaClient } from "@prisma/client";
+
+const prisma = new PrismaClient();
+
 
 const router = express.Router();
 const verifier = new AdvancedVerifier({
@@ -20,6 +24,7 @@ const unlinkFile = promisify(fs.unlink);
 const upload = multer({ dest: "uploads/" });
 
 // --------- 1. Single Verify ----------
+// --------- 1. Single Verify ----------
 router.post("/verify-single", async (req, res) => {
   const { email } = req.body;
 
@@ -29,6 +34,37 @@ router.post("/verify-single", async (req, res) => {
 
   try {
     const result = await verifier.verify(email.trim().toLowerCase());
+
+    // Save to DB
+    await prisma.verification.upsert({
+      where: { email: result.email },
+      update: {
+        status: result.status,
+        score: result.score,
+        syntax_valid: result.syntax_valid,
+        domain_valid: result.domain_valid,
+        mailbox_exists: result.mailbox_exists,
+        catch_all: result.catch_all,
+        disposable: result.disposable,
+        role_based: result.role_based,
+        greylisted: result.greylisted,
+        error: result.error || null,
+      },
+      create: {
+        email: result.email,
+        status: result.status,
+        score: result.score,
+        syntax_valid: result.syntax_valid,
+        domain_valid: result.domain_valid,
+        mailbox_exists: result.mailbox_exists,
+        catch_all: result.catch_all,
+        disposable: result.disposable,
+        role_based: result.role_based,
+        greylisted: result.greylisted,
+        error: result.error || null,
+      },
+    });
+
     res.json(result);
   } catch (err) {
     res.status(500).json({ error: "Verification error", details: err.message });
@@ -158,26 +194,63 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
 
       const batchResults = await Promise.allSettled(batchPromises);
 
-      for (const result of batchResults) {
-        if (result.status === "fulfilled") {
-          results.push(result.value);
-        } else {
-          summary.invalid++;
-          results.push({
-            email: "unknown",
-            status: "invalid",
-            score: 0,
-            syntax_valid: false,
-            domain_valid: false,
-            mailbox_exists: false,
-            catch_all: false,
-            disposable: false,
-            role_based: false,
-            greylisted: false,
-            error: "Processing failed"
-          });
-        }
-      }
+      
+      for (const r of batchResults) {
+  let finalResult;
+  if (r.status === "fulfilled") {
+    finalResult = r.value;
+  } else {
+    summary.invalid++;
+    finalResult = {
+      email: "unknown",
+      status: "invalid",
+      score: 0,
+      syntax_valid: false,
+      domain_valid: false,
+      mailbox_exists: false,
+      catch_all: false,
+      disposable: false,
+      role_based: false,
+      greylisted: false,
+      error: "Processing failed",
+    };
+  }
+
+  results.push(finalResult);
+
+  // Save to DB
+  if (finalResult.email !== "unknown") {
+    await prisma.verification.upsert({
+      where: { email: finalResult.email },
+      update: {
+        status: finalResult.status,
+        score: finalResult.score,
+        syntax_valid: finalResult.syntax_valid,
+        domain_valid: finalResult.domain_valid,
+        mailbox_exists: finalResult.mailbox_exists,
+        catch_all: finalResult.catch_all,
+        disposable: finalResult.disposable,
+        role_based: finalResult.role_based,
+        greylisted: finalResult.greylisted,
+        error: finalResult.error || null,
+      },
+      create: {
+        email: finalResult.email,
+        status: finalResult.status,
+        score: finalResult.score,
+        syntax_valid: finalResult.syntax_valid,
+        domain_valid: finalResult.domain_valid,
+        mailbox_exists: finalResult.mailbox_exists,
+        catch_all: finalResult.catch_all,
+        disposable: finalResult.disposable,
+        role_based: finalResult.role_based,
+        greylisted: finalResult.greylisted,
+        error: finalResult.error || null,
+      },
+    });
+  }
+}
+
 
       if (i + BATCH_SIZE < uniqueEmails.length) {
         await new Promise(resolve => setTimeout(resolve, 1000));
