@@ -163,3 +163,24 @@ model PasswordResetToken {
   expiresAt DateTime
   user      User     @relation("UserTokens", fields: [userId], references: [id])
 }
+
+model Task {
+  id       Int      @id @default(autoincrement())
+  title    String
+  due      DateTime
+  status   String
+  priority String
+  notes    String?
+}
+
+model Deal {
+  id        Int      @id @default(autoincrement())
+  name      String
+  client    String
+  stage     String
+  value     Float
+  closing   DateTime
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
