@@ -69,7 +69,15 @@ const PropertiesPanel = ({
     { value: "Settings", label: "Settings" },
     { value: "Mail", label: "Mail" }
   ];
-
+  
+  const socialIconOptions = [
+    { value: "Facebook", label: "Facebook" },
+    { value: "Twitter", label: "Twitter" },
+    { value: "Instagram", label: "Instagram" },
+    { value: "LinkedIn", label: "LinkedIn" },
+    { value: "YouTube", label: "YouTube" }
+  ];
+  
   const animations = [
     { value: "fade", label: "Fade In" },
     { value: "slide", label: "Slide In" },
@@ -103,6 +111,7 @@ const PropertiesPanel = ({
       case "input": return <PenTool {...iconProps} className="text-indigo-400" />;
       case "checkbox": return <Hash {...iconProps} className="text-teal-400" />;
       case "icon": return <Star {...iconProps} className="text-yellow-400" />;
+      case "social": return <Star {...iconProps} className="text-blue-400" />;
       default: return <Square {...iconProps} className="text-gray-400" />;
     }
   };
@@ -145,7 +154,7 @@ const PropertiesPanel = ({
                         <div className="text-xs text-gray-400 truncate max-w-32">
                           {element.content || 
                            (element.type === "image" || element.type === "video" ? "Media" : 
-                            element.type === "icon" ? element.name || "Icon" : "Empty")}
+                            element.type === "icon" || element.type === "social" ? element.name || "Icon" : "Empty")}
                         </div>
                       </div>
                     </div>
@@ -206,6 +215,34 @@ const PropertiesPanel = ({
                 </button>
               </div>
             </div>
+            
+            {/* Link Properties */}
+            {(selectedElementData.type === "button" || 
+              selectedElementData.type === "icon" || 
+              selectedElementData.type === "social") && (
+              <div>
+                <h4 className="font-medium mb-3 text-gray-300">Link</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">URL</label>
+                    <input
+                      type="text"
+                      value={selectedElementData.link || ""}
+                      onChange={(e) =>
+                        updateElement(selectedElementData.id, {
+                          link: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="https://example.com"
+                    />
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Leave empty to disable link functionality
+                  </div>
+                </div>
+              </div>
+            )}
             
             {/* Position & Size */}
             <div>
@@ -903,6 +940,79 @@ const PropertiesPanel = ({
               </div>
             )}
             
+            {/* Social Icon Properties */}
+            {selectedElementData.type === "social" && (
+              <div>
+                <h4 className="font-medium mb-3 text-gray-300">Social Icon Settings</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Icon Type</label>
+                    <select
+                      value={selectedElementData.name || "Facebook"}
+                      onChange={(e) =>
+                        updateElement(selectedElementData.id, {
+                          name: e.target.value,
+                        })
+                      }
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {socialIconOptions.map((icon) => (
+                        <option key={icon.value} value={icon.value}>
+                          {icon.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Icon Color</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={selectedElementData.color || "#000000"}
+                        onChange={(e) =>
+                          updateElement(selectedElementData.id, {
+                            color: e.target.value,
+                          })
+                        }
+                        className="w-12 h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={selectedElementData.color || "#000000"}
+                        onChange={(e) =>
+                          updateElement(selectedElementData.id, {
+                            color: e.target.value,
+                          })
+                        }
+                        className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="#000000"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Icon Size</label>
+                    <input
+                      type="range"
+                      min="8"
+                      max="100"
+                      value={selectedElementData.fontSize || 24}
+                      onChange={(e) =>
+                        updateElement(selectedElementData.id, {
+                          fontSize: parseInt(e.target.value),
+                        })
+                      }
+                      className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="text-sm text-gray-400 text-center mt-1">
+                      {selectedElementData.fontSize || 24}px
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
             {/* Animation Properties */}
             <div>
               <h4 className="font-medium mb-3 text-gray-300">Animation</h4>
@@ -1053,11 +1163,9 @@ const PropertiesPanel = ({
                         updateElement(selectedElementData.id, {
                           strokeColor: color,
                         });
-                      } else if (selectedElementData.type === "checkbox") {
-                        updateElement(selectedElementData.id, {
-                          color: color,
-                        });
-                      } else if (selectedElementData.type === "icon") {
+                      } else if (selectedElementData.type === "checkbox" ||
+                               selectedElementData.type === "icon" ||
+                               selectedElementData.type === "social") {
                         updateElement(selectedElementData.id, {
                           color: color,
                         });

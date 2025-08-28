@@ -8,7 +8,9 @@ import {
   ChevronUp, Star, Triangle, Hexagon, ArrowRight, 
   PenTool, Frame, Video, Music, FileText, Hash,
   // Import the correct icons
-  Heart, Home, User, Settings, Mail, Check
+  Heart, Home, User, Settings, Mail, Check,
+  // Social media icons
+  Facebook, Twitter, Instagram, Linkedin, Youtube
 } from 'lucide-react';
 
 const Toolbox = ({ 
@@ -27,9 +29,9 @@ const Toolbox = ({
   setZoomLevel,
   showGrid,
   setShowGrid,
-  // Add new props
   canvasBackgroundColor,
-  setCanvasBackgroundColor
+  setCanvasBackgroundColor,
+  onAddLayout
 }) => {
   const [activeTab, setActiveTab] = useState('elements');
   const [imageUrl, setImageUrl] = useState('');
@@ -38,6 +40,7 @@ const Toolbox = ({
     shapes: true,
     interactive: true,
     media: true,
+    social: true,
     advanced: false
   });
   
@@ -93,6 +96,79 @@ const Toolbox = ({
     { name: 'User', icon: User },
     { name: 'Settings', icon: Settings },
     { name: 'Mail', icon: Mail }
+  ];
+  
+  // Social media icons
+  const socialIcons = [
+    { name: 'Facebook', icon: Facebook, color: '#1877F2' },
+    { name: 'Twitter', icon: Twitter, color: '#1DA1F2' },
+    { name: 'Instagram', icon: Instagram, color: '#E4405F' },
+    { name: 'LinkedIn', icon: Linkedin, color: '#0077B5' },
+    { name: 'YouTube', icon: Youtube, color: '#FF0000' }
+  ];
+  
+  // Prebuilt layouts
+  const prebuiltLayouts = [
+    {
+      id: 1,
+      name: "Header + Content",
+      description: "Simple header with content section",
+      thumbnail: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 150'%3E%3Crect width='200' height='40' fill='%234ECDC4'/%3E%3Crect y='50' width='200' height='100' fill='%23f8f9fa' stroke='%23dee2e6'/%3E%3C/svg%3E"
+    },
+    {
+      id: 2,
+      name: "Two Columns",
+      description: "Two column layout",
+      thumbnail: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 150'%3E%3Crect width='95' height='150' fill='%23f8f9fa' stroke='%23dee2e6'/%3E%3Crect x='105' width='95' height='150' fill='%23f8f9fa' stroke='%23dee2e6'/%3E%3C/svg%3E"
+    },
+    {
+      id: 3,
+      name: "Three Columns",
+      description: "Three column layout",
+      thumbnail: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 150'%3E%3Crect width='65' height='150' fill='%23f8f9fa' stroke='%23dee2e6'/%3E%3Crect x='68' width='64' height='150' fill='%23f8f9fa' stroke='%23dee2e6'/%3E%3Crect x='135' width='65' height='150' fill='%23f8f9fa' stroke='%23dee2e6'/%3E%3C/svg%3E"
+    },
+    {
+      id: 4,
+      name: "Header + Two Columns",
+      description: "Header with two columns below",
+      thumbnail: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 150'%3E%3Crect width='200' height='40' fill='%234ECDC4'/%3E%3Crect y='50' width='95' height='100' fill='%23f8f9fa' stroke='%23dee2e6'/%3E%3Crect x='105' y='50' width='95' height='100' fill='%23f8f9fa' stroke='%23dee2e6'/%3E%3C/svg%3E"
+    },
+    {
+      id: 5,
+      name: "Sidebar + Content",
+      description: "Left sidebar with main content",
+      thumbnail: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 150'%3E%3Crect width='60' height='150' fill='%23e9ecef' stroke='%23dee2e6'/%3E%3Crect x='65' width='135' height='150' fill='%23f8f9fa' stroke='%23dee2e6'/%3E%3C/svg%3E"
+    },
+    {
+      id: 6,
+      name: "Hero Section",
+      description: "Full width hero section",
+      thumbnail: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 150'%3E%3Crect width='200' height='80' fill='%23FF6B6B'/%3E%3Crect y='90' width='200' height='60' fill='%23f8f9fa' stroke='%23dee2e6'/%3E%3C/svg%3E"
+    },
+    {
+      id: 7,
+      name: "Card Layout",
+      description: "Grid of cards",
+      thumbnail: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 150'%3E%3Crect width='90' height='65' fill='%23f8f9fa' stroke='%23dee2e6'/%3E%3Crect x='110' width='90' height='65' fill='%23f8f9fa' stroke='%23dee2e6'/%3E%3Crect y='75' width='90' height='65' fill='%23f8f9fa' stroke='%23dee2e6'/%3E%3Crect x='110' y='75' width='90' height='65' fill='%23f8f9fa' stroke='%23dee2e6'/%3E%3C/svg%3E"
+    },
+    {
+      id: 8,
+      name: "Newsletter",
+      description: "Newsletter signup layout",
+      thumbnail: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 150'%3E%3Crect width='200' height='60' fill='%2345B7D1'/%3E%3Crect y='70' width='200' height='40' fill='%23f8f9fa' stroke='%23dee2e6'/%3E%3Crect y='120' width='200' height='30' fill='%2328a745'/%3E%3C/svg%3E"
+    },
+    {
+      id: 9,
+      name: "Product Showcase",
+      description: "Product showcase with image and details",
+      thumbnail: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 150'%3E%3Crect width='100' height='150' fill='%23f8f9fa' stroke='%23dee2e6'/%3E%3Crect x='110' width='90' height='150' fill='%23f8f9fa' stroke='%23dee2e6'/%3E%3C/svg%3E"
+    },
+    {
+      id: 10,
+      name: "Testimonial",
+      description: "Customer testimonial layout",
+      thumbnail: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 150'%3E%3Ccircle cx='100' cy='40' r='20' fill='%23dee2e6'/%3E%3Crect x='50' y='70' width='100' height='10' fill='%23dee2e6'/%3E%3Crect x='30' y='90' width='140' height='10' fill='%23dee2e6'/%3E%3Crect x='40' y='110' width='120' height='10' fill='%23dee2e6'/%3E%3C/svg%3E"
+    }
   ];
   
   const handleUpload = (e) => {
@@ -185,19 +261,34 @@ const Toolbox = ({
   };
   
   const handleAddIcon = (iconName) => {
-    console.log("Adding icon:", iconName); // Debug log
-    
+    // Add icon without prompting for link
     onAddElement("icon", { 
-      name: iconName, // Ensure the name is set here
+      name: iconName, 
       color: '#000000',
-      fontSize: 24
+      fontSize: 24,
+      link: null
+    });
+  };
+  
+  const handleAddSocialIcon = (socialName, socialColor) => {
+    // Prompt for link when adding a social icon
+    const link = prompt(`Enter link for ${socialName} (optional):`, "");
+    
+    onAddElement("social", { 
+      name: socialName, 
+      color: socialColor,
+      fontSize: 24,
+      link: link || null
     });
   };
   
   const handleAnimationSelect = (animationId) => {
     if (selectedElement) {
       onUpdateElementStyle(selectedElement.id, { 
-        animation: animationId 
+        animation: animationId,
+        animationDuration: 1,
+        animationDelay: 0,
+        animationTiming: 'ease'
       });
     }
   };
@@ -216,10 +307,10 @@ const Toolbox = ({
   
   const tabs = [
     { id: 'elements', label: 'Elements', icon: Shapes },
+    { id: 'layouts', label: 'Layouts', icon: Layers },
     { id: 'images', label: 'Images', icon: FileImage },
-    { id: 'colors', label: 'Colors', icon: Palette },
-    { id: 'animations', label: 'Animations', icon: Zap },
-    { id: 'layers', label: 'Layers', icon: Layers }
+    { id: 'colors', label: 'Colors', icon: Palette }
+
   ];
   
   return (
@@ -442,7 +533,10 @@ const Toolbox = ({
               {expandedSections.interactive && (
                 <div className="grid grid-cols-2 gap-2 mt-3">
                   <button
-                    onClick={() => onAddElement("button")}
+                    onClick={() => {
+                      const link = prompt("Enter button link (optional):", "");
+                      onAddElement("button", { link: link || null });
+                    }}
                     className="flex flex-col items-center gap-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
                   >
                     <Square size={16} className="text-orange-400" />
@@ -517,6 +611,32 @@ const Toolbox = ({
               )}
             </div>
             
+            {/* Social Icons */}
+            <div className="bg-gray-700/50 rounded-lg p-3">
+              <div 
+                className="flex items-center justify-between cursor-pointer"
+                onClick={() => toggleSection('social')}
+              >
+                <h3 className="text-sm font-medium text-gray-300">Social Icons</h3>
+                {expandedSections.social ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
+              
+              {expandedSections.social && (
+                <div className="grid grid-cols-5 gap-2 mt-3">
+                  {socialIcons.map((social, index) => (
+                    <button
+                      key={index}
+                      onClick={() => handleAddSocialIcon(social.name, social.color)}
+                      className="flex flex-col items-center gap-1 p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
+                    >
+                      <social.icon size={18} style={{ color: social.color }} />
+                      <span className="text-xs text-gray-300 group-hover:text-white">{social.name}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+            
             {/* Icons */}
             <div className="bg-gray-700/50 rounded-lg p-3">
               <h3 className="text-sm font-medium text-gray-300 mb-3">Icons</h3>
@@ -530,6 +650,38 @@ const Toolbox = ({
                     <icon.icon size={18} className="text-blue-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">{icon.name}</span>
                   </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Layouts Tab */}
+        {activeTab === 'layouts' && (
+          <div className="space-y-4">
+            <div className="bg-gray-700/50 rounded-lg p-3">
+              <h3 className="text-sm font-medium text-gray-300 mb-3">Prebuilt Layouts</h3>
+              <p className="text-xs text-gray-400 mb-3">Drag to add layouts to your email</p>
+              
+              <div className="grid grid-cols-2 gap-3">
+                {prebuiltLayouts.map((layout) => (
+                  <div 
+                    key={layout.id}
+                    className="bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:bg-gray-600 transition-colors"
+                    onClick={() => onAddLayout(layout.id)}
+                  >
+                    <div className="p-2 bg-gray-800 flex items-center justify-center">
+                      <img 
+                        src={layout.thumbnail} 
+                        alt={layout.name}
+                        className="w-full h-20 object-contain"
+                      />
+                    </div>
+                    <div className="p-2">
+                      <h4 className="text-sm font-medium text-white">{layout.name}</h4>
+                      <p className="text-xs text-gray-400 mt-1">{layout.description}</p>
+                    </div>
+                  </div>
                 ))}
               </div>
             </div>
@@ -789,89 +941,6 @@ const Toolbox = ({
                     <option>Elastic</option>
                   </select>
                 </div>
-              </div>
-            </div>
-          </div>
-        )}
-        
-        {/* Layers Tab */}
-        {activeTab === 'layers' && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-medium text-gray-300">Layers</h3>
-              <button className="text-xs text-blue-400 hover:text-blue-300">Reset Order</button>
-            </div>
-            
-            <div className="space-y-2 max-h-96 overflow-y-auto">
-              {/* This would be populated with actual layers from the parent component */}
-              <div className="p-3 bg-gray-700 rounded-lg flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-blue-500 rounded"></div>
-                  <span className="text-sm">Rectangle 1</span>
-                </div>
-                <div className="flex gap-1">
-                  <button className="p-1 hover:bg-gray-600 rounded">
-                    <Eye size={14} />
-                  </button>
-                  <button className="p-1 hover:bg-gray-600 rounded">
-                    <Move size={14} />
-                  </button>
-                </div>
-              </div>
-              
-              <div className="p-3 bg-gray-700 rounded-lg flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <div className="w-6 h-6 bg-green-500 rounded-full"></div>
-                  <span className="text-sm">Circle 1</span>
-                </div>
-                <div className="flex gap-1">
-                  <button className="p-1 hover:bg-gray-600 rounded">
-                    <Eye size={14} />
-                  </button>
-                  <button className="p-1 hover:bg-gray-600 rounded">
-                    <Move size={14} />
-                  </button>
-                </div>
-              </div>
-              
-              <div className="p-3 bg-gray-700 rounded-lg flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Type size={16} className="text-purple-400" />
-                  <span className="text-sm">Heading 1</span>
-                </div>
-                <div className="flex gap-1">
-                  <button className="p-1 hover:bg-gray-600 rounded">
-                    <Eye size={14} />
-                  </button>
-                  <button className="p-1 hover:bg-gray-600 rounded">
-                    <Move size={14} />
-                  </button>
-                </div>
-              </div>
-              
-              <div className="p-3 bg-gray-700 rounded-lg flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Image size={16} className="text-yellow-400" />
-                  <span className="text-sm">Image 1</span>
-                </div>
-                <div className="flex gap-1">
-                  <button className="p-1 hover:bg-gray-600 rounded">
-                    <Eye size={14} />
-                  </button>
-                  <button className="p-1 hover:bg-gray-600 rounded">
-                    <Move size={14} />
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <div className="p-3 bg-gray-700 rounded-lg">
-              <h4 className="text-sm font-medium text-gray-300 mb-2">Layer Management</h4>
-              <div className="grid grid-cols-2 gap-2">
-                <button className="p-2 bg-gray-600 hover:bg-gray-500 rounded text-sm">Bring Forward</button>
-                <button className="p-2 bg-gray-600 hover:bg-gray-500 rounded text-sm">Send Backward</button>
-                <button className="p-2 bg-gray-600 hover:bg-gray-500 rounded text-sm">Bring to Front</button>
-                <button className="p-2 bg-gray-600 hover:bg-gray-500 rounded text-sm">Send to Back</button>
               </div>
             </div>
           </div>
