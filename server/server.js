@@ -14,6 +14,9 @@ import notificationsRoutes from "./routes/notificationsRoutes.js"; // ✅ if fil
 import forgotPasswordRoutes from "./routes/forgotPasswordRoute.js";
 import advancedVerificationRoute from "./routes/advancedVerification.js";
 import passwordRoutes from "./routes/passwordRoutes.js";
+import contactRoutes from "./routes/contactRoutes.js";
+import sendContactsRoutes from "./routes/SendCampaignContact.js";
+import sendCampaignsRoutes from "./routes/CampaignRoutes.js";
 dotenv.config();
 
 const app = express();
@@ -50,6 +53,9 @@ app.use(express.urlencoded({ extended: true }));
 
 
 // Mount routes
+app.use("/api/contacts", contactRoutes);
+
+// Mount routes
 app.use("/api/auth", passwordRoutes);
 
 // ✅ Routes
@@ -59,7 +65,9 @@ app.use('/api/auth', authRoutes);
 app.use('/verification', verificationRoutes);
 
 app.use("/api/verification", advancedVerificationRoute);
-app.use("/auth", forgotPasswordRoutes); 8
+
+app.use("/auth", forgotPasswordRoutes);
+
 
 // ✅ Support routes with middleware
 app.use('/api/support', supportRoutes);
@@ -70,6 +78,12 @@ app.use('/api/settings', verifySettingsAuth, settingsRoutes);
 // Push notifications
 app.use("/api/push", pushRoutes);
 app.use("/notifications", notificationsRoutes);
+
+//campaign
+// Routes
+app.use('/api/sendContacts', sendContactsRoutes);
+app.use('/api/sendCampaigns', sendCampaignsRoutes);
+
 
 app.get('/', (req, res) => {
   res.send('Backend is running...');
