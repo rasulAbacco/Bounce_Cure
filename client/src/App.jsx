@@ -41,7 +41,7 @@ import Templets from './pages/Campaign/pages/Templets';
 import CanvasArea from './pages/Campaign/Components/Editor/CanvasArea';
 import { useNavigate } from "react-router-dom";
 import SendCampaign from './pages/Campaign/pages/SendCampaign';
-import AllTemplats  from './pages/Campaign/pages/AllTemplats';
+import AllTemplates from './pages/Campaign/pages/AllTemplats';
 
 function App() {
   return (
@@ -104,12 +104,8 @@ function App() {
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/templetes" element={<Templets />} />
             <Route path="/canva" element={<CanvasArea />} />
-
-
             <Route path="/send-campaign" element={<SendCampaign />} />
-            <Route path="/all-templates" element={<AllTemplats/>} />
-
-
+            <Route path="/all-templates" element={<AllTemplates />} />
           </Routes>
 
 

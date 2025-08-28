@@ -1,4 +1,3 @@
-// src/components/Editor/Toolbox.jsx
 import React, { useState } from "react";
 import { 
   Type, Image, Square, Circle, Minus, Upload, 
@@ -7,10 +6,9 @@ import {
   FileImage, Camera, Link, Zap, Layers, ChevronDown,
   ChevronUp, Star, Triangle, Hexagon, ArrowRight, 
   PenTool, Frame, Video, Music, FileText, Hash,
-  // Import the correct icons
   Heart, Home, User, Settings, Mail, Check,
-  // Social media icons
-  Facebook, Twitter, Instagram, Linkedin, Youtube
+  Facebook, Twitter, Instagram, Linkedin, Youtube,
+  CreditCard
 } from 'lucide-react';
 
 const Toolbox = ({ 
@@ -41,7 +39,8 @@ const Toolbox = ({
     interactive: true,
     media: true,
     social: true,
-    advanced: false
+    advanced: false,
+    cards: true
   });
   
   const stockImages = [
@@ -59,7 +58,7 @@ const Toolbox = ({
     '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4', '#FFEAA7',
     '#DDA0DD', '#98D8C8', '#F7DC6F', '#BB8FCE', '#85C1E9',
     '#000000', '#FFFFFF', '#808080', '#FF0000', '#00FF00',
-    '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500'
+    '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF', '#FFA500',
   ];
   
   const gradients = [
@@ -86,7 +85,6 @@ const Toolbox = ({
     { id: 'pulse', name: 'Pulse', icon: ChevronUp }
   ];
   
-  // Fixed icons array with correct Lucide components
   const icons = [
     { name: 'Star', icon: Star },
     { name: 'Heart', icon: Heart },
@@ -98,7 +96,6 @@ const Toolbox = ({
     { name: 'Mail', icon: Mail }
   ];
   
-  // Social media icons
   const socialIcons = [
     { name: 'Facebook', icon: Facebook, color: '#1877F2' },
     { name: 'Twitter', icon: Twitter, color: '#1DA1F2' },
@@ -107,7 +104,72 @@ const Toolbox = ({
     { name: 'YouTube', icon: Youtube, color: '#FF0000' }
   ];
   
-  // Prebuilt layouts
+  const cardStyles = [
+    {
+      id: 'card-basic',
+      name: 'Basic Card',
+      description: 'Simple card with border',
+      style: {
+        backgroundColor: '#FFFFFF',
+        borderColor: '#E2E8F0',
+        borderWidth: 1,
+        borderRadius: 8,
+        padding: 16
+      }
+    },
+    {
+      id: 'card-shadow',
+      name: 'Shadow Card',
+      description: 'Card with shadow effect',
+      style: {
+        backgroundColor: '#FFFFFF',
+        borderColor: '#E2E8F0',
+        borderWidth: 0,
+        borderRadius: 8,
+        padding: 16,
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)'
+      }
+    },
+    {
+      id: 'card-colored',
+      name: 'Colored Card',
+      description: 'Card with colored background',
+      style: {
+        backgroundColor: '#EBF8FF',
+        borderColor: '#90CDF4',
+        borderWidth: 1,
+        borderRadius: 8,
+        padding: 16
+      }
+    },
+    {
+      id: 'card-gradient',
+      name: 'Gradient Card',
+      description: 'Card with gradient background',
+      style: {
+        backgroundColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+        borderColor: '#90CDF4',
+        borderWidth: 0,
+        borderRadius: 8,
+        padding: 16,
+        color: '#0000'
+      }
+    },
+    {
+      id: 'card-pattern',
+      name: 'Pattern Card',
+      description: 'Card with pattern background',
+      style: {
+        backgroundColor: '#F7FAFC',
+        borderColor: '#CBD5E0',
+        borderWidth: 1,
+        borderRadius: 8,
+        padding: 16,
+        backgroundImage: 'repeating-linear-gradient(45deg, #f0f0f0, #f0f0f0 10px, #e0e0e0 10px, #e0e0e0 20px)'
+      }
+    }
+  ];
+  
   const prebuiltLayouts = [
     {
       id: 1,
@@ -200,6 +262,7 @@ const Toolbox = ({
       switch (selectedElement.type) {
         case 'rectangle':
         case 'circle':
+        case 'card':
           styleUpdates.backgroundColor = color;
           break;
         case 'heading':
@@ -216,7 +279,7 @@ const Toolbox = ({
       
       onUpdateElementStyle(selectedElement.id, styleUpdates);
     } else {
-      onAddElement("rectangle", { 
+      onAddElement("card", { 
         style: { backgroundColor: color }
       });
     }
@@ -226,14 +289,14 @@ const Toolbox = ({
     if (selectedElement) {
       const styleUpdates = {};
       
-      if (selectedElement.type === 'rectangle' || selectedElement.type === 'circle') {
+      if (selectedElement.type === 'rectangle' || selectedElement.type === 'circle' || selectedElement.type === 'card') {
         styleUpdates.background = gradient;
         styleUpdates.backgroundColor = 'black';
       }
       
       onUpdateElementStyle(selectedElement.id, styleUpdates);
     } else {
-      onAddElement("rectangle", { 
+      onAddElement("card", { 
         style: { background: gradient }
       });
     }
@@ -243,14 +306,14 @@ const Toolbox = ({
     if (selectedElement) {
       const styleUpdates = {};
       
-      if (selectedElement.type === 'rectangle' || selectedElement.type === 'circle') {
+      if (selectedElement.type === 'rectangle' || selectedElement.type === 'circle' || selectedElement.type === 'card') {
         styleUpdates.background = pattern;
         styleUpdates.backgroundColor = 'transparent';
       }
       
       onUpdateElementStyle(selectedElement.id, styleUpdates);
     } else {
-      onAddElement("rectangle", { 
+      onAddElement("card", { 
         style: { background: pattern }
       });
     }
@@ -261,7 +324,6 @@ const Toolbox = ({
   };
   
   const handleAddIcon = (iconName) => {
-    // Add icon without prompting for link
     onAddElement("icon", { 
       name: iconName, 
       color: '#000000',
@@ -271,7 +333,6 @@ const Toolbox = ({
   };
   
   const handleAddSocialIcon = (socialName, socialColor) => {
-    // Prompt for link when adding a social icon
     const link = prompt(`Enter link for ${socialName} (optional):`, "");
     
     onAddElement("social", { 
@@ -279,6 +340,15 @@ const Toolbox = ({
       color: socialColor,
       fontSize: 24,
       link: link || null
+    });
+  };
+  
+  const handleAddCard = (cardStyle) => {
+    onAddElement("card", {
+      ...cardStyle.style,
+      content: "This is a card element. You can edit this text.",
+      width: 300,
+      height: 200
     });
   };
   
@@ -300,7 +370,6 @@ const Toolbox = ({
     }));
   };
   
-  // Add function to handle canvas background color change
   const handleCanvasBackgroundChange = (color) => {
     setCanvasBackgroundColor(color);
   };
@@ -466,6 +535,42 @@ const Toolbox = ({
                     <FileText size={16} className="text-yellow-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Quote</span>
                   </button>
+                </div>
+              )}
+            </div>
+            
+            {/* Card Elements */}
+            <div className="bg-gray-700/50 rounded-lg p-3">
+              <div 
+                className="flex items-center justify-between cursor-pointer"
+                onClick={() => toggleSection('cards')}
+              >
+                <h3 className="text-sm font-medium text-gray-300">Card Elements</h3>
+                {expandedSections.cards ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+              </div>
+              
+              {expandedSections.cards && (
+                <div className="grid grid-cols-1 gap-3 mt-3">
+                  {cardStyles.map((card) => (
+                    <button
+                      key={card.id}
+                      onClick={() => handleAddCard(card)}
+                      className="flex flex-col items-center gap-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
+                    >
+                      <div className="flex items-center justify-center w-16 h-10 rounded-md" 
+                           style={{ 
+                             backgroundColor: card.style.backgroundColor,
+                             border: `${card.style.borderWidth}px solid ${card.style.borderColor}`,
+                             borderRadius: `${card.style.borderRadius}px`
+                           }}>
+                        <CreditCard size={16} className="text-gray-700" />
+                      </div>
+                      <div>
+                        <span className="text-xs text-gray-300 group-hover:text-white">{card.name}</span>
+                        <p className="text-xs text-gray-400">{card.description}</p>
+                      </div>
+                    </button>
+                  ))}
                 </div>
               )}
             </div>
@@ -844,7 +949,7 @@ const Toolbox = ({
               <p className="text-xs text-gray-300" title="Instructions for color selection">
                 {selectedElement 
                   ? `Applying colors to selected ${selectedElement.type}`
-                  : "Select an element or click a color to create a new rectangle"
+                  : "Select an element or click a color to create a new card"
                 }
               </p>
             </div>
