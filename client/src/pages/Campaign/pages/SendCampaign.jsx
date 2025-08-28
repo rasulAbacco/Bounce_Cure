@@ -16,15 +16,12 @@ class ErrorBoundary extends React.Component {
         super(props);
         this.state = { hasError: false };
     }
-
     static getDerivedStateFromError(error) {
         return { hasError: true };
     }
-
     componentDidCatch(error, errorInfo) {
         console.error("EmailPreview Error:", error, errorInfo);
     }
-
     render() {
         if (this.state.hasError) {
             return (
@@ -34,7 +31,6 @@ class ErrorBoundary extends React.Component {
                 </div>
             );
         }
-
         return this.props.children;
     }
 }
@@ -55,7 +51,6 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
             </div>
         );
     }
-
     const currentPage = pages[activePage];
     if (!currentPage || !currentPage.elements) {
         return (
@@ -70,7 +65,6 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
             </div>
         );
     }
-
     const renderElement = (element) => {
         try {
             // Calculate position and size with zoom
@@ -84,7 +78,6 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                 opacity: element.opacity || 1,
                 zIndex: element.zIndex || 0,
             };
-
             // Common style properties
             const commonStyle = {
                 width: '100%',
@@ -99,7 +92,6 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                 textDecoration: element.textDecoration || 'none',
                 textAlign: element.textAlign || 'left',
             };
-
             // Render based on element type
             switch (element.type) {
                 case "heading":
@@ -132,11 +124,13 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                             </div>
                         </div>
                     );
-
                 case "button":
                     return (
                         <div key={element.id} style={style}>
-                            <button
+                            <a
+                                href={element.link || "#"}
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 style={{
                                     ...commonStyle,
                                     fontSize: `${(element.fontSize || 16) * zoomLevel}px`,
@@ -145,27 +139,43 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                                     display: 'flex',
                                     alignItems: 'center',
                                     justifyContent: 'center',
+                                    textDecoration: 'none',
                                 }}
                             >
                                 {element.content || "Click Me"}
-                            </button>
+                            </a>
                         </div>
                     );
-
+                case "card":
+                    return (
+                        <div key={element.id} style={style}>
+                            <div
+                                style={{
+                                    ...commonStyle,
+                                    padding: `${(element.padding || 16) * zoomLevel}px`,
+                                    fontSize: `${(element.fontSize || 16) * zoomLevel}px`,
+                                    lineHeight: '1.4',
+                                    wordWrap: 'break-word',
+                                    backgroundImage: element.backgroundImage || 'none',
+                                    boxShadow: element.boxShadow || 'none',
+                                }}
+                            >
+                                {element.content || "Card content goes here"}
+                            </div>
+                        </div>
+                    );
                 case "rectangle":
                     return (
                         <div key={element.id} style={style}>
                             <div style={commonStyle} />
                         </div>
                     );
-
                 case "circle":
                     return (
                         <div key={element.id} style={style}>
                             <div style={{ ...commonStyle, borderRadius: '50%' }} />
                         </div>
                     );
-
                 case "triangle":
                     return (
                         <div key={element.id} style={style}>
@@ -181,7 +191,6 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                             />
                         </div>
                     );
-
                 case "star":
                     return (
                         <div key={element.id} style={style}>
@@ -207,7 +216,6 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                             </div>
                         </div>
                     );
-
                 case "hexagon":
                     return (
                         <div key={element.id} style={style}>
@@ -219,7 +227,6 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                             />
                         </div>
                     );
-
                 case "arrow":
                     return (
                         <div key={element.id} style={style}>
@@ -245,7 +252,6 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                             </div>
                         </div>
                     );
-
                 case "line":
                     return (
                         <div key={element.id} style={style}>
@@ -259,7 +265,6 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                             />
                         </div>
                     );
-
                 case "image":
                     return (
                         <div key={element.id} style={style}>
@@ -276,7 +281,6 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                             />
                         </div>
                     );
-
                 case "video":
                     return (
                         <div key={element.id} style={style}>
@@ -295,7 +299,6 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                             </video>
                         </div>
                     );
-
                 case "audio":
                     return (
                         <div key={element.id} style={style}>
@@ -310,11 +313,11 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                             >
                                 <audio controls style={{ width: '80%' }}>
                                     <source src={element.src || ""} type="audio/mpeg" />
+                                    Your browser does not support the audio element.
                                 </audio>
                             </div>
                         </div>
                     );
-
                 case "frame":
                     return (
                         <div key={element.id} style={style}>
@@ -331,7 +334,6 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                             </div>
                         </div>
                     );
-
                 case "input":
                     return (
                         <div key={element.id} style={style}>
@@ -347,7 +349,6 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                             />
                         </div>
                     );
-
                 case "checkbox":
                     return (
                         <div key={element.id} style={style}>
@@ -371,7 +372,6 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                             </div>
                         </div>
                     );
-
                 case "icon":
                 case "social":
                     return (
@@ -397,7 +397,6 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                             </div>
                         </div>
                     );
-
                 default:
                     return (
                         <div key={element.id} style={style}>
@@ -416,7 +415,6 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
             );
         }
     };
-
     return (
         <div className="p-4 bg-white rounded-lg shadow-inner" style={{ position: 'relative', minHeight: '600px' }}>
             {currentPage.elements.length === 0 ? (
@@ -463,6 +461,7 @@ export default function CampaignBuilder() {
     });
     const [isSending, setIsSending] = useState(false);
     const [sendStatus, setSendStatus] = useState(null);
+    const [contacts, setContacts] = useState([]); // Store contacts
     
     // Canvas state
     const [canvasPages, setCanvasPages] = useState([{ id: 1, elements: [] }]);
@@ -480,6 +479,26 @@ export default function CampaignBuilder() {
             }));
         }
     }, [location.state]);
+    
+    // Fetch contacts when component mounts
+    useEffect(() => {
+        fetchContacts();
+    }, []);
+    
+    // Function to fetch contacts from API
+    const fetchContacts = async () => {
+        try {
+            const response = await fetch('http://localhost:5000/api/campaigncontacts');
+            if (response.ok) {
+                const data = await response.json();
+                setContacts(data);
+            } else {
+                console.error('Failed to fetch contacts');
+            }
+        } catch (error) {
+            console.error('Error fetching contacts:', error);
+        }
+    };
     
     const toggleExpand = (id) => {
         setExpanded(expanded === id ? null : id);
@@ -504,25 +523,69 @@ export default function CampaignBuilder() {
     const handleSendCampaign = async () => {
         setIsSending(true);
         try {
-            // Backend API call
-            const response = await fetch('/api/sendCampaigns/send', {
+            // Fetch the latest contacts to ensure we have the most up-to-date list
+            const contactsResponse = await fetch('http://localhost:5000/api/campaigncontacts');
+            if (!contactsResponse.ok) {
+                throw new Error('Failed to fetch contacts');
+            }
+            const contactsData = await contactsResponse.json();
+            
+            // Filter contacts based on selected recipients
+            let recipientsList = [];
+            
+            if (formData.recipients === "all-subscribers") {
+                recipientsList = contactsData;
+            } else if (formData.recipients === "new-customers") {
+                recipientsList = contactsData.filter(contact => contact.type === "new-customer");
+            } else if (formData.recipients === "vip-clients") {
+                recipientsList = contactsData.filter(contact => contact.type === "vip-client");
+            }
+            
+            if (recipientsList.length === 0) {
+                setSendStatus({ 
+                    success: false, 
+                    message: 'No contacts found for the selected audience.' 
+                });
+                setIsSending(false);
+                return;
+            }
+            
+            // Prepare email data
+            const emailData = {
+                recipients: recipientsList,
+                fromName: formData.fromName,
+                fromEmail: formData.fromEmail,
+                subject: formData.subject,
+                canvasData: canvasPages[0].elements // Send the canvas elements
+            };
+            
+            // Backend API call to send emails
+            const response = await fetch('http://localhost:5000/api/campaigns/send', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
                 },
-                body: JSON.stringify({
-                    ...formData,
-                    canvasData: canvasPages // Include canvas data in the request
-                }),
+                body: JSON.stringify(emailData),
             });
+            
             const data = await response.json();
             if (response.ok) {
-                setSendStatus({ success: true, message: data.message });
+                setSendStatus({ 
+                    success: true, 
+                    message: data.message 
+                });
             } else {
-                setSendStatus({ success: false, message: data.error || 'Failed to send campaign' });
+                setSendStatus({ 
+                    success: false, 
+                    message: data.error || 'Failed to send campaign' 
+                });
             }
         } catch (error) {
-            setSendStatus({ success: false, message: 'Network error. Please try again.' });
+            console.error('Error sending campaign:', error);
+            setSendStatus({ 
+                success: false, 
+                message: 'Network error. Please try again.' 
+            });
         } finally {
             setIsSending(false);
         }
@@ -642,9 +705,27 @@ export default function CampaignBuilder() {
                                                             <option value="vip-clients">VIP Clients</option>
                                                         </select>
                                                     </div>
+                                                    <div className="bg-gray-800 p-4 rounded-md">
+                                                        <h3 className="font-medium text-white mb-2">Audience Summary</h3>
+                                                        <div className="text-sm text-gray-400">
+                                                            {formData.recipients === "all-subscribers" && (
+                                                                <p>This will send to all {contacts.length} subscribers in your contact list.</p>
+                                                            )}
+                                                            {formData.recipients === "new-customers" && (
+                                                                <p>This will send to {contacts.filter(c => c.type === "new-customer").length} new customers.</p>
+                                                            )}
+                                                            {formData.recipients === "vip-clients" && (
+                                                                <p>This will send to {contacts.filter(c => c.type === "vip-client").length} VIP clients.</p>
+                                                            )}
+                                                            {!formData.recipients && (
+                                                                <p>Please select an audience to see recipient count.</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
                                                     <button
                                                         onClick={() => markComplete(id)}
-                                                        className="mt-2 bg-[#c2831f] text-white px-4 py-2 rounded-md hover:bg-[#d09025]"
+                                                        disabled={!formData.recipients}
+                                                        className={`mt-2 px-4 py-2 rounded-md ${!formData.recipients ? 'bg-gray-700 cursor-not-allowed' : 'bg-[#c2831f] hover:bg-[#d09025] text-white'}`}
                                                     >
                                                         Save and Continue
                                                     </button>
@@ -731,7 +812,12 @@ export default function CampaignBuilder() {
                                                         <div className="space-y-2 text-sm">
                                                             <div className="flex">
                                                                 <span className="w-32 text-gray-400">Recipients:</span>
-                                                                <span className="font-medium text-white">{formData.recipients || 'Not selected'}</span>
+                                                                <span className="font-medium text-white">
+                                                                    {formData.recipients === "all-subscribers" && `All Subscribers (${contacts.length} contacts)`}
+                                                                    {formData.recipients === "new-customers" && `New Customers (${contacts.filter(c => c.type === "new-customer").length} contacts)`}
+                                                                    {formData.recipients === "vip-clients" && `VIP Clients (${contacts.filter(c => c.type === "vip-client").length} contacts)`}
+                                                                    {!formData.recipients && 'Not selected'}
+                                                                </span>
                                                             </div>
                                                             <div className="flex">
                                                                 <span className="w-32 text-gray-400">From:</span>

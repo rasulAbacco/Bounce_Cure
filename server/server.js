@@ -19,7 +19,8 @@ import sendContactsRoutes from "./routes/SendCampaignContact.js";
 import sendCampaignsRoutes from "./routes/CampaignRoutes.js";
 import taskRoutes from "./routes/tasks.js";
 import dealsRoutes from "./routes/deals.js";
-
+import { router as campaignContactsRoutes } from './routes/contacts.js';
+import { router as campaignsRoutes } from './routes/campaigns.js';
 
 dotenv.config();
 
@@ -90,6 +91,10 @@ app.use('/api/sendCampaigns', sendCampaignsRoutes);
 
 app.use("/tasks", taskRoutes);
 app.use("/deals", dealsRoutes);
+//
+app.use('/api/campaigncontacts', campaignContactsRoutes);
+app.use('/api/campaigns', campaignsRoutes);
+
 
 app.get('/', (req, res) => {
   res.send('Backend is running...');
