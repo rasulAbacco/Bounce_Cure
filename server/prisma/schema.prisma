@@ -188,7 +188,7 @@ model Contact {
 
 
 
-  userId    Int
+  userId    Int{
   expiresAt DateTime
   user      User     @relation("UserTokens", fields: [userId], references: [id])
 }
