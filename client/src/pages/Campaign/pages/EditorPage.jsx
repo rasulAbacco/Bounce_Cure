@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
 import CanvasArea from "../Components/Editor/CanvasArea";
-import {Toolbox} from "../Components/Editor/Toolbox";
+import Toolbox from "../Components/Editor/Toolbox";
 import PropertiesPanel from "../Components/Editor/PropertiesPanel";
 
 const EditorPage = () => {
