@@ -106,8 +106,7 @@ function App() {
             <Route path="/canva" element={<CanvasArea />} />
 
             {/* ✅ Use Wrapper for AllTemplates */}
-            <Route path="/all-templates" element={<AllTemplatesWrapper />} />
-
+ 
           </Routes>
 
 
