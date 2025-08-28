@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
 import CanvasArea from "../Components/Editor/CanvasArea";
 import Toolbox from "../Components/Editor/Toolbox";
@@ -1734,76 +1734,150 @@ const EditorPage = () => {
           x: element.x + 20,
           y: element.y + 20
         };
+
         const updatedPages = [...pages];
-        updatedPages[activePage].elements.push(duplicated);
+        updatedPages[activePage].elements.push(newElement);
         setPages(updatedPages);
-        setSelectedElement(duplicated.id);
+        setSelectedElement(newElement.id);
         saveToUndoStack();
-      }
-    }
-  };
-  
-  // Handle send campaign
-  const handleSendCampaign = () => {
-    navigate('/send-campaign', { 
-      state: { 
-        canvasData: pages[activePage].elements,
-        subject: "Your Campaign Subject" // You can make this dynamic
-      } 
-    });
-  };
-  
-  return (
-    <div className="flex h-screen bg-gray-900 text-white">
-      {/* Toolbox */}
-      <Toolbox
-        onAddElement={handleAddElement}
-        onUploadImage={handleUploadImage}
-        onSelectStockImage={handleUploadImage}
-        selectedElement={selectedElement}
-        onUndo={undo}
-        onRedo={redo}
-        onDelete={deleteElement}
-        onDuplicate={duplicateElement}
-        canUndo={undoStack.length > 0}
-        canRedo={redoStack.length > 0}
-        zoomLevel={zoomLevel}
-        setZoomLevel={setZoomLevel}
-        showGrid={showGrid}
-        setShowGrid={setShowGrid}
-        canvasBackgroundColor={canvasBackgroundColor}
-        setCanvasBackgroundColor={setCanvasBackgroundColor}
-        onAddLayout={handleAddLayout}
-      />
-      
-      {/* Canvas */}
-      <div className="flex-1 overflow-hidden">
-        <CanvasArea
-          pages={pages}
-          setPages={setPages}
-          activePage={activePage}
-          setActivePage={setActivePage}
-          onUpdate={handleUpdate}
-          selectedElement={selectedElement}
-          setSelectedElement={setSelectedElement}
-          updateElement={updateElement}
-          zoomLevel={zoomLevel}
-          showGrid={showGrid}
-          canvasBackgroundColor={canvasBackgroundColor}
-          onSendCampaign={handleSendCampaign}
-        />
-      </div>
-      
-      {/* Properties Panel */}
-      <PropertiesPanel
-        elements={pages[activePage].elements}
-        selectedElement={selectedElement}
-        setSelectedElement={setSelectedElement}
-        updateElement={updateElement}
-        setElements={(updatedElements) => handleUpdate(updatedElements)}
-      />
-    </div>
-  );
+    };
+
+    // Update elements after drag/resize/edit
+    const handleUpdate = (updatedElements) => {
+        const updatedPages = [...pages];
+        updatedPages[activePage].elements = updatedElements;
+        setPages(updatedPages);
+    };
+
+    // Update single element
+    const updateElement = (id, updates) => {
+        const updatedPages = [...pages];
+        updatedPages[activePage].elements = updatedPages[activePage].elements.map(el =>
+            el.id === id ? { ...el, ...updates } : el
+        );
+        setPages(updatedPages);
+    };
+
+    // Undo/Redo functionality
+    const saveToUndoStack = () => {
+        setUndoStack(prev => [...prev.slice(-19), JSON.parse(JSON.stringify(pages))]);
+        setRedoStack([]);
+    };
+
+    const undo = () => {
+        if (undoStack.length > 0) {
+            const previousState = undoStack[undoStack.length - 1];
+            setRedoStack(prev => [JSON.parse(JSON.stringify(pages)), ...prev.slice(0, 19)]);
+            setPages(previousState);
+            setUndoStack(prev => prev.slice(0, -1));
+            setSelectedElement(null);
+        }
+    };
+
+    const redo = () => {
+        if (redoStack.length > 0) {
+            const nextState = redoStack[0];
+            setUndoStack(prev => [...prev.slice(-19), JSON.parse(JSON.stringify(pages))]);
+            setPages(nextState);
+            setRedoStack(prev => prev.slice(1));
+            setSelectedElement(null);
+        }
+    };
+
+    // Delete selected element
+    const deleteElement = () => {
+        if (selectedElement) {
+            const updatedPages = [...pages];
+            updatedPages[activePage].elements = updatedPages[activePage].elements.filter(
+                el => el.id !== selectedElement
+            );
+            setPages(updatedPages);
+            setSelectedElement(null);
+            saveToUndoStack();
+        }
+    };
+
+    // Duplicate element
+    const duplicateElement = () => {
+        if (selectedElement) {
+            const element = pages[activePage].elements.find(el => el.id === selectedElement);
+            if (element) {
+                const duplicated = {
+                    ...element,
+                    id: crypto.randomUUID(),
+                    x: element.x + 20,
+                    y: element.y + 20
+                };
+                const updatedPages = [...pages];
+                updatedPages[activePage].elements.push(duplicated);
+                setPages(updatedPages);
+                setSelectedElement(duplicated.id);
+                saveToUndoStack();
+            }
+        }
+    };
+
+    // Handle send campaign
+    const handleSendCampaign = () => {
+        navigate('/send-campaign', {
+            state: {
+                canvasData: pages[activePage].elements,
+                subject: "Your Campaign Subject" // You can make this dynamic
+            }
+        });
+    };
+
+    return (
+        <div className="flex h-screen bg-gray-900 text-white">
+            {/* Toolbox */}
+            <Toolbox
+                onAddElement={handleAddElement}
+                onUploadImage={handleUploadImage}
+                onSelectStockImage={handleUploadImage}
+                selectedElement={selectedElement}
+                onUndo={undo}
+                onRedo={redo}
+                onDelete={deleteElement}
+                onDuplicate={duplicateElement}
+                canUndo={undoStack.length > 0}
+                canRedo={redoStack.length > 0}
+                zoomLevel={zoomLevel}
+                setZoomLevel={setZoomLevel}
+                showGrid={showGrid}
+                setShowGrid={setShowGrid}
+                canvasBackgroundColor={canvasBackgroundColor}
+                setCanvasBackgroundColor={setCanvasBackgroundColor}
+                onAddLayout={handleAddLayout}
+            />
+
+            {/* Canvas */}
+            <div className="flex-1 overflow-hidden">
+                <CanvasArea
+                    pages={pages}
+                    setPages={setPages}
+                    activePage={activePage}
+                    setActivePage={setActivePage}
+                    onUpdate={handleUpdate}
+                    selectedElement={selectedElement}
+                    setSelectedElement={setSelectedElement}
+                    updateElement={updateElement}
+                    zoomLevel={zoomLevel}
+                    showGrid={showGrid}
+                    canvasBackgroundColor={canvasBackgroundColor}
+                    onSendCampaign={handleSendCampaign}
+                />
+            </div>
+
+            {/* Properties Panel */}
+            <PropertiesPanel
+                elements={pages[activePage].elements}
+                selectedElement={selectedElement}
+                setSelectedElement={setSelectedElement}
+                updateElement={updateElement}
+                setElements={(updatedElements) => handleUpdate(updatedElements)}
+            />
+        </div>
+    );
 };
 
 export default EditorPage;
