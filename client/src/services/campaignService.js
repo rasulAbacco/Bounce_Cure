@@ -1,58 +1,50 @@
-// services/campaignService.js
+const API_URL = "http://localhost:5000/api";
 
-export const getCampaigns = () => {
-    return Promise.resolve([
-        {
-            id: 1,
-            name: "Black Friday Mega Sale",
-            description: "🔥 Massive Black Friday Deals - Up to 70% Off!",
-            status: "Active",
-            recipients: 15420,
-            opens: 10457,
-            clicks: 3781,
-            openRate: 67.8,
-            clickRate: 24.5,
-            revenue: "$24,850",
-        },
-        {
-            id: 2,
-            name: "Product Launch Newsletter",
-            description: "Introducing Our Revolutionary New Product",
-            status: "Completed",
-            recipients: 8930,
-            opens: 4840,
-            clicks: 1670,
-            openRate: 54.2,
-            clickRate: 18.7,
-            revenue: "$12,400",
-        },
-        {
-            id: 3,
-            name: "Customer Feedback Survey",
-            description: "We Value Your Opinion – Quick 2-Minute Survey",
-            status: "Paused",
-            recipients: 5670,
-            opens: 1565,
-            clicks: 998,
-            openRate: 48.9,
-            clickRate: 31.2,
-            revenue: "-",
-        },
-        {
-            id: 4,
-            name: "Weekly Digest #23",
-            description: "Weekly Insights & Industry Updates",
-            status: "Draft",
-            recipients: 12850,
-            opens: 0,
-            clicks: 0,
-            openRate: 0,
-            clickRate: 0,
-            revenue: "-",
-        },
-    ]);
+// Fetch all campaigns
+export const getCampaigns = async () => {
+    try {
+        const response = await fetch(`${API_URL}/campaigns`);
+        if (!response.ok) throw new Error("Failed to load campaigns");
+        return await response.json();
+    } catch (error) {
+        console.warn("Falling back to default campaigns:", error.message);
+
+        return [
+            {
+                id: 1,
+                name: "Black Friday Mega Sale",
+                status: "active",
+                recipients: 15420,
+                sent: 0,
+                opens: 10457,
+                openRate: 67.8,
+                clicks: 3781,
+                replies: 0,
+                revenue: "$12,300",
+                clickRate: 24.5,
+            },
+            {
+                id: 2,
+                name: "Product Launch Newsletter",
+                status: "completed",
+                recipients: 8930,
+                sent: 0,
+                opens: 4840,
+                openRate: 54.2,
+                clicks: 1670,
+                replies: 0,
+                revenue: "$5,400",
+                clickRate: 18.7,
+            },
+        ];
+    }
 };
 
-export const saveCampaign = (campaign) => {
-    return Promise.resolve({ success: true, campaign });
+// Delete campaign
+export const deleteCampaign = async (id) => {
+    const response = await fetch(`${API_URL}/campaigns/${id}`, {
+        method: "DELETE",
+    });
+    if (!response.ok) throw new Error("Failed to delete campaign");
+    return true;
 };

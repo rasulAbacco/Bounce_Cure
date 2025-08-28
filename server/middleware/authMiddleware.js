@@ -15,7 +15,6 @@ export const protect = async (req, res, next) => {
 
     try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        console.log("Decoded token:", decoded);
 
         const user = await prisma.user.findUnique({
             where: { id: Number(decoded.id) }, // ensure number type
