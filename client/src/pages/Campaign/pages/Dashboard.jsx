@@ -17,10 +17,9 @@ import { FiEye, FiEdit, FiTrash2 } from "react-icons/fi";
 </div>
 
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { getCampaigns } from "../../../services/campaignService";
 import Button from "../Components/UI/Button";
-import Layout from "../Components/Layout/Layout";
 import Templets from "./Templets";
 import {
     MdCampaign,
@@ -30,9 +29,7 @@ import {
     MdAdd,
     MdAnalytics,
     MdDescription,
-
 } from "react-icons/md";
-import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
     const [campaigns, setCampaigns] = useState([]);
@@ -40,18 +37,88 @@ const Dashboard = () => {
     const [filter, setFilter] = useState("All");
     const [activeTab, setActiveTab] = useState("dashboard");
 
+    const navigate = useNavigate();
+    const [showOptions, setShowOptions] = useState(false);
 
-     const navigate = useNavigate();
-  const [showOptions, setShowOptions] = useState(false);
+    // 📌 Contacts state
+    const [contacts, setContacts] = useState([]);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedContact, setSelectedContact] = useState(null);
+    const [newContact, setNewContact] = useState({
+        name: "",
+        email: "",
+        phone: "",
+        company: "",
+        status: "active",
+    });
+
+    // 📌 Fetch Contacts
+    const fetchContacts = async () => {
+        try {
+            const res = await fetch("http://localhost:5000/api/contacts");
+            const data = await res.json();
+            setContacts(data);
+        } catch (err) {
+            console.error("Fetch contacts error:", err);
+        }
+    };
 
     useEffect(() => {
-        getCampaigns()
-            .then((data) => {
-                setCampaigns(data);
-            })
-            .finally(() => setLoading(false));
-    }, []);
+        if (activeTab === "contacts") {
+            fetchContacts();
+        }
+    }, [activeTab]);
 
+    // 📌 Handle Add Contact
+    const handleAddContact = async () => {
+        try {
+            const res = await fetch("http://localhost:5000/api/contacts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newContact),
+            });
+            if (!res.ok) throw new Error("Failed to add contact");
+            await fetchContacts();
+            setShowAddModal(false);
+            setNewContact({ name: "", email: "", phone: "", company: "", status: "active" });
+        } catch (err) {
+            console.error("Add contact error:", err);
+        }
+    };
+
+    // 📌 Handle Edit Contact
+    const handleUpdateContact = async () => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/contacts/${selectedContact.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(selectedContact),
+            });
+            if (!res.ok) throw new Error("Failed to update contact");
+            await fetchContacts();
+            setShowEditModal(false);
+            setSelectedContact(null);
+        } catch (err) {
+            console.error("Update contact error:", err);
+        }
+    };
+
+    // 📌 Handle Delete Contact
+    const handleDeleteContact = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this contact?")) return;
+        try {
+            const res = await fetch(`http://localhost:5000/api/contacts/${id}`, {
+                method: "DELETE",
+            });
+            if (!res.ok) throw new Error("Failed to delete contact");
+            await fetchContacts();
+        } catch (err) {
+            console.error("Delete contact error:", err);
+        }
+    };
+
+    // Campaign stats
     const filteredCampaigns =
         filter === "All"
             ? campaigns
@@ -68,34 +135,24 @@ const Dashboard = () => {
     const activeCampaigns = campaigns.filter((c) => c.status === "active").length;
 
     const activities = [
-        { id: 1, message: "Newsletter #45 sent to 2,500 subscribers", time: "2 minutes ago" },
-        { id: 2, message: "Black Friday campaign achieved 67% open rate", time: "15 minutes ago" },
-        { id: 3, message: "125 new subscribers joined this hour", time: "1 hour ago" },
-        { id: 4, message: "Product Launch campaign completed successfully", time: "2 hours ago" },
+        { id: 1, message: "Newsletter #45 sent to 2,500 subscribers", time: "2m ago" },
+        { id: 2, message: "Black Friday campaign got 67% open rate", time: "15m ago" },
+        { id: 3, message: "125 new subscribers joined this hour", time: "1h ago" },
+        { id: 4, message: "Product Launch campaign completed", time: "2h ago" },
     ];
-    const handleView = (id) => {
-        // Redirect or open a view modal - example using React Router:
-        window.location.href = `/campaigns/${id}`;
-    };
 
-    const handleEdit = (id) => {
-        // Redirect to edit campaign page
-        window.location.href = `/campaigns/${id}/edit`;
-    };
-
+    // Campaign Actions
+    const handleView = (id) => (window.location.href = `/campaigns/${id}`);
+    const handleEdit = (id) => (window.location.href = `/campaigns/${id}/edit`);
     const handleDelete = (id) => {
         if (window.confirm("Are you sure you want to delete this campaign?")) {
-            // Call your API delete method (pseudo-code, update based on your real API)
-            // Example:
-            import('../../../services/campaignService').then(({ deleteCampaign }) => {
-                deleteCampaign(id).then(() => {
-                    setCampaigns((prev) => prev.filter((c) => c.id !== id));
-                });
+            import("../../../services/campaignService").then(({ deleteCampaign }) => {
+                deleteCampaign(id).then(() =>
+                    setCampaigns((prev) => prev.filter((c) => c.id !== id))
+                );
             });
         }
     };
-    const [showAddModal, setShowAddModal] = useState(false);
-    const [contact, setContact] = useState({ name: "", email: "" });
 
     return (
 
@@ -108,8 +165,8 @@ const Dashboard = () => {
                         Complete email marketing management in one place
                     </p>
                 </div>
-                
-                 <div className="flex flex-row items-center justify-center text-white gap-5">
+
+                <div className="flex flex-row items-center justify-center text-white gap-5">
                     {/* Top Row Actions */}
                     <div className="flex space-x-3 cursor-pointer z-index">
                         <button
@@ -123,66 +180,66 @@ const Dashboard = () => {
 
                     {/* New Campaign Button */}
                     <Button
-                    onClick={() => setShowOptions(true)}
-                    className="text-white px-6 py-3 rounded-xl transition duration-200" 
+                        onClick={() => setShowOptions(true)}
+                        className="text-white px-6 py-3 rounded-xl transition duration-200"
                     >
-                    New Campaign
+                        New Campaign
                     </Button>
 
 
                     {/* Modal */}
                     {showOptions && (
                         <div className="fixed inset-0 z-50 flex items-center justify-center">
-                        {/* Background Blur Overlay */}
-                        <div
-                            className="absolute inset-0 bg-black/60 backdrop-blur-sm"
-                            onClick={() => setShowOptions(false)} // close on outside click
-                        ></div>
-
-                        {/* Modal Content */}
-                        <div className="relative bg-[#111] text-white rounded-2xl shadow-2xl p-8 w-[90%] max-w-3xl border border-gray-800 animate-fadeIn">
-                            {/* Close Button */}
-                            <button
-                            className="absolute top-4 right-4 text-gray-400 hover:text-white text-xl"
-                            onClick={() => setShowOptions(false)}
-                            >
-                            ✕
-                            </button>
-
-                            <h2 className="text-2xl font-bold mb-6 text-center">
-                            Create New Campaign
-                            </h2>
-
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                            {/* Option 1 - Scratch */}
+                            {/* Background Blur Overlay */}
                             <div
-                                onClick={() => {
-                                setShowOptions(false);
-                                navigate("/editor", { state: { template: null } });
-                                }}
-                                className="cursor-pointer bg-gray-900 p-8 rounded-xl hover:bg-gray-800 transition flex flex-col items-center text-center"
-                            >
-                                <h3 className="text-xl font-semibold mb-2">Start from Scratch</h3>
-                                <p className="text-gray-400 text-sm">
-                                Create a brand new design with an empty canvas
-                                </p>
-                            </div>
+                                className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                                onClick={() => setShowOptions(false)} // close on outside click
+                            ></div>
 
-                            {/* Option 2 - Templates */}
-                            <div
-                                onClick={() => {
-                                setShowOptions(false);
-                                navigate("/all-templates");
-                                }}
-                                className="cursor-pointer bg-gray-900 p-8 rounded-xl hover:bg-gray-800 transition flex flex-col items-center text-center"
-                            >
-                                <h3 className="text-xl font-semibold mb-2">Choose Templates</h3>
-                                <p className="text-gray-400 text-sm">
-                                Select from predefined templates
-                                </p>
+                            {/* Modal Content */}
+                            <div className="relative bg-[#111] text-white rounded-2xl shadow-2xl p-8 w-[90%] max-w-3xl border border-gray-800 animate-fadeIn">
+                                {/* Close Button */}
+                                <button
+                                    className="absolute top-4 right-4 text-gray-400 hover:text-white text-xl"
+                                    onClick={() => setShowOptions(false)}
+                                >
+                                    ✕
+                                </button>
+
+                                <h2 className="text-2xl font-bold mb-6 text-center">
+                                    Create New Campaign
+                                </h2>
+
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    {/* Option 1 - Scratch */}
+                                    <div
+                                        onClick={() => {
+                                            setShowOptions(false);
+                                            navigate("/editor", { state: { template: null } });
+                                        }}
+                                        className="cursor-pointer bg-gray-900 p-8 rounded-xl hover:bg-gray-800 transition flex flex-col items-center text-center"
+                                    >
+                                        <h3 className="text-xl font-semibold mb-2">Start from Scratch</h3>
+                                        <p className="text-gray-400 text-sm">
+                                            Create a brand new design with an empty canvas
+                                        </p>
+                                    </div>
+
+                                    {/* Option 2 - Templates */}
+                                    <div
+                                        onClick={() => {
+                                            setShowOptions(false);
+                                            navigate("/all-templates");
+                                        }}
+                                        className="cursor-pointer bg-gray-900 p-8 rounded-xl hover:bg-gray-800 transition flex flex-col items-center text-center"
+                                    >
+                                        <h3 className="text-xl font-semibold mb-2">Choose Templates</h3>
+                                        <p className="text-gray-400 text-sm">
+                                            Select from predefined templates
+                                        </p>
+                                    </div>
+                                </div>
                             </div>
-                            </div>
-                        </div>
                         </div>
                     )}
                 </div>
@@ -457,63 +514,66 @@ const Dashboard = () => {
                                     <form
                                         onSubmit={(e) => {
                                             e.preventDefault();
-                                            if (!contact.name || !contact.email || !contact.phone || !contact.company || status) {
+                                            if (
+                                                !newContact.name ||
+                                                !newContact.email ||
+                                                !newContact.phone ||
+                                                !newContact.company ||
+                                                !newContact.status
+                                            ) {
                                                 alert("Please fill in all fields.");
                                                 return;
                                             }
-                                            console.log("New Contact:", contact);
-                                            alert("Contact Added Successfully!");
-                                            setContact({ name: "", email: "", phone: "", company: "" ,status: ""});
-                                            setShowAddModal(false);
+                                            handleAddContact(); // <-- call backend
                                         }}
                                         className="space-y-4"
                                     >
                                         <input
                                             type="text"
                                             placeholder="Name"
-                                            value={contact.name}
+                                            value={newContact.name}
                                             onChange={(e) =>
-                                                setContact({ ...contact, name: e.target.value })
+                                                setNewContact({ ...newContact, name: e.target.value })
                                             }
                                             className="w-full px-4 py-2 rounded-md bg-black border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500"
                                         />
                                         <input
                                             type="email"
                                             placeholder="Email"
-                                            value={contact.email}
+                                            value={newContact.email}
                                             onChange={(e) =>
-                                                setContact({ ...contact, email: e.target.value })
+                                                setNewContact({ ...newContact, email: e.target.value })
                                             }
                                             className="w-full px-4 py-2 rounded-md bg-black border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500"
                                         />
                                         <input
                                             type="text"
                                             placeholder="Phone"
-                                            value={contact.phone}
+                                            value={newContact.phone}
                                             onChange={(e) =>
-                                                setContact({ ...contact, phone: e.target.value })
+                                                setNewContact({ ...newContact, phone: e.target.value })
                                             }
                                             className="w-full px-4 py-2 rounded-md bg-black border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500"
                                         />
                                         <input
                                             type="text"
                                             placeholder="Company"
-                                            value={contact.company}
+                                            value={newContact.company}
                                             onChange={(e) =>
-                                                setContact({ ...contact, company: e.target.value })
+                                                setNewContact({ ...newContact, company: e.target.value })
                                             }
                                             className="w-full px-4 py-2 rounded-md bg-black border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500"
                                         />
                                         <input
                                             type="text"
                                             placeholder="Status"
-                                            value={contact.status}
+                                            value={newContact.status}
                                             onChange={(e) =>
-                                                setContact({ ...contact, status: e.target.value })
+                                                setNewContact({ ...newContact, status: e.target.value })
                                             }
                                             className="w-full px-4 py-2 rounded-md bg-black border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500"
                                         />
-                                        
+
                                         <div className="flex justify-end space-x-3 pt-4">
                                             <button
                                                 type="button"
@@ -533,6 +593,7 @@ const Dashboard = () => {
                                 </div>
                             </div>
                         )}
+
                     </>
 
                     {/* Header */}
@@ -593,7 +654,6 @@ const Dashboard = () => {
                     <Templets />
                 </div>
             )}
-
         </div>
 
     );

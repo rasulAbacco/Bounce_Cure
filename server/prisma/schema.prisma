@@ -1,39 +1,32 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
 
-generator client {
-  provider = "prisma-client-js"
-}
-
 model User {
-  id        Int      @id @default(autoincrement())
-  firstName String
-  lastName  String
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  contents            Content[]
-  sessions            Session[]
-  loginLogs           LoginLog[]
-  verificationTokens  EmailVerificationToken[]
-  otpCodes            OTPCode[]
+  id                  Int                      @id @default(autoincrement())
+  firstName           String
+  lastName            String
+  email               String                   @unique
+  password            String
+  createdAt           DateTime                 @default(now())
+  twoFASecret         String?
+  is2FAEnabled        Boolean                  @default(false)
+  profileImage        Bytes?
+  updatedAt           DateTime                 @updatedAt
   apiKeys             ApiKey[]
+  contents            Content[]
+  verificationTokens  EmailVerificationToken[]
+  inAppNotifications  InAppNotification[]
+  loginLogs           LoginLog[]
   notificationSetting NotificationSetting?
-
-  // FIXED: relation must have same name on both sides
-  passwordResetTokens PasswordResetToken[] @relation("UserTokens")
-
-  inAppNotifications InAppNotification[]
-  twoFASecret        String?
-  is2FAEnabled       Boolean             @default(false)
-  profileImage       Bytes?
-
-  // FIXED: back relation for Contact
-  contacts Contact[]
+  otpCodes            OTPCode[]
+  passwordResetTokens PasswordResetToken[]     @relation("UserTokens")
+  sessions            Session[]
 }
 
 model Content {
@@ -50,52 +43,52 @@ model Content {
 model Session {
   id        Int      @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
   device    String
   ipAddress String
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model LoginLog {
   id        Int      @id @default(autoincrement())
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
   device    String
   ipAddress String
   location  String?
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model EmailVerificationToken {
   id        Int      @id @default(autoincrement())
   token     String
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
   expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model OTPCode {
   id        Int      @id @default(autoincrement())
   code      String
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
   expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model Verification {
   id             String   @id @default(cuid())
   email          String   @unique
   status         String
+  catch_all      Boolean
+  createdAt      DateTime @default(now())
+  disposable     Boolean
+  domain_valid   Boolean
+  error          String?
+  greylisted     Boolean
+  mailbox_exists Boolean
+  role_based     Boolean
   score          Int
   syntax_valid   Boolean
-  domain_valid   Boolean
-  mailbox_exists Boolean
-  catch_all      Boolean
-  disposable     Boolean
-  role_based     Boolean
-  greylisted     Boolean
-  error          String?
-  createdAt      DateTime @default(now())
 }
 
 model SupportMessage {
@@ -103,18 +96,18 @@ model SupportMessage {
   name      String
   message   String
   createdAt DateTime @default(now())
-  userId    Int?
   userEmail String?
+  userId    Int?
 }
 
 model SupportTicket {
   id          Int           @id @default(autoincrement())
-  userId      Int?
-  userEmail   String?
   subject     String
   description String
-  files       SupportFile[]
   createdAt   DateTime      @default(now())
+  userEmail   String?
+  userId      Int?
+  files       SupportFile[]
 }
 
 model SupportFile {
@@ -123,18 +116,17 @@ model SupportFile {
   mimetype  String
   data      Bytes
   createdAt DateTime      @default(now())
-  ticket    SupportTicket @relation(fields: [ticketId], references: [id])
   ticketId  Int
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id])
 }
 
 model NotificationSetting {
-  id     Int  @id @default(autoincrement())
-  userId Int  @unique
-  user   User @relation(fields: [userId], references: [id])
-
+  id        Int     @id @default(autoincrement())
+  userId    Int     @unique
   email     Boolean @default(true)
   sms       Boolean @default(false)
   frequency String  @default("daily")
+  user      User    @relation(fields: [userId], references: [id])
 }
 
 model InAppNotification {
@@ -153,9 +145,8 @@ model ApiKey {
   name      String
   createdAt DateTime @default(now())
   revoked   Boolean  @default(false)
-
-  userId Int
-  user   User @relation(fields: [userId], references: [id])
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
 }
 
 model DeletedAccount {
@@ -168,23 +159,7 @@ model DeletedAccount {
 model PasswordResetToken {
   id        Int      @id @default(autoincrement())
   token     String   @unique
-  createdAt DateTime @default(now())
-
-  // FIXED: userId must be Int (to match User.id)
-  userId Int
-  user   User @relation("UserTokens", fields: [userId], references: [id], onDelete: Cascade)
-
+  userId    Int
   expiresAt DateTime
-}
-
-model Contact {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String   @unique
-  phone     String?
-  status    String   @default("active")
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  User      User?    @relation(fields: [userId], references: [id])
-  userId    Int?
+  user      User     @relation("UserTokens", fields: [userId], references: [id])
 }
