@@ -1,5 +1,4 @@
-// src/components/Editor/CanvasArea.jsx
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Rnd } from "react-rnd";
 import { Send } from 'lucide-react';
 import {
@@ -9,7 +8,9 @@ import {
   PenTool, Hash, FileText, ChevronDown, ChevronUp,
   Zap, Move, ZoomIn, RotateCcw,
   // Import all the icons we need for the icon elements
-  Heart, Home, User, Settings, Mail, Check
+  Heart, Home, User, Settings, Mail, Check,
+  // Import social media icons
+  Facebook, Twitter, Instagram, Linkedin, Youtube
 } from 'lucide-react';
 
 export default function CanvasArea({
@@ -23,11 +24,65 @@ export default function CanvasArea({
   updateElement,
   zoomLevel = 1,
   showGrid = true,
-  // Add new prop
-  canvasBackgroundColor = '#FFFFFF'
+  canvasBackgroundColor = '#FFFFFF',
+  onSendCampaign
 }) {
   const [preview, setPreview] = useState(false);
   const canvasRef = useRef(null);
+  
+  // Add animation styles
+  useEffect(() => {
+    if (document.getElementById('animation-styles')) return;
+    const style = document.createElement('style');
+    style.id = 'animation-styles';
+    style.textContent = `
+      @keyframes fade {
+        from { opacity: 0; }
+        to { opacity: 1; }
+      }
+      @keyframes slide {
+        from { transform: translateX(-100%); }
+        to { transform: translateX(0); }
+      }
+      @keyframes bounce {
+        0%, 100% { transform: translateY(0); }
+        50% { transform: translateY(-20px); }
+      }
+      @keyframes zoom {
+        from { transform: scale(0); }
+        to { transform: scale(1); }
+      }
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
+      @keyframes pulse {
+        0% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+        100% { transform: scale(1); }
+      }
+      
+      .animate-fade {
+        animation: fade 1s ease both;
+      }
+      .animate-slide {
+        animation: slide 1s ease both;
+      }
+      .animate-bounce {
+        animation: bounce 1s ease both;
+      }
+      .animate-zoom {
+        animation: zoom 1s ease both;
+      }
+      .animate-spin {
+        animation: spin 1s linear both;
+      }
+      .animate-pulse {
+        animation: pulse 1s ease both;
+      }
+    `;
+    document.head.appendChild(style);
+  }, []);
   
   const addPage = () => {
     const newPage = { id: pages.length + 1, elements: [] };
@@ -66,13 +121,11 @@ export default function CanvasArea({
   
   // Fixed and more robust icon rendering function
   const renderIcon = (element) => {
-    // Debug: log the icon element
-    console.log("Rendering icon element:", element);
     // Get the icon name from the element
     const iconName = element.name || element.iconName || 'Star';
     const color = element.color || element.style?.color || '#000000';
     const size = Math.min(element.width, element.height) * zoomLevel || 24 * zoomLevel;
-    console.log("Icon details:", { iconName, color, size });
+    
     // Create icon mapping with all possible variations
     const iconMap = {
       'star': Star,
@@ -83,6 +136,12 @@ export default function CanvasArea({
       'user': User,
       'settings': Settings,
       'mail': Mail,
+      // Social media icons
+      'facebook': Facebook,
+      'twitter': Twitter,
+      'instagram': Instagram,
+      'linkedin': Linkedin,
+      'youtube': Youtube,
       // Add capitalized versions
       'Star': Star,
       'Heart': Heart,
@@ -91,15 +150,19 @@ export default function CanvasArea({
       'Home': Home,
       'User': User,
       'Settings': Settings,
-      'Mail': Mail
+      'Mail': Mail,
+      'Facebook': Facebook,
+      'Twitter': Twitter,
+      'Instagram': Instagram,
+      'LinkedIn': Linkedin,
+      'YouTube': Youtube
     };
+    
     // Get the icon component
-    const IconComponent = iconMap[iconName];
+    const IconComponent = iconMap[iconName.toLowerCase()];
     if (IconComponent) {
-      console.log("Found icon component for:", iconName);
       return <IconComponent color={color} size={size} />;
     } else {
-      console.log("No icon component found for:", iconName);
       // Fallback with the icon name for debugging
       return (
         <div
@@ -117,6 +180,26 @@ export default function CanvasArea({
           {iconName.charAt(0).toUpperCase()}
         </div>
       );
+    }
+  };
+  
+  // Helper function to get animation style
+  const getAnimationStyle = (element) => {
+    if (!element.animation || element.animation === 'none') {
+      return {};
+    }
+    const duration = (element.animationDuration || 1) + 's';
+    const delay = (element.animationDelay || 0) + 's';
+    const timing = element.animationTiming || 'ease';
+    return {
+      animation: `${element.animation} ${duration} ${delay} ${timing} both`
+    };
+  };
+  
+  // Handle link click
+  const handleLinkClick = (link) => {
+    if (link) {
+      window.open(link, '_blank');
     }
   };
   
@@ -213,6 +296,7 @@ export default function CanvasArea({
               }}
               onInput={(e) => handleElementUpdate(element.id, { content: e.currentTarget.textContent })}
               onBlur={() => setSelectedElement(null)}
+              onClick={() => handleLinkClick(element.link)}
             >
               {element.content || "Click Me"}
             </div>
@@ -373,7 +457,19 @@ export default function CanvasArea({
           )}
           {/* Icon Element - Fixed */}
           {element.type === "icon" && (
-            <div className="w-full h-full flex items-center justify-center">
+            <div 
+              className="w-full h-full flex items-center justify-center"
+              onClick={() => handleLinkClick(element.link)}
+            >
+              {renderIcon(element)}
+            </div>
+          )}
+          {/* Social Icon Element */}
+          {element.type === "social" && (
+            <div 
+              className="w-full h-full flex items-center justify-center"
+              onClick={() => handleLinkClick(element.link)}
+            >
               {renderIcon(element)}
             </div>
           )}
@@ -395,10 +491,247 @@ export default function CanvasArea({
     );
   };
   
+  // New function to render preview elements with absolute positioning
+  const renderPreviewElement = (element) => {
+    const animationStyle = preview ? getAnimationStyle(element) : {};
+    
+    return (
+      <div
+        key={element.id}
+        className="absolute"
+        style={{
+          left: element.x * zoomLevel,
+          top: element.y * zoomLevel,
+          width: element.width * zoomLevel,
+          height: element.height * zoomLevel,
+          transform: `rotate(${element.rotation || 0}deg)`,
+          opacity: element.opacity || 1,
+          zIndex: element.zIndex || 0,
+          ...animationStyle
+        }}
+      >
+        {/* Text Elements */}
+        {(element.type === "heading" || element.type === "paragraph" ||
+          element.type === "subheading" || element.type === "blockquote") && (
+            <div
+              className={`w-full h-full p-2 ${element.type === "heading" ? "font-bold" :
+                element.type === "subheading" ? "font-semibold" :
+                element.type === "blockquote" ? "italic pl-4 border-l-4 border-gray-300" : ""
+              }`}
+              style={{
+                fontSize: `${(element.fontSize || 16) * zoomLevel}px`,
+                fontFamily: element.fontFamily || 'Arial',
+                color: element.color || '#000000',
+                fontWeight: element.fontWeight || 'normal',
+                fontStyle: element.fontStyle || 'normal',
+                textDecoration: element.textDecoration || 'none',
+                textAlign: element.textAlign || 'left',
+                lineHeight: '1.4',
+                wordWrap: 'break-word',
+                backgroundColor: element.backgroundColor || 'transparent'
+              }}
+            >
+              {element.content || (
+                element.type === "heading" ? "Heading" :
+                  element.type === "subheading" ? "Subheading" :
+                    element.type === "blockquote" ? "Blockquote" : "Paragraph text"
+              )}
+            </div>
+          )}
+        {/* Button Element */}
+        {element.type === "button" && (
+          <div
+            className="w-full h-full flex items-center justify-center cursor-pointer"
+            style={{
+              backgroundColor: element.backgroundColor || "#007bff",
+              color: element.color || "#fff",
+              borderRadius: `${(element.borderRadius || 6) * zoomLevel}px`,
+              fontSize: `${(element.fontSize || 16) * zoomLevel}px`,
+              fontFamily: element.fontFamily || 'Arial',
+              fontWeight: element.fontWeight || 'normal',
+              border: element.borderWidth ? `${element.borderWidth * zoomLevel}px solid ${element.borderColor}` : 'none'
+            }}
+            onClick={() => handleLinkClick(element.link)}
+          >
+            {element.content || "Click Me"}
+          </div>
+        )}
+        {/* Shape Elements */}
+        {element.type === "rectangle" && (
+          <div
+            className="w-full h-full"
+            style={{
+              backgroundColor: element.backgroundColor || "#4ECDC4",
+              border: `${(element.borderWidth || 2) * zoomLevel}px solid ${element.borderColor || '#000'}`,
+              borderRadius: `${(element.borderRadius || 4) * zoomLevel}px`
+            }}
+          />
+        )}
+        {element.type === "circle" && (
+          <div
+            className="w-full h-full rounded-full"
+            style={{
+              backgroundColor: element.backgroundColor || "#FF6B6B",
+              border: `${(element.borderWidth || 2) * zoomLevel}px solid ${element.borderColor || '#000'}`
+            }}
+          />
+        )}
+        {element.type === "triangle" && (
+          <div
+            className="w-full h-full"
+            style={{
+              width: 0,
+              height: 0,
+              borderLeft: `${(element.width || 50) * zoomLevel}px solid transparent`,
+              borderRight: `${(element.width || 50) * zoomLevel}px solid transparent`,
+              borderBottom: `${(element.height || 86) * zoomLevel}px solid ${element.backgroundColor || "#FF9F43"}`,
+              backgroundColor: 'transparent'
+            }}
+          />
+        )}
+        {element.type === "star" && (
+          <div className="w-full h-full flex items-center justify-center">
+            <Star
+              size={Math.min(element.width, element.height) * zoomLevel || 24 * zoomLevel}
+              color={element.color || '#FFD93D'}
+              fill={element.backgroundColor || '#FFD93D'}
+            />
+          </div>
+        )}
+        {element.type === "hexagon" && (
+          <div
+            className="w-full h-full flex items-center justify-center"
+            style={{
+              backgroundColor: element.backgroundColor || "#6C5CE7",
+              clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
+            }}
+          />
+        )}
+        {element.type === "arrow" && (
+          <div className="w-full h-full flex items-center justify-center">
+            <ArrowRight
+              size={Math.min(element.width, element.height) * zoomLevel || 24 * zoomLevel}
+              color={element.color || '#00CEC9'}
+            />
+          </div>
+        )}
+        {/* Line Element */}
+        {element.type === "line" && (
+          <div
+            className="w-full"
+            style={{
+              height: `${(element.strokeWidth || 3) * zoomLevel}px`,
+              backgroundColor: element.strokeColor || '#000000',
+              marginTop: `${((element.height * zoomLevel) - (element.strokeWidth || 3) * zoomLevel) / 2}px`
+            }}
+          />
+        )}
+        {/* Image Element */}
+        {element.type === "image" && (
+          <img
+            src={element.src}
+            alt="Preview element"
+            className="w-full h-full object-cover"
+            style={{
+              borderRadius: `${(element.borderRadius || 0) * zoomLevel}px`,
+              border: element.borderWidth ? `${element.borderWidth * zoomLevel}px solid ${element.borderColor}` : 'none'
+            }}
+          />
+        )}
+        {/* Video Element */}
+        {element.type === "video" && (
+          <video
+            controls
+            className="w-full h-full object-cover"
+            style={{
+              borderRadius: `${(element.borderRadius || 0) * zoomLevel}px`,
+              border: element.borderWidth ? `${element.borderWidth * zoomLevel}px solid ${element.borderColor}` : 'none'
+            }}
+          >
+            <source src={element.src || ""} type="video/mp4" />
+            Your browser does not support the video tag.
+          </video>
+        )}
+        {/* Audio Element */}
+        {element.type === "audio" && (
+          <div
+            className="w-full h-full flex items-center justify-center bg-gray-100"
+            style={{
+              borderRadius: `${(element.borderRadius || 0) * zoomLevel}px`,
+              border: element.borderWidth ? `${element.borderWidth * zoomLevel}px solid ${element.borderColor}` : 'none'
+            }}
+          >
+            <audio controls className="w-full">
+              <source src={element.src || ""} type="audio/mpeg" />
+              Your browser does not support the audio element.
+            </audio>
+          </div>
+        )}
+        {/* Frame Element */}
+        {element.type === "frame" && (
+          <div
+            className="w-full h-full border-2 border-dashed flex items-center justify-center"
+            style={{
+              borderColor: element.borderColor || '#A0AEC0',
+              borderRadius: `${(element.borderRadius || 8) * zoomLevel}px`,
+              backgroundColor: element.backgroundColor || 'transparent'
+            }}
+          >
+            <span className="text-gray-400 text-sm">Frame</span>
+          </div>
+        )}
+        {/* Interactive Elements */}
+        {element.type === "input" && (
+          <input
+            type="text"
+            placeholder={element.placeholder || "Enter text..."}
+            className="w-full h-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            style={{
+              borderColor: element.borderColor || '#CBD5E0',
+              borderRadius: `${(element.borderRadius || 4) * zoomLevel}px`,
+              fontSize: `${(element.fontSize || 14) * zoomLevel}px`,
+              backgroundColor: element.backgroundColor || '#FFFFFF'
+            }}
+          />
+        )}
+        {element.type === "checkbox" && (
+          <div className="w-full h-full flex items-center justify-center">
+            <input
+              type="checkbox"
+              className="w-6 h-6"
+              style={{
+                transform: `scale(${zoomLevel})`,
+                accentColor: element.color || '#4299E1'
+              }}
+            />
+          </div>
+        )}
+        {/* Icon Element */}
+        {element.type === "icon" && (
+          <div 
+            className="w-full h-full flex items-center justify-center"
+            onClick={() => handleLinkClick(element.link)}
+          >
+            {renderIcon(element)}
+          </div>
+        )}
+        {/* Social Icon Element */}
+        {element.type === "social" && (
+          <div 
+            className="w-full h-full flex items-center justify-center"
+            onClick={() => handleLinkClick(element.link)}
+          >
+            {renderIcon(element)}
+          </div>
+        )}
+      </div>
+    );
+  };
+  
   return (
     <div className="flex-1 bg-gray-700 flex flex-col overflow-hidden">
       {/* Top Controls */}
-      <div className="h-16 bg-gray-800 border-b border-gray-600 flex items-center justify-between px-6">
+      <div className="h-16 bg-gray-800 border-b border-gray-600 flex items-center justify-between px-6 flex-shrink-0">
         {/* Page Tabs */}
         <div className="flex items-center gap-2">
           <div className="flex items-center space-x-1 bg-gray-700 rounded-lg p-1">
@@ -466,17 +799,18 @@ export default function CanvasArea({
             )}
           </button>
           <button
+            onClick={onSendCampaign}
             className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
-            onClick={() => window.location.href = '/send-campaign'}  // Change to your target URL
           >
             <Send size={16} />
             Send
           </button>
         </div>
       </div>
-      {/* Canvas Container */}
+      
+      {/* Canvas Container - Fixed to ensure proper display */}
       <div className="flex-1 overflow-auto bg-gray-700 p-8" onClick={handleCanvasClick}>
-        <div className="flex justify-center">
+        <div className="flex justify-center items-center min-w-full min-h-full">
           <div
             ref={canvasRef}
             className={`canvas-background relative shadow-2xl rounded-lg overflow-hidden ${preview ? '' : 'ring-1 ring-gray-400/20'
@@ -484,21 +818,24 @@ export default function CanvasArea({
             style={{
               width: 800 * zoomLevel,
               height: 600 * zoomLevel,
-              backgroundColor: canvasBackgroundColor, // Apply the background color here
+              backgroundColor: canvasBackgroundColor,
               backgroundImage: showGrid && !preview ? `
                 linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)
               ` : 'none',
-              backgroundSize: showGrid && !preview ? `${20 * zoomLevel}px ${20 * zoomLevel}px` : 'none'
+              backgroundSize: showGrid && !preview ? `${20 * zoomLevel}px ${20 * zoomLevel}px` : 'none',
+              boxSizing: 'border-box',
+              maxWidth: '100%',
+              maxHeight: '100%'
             }}
           >
             {/* Edit Mode */}
             {!preview && pages[activePage].elements.map(element => renderElement(element))}
-            {/* Preview Mode */}
+            {/* Preview Mode - Fixed to maintain exact positions */}
             {preview && (
-              <div className="p-8 h-full overflow-y-auto">
+              <div className="relative w-full h-full">
                 {pages[activePage].elements.length === 0 && (
-                  <div className="flex items-center justify-center h-full">
+                  <div className="absolute inset-0 flex items-center justify-center">
                     <div className="text-center text-gray-400">
                       <div className="text-6xl mb-4">📄</div>
                       <p className="text-xl">This page is empty</p>
@@ -508,209 +845,7 @@ export default function CanvasArea({
                 )}
                 {pages[activePage].elements
                   .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
-                  .map(element => (
-                    <div key={element.id} className="mb-4" style={{
-                      transform: `rotate(${element.rotation || 0}deg)`,
-                      opacity: element.opacity || 1
-                    }}>
-                      {/* Text Elements */}
-                      {(element.type === "heading" || element.type === "paragraph" ||
-                        element.type === "subheading" || element.type === "blockquote") && (
-                          <div
-                            className={`
-                            ${element.type === "heading" ? "font-bold text-2xl" :
-                                element.type === "subheading" ? "font-semibold text-xl" :
-                                  element.type === "blockquote" ? "italic pl-4 border-l-4 border-gray-300" : ""}
-                          `}
-                            style={{
-                              fontSize: element.fontSize || 16,
-                              fontFamily: element.fontFamily || 'Arial',
-                              color: element.color || '#000000',
-                              fontWeight: element.fontWeight || 'normal',
-                              fontStyle: element.fontStyle || 'normal',
-                              textDecoration: element.textDecoration || 'none',
-                              textAlign: element.textAlign || 'left',
-                              backgroundColor: element.backgroundColor || 'transparent'
-                            }}
-                          >
-                            {element.content || (
-                              element.type === "heading" ? "Heading" :
-                                element.type === "subheading" ? "Subheading" :
-                                  element.type === "blockquote" ? "Blockquote" : "Paragraph text"
-                            )}
-                          </div>
-                        )}
-                      {element.type === "button" && (
-                        <button
-                          className="font-medium cursor-pointer"
-                          style={{
-                            backgroundColor: element.backgroundColor || "#007bff",
-                            color: element.color || "#fff",
-                            padding: "12px 24px",
-                            borderRadius: element.borderRadius || 6,
-                            fontSize: element.fontSize || 16,
-                            fontFamily: element.fontFamily || 'Arial',
-                            border: element.borderWidth ? `${element.borderWidth}px solid ${element.borderColor}` : 'none'
-                          }}
-                        >
-                          {element.content || "Click Me"}
-                        </button>
-                      )}
-                      {element.type === "rectangle" && (
-                        <div
-                          style={{
-                            width: element.width || 100,
-                            height: element.height || 100,
-                            backgroundColor: element.backgroundColor || "#4ECDC4",
-                            border: `${element.borderWidth || 2}px solid ${element.borderColor || '#000'}`,
-                            borderRadius: element.borderRadius || 4
-                          }}
-                        />
-                      )}
-                      {element.type === "circle" && (
-                        <div
-                          className="rounded-full"
-                          style={{
-                            width: element.width || 100,
-                            height: element.height || 100,
-                            backgroundColor: element.backgroundColor || "#FF6B6B",
-                            border: `${element.borderWidth || 2}px solid ${element.borderColor || '#000'}`
-                          }}
-                        />
-                      )}
-                      {element.type === "triangle" && (
-                        <div
-                          style={{
-                            width: 0,
-                            height: 0,
-                            borderLeft: `${element.width || 50}px solid transparent`,
-                            borderRight: `${element.width || 50}px solid transparent`,
-                            borderBottom: `${element.height || 86}px solid ${element.backgroundColor || "#FF9F43"}`,
-                            backgroundColor: 'transparent'
-                          }}
-                        />
-                      )}
-                      {element.type === "star" && (
-                        <div className="flex items-center justify-center">
-                          <Star
-                            size={Math.min(element.width, element.height) || 24}
-                            color={element.color || '#FFD93D'}
-                            fill={element.backgroundColor || '#FFD93D'}
-                          />
-                        </div>
-                      )}
-                      {element.type === "hexagon" && (
-                        <div
-                          className="flex items-center justify-center"
-                          style={{
-                            width: element.width || 100,
-                            height: element.height || 100,
-                            backgroundColor: element.backgroundColor || "#6C5CE7",
-                            clipPath: 'polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%)'
-                          }}
-                        />
-                      )}
-                      {element.type === "arrow" && (
-                        <div className="flex items-center justify-center">
-                          <ArrowRight
-                            size={Math.min(element.width, element.height) || 24}
-                            color={element.color || '#00CEC9'}
-                          />
-                        </div>
-                      )}
-                      {element.type === "line" && (
-                        <div
-                          style={{
-                            width: element.width || 150,
-                            height: element.strokeWidth || 3,
-                            backgroundColor: element.strokeColor || '#000000'
-                          }}
-                        />
-                      )}
-                      {element.type === "image" && (
-                        <img
-                          src={element.src}
-                          alt="Preview element"
-                          style={{
-                            maxWidth: element.width || 200,
-                            maxHeight: element.height || 150,
-                            borderRadius: element.borderRadius || 0,
-                            border: element.borderWidth ? `${element.borderWidth}px solid ${element.borderColor}` : 'none'
-                          }}
-                          className="object-cover"
-                        />
-                      )}
-                      {element.type === "video" && (
-                        <video
-                          controls
-                          className="max-w-full max-h-60 object-cover"
-                          style={{
-                            borderRadius: element.borderRadius || 0,
-                            border: element.borderWidth ? `${element.borderWidth}px solid ${element.borderColor}` : 'none'
-                          }}
-                        >
-                          <source src={element.src || ""} type="video/mp4" />
-                        </video>
-                      )}
-                      {element.type === "audio" && (
-                        <div
-                          className="bg-gray-100 p-4 rounded"
-                          style={{
-                            borderRadius: element.borderRadius || 0,
-                            border: element.borderWidth ? `${element.borderWidth}px solid ${element.borderColor}` : 'none'
-                          }}
-                        >
-                          <audio controls className="w-full">
-                            <source src={element.src || ""} type="audio/mpeg" />
-                          </audio>
-                        </div>
-                      )}
-                      {element.type === "frame" && (
-                        <div
-                          className="border-2 border-dashed p-4 flex items-center justify-center"
-                          style={{
-                            borderColor: element.borderColor || '#A0AEC0',
-                            borderRadius: element.borderRadius || 8,
-                            backgroundColor: element.backgroundColor || 'transparent',
-                            width: element.width || 200,
-                            height: element.height || 150
-                          }}
-                        >
-                          <span className="text-gray-400">Frame Content</span>
-                        </div>
-                      )}
-                      {element.type === "input" && (
-                        <input
-                          type="text"
-                          placeholder={element.placeholder || "Enter text..."}
-                          className="px-3 py-2 border rounded"
-                          style={{
-                            borderColor: element.borderColor || '#CBD5E0',
-                            borderRadius: element.borderRadius || 4,
-                            fontSize: element.fontSize || 14,
-                            backgroundColor: element.backgroundColor || '#FFFFFF'
-                          }}
-                        />
-                      )}
-                      {element.type === "checkbox" && (
-                        <div className="flex items-center">
-                          <input
-                            type="checkbox"
-                            className="w-6 h-6"
-                            style={{
-                              accentColor: element.color || '#4299E1'
-                            }}
-                          />
-                          <span className="ml-2">Checkbox Option</span>
-                        </div>
-                      )}
-                      {element.type === "icon" && (
-                        <div className="flex items-center justify-center">
-                          {renderIcon(element)}
-                        </div>
-                      )}
-                    </div>
-                  ))}
+                  .map(element => renderPreviewElement(element))}
               </div>
             )}
             {/* Empty State */}
