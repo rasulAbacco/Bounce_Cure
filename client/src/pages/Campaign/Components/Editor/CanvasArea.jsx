@@ -6,11 +6,10 @@ import {
   Type, Square, Circle, Minus, Image, Video, Music,
   Frame, Star, Triangle, Hexagon, ArrowRight,
   PenTool, Hash, FileText, ChevronDown, ChevronUp,
-  Zap, Move,
-  // Import all the icons we need for the icon elements
+  Zap, Move, ZoomIn, RotateCcw,
   Heart, Home, User, Settings, Mail, Check,
-  // Import social media icons
-  Facebook, Twitter, Instagram, Linkedin, Youtube
+  Facebook, Twitter, Instagram, Linkedin, Youtube,
+  CreditCard
 } from 'lucide-react';
 
 export default function CanvasArea({
@@ -212,12 +211,10 @@ export default function CanvasArea({
 
   // Fixed and more robust icon rendering function
   const renderIcon = (element) => {
-    // Get the icon name from the element
     const iconName = element.name || element.iconName || 'Star';
     const color = element.color || element.style?.color || '#000000';
     const size = Math.min(element.width, element.height) * zoomLevel || 24 * zoomLevel;
-
-    // Create icon mapping with all possible variations
+    
     const iconMap = {
       'star': Star,
       'heart': Heart,
@@ -227,13 +224,11 @@ export default function CanvasArea({
       'user': User,
       'settings': Settings,
       'mail': Mail,
-      // Social media icons
       'facebook': Facebook,
       'twitter': Twitter,
       'instagram': Instagram,
       'linkedin': Linkedin,
       'youtube': Youtube,
-      // Add capitalized versions
       'Star': Star,
       'Heart': Heart,
       'Check': Check,
@@ -250,11 +245,11 @@ export default function CanvasArea({
     };
 
     // Get the icon component
+
     const IconComponent = iconMap[iconName.toLowerCase()];
     if (IconComponent) {
       return <IconComponent color={color} size={size} />;
     } else {
-      // Fallback with the icon name for debugging
       return (
         <div
           style={{
@@ -390,6 +385,36 @@ export default function CanvasArea({
               onClick={() => handleLinkClick(element.link)}
             >
               {element.content || "Click Me"}
+            </div>
+          )}
+          {/* Card Element */}
+          {element.type === "card" && (
+            <div
+              contentEditable={isSelected}
+              suppressContentEditableWarning
+              className="w-full h-full outline-none overflow-hidden"
+              style={{
+                backgroundColor: element.backgroundColor || "#FFFFFF",
+                borderColor: element.borderColor || "#E2E8F0",
+                borderWidth: `${(element.borderWidth || 1) * zoomLevel}px`,
+                borderRadius: `${(element.borderRadius || 8) * zoomLevel}px`,
+                padding: `${(element.padding || 16) * zoomLevel}px`,
+                fontSize: `${(element.fontSize || 16) * zoomLevel}px`,
+                fontFamily: element.fontFamily || 'Arial',
+                color: element.color || '#000000',
+                fontWeight: element.fontWeight || 'normal',
+                fontStyle: element.fontStyle || 'normal',
+                textDecoration: element.textDecoration || 'none',
+                textAlign: element.textAlign || 'left',
+                lineHeight: '1.4',
+                wordWrap: 'break-word',
+                backgroundImage: element.backgroundImage || 'none',
+                boxShadow: element.boxShadow || 'none'
+              }}
+              onInput={(e) => handleElementUpdate(element.id, { content: e.currentTarget.textContent })}
+              onBlur={() => setSelectedElement(null)}
+            >
+              {element.content || "Card content goes here"}
             </div>
           )}
           {/* Shape Elements */}
@@ -546,7 +571,7 @@ export default function CanvasArea({
               />
             </div>
           )}
-          {/* Icon Element - Fixed */}
+          {/* Icon Element */}
           {element.type === "icon" && (
             <div
               className="w-full h-full flex items-center justify-center"
@@ -645,6 +670,32 @@ export default function CanvasArea({
             onClick={() => handleLinkClick(element.link)}
           >
             {element.content || "Click Me"}
+          </div>
+        )}
+        {/* Card Element */}
+        {element.type === "card" && (
+          <div
+            className="w-full h-full overflow-hidden"
+            style={{
+              backgroundColor: element.backgroundColor || "#FFFFFF",
+              borderColor: element.borderColor || "#E2E8F0",
+              borderWidth: `${(element.borderWidth || 1) * zoomLevel}px`,
+              borderRadius: `${(element.borderRadius || 8) * zoomLevel}px`,
+              padding: `${(element.padding || 16) * zoomLevel}px`,
+              fontSize: `${(element.fontSize || 16) * zoomLevel}px`,
+              fontFamily: element.fontFamily || 'Arial',
+              color: element.color || '#000000',
+              fontWeight: element.fontWeight || 'normal',
+              fontStyle: element.fontStyle || 'normal',
+              textDecoration: element.textDecoration || 'none',
+              textAlign: element.textAlign || 'left',
+              lineHeight: '1.4',
+              wordWrap: 'break-word',
+              backgroundImage: element.backgroundImage || 'none',
+              boxShadow: element.boxShadow || 'none'
+            }}
+          >
+            {element.content || "Card content goes here"}
           </div>
         )}
         {/* Shape Elements */}
@@ -1005,13 +1056,9 @@ export default function CanvasArea({
 
         </div>
       </div>
-
-      {/* Canvas Container - Fixed to ensure proper display */}
-      <div
-        ref={containerRef}
-        className="flex-1 overflow-auto bg-gray-700 p-4 custom-scrollbar"
-        onClick={handleCanvasClick}
-      >
+      
+      {/* Canvas Container */}
+      <div className="flex-1 overflow-auto bg-gray-700 p-8" onClick={handleCanvasClick}>
         <div className="flex justify-center items-center min-w-full min-h-full">
           <div
             ref={canvasRef}
@@ -1034,7 +1081,7 @@ export default function CanvasArea({
             {/* Edit Mode */}
             {!preview && pages[activePage].elements.map(element => renderElement(element))}
 
-            {/* Preview Mode - Fixed to maintain exact positions */}
+            {/* Preview Mode */}
             {preview && (
               <div className="relative w-full h-full">
                 {pages[activePage].elements.length === 0 && (
