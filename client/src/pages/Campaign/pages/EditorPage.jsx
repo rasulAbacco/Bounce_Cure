@@ -1878,6 +1878,6 @@ const EditorPage = () => {
             />
         </div>
     );
-};
-
+  };
+}}
 export default EditorPage;
