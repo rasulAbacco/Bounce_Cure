@@ -38,10 +38,10 @@ import Tasks from './pages/ContactManagement/pages/Tasks';
 import ResetPasswordPage from './pages/ResetPasswordPage';
 import VerifyEmail from "./pages/VerifyEmail";
 import Templets from './pages/Campaign/pages/Templets';
-import CanvasArea from './pages/Campaign/components/Editor/CanvasArea';
+import CanvasArea from './pages/Campaign/Components/Editor/CanvasArea';
 import { useNavigate } from "react-router-dom";
 import SendCampaign from './pages/Campaign/pages/SendCampaign';
-
+import AllTemplats  from './pages/Campaign/pages/AllTemplats';
 
 function App() {
   return (
@@ -107,6 +107,7 @@ function App() {
 
 
             <Route path="/send-campaign" element={<SendCampaign />} />
+            <Route path="/all-templates" element={<AllTemplats/>} />
 
 
           </Routes>

@@ -178,19 +178,20 @@ model PasswordResetToken {
 }
 
 model Contact {
-  id        Int      @id @default(autoincrement())
-  name      String
-  email     String
-  phone     String?
-  company   String?
-  status    String   @default("active")
-  userId    Int
-  user      User     @relation(fields: [userId], references: [id])
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id        Int       @id @default(autoincrement())
+  name      String?
+  email     String?
+  phone     String?    // ✅ optional
+  company   String?    // ✅ optional
+  status    String?    @default("active")
+  userId    Int?
+  user      User?      @relation(fields: [userId], references: [id])
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
   @@unique([userId, email], name: "user_email_unique")
   @@index([userId, status])
 }
+
 
 
