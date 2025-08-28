@@ -1,16 +1,15 @@
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Rnd } from "react-rnd";
-import { Send } from 'lucide-react';
+import { Send, Save, Trash2 } from 'lucide-react';
 import {
   Eye, X, Plus, Download, Play, Layers,
   Type, Square, Circle, Minus, Image, Video, Music,
   Frame, Star, Triangle, Hexagon, ArrowRight,
   PenTool, Hash, FileText, ChevronDown, ChevronUp,
   Zap, Move, ZoomIn, RotateCcw,
-  // Import all the icons we need for the icon elements
   Heart, Home, User, Settings, Mail, Check,
-  // Import social media icons
-  Facebook, Twitter, Instagram, Linkedin, Youtube
+  Facebook, Twitter, Instagram, Linkedin, Youtube,
+  CreditCard
 } from 'lucide-react';
 
 export default function CanvasArea({
@@ -23,13 +22,32 @@ export default function CanvasArea({
   setSelectedElement,
   updateElement,
   zoomLevel = 1,
+  setZoomLevel,
   showGrid = true,
   canvasBackgroundColor = '#FFFFFF',
   onSendCampaign
 }) {
   const [preview, setPreview] = useState(false);
+  const [saveStatus, setSaveStatus] = useState(''); // 'saved', 'saving', 'error'
   const canvasRef = useRef(null);
-  
+  const containerRef = useRef(null);
+
+  // Load saved data from localStorage on component mount
+  useEffect(() => {
+    const savedData = localStorage.getItem('canvasData');
+    if (savedData) {
+      try {
+        const { pages: savedPages, activePage: savedActivePage, canvasBackgroundColor: savedBg } = JSON.parse(savedData);
+        setPages(savedPages);
+        setActivePage(savedActivePage);
+        // Note: canvasBackgroundColor is a prop, so we can't set it directly here
+        // You might need to lift this state up or handle it differently
+      } catch (error) {
+        console.error('Failed to load saved data:', error);
+      }
+    }
+  }, [setPages, setActivePage]);
+
   // Add animation styles
   useEffect(() => {
     if (document.getElementById('animation-styles')) return;
@@ -80,53 +98,123 @@ export default function CanvasArea({
       .animate-pulse {
         animation: pulse 1s ease both;
       }
+      
+      /* Custom scrollbar */
+      .custom-scrollbar::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar-track {
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 5px;
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: rgba(255, 255, 255, 0.3);
+        border-radius: 5px;
+      }
+      
+      .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: rgba(255, 255, 255, 0.5);
+      }
     `;
     document.head.appendChild(style);
   }, []);
-  
+
   const addPage = () => {
     const newPage = { id: pages.length + 1, elements: [] };
-    setPages([...pages, newPage]);
+    const updatedPages = [...pages, newPage];
+    setPages(updatedPages);
     setActivePage(pages.length);
+    // Auto-save when adding a page
+    saveToLocalStorage(updatedPages, pages.length, canvasBackgroundColor);
   };
-  
+
   const deletePage = (pageIndex) => {
     if (pages.length > 1) {
       const updatedPages = pages.filter((_, index) => index !== pageIndex);
       setPages(updatedPages);
       if (activePage >= updatedPages.length) {
-        setActivePage(updatedPages.length - 1);
+        const newActivePage = updatedPages.length - 1;
+        setActivePage(newActivePage);
+        saveToLocalStorage(updatedPages, newActivePage, canvasBackgroundColor);
+      } else {
+        saveToLocalStorage(updatedPages, activePage, canvasBackgroundColor);
       }
     }
   };
-  
+
   const handleElementClick = (elementId, e) => {
     e.stopPropagation();
     setSelectedElement(elementId);
   };
-  
+
   const handleCanvasClick = (e) => {
     if (e.target === canvasRef.current || e.target.closest('.canvas-background')) {
       setSelectedElement(null);
     }
   };
-  
+
   const handleElementUpdate = (elementId, newProps) => {
     updateElement(elementId, newProps);
     const updatedElements = pages[activePage].elements.map(el =>
       el.id === elementId ? { ...el, ...newProps } : el
     );
+    const updatedPages = [...pages];
+    updatedPages[activePage] = { ...updatedPages[activePage], elements: updatedElements };
+    setPages(updatedPages);
     onUpdate(updatedElements);
+    // Auto-save when element is updated
+    saveToLocalStorage(updatedPages, activePage, canvasBackgroundColor);
   };
-  
+
+  // Save data to localStorage
+  const saveToLocalStorage = useCallback((pagesToSave, activePageToSave, bgColor) => {
+    const dataToSave = {
+      pages: pagesToSave,
+      activePage: activePageToSave,
+      canvasBackgroundColor: bgColor
+    };
+    localStorage.setItem('canvasData', JSON.stringify(dataToSave));
+  }, []);
+
+  // Clear canvas and localStorage
+  const handleClear = useCallback(() => {
+    // Reset to initial state with one empty page
+    const initialPages = [{ id: 1, elements: [] }];
+    setPages(initialPages);
+    setActivePage(0);
+
+    // Clear localStorage
+    localStorage.removeItem('canvasData');
+
+    // Update save status
+    setSaveStatus('');
+
+    console.log('Canvas cleared and saved data removed');
+  }, [setPages, setActivePage]);
+
+  // Fixed save functionality
+  const handleSave = useCallback(() => {
+    setSaveStatus('saving');
+
+    // Save to localStorage
+    saveToLocalStorage(pages, activePage, canvasBackgroundColor);
+
+    // Simulate API call to save data
+    setTimeout(() => {
+      setSaveStatus('saved');
+      console.log('Save completed successfully');
+    }, 1000);
+  }, [pages, activePage, canvasBackgroundColor, saveToLocalStorage]);
+
   // Fixed and more robust icon rendering function
   const renderIcon = (element) => {
-    // Get the icon name from the element
     const iconName = element.name || element.iconName || 'Star';
     const color = element.color || element.style?.color || '#000000';
     const size = Math.min(element.width, element.height) * zoomLevel || 24 * zoomLevel;
     
-    // Create icon mapping with all possible variations
     const iconMap = {
       'star': Star,
       'heart': Heart,
@@ -136,13 +224,11 @@ export default function CanvasArea({
       'user': User,
       'settings': Settings,
       'mail': Mail,
-      // Social media icons
       'facebook': Facebook,
       'twitter': Twitter,
       'instagram': Instagram,
       'linkedin': Linkedin,
       'youtube': Youtube,
-      // Add capitalized versions
       'Star': Star,
       'Heart': Heart,
       'Check': Check,
@@ -157,13 +243,13 @@ export default function CanvasArea({
       'LinkedIn': Linkedin,
       'YouTube': Youtube
     };
-    
+
     // Get the icon component
+
     const IconComponent = iconMap[iconName.toLowerCase()];
     if (IconComponent) {
       return <IconComponent color={color} size={size} />;
     } else {
-      // Fallback with the icon name for debugging
       return (
         <div
           style={{
@@ -182,7 +268,7 @@ export default function CanvasArea({
       );
     }
   };
-  
+
   // Helper function to get animation style
   const getAnimationStyle = (element) => {
     if (!element.animation || element.animation === 'none') {
@@ -195,19 +281,19 @@ export default function CanvasArea({
       animation: `${element.animation} ${duration} ${delay} ${timing} both`
     };
   };
-  
+
   // Handle link click
   const handleLinkClick = (link) => {
     if (link) {
       window.open(link, '_blank');
     }
   };
-  
+
   const renderElement = (element) => {
     const isSelected = selectedElement === element.id;
     return (
       <Rnd
-        key={element.id}
+        key={`${element.id}-${zoomLevel}`} // Added zoomLevel to key to force re-render on zoom change
         default={{
           x: element.x || 50,
           y: element.y || 50,
@@ -238,8 +324,8 @@ export default function CanvasArea({
       >
         <div
           className={`w-full h-full cursor-pointer border-2 transition-all ${isSelected
-              ? 'border-blue-500 shadow-lg ring-2 ring-blue-500/20'
-              : 'border-transparent hover:border-blue-300/50'
+            ? 'border-blue-500 shadow-lg ring-2 ring-blue-500/20'
+            : 'border-transparent hover:border-blue-300/50'
             }`}
           style={{
             transform: `rotate(${element.rotation || 0}deg)`,
@@ -254,8 +340,8 @@ export default function CanvasArea({
                 contentEditable={isSelected}
                 suppressContentEditableWarning
                 className={`w-full h-full p-2 outline-none ${element.type === "heading" ? "font-bold" :
-                    element.type === "subheading" ? "font-semibold" :
-                      element.type === "blockquote" ? "italic pl-4 border-l-4 border-gray-300" : ""
+                  element.type === "subheading" ? "font-semibold" :
+                    element.type === "blockquote" ? "italic pl-4 border-l-4 border-gray-300" : ""
                   }`}
                 style={{
                   fontSize: `${(element.fontSize || 16) * zoomLevel}px`,
@@ -299,6 +385,36 @@ export default function CanvasArea({
               onClick={() => handleLinkClick(element.link)}
             >
               {element.content || "Click Me"}
+            </div>
+          )}
+          {/* Card Element */}
+          {element.type === "card" && (
+            <div
+              contentEditable={isSelected}
+              suppressContentEditableWarning
+              className="w-full h-full outline-none overflow-hidden"
+              style={{
+                backgroundColor: element.backgroundColor || "#FFFFFF",
+                borderColor: element.borderColor || "#E2E8F0",
+                borderWidth: `${(element.borderWidth || 1) * zoomLevel}px`,
+                borderRadius: `${(element.borderRadius || 8) * zoomLevel}px`,
+                padding: `${(element.padding || 16) * zoomLevel}px`,
+                fontSize: `${(element.fontSize || 16) * zoomLevel}px`,
+                fontFamily: element.fontFamily || 'Arial',
+                color: element.color || '#000000',
+                fontWeight: element.fontWeight || 'normal',
+                fontStyle: element.fontStyle || 'normal',
+                textDecoration: element.textDecoration || 'none',
+                textAlign: element.textAlign || 'left',
+                lineHeight: '1.4',
+                wordWrap: 'break-word',
+                backgroundImage: element.backgroundImage || 'none',
+                boxShadow: element.boxShadow || 'none'
+              }}
+              onInput={(e) => handleElementUpdate(element.id, { content: e.currentTarget.textContent })}
+              onBlur={() => setSelectedElement(null)}
+            >
+              {element.content || "Card content goes here"}
             </div>
           )}
           {/* Shape Elements */}
@@ -455,9 +571,9 @@ export default function CanvasArea({
               />
             </div>
           )}
-          {/* Icon Element - Fixed */}
+          {/* Icon Element */}
           {element.type === "icon" && (
-            <div 
+            <div
               className="w-full h-full flex items-center justify-center"
               onClick={() => handleLinkClick(element.link)}
             >
@@ -466,7 +582,7 @@ export default function CanvasArea({
           )}
           {/* Social Icon Element */}
           {element.type === "social" && (
-            <div 
+            <div
               className="w-full h-full flex items-center justify-center"
               onClick={() => handleLinkClick(element.link)}
             >
@@ -490,11 +606,11 @@ export default function CanvasArea({
       </Rnd>
     );
   };
-  
+
   // New function to render preview elements with absolute positioning
   const renderPreviewElement = (element) => {
     const animationStyle = preview ? getAnimationStyle(element) : {};
-    
+
     return (
       <div
         key={element.id}
@@ -516,8 +632,8 @@ export default function CanvasArea({
             <div
               className={`w-full h-full p-2 ${element.type === "heading" ? "font-bold" :
                 element.type === "subheading" ? "font-semibold" :
-                element.type === "blockquote" ? "italic pl-4 border-l-4 border-gray-300" : ""
-              }`}
+                  element.type === "blockquote" ? "italic pl-4 border-l-4 border-gray-300" : ""
+                }`}
               style={{
                 fontSize: `${(element.fontSize || 16) * zoomLevel}px`,
                 fontFamily: element.fontFamily || 'Arial',
@@ -554,6 +670,32 @@ export default function CanvasArea({
             onClick={() => handleLinkClick(element.link)}
           >
             {element.content || "Click Me"}
+          </div>
+        )}
+        {/* Card Element */}
+        {element.type === "card" && (
+          <div
+            className="w-full h-full overflow-hidden"
+            style={{
+              backgroundColor: element.backgroundColor || "#FFFFFF",
+              borderColor: element.borderColor || "#E2E8F0",
+              borderWidth: `${(element.borderWidth || 1) * zoomLevel}px`,
+              borderRadius: `${(element.borderRadius || 8) * zoomLevel}px`,
+              padding: `${(element.padding || 16) * zoomLevel}px`,
+              fontSize: `${(element.fontSize || 16) * zoomLevel}px`,
+              fontFamily: element.fontFamily || 'Arial',
+              color: element.color || '#000000',
+              fontWeight: element.fontWeight || 'normal',
+              fontStyle: element.fontStyle || 'normal',
+              textDecoration: element.textDecoration || 'none',
+              textAlign: element.textAlign || 'left',
+              lineHeight: '1.4',
+              wordWrap: 'break-word',
+              backgroundImage: element.backgroundImage || 'none',
+              boxShadow: element.boxShadow || 'none'
+            }}
+          >
+            {element.content || "Card content goes here"}
           </div>
         )}
         {/* Shape Elements */}
@@ -708,7 +850,7 @@ export default function CanvasArea({
         )}
         {/* Icon Element */}
         {element.type === "icon" && (
-          <div 
+          <div
             className="w-full h-full flex items-center justify-center"
             onClick={() => handleLinkClick(element.link)}
           >
@@ -717,7 +859,7 @@ export default function CanvasArea({
         )}
         {/* Social Icon Element */}
         {element.type === "social" && (
-          <div 
+          <div
             className="w-full h-full flex items-center justify-center"
             onClick={() => handleLinkClick(element.link)}
           >
@@ -727,7 +869,7 @@ export default function CanvasArea({
       </div>
     );
   };
-  
+
   return (
     <div className="flex-1 bg-gray-700 flex flex-col overflow-hidden">
       {/* Top Controls */}
@@ -740,8 +882,8 @@ export default function CanvasArea({
                 <button
                   onClick={() => setActivePage(idx)}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${idx === activePage
-                      ? "bg-blue-600 text-white shadow-lg"
-                      : "text-gray-300 hover:bg-gray-600 hover:text-white"
+                    ? "bg-blue-600 text-white shadow-lg"
+                    : "text-gray-300 hover:bg-gray-600 hover:text-white"
                     }`}
                 >
                   Page {page.id}
@@ -762,28 +904,115 @@ export default function CanvasArea({
           </div>
           <button
             onClick={addPage}
-            className="flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors shadow-lg"
+            className="relative group flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors shadow-lg"
           >
             <Plus size={16} />
             Add Page
+
+            {/* Tooltip */}
+            <span
+              className="absolute left-1/2 -translate-x-1/2 top-full mt-2
+               opacity-0 group-hover:opacity-100 transition
+               bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap"
+            >
+              Add a New Page
+            </span>
           </button>
+
         </div>
+
         {/* Right Controls */}
         <div className="flex items-center gap-3">
+          {/* Save Status */}
+          <div className="flex items-center gap-2 text-sm">
+            {saveStatus === 'saving' && (
+              <div className="flex items-center text-yellow-400">
+                <div className="w-2 h-2 rounded-full bg-yellow-400 animate-ping mr-1"></div>
+                Saving...
+              </div>
+            )}
+            {saveStatus === 'saved' && (
+              <div className="flex items-center text-green-400">
+                <div className="w-2 h-2 rounded-full bg-green-400 mr-1"></div>
+                Saved
+              </div>
+            )}
+            {saveStatus === 'error' && (
+              <div className="flex items-center text-red-400">
+                <div className="w-2 h-2 rounded-full bg-red-400 mr-1"></div>
+                Save failed
+              </div>
+            )}
+          </div>
+
           <div className="flex items-center gap-2 text-sm text-gray-300">
             <Layers size={16} />
             <span>{pages[activePage].elements.length} elements</span>
           </div>
+
           <div className="w-px h-6 bg-gray-600"></div>
-          <button className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors">
-            <Play size={16} />
-            Animate
+
+          {/* Clear Button */}
+          <button
+            onClick={handleClear}
+            className="relative group flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            <Trash2 size={16} />
+
+            {/* Tooltip */}
+            <span
+              className="absolute left-1/2 -translate-x-1/2 top-full mt-2
+               opacity-0 group-hover:opacity-100 transition
+               bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap"
+            >
+              Clear
+            </span>
           </button>
+
+
+          {/* Save Button */}
+          <button
+            onClick={handleSave}
+            disabled={saveStatus === "saving"}
+            className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors group ${saveStatus === "saving"
+              ? "bg-yellow-600 text-white cursor-not-allowed"
+              : "bg-indigo-600 hover:bg-indigo-700 text-white"
+              }`}
+          >
+            <Save size={16} />
+
+            {/* Tooltip */}
+            <span
+              className="absolute left-1/2 -translate-x-1/2 top-full mt-2
+               opacity-0 group-hover:opacity-100 transition
+               bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap"
+            >
+              Save
+            </span>
+          </button>
+
+
+          <button
+            className="relative group flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors"
+          >
+            <Play size={16} />
+
+            {/* Tooltip */}
+            <span
+              className="absolute left-1/2 -translate-x-1/2 top-full mt-2
+               opacity-0 group-hover:opacity-100 transition
+               bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap"
+            >
+              Play
+            </span>
+          </button>
+
+
           <button
             onClick={() => setPreview(!preview)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${preview
-                ? "bg-red-600 hover:bg-red-700 text-white"
-                : "bg-blue-600 hover:bg-blue-700 text-white"
+            className={`relative group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${preview
+              ? "bg-red-600 hover:bg-red-700 text-white"
+              : "bg-blue-600 hover:bg-blue-700 text-white"
               }`}
           >
             {preview ? (
@@ -797,18 +1026,38 @@ export default function CanvasArea({
                 Preview
               </>
             )}
+
+            {/* Tooltip */}
+            <span
+              className="absolute left-1/2 -translate-x-1/2 top-full mt-2
+               opacity-0 group-hover:opacity-100 transition
+               bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap"
+            >
+              {preview ? "Exit Preview" : "Preview"}
+            </span>
           </button>
+
           <button
             onClick={onSendCampaign}
-            className="flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+            className="relative group flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
           >
             <Send size={16} />
             Send
+
+            {/* Tooltip */}
+            <span
+              className="absolute left-1/2 -translate-x-1/2 top-full mt-2
+               opacity-0 group-hover:opacity-100 transition
+               bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap"
+            >
+              Send Campaign
+            </span>
           </button>
+
         </div>
       </div>
       
-      {/* Canvas Container - Fixed to ensure proper display */}
+      {/* Canvas Container */}
       <div className="flex-1 overflow-auto bg-gray-700 p-8" onClick={handleCanvasClick}>
         <div className="flex justify-center items-center min-w-full min-h-full">
           <div
@@ -831,7 +1080,8 @@ export default function CanvasArea({
           >
             {/* Edit Mode */}
             {!preview && pages[activePage].elements.map(element => renderElement(element))}
-            {/* Preview Mode - Fixed to maintain exact positions */}
+
+            {/* Preview Mode */}
             {preview && (
               <div className="relative w-full h-full">
                 {pages[activePage].elements.length === 0 && (
@@ -848,6 +1098,7 @@ export default function CanvasArea({
                   .map(element => renderPreviewElement(element))}
               </div>
             )}
+
             {/* Empty State */}
             {!preview && pages[activePage].elements.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">

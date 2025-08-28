@@ -159,6 +159,35 @@ model DeletedAccount {
 model PasswordResetToken {
   id        Int      @id @default(autoincrement())
   token     String   @unique
+
+  createdAt DateTime @default(now())
+
+  // FIXED: userId must be Int (to match User.id)
+  userId Int
+  user   User @relation("UserTokens", fields: [userId], references: [id], onDelete: Cascade)
+
+  expiresAt DateTime
+}
+
+model Contact {
+  id        Int       @id @default(autoincrement())
+  name      String?
+  email     String?
+  phone     String?    // ✅ optional
+  company   String?    // ✅ optional
+  status    String?    @default("active")
+  userId    Int?
+  user      User?      @relation(fields: [userId], references: [id])
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+
+  @@unique([userId, email], name: "user_email_unique")
+  @@index([userId, status])
+}
+
+
+
+
   userId    Int
   expiresAt DateTime
   user      User     @relation("UserTokens", fields: [userId], references: [id])
@@ -184,3 +213,4 @@ model Deal {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
