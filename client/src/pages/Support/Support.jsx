@@ -187,7 +187,7 @@ export default function HelpAndSupport() {
             <div className="help-support-container">
                 <div className="help-support-inner">
                     {/* FAQ Section */}
-                    <div className="faq-section">
+                    <div className="faq-section mt-[5%]">
                         <h2>Help & Support</h2>
                         <p>Find quick answers to common questions below.</p>
                         <div className="faq-list">
@@ -230,7 +230,7 @@ export default function HelpAndSupport() {
                     </div>
 
                     {/* Support Cards Grid */}
-                    <div className="support-cards-grid">
+                    <div className="support-cards-grid ">
                         {/* Email Support */}
                         <div className="support-card">
                             <div className="card-header"style={{ cursor: "pointer" }}>
