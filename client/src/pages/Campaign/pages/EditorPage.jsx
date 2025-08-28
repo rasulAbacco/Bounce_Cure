@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
 import CanvasArea from "../Components/Editor/CanvasArea";
 import Toolbox from "../Components/Editor/Toolbox";
-import PropertiesPanel from "../components/Editor/PropertiesPanel";
+import PropertiesPanel from "../Components/Editor/PropertiesPanel";
 
 const EditorPage = () => {
   const location = useLocation();
@@ -95,7 +95,7 @@ const EditorPage = () => {
             type: "rectangle",
             x: 0,
             y: 0,
-            width: 728,
+            width: 800,
             height: 100,
             backgroundColor: "#4ECDC4",
             borderRadius: 0,
