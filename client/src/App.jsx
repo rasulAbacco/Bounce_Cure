@@ -43,7 +43,6 @@ import { useNavigate } from "react-router-dom";
 import SendCampaign from './pages/Campaign/pages/SendCampaign';
 import AllTemplates from './pages/Campaign/pages/AllTemplats';
 
-
 function App() {
   return (
     <UserProvider>
@@ -105,8 +104,6 @@ function App() {
             <Route path="/tasks" element={<Tasks />} />
             <Route path="/templetes" element={<Templets />} />
             <Route path="/canva" element={<CanvasArea />} />
-
-
             <Route path="/send-campaign" element={<SendCampaign />} />
             <Route path="/all-templates" element={<AllTemplates />} />
           </Routes>
