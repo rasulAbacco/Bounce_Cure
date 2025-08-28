@@ -98,7 +98,7 @@ const EditorPage = () => {
         layoutElements = [
           {
             id: crypto.randomUUID(),
-            type: "",
+            type: "rectangle",
             x: 0,
             y: 0,
             width: 800,
@@ -115,7 +115,7 @@ const EditorPage = () => {
             width: 600,
             height: 50,
             content: "Monthly Campaign Newsletter",
-            color: "black",
+            color: "#FFFFFF",
             fontSize: 28,
             fontWeight: "bold",
             textAlign: "center"
@@ -307,7 +307,7 @@ const EditorPage = () => {
         layoutElements = [
           {
             id: crypto.randomUUID(),
-            type: "",
+            type: "rectangle",
             x: 0,
             y: 0,
             width: 300,
@@ -319,7 +319,7 @@ const EditorPage = () => {
           },
           {
             id: crypto.randomUUID(),
-            type: "",
+            type: "rectangle",
             x: 300,
             y: 0,
             width: 300,
@@ -331,7 +331,7 @@ const EditorPage = () => {
           },
           {
             id: crypto.randomUUID(),
-            type: "",
+            type: "rectangle",
             x: 500,
             y: 0,
             width: 300,
