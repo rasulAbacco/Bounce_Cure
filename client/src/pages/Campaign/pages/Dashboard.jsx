@@ -17,10 +17,9 @@ import { FiEye, FiEdit, FiTrash2 } from "react-icons/fi";
 </div>
 
 
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { getCampaigns } from "../../../services/campaignService";
 import Button from "../Components/UI/Button";
-import Layout from "../Components/Layout/Layout";
 import Templets from "./Templets";
 import {
     MdCampaign,
@@ -30,9 +29,7 @@ import {
     MdAdd,
     MdAnalytics,
     MdDescription,
-
 } from "react-icons/md";
-import { useNavigate } from "react-router-dom";
 
 const Dashboard = () => {
     const [campaigns, setCampaigns] = useState([]);
@@ -40,18 +37,88 @@ const Dashboard = () => {
     const [filter, setFilter] = useState("All");
     const [activeTab, setActiveTab] = useState("dashboard");
 
-
     const navigate = useNavigate();
     const [showOptions, setShowOptions] = useState(false);
 
-    useEffect(() => {
-        getCampaigns()
-            .then((data) => {
-                setCampaigns(data);
-            })
-            .finally(() => setLoading(false));
-    }, []);
+    // 📌 Contacts state
+    const [contacts, setContacts] = useState([]);
+    const [showAddModal, setShowAddModal] = useState(false);
+    const [showEditModal, setShowEditModal] = useState(false);
+    const [selectedContact, setSelectedContact] = useState(null);
+    const [newContact, setNewContact] = useState({
+        name: "",
+        email: "",
+        phone: "",
+        company: "",
+        status: "active",
+    });
 
+    // 📌 Fetch Contacts
+    const fetchContacts = async () => {
+        try {
+            const res = await fetch("http://localhost:5000/api/contacts");
+            const data = await res.json();
+            setContacts(data);
+        } catch (err) {
+            console.error("Fetch contacts error:", err);
+        }
+    };
+
+    useEffect(() => {
+        if (activeTab === "contacts") {
+            fetchContacts();
+        }
+    }, [activeTab]);
+
+    // 📌 Handle Add Contact
+    const handleAddContact = async () => {
+        try {
+            const res = await fetch("http://localhost:5000/api/contacts", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(newContact),
+            });
+            if (!res.ok) throw new Error("Failed to add contact");
+            await fetchContacts();
+            setShowAddModal(false);
+            setNewContact({ name: "", email: "", phone: "", company: "", status: "active" });
+        } catch (err) {
+            console.error("Add contact error:", err);
+        }
+    };
+
+    // 📌 Handle Edit Contact
+    const handleUpdateContact = async () => {
+        try {
+            const res = await fetch(`http://localhost:5000/api/contacts/${selectedContact.id}`, {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(selectedContact),
+            });
+            if (!res.ok) throw new Error("Failed to update contact");
+            await fetchContacts();
+            setShowEditModal(false);
+            setSelectedContact(null);
+        } catch (err) {
+            console.error("Update contact error:", err);
+        }
+    };
+
+    // 📌 Handle Delete Contact
+    const handleDeleteContact = async (id) => {
+        if (!window.confirm("Are you sure you want to delete this contact?")) return;
+        try {
+            const res = await fetch(`http://localhost:5000/api/contacts/${id}`, {
+                method: "DELETE",
+            });
+            if (!res.ok) throw new Error("Failed to delete contact");
+            await fetchContacts();
+        } catch (err) {
+            console.error("Delete contact error:", err);
+        }
+    };
+
+    // Campaign stats
     const filteredCampaigns =
         filter === "All"
             ? campaigns
@@ -68,11 +135,24 @@ const Dashboard = () => {
     const activeCampaigns = campaigns.filter((c) => c.status === "active").length;
 
     const activities = [
-        { id: 1, message: "Newsletter #45 sent to 2,500 subscribers", time: "2 minutes ago" },
-        { id: 2, message: "Black Friday campaign achieved 67% open rate", time: "15 minutes ago" },
-        { id: 3, message: "125 new subscribers joined this hour", time: "1 hour ago" },
-        { id: 4, message: "Product Launch campaign completed successfully", time: "2 hours ago" },
+        { id: 1, message: "Newsletter #45 sent to 2,500 subscribers", time: "2m ago" },
+        { id: 2, message: "Black Friday campaign got 67% open rate", time: "15m ago" },
+        { id: 3, message: "125 new subscribers joined this hour", time: "1h ago" },
+        { id: 4, message: "Product Launch campaign completed", time: "2h ago" },
     ];
+
+    // Campaign Actions
+    const handleView = (id) => (window.location.href = `/campaigns/${id}`);
+    const handleEdit = (id) => (window.location.href = `/campaigns/${id}/edit`);
+    const handleDelete = (id) => {
+        if (window.confirm("Are you sure you want to delete this campaign?")) {
+            import("../../../services/campaignService").then(({ deleteCampaign }) => {
+                deleteCampaign(id).then(() =>
+                    setCampaigns((prev) => prev.filter((c) => c.id !== id))
+                );
+            });
+        }
+    };
 
     return (
 
@@ -250,14 +330,19 @@ const Dashboard = () => {
                                         <span className="text-sm font-semibold">Analytics</span>
                                     </div></Link>
 
-                                <div className="border border-green-400 hover:bg-green-600/20 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-green-400 cursor-pointer">
-                                    <MdPeople className="text-xl mb-1" />
-                                    <span className="text-sm font-semibold">Contacts</span>
-                                </div>
-                                <div className="border border-orange-400 hover:bg-orange-500/20 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-orange-400 cursor-pointer">
+                                <Link to="/contacts">
+                                    <div onClick={() => setActiveTab("contacts")} className="border border-green-400 hover:bg-green-600/20 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-green-400 cursor-pointer">
+                                        <MdPeople className="text-xl mb-1" />
+                                        <span className="text-sm font-semibold">Contacts</span>
+                                    </div></Link>
+                                <div
+                                    onClick={() => setActiveTab("templates")}
+                                    className="border border-orange-400 hover:bg-orange-500/20 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-orange-400 cursor-pointer"
+                                >
                                     <MdDescription className="text-xl mb-1" />
                                     <span className="text-sm font-semibold">Templates</span>
                                 </div>
+
                             </div>
                         </div>
 
@@ -311,6 +396,7 @@ const Dashboard = () => {
                 </>
             )}
 
+            {/* Campaigns Tab */}
             {activeTab === "campaigns" && (
                 <div className="bg-[#111] p-6 rounded-xl border border-gray-800">
                     <div className="flex justify-between items-center mb-4">
@@ -352,22 +438,17 @@ const Dashboard = () => {
                                 </thead>
                                 <tbody>
                                     {filteredCampaigns.map((c) => (
-                                        <tr
-                                            key={c.id}
-                                            className="border-b border-gray-800 hover:bg-[#1a1a1a]"
-                                        >
+                                        <tr key={c.id} className="border-b border-gray-800 hover:bg-[#1a1a1a]">
                                             <td className="p-3">{c.name}</td>
                                             <td className="p-3">
-                                                <span
-                                                    className={`px-3 py-1 rounded-full text-xs font-medium ${c.status === "active"
-                                                        ? "bg-green-600"
-                                                        : c.status === "paused"
-                                                            ? "bg-yellow-600"
-                                                            : c.status === "completed"
-                                                                ? "bg-blue-600"
-                                                                : "bg-gray-600"
-                                                        }`}
-                                                >
+                                                <span className={`px-3 py-1 rounded-full text-xs font-medium ${c.status === "active"
+                                                    ? "bg-green-600"
+                                                    : c.status === "paused"
+                                                        ? "bg-yellow-600"
+                                                        : c.status === "completed"
+                                                            ? "bg-blue-600"
+                                                            : "bg-gray-600"
+                                                    }`}>
                                                     {c.status}
                                                 </span>
                                             </td>
@@ -379,20 +460,16 @@ const Dashboard = () => {
                                             </td>
                                             <td className="p-3">{c.clicks || 0}</td>
                                             <td className="p-3">{c.replies || 0}</td>
-                                            <td className="p-3 flex space-x-2">
-                                                <div className="flex space-x-4">
-                                                    <button className="text-[#c2831f] hover:text-white transition-colors duration-200">
-                                                        <FiEye className="w-5 h-5" />
-                                                    </button>
-
-                                                    <button className="text-[#c2831f] hover:text-white transition-colors duration-200">
-                                                        <FiEdit className="w-5 h-5" />
-                                                    </button>
-
-                                                    <button className="text-[#c2831f] hover:text-white transition-colors duration-200">
-                                                        <FiTrash2 className="w-5 h-5" />
-                                                    </button>
-                                                </div>
+                                            <td className="p-3 flex space-x-3">
+                                                <button onClick={() => handleView(c.id)} className="text-[#c2831f] hover:text-white transition-colors duration-200">
+                                                    <FiEye className="w-5 h-5" />
+                                                </button>
+                                                <button onClick={() => handleEdit(c.id)} className="text-[#c2831f] hover:text-white transition-colors duration-200">
+                                                    <FiEdit className="w-5 h-5" />
+                                                </button>
+                                                <button onClick={() => handleDelete(c.id)} className="text-[#c2831f] hover:text-white transition-colors duration-200">
+                                                    <FiTrash2 className="w-5 h-5" />
+                                                </button>
                                             </td>
                                         </tr>
                                     ))}
@@ -404,7 +481,121 @@ const Dashboard = () => {
             )}
 
             {activeTab === "contacts" && (
-                <div className="bg-[#111] p-6 rounded-xl border border-gray-800">
+                <div className="bg-[#111] p-6 rounded-xl border border-gray-800 text-white relative">
+                    {/* State and Handlers */}
+                    <>
+                        {/* Required States */}
+                        <input
+                            type="file"
+                            accept=".csv"
+                            id="csvUploader"
+                            className="hidden"
+                            onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (!file) return;
+
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                    const csvText = event.target.result;
+                                    const rows = csvText.split("\n");
+                                    const parsed = rows.map((row) => row.split(","));
+                                    console.log("Parsed CSV:", parsed);
+                                    alert("CSV Imported Successfully! Check console.");
+                                };
+                                reader.readAsText(file);
+                            }}
+                        />
+
+                        {/* Add Contact Modal */}
+                        {showAddModal && (
+                            <div className="fixed inset-0 bg-black/70 z-40 flex items-center justify-center">
+                                <div className="bg-[#1a1a1a] p-6 rounded-lg shadow-lg w-full max-w-md border border-gray-700">
+                                    <h3 className="text-lg font-semibold mb-4">Add New Contact</h3>
+                                    <form
+                                        onSubmit={(e) => {
+                                            e.preventDefault();
+                                            if (
+                                                !newContact.name ||
+                                                !newContact.email ||
+                                                !newContact.phone ||
+                                                !newContact.company ||
+                                                !newContact.status
+                                            ) {
+                                                alert("Please fill in all fields.");
+                                                return;
+                                            }
+                                            handleAddContact(); // <-- call backend
+                                        }}
+                                        className="space-y-4"
+                                    >
+                                        <input
+                                            type="text"
+                                            placeholder="Name"
+                                            value={newContact.name}
+                                            onChange={(e) =>
+                                                setNewContact({ ...newContact, name: e.target.value })
+                                            }
+                                            className="w-full px-4 py-2 rounded-md bg-black border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500"
+                                        />
+                                        <input
+                                            type="email"
+                                            placeholder="Email"
+                                            value={newContact.email}
+                                            onChange={(e) =>
+                                                setNewContact({ ...newContact, email: e.target.value })
+                                            }
+                                            className="w-full px-4 py-2 rounded-md bg-black border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Phone"
+                                            value={newContact.phone}
+                                            onChange={(e) =>
+                                                setNewContact({ ...newContact, phone: e.target.value })
+                                            }
+                                            className="w-full px-4 py-2 rounded-md bg-black border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Company"
+                                            value={newContact.company}
+                                            onChange={(e) =>
+                                                setNewContact({ ...newContact, company: e.target.value })
+                                            }
+                                            className="w-full px-4 py-2 rounded-md bg-black border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500"
+                                        />
+                                        <input
+                                            type="text"
+                                            placeholder="Status"
+                                            value={newContact.status}
+                                            onChange={(e) =>
+                                                setNewContact({ ...newContact, status: e.target.value })
+                                            }
+                                            className="w-full px-4 py-2 rounded-md bg-black border border-gray-600 text-white focus:outline-none focus:ring-1 focus:ring-yellow-500"
+                                        />
+
+                                        <div className="flex justify-end space-x-3 pt-4">
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowAddModal(false)}
+                                                className="px-4 py-2 text-gray-300 hover:text-white"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                className="bg-yellow-500 hover:bg-yellow-600 text-black px-4 py-2 rounded-md font-semibold"
+                                            >
+                                                Save Contact
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        )}
+
+                    </>
+
                     {/* Header */}
                     <h3 className="text-xl font-bold mb-2 flex items-center">
                         <MdPeople className="text-yellow-500 text-2xl mr-2" />
@@ -432,11 +623,17 @@ const Dashboard = () => {
 
                     {/* Buttons */}
                     <div className="flex space-x-3 mb-8">
-                        <button className="flex items-center gap-2 bg-yellow-500 text-black px-4 py-2 rounded-md font-medium hover:bg-yellow-600 transition">
+                        <button
+                            className="flex items-center gap-2 bg-yellow-500 text-black px-4 py-2 rounded-md font-medium hover:bg-yellow-600 transition"
+                            onClick={() => setShowAddModal(true)}
+                        >
                             <MdAdd className="w-5 h-5" />
                             Add Contact
                         </button>
-                        <button className="flex items-center gap-2 bg-black border border-gray-600 px-4 py-2 rounded-md font-medium hover:border-yellow-500 transition">
+                        <button
+                            className="flex items-center gap-2 bg-black border border-gray-600 px-4 py-2 rounded-md font-medium hover:border-yellow-500 transition"
+                            onClick={() => document.getElementById("csvUploader").click()}
+                        >
                             <MdOpenInNew className="w-5 h-5" />
                             Import CSV
                         </button>
@@ -452,14 +649,11 @@ const Dashboard = () => {
                     </div>
                 </div>
             )}
-
-
             {activeTab === "templates" && (
                 <div className="">
                     <Templets />
                 </div>
             )}
-
         </div>
 
     );

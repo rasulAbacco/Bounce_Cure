@@ -3,8 +3,6 @@ import { FaEnvelope, FaTicketAlt, FaPhoneAlt, FaComments } from "react-icons/fa"
 import DashboardLayout from "../../components/DashboardLayout";
 import "../../styles/support.css";
 
-const API_URL = import.meta.env.VITE_API_URL;
-
 export default function HelpAndSupport() {
     const [messageForm, setMessageForm] = useState({ name: "", message: "" });
     const [ticketForm, setTicketForm] = useState({
@@ -71,7 +69,7 @@ export default function HelpAndSupport() {
             const token = localStorage.getItem("token");
             const user = JSON.parse(localStorage.getItem("user")); // 👈 load user (id, email)
 
-            const res = await fetch(`${API_URL}/support/message`, {
+            const res = await fetch("http://localhost:5000/api/support/message", {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
@@ -118,7 +116,7 @@ export default function HelpAndSupport() {
         try {
             const token = localStorage.getItem("token"); // 👈 where JWT is stored
 
-            const res = await fetch(`${API_URL}/support/ticket`, {
+            const res = await fetch("http://localhost:5000/api/support/ticket", {
                 method: "POST",
                 headers: {
                     Authorization: `Bearer ${token}`, // 👈 REQUIRED
@@ -235,7 +233,7 @@ export default function HelpAndSupport() {
                     <div className="support-cards-grid">
                         {/* Email Support */}
                         <div className="support-card">
-                            <div className="card-header">
+                            <div className="card-header"style={{ cursor: "pointer" }}>
                                 <FaEnvelope className="card-icon" />
                                 <h3>Email Support</h3>
                             </div>
@@ -291,11 +289,13 @@ export default function HelpAndSupport() {
                         </div>
 
                         {/* Raise Ticket Form */}
-                        <div className="support-card">
+                        <div className="support-card" >
                             <div className="card-header">
                                 <FaTicketAlt className="card-icon" />
                                 <h3>Raise Ticket</h3>
                             </div>
+
+
                             <p>Technical issue or account trouble? Submit a ticket.</p>
 
                             <form className="card-form" onSubmit={handleTicketSubmit}>
