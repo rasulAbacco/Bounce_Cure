@@ -385,7 +385,7 @@ const Toolbox = ({
     <div className="w-80 bg-gray-800 border-r border-gray-700 flex flex-col h-full">
       {/* Header */}
       <div className="p-4 border-b border-gray-700">
-        <h2 className="text-lg font-bold text-blue-400 flex items-center gap-2">
+        <h2 className="text-lg font-bold text-blue-400 flex items-center gap-2" title="Design Tools">
           <Palette size={20} />
           Design Tools
         </h2>
@@ -399,7 +399,7 @@ const Toolbox = ({
             onClick={onUndo}
             disabled={!canUndo}
             className="p-3 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
-            title="Undo"
+            title="Undo last action"
           >
             <RotateCcw size={16} />
           </button>
@@ -407,7 +407,7 @@ const Toolbox = ({
             onClick={onRedo}
             disabled={!canRedo}
             className="p-3 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
-            title="Redo"
+            title="Redo last action"
           >
             <RotateCw size={16} />
           </button>
@@ -415,7 +415,7 @@ const Toolbox = ({
             onClick={onDuplicate}
             disabled={!selectedElement}
             className="p-3 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
-            title="Duplicate"
+            title="Duplicate selected element"
           >
             <Copy size={16} />
           </button>
@@ -423,7 +423,7 @@ const Toolbox = ({
             onClick={onDelete}
             disabled={!selectedElement}
             className="p-3 bg-red-600 hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
-            title="Delete"
+            title="Delete selected element"
           >
             <Trash2 size={16} />
           </button>
@@ -436,6 +436,7 @@ const Toolbox = ({
             <button
               onClick={() => setZoomLevel(prev => Math.max(prev - 0.1, 0.1))}
               className="p-1 bg-gray-700 hover:bg-gray-600 rounded"
+              title="Zoom out"
             >
               <ZoomOut size={14} />
             </button>
@@ -445,6 +446,7 @@ const Toolbox = ({
             <button
               onClick={() => setZoomLevel(prev => Math.min(prev + 0.1, 3))}
               className="p-1 bg-gray-700 hover:bg-gray-600 rounded"
+              title="Zoom in"
             >
               <ZoomIn size={14} />
             </button>
@@ -457,6 +459,7 @@ const Toolbox = ({
           className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors ${
             showGrid ? 'bg-blue-600 text-white' : 'bg-gray-700 hover:bg-gray-600'
           }`}
+          title="Toggle grid display"
         >
           <span className="text-sm">Show Grid</span>
           <Grid size={16} />
@@ -474,6 +477,7 @@ const Toolbox = ({
                 ? 'bg-blue-600 text-white'
                 : 'text-gray-400 hover:text-gray-200 hover:bg-gray-700'
             }`}
+            title={`View ${tab.label}`}
           >
             <tab.icon size={18} />
             {tab.label}
@@ -491,6 +495,7 @@ const Toolbox = ({
               <div 
                 className="flex items-center justify-between cursor-pointer"
                 onClick={() => toggleSection('text')}
+                title="Toggle text elements section"
               >
                 <h3 className="text-sm font-medium text-gray-300">Text Elements</h3>
                 {expandedSections.text ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -501,6 +506,7 @@ const Toolbox = ({
                   <button
                     onClick={() => onAddElement("heading")}
                     className="flex flex-col items-center gap-2 p-3 bg-transparent hover:bg-gray-600 rounded-lg transition-colors group"
+                    title="Add heading text"
                   >
                     <Type size={20} className="text-blue-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Heading</span>
@@ -508,6 +514,7 @@ const Toolbox = ({
                   <button
                     onClick={() => onAddElement("paragraph")}
                     className="flex flex-col items-center gap-2 p-3 bg-transparent hover:bg-gray-600 rounded-lg transition-colors group"
+                    title="Add paragraph text"
                   >
                     <Type size={16} className="text-green-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Paragraph</span>
@@ -515,6 +522,7 @@ const Toolbox = ({
                   <button
                     onClick={() => onAddElement("subheading")}
                     className="flex flex-col items-center gap-2 p-3 bg-transparent hover:bg-gray-600 rounded-lg transition-colors group"
+                    title="Add subheading text"
                   >
                     <Type size={18} className="text-purple-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Subheading</span>
@@ -522,6 +530,7 @@ const Toolbox = ({
                   <button
                     onClick={() => onAddElement("blockquote")}
                     className="flex flex-col items-center gap-2 p-3 bg-transparent hover:bg-gray-600 rounded-lg transition-colors group"
+                    title="Add blockquote text"
                   >
                     <FileText size={16} className="text-yellow-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Quote</span>
@@ -571,6 +580,7 @@ const Toolbox = ({
               <div 
                 className="flex items-center justify-between cursor-pointer"
                 onClick={() => toggleSection('shapes')}
+                title="Toggle shapes section"
               >
                 <h3 className="text-sm font-medium text-gray-300">Shapes</h3>
                 {expandedSections.shapes ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -581,6 +591,7 @@ const Toolbox = ({
                   <button
                     onClick={() => onAddElement("rectangle")}
                     className="flex flex-col items-center gap-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
+                    title="Add rectangle shape"
                   >
                     <Square size={20} className="text-purple-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Rectangle</span>
@@ -588,6 +599,7 @@ const Toolbox = ({
                   <button
                     onClick={() => onAddElement("circle")}
                     className="flex flex-col items-center gap-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
+                    title="Add circle shape"
                   >
                     <Circle size={20} className="text-pink-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Circle</span>
@@ -595,6 +607,7 @@ const Toolbox = ({
                   <button
                     onClick={() => onAddElement("triangle")}
                     className="flex flex-col items-center gap-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
+                    title="Add triangle shape"
                   >
                     <Triangle size={20} className="text-green-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Triangle</span>
@@ -602,6 +615,7 @@ const Toolbox = ({
                   <button
                     onClick={() => onAddElement("star")}
                     className="flex flex-col items-center gap-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
+                    title="Add star shape"
                   >
                     <Star size={20} className="text-yellow-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Star</span>
@@ -609,6 +623,7 @@ const Toolbox = ({
                   <button
                     onClick={() => onAddElement("hexagon")}
                     className="flex flex-col items-center gap-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
+                    title="Add hexagon shape"
                   >
                     <Hexagon size={20} className="text-blue-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Hexagon</span>
@@ -616,6 +631,7 @@ const Toolbox = ({
                   <button
                     onClick={() => onAddElement("arrow")}
                     className="flex flex-col items-center gap-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
+                    title="Add arrow shape"
                   >
                     <ArrowRight size={20} className="text-red-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Arrow</span>
@@ -629,6 +645,7 @@ const Toolbox = ({
               <div 
                 className="flex items-center justify-between cursor-pointer"
                 onClick={() => toggleSection('interactive')}
+                title="Toggle interactive elements section"
               >
                 <h3 className="text-sm font-medium text-gray-300">Interactive</h3>
                 {expandedSections.interactive ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -642,6 +659,7 @@ const Toolbox = ({
                       onAddElement("button", { link: link || null });
                     }}
                     className="flex flex-col items-center gap-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
+                    title="Add button element"
                   >
                     <Square size={16} className="text-orange-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Button</span>
@@ -649,6 +667,7 @@ const Toolbox = ({
                   <button
                     onClick={() => onAddElement("input")}
                     className="flex flex-col items-center gap-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
+                    title="Add input field"
                   >
                     <PenTool size={16} className="text-indigo-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Input</span>
@@ -656,6 +675,7 @@ const Toolbox = ({
                   <button
                     onClick={() => onAddElement("checkbox")}
                     className="flex flex-col items-center gap-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
+                    title="Add checkbox"
                   >
                     <Hash size={16} className="text-teal-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Checkbox</span>
@@ -663,6 +683,7 @@ const Toolbox = ({
                   <button
                     onClick={() => onAddElement("line")}
                     className="flex flex-col items-center gap-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
+                    title="Add line element"
                   >
                     <Minus size={20} className="text-yellow-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Line</span>
@@ -676,6 +697,7 @@ const Toolbox = ({
               <div 
                 className="flex items-center justify-between cursor-pointer"
                 onClick={() => toggleSection('media')}
+                title="Toggle media elements section"
               >
                 <h3 className="text-sm font-medium text-gray-300">Media</h3>
                 {expandedSections.media ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -686,6 +708,7 @@ const Toolbox = ({
                   <button
                     onClick={() => onAddElement("image")}
                     className="flex flex-col items-center gap-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
+                    title="Add image element"
                   >
                     <Image size={20} className="text-blue-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Image</span>
@@ -693,6 +716,7 @@ const Toolbox = ({
                   <button
                     onClick={() => onAddElement("video")}
                     className="flex flex-col items-center gap-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
+                    title="Add video element"
                   >
                     <Video size={20} className="text-red-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Video</span>
@@ -700,6 +724,7 @@ const Toolbox = ({
                   <button
                     onClick={() => onAddElement("audio")}
                     className="flex flex-col items-center gap-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
+                    title="Add audio element"
                   >
                     <Music size={20} className="text-green-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Audio</span>
@@ -707,6 +732,7 @@ const Toolbox = ({
                   <button
                     onClick={() => onAddElement("frame")}
                     className="flex flex-col items-center gap-2 p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
+                    title="Add frame element"
                   >
                     <Frame size={20} className="text-purple-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">Frame</span>
@@ -720,6 +746,7 @@ const Toolbox = ({
               <div 
                 className="flex items-center justify-between cursor-pointer"
                 onClick={() => toggleSection('social')}
+                title="Toggle social icons section"
               >
                 <h3 className="text-sm font-medium text-gray-300">Social Icons</h3>
                 {expandedSections.social ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -732,6 +759,7 @@ const Toolbox = ({
                       key={index}
                       onClick={() => handleAddSocialIcon(social.name, social.color)}
                       className="flex flex-col items-center gap-1 p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
+                      title={`Add ${social.name} icon`}
                     >
                       <social.icon size={18} style={{ color: social.color }} />
                       <span className="text-xs text-gray-300 group-hover:text-white">{social.name}</span>
@@ -743,13 +771,14 @@ const Toolbox = ({
             
             {/* Icons */}
             <div className="bg-gray-700/50 rounded-lg p-3">
-              <h3 className="text-sm font-medium text-gray-300 mb-3">Icons</h3>
+              <h3 className="text-sm font-medium text-gray-300 mb-3" title="Basic icons">Icons</h3>
               <div className="grid grid-cols-4 gap-2">
                 {icons.map((icon, index) => (
                   <button
                     key={index}
                     onClick={() => handleAddIcon(icon.name)}
                     className="flex flex-col items-center gap-1 p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
+                    title={`Add ${icon.name} icon`}
                   >
                     <icon.icon size={18} className="text-blue-400" />
                     <span className="text-xs text-gray-300 group-hover:text-white">{icon.name}</span>
@@ -773,6 +802,7 @@ const Toolbox = ({
                     key={layout.id}
                     className="bg-gray-700 rounded-lg overflow-hidden cursor-pointer hover:bg-gray-600 transition-colors"
                     onClick={() => onAddLayout(layout.id)}
+                    title={`Add ${layout.name} layout`}
                   >
                     <div className="p-2 bg-gray-800 flex items-center justify-center">
                       <img 
@@ -801,7 +831,7 @@ const Toolbox = ({
                 <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-600 hover:border-gray-500 rounded-lg cursor-pointer transition-colors group">
                   <Upload size={20} className="text-gray-400 group-hover:text-gray-300" />
                   <span className="text-sm text-gray-400 group-hover:text-gray-300">Choose file</span>
-                  <input type="file" accept="image/*" onChange={handleUpload} className="hidden" />
+                  <input type="file" accept="image/*" onChange={handleUpload} className="hidden" title="Upload image from device" />
                 </label>
                 
                 <div className="flex gap-2">
@@ -811,10 +841,12 @@ const Toolbox = ({
                     onChange={(e) => setImageUrl(e.target.value)}
                     placeholder="Enter image URL..."
                     className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    title="Enter image URL"
                   />
                   <button
                     onClick={handleUrlSubmit}
                     className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
+                    title="Add image from URL"
                   >
                     <Link size={16} />
                   </button>
@@ -832,6 +864,7 @@ const Toolbox = ({
                       alt={`Stock ${i + 1}`}
                       className="w-full h-20 object-cover rounded-lg cursor-pointer border-2 border-transparent hover:border-blue-400 transition-all"
                       onClick={() => handleStockImageSelect(img)}
+                      title={`Add stock image ${i + 1}`}
                     />
                     <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
                       <Plus size={16} className="text-white" />
@@ -844,25 +877,25 @@ const Toolbox = ({
             <div>
               <h3 className="text-sm font-medium text-gray-300 mb-3">Image Effects</h3>
               <div className="grid grid-cols-2 gap-2">
-                <button className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">
+                <button className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" title="Apply grayscale effect">
                   <div className="flex flex-col items-center gap-1">
                     <div className="w-8 h-8 bg-gradient-to-r from-gray-400 to-gray-600 rounded"></div>
                     <span className="text-xs text-gray-300">Grayscale</span>
                   </div>
                 </button>
-                <button className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">
+                <button className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" title="Apply sepia effect">
                   <div className="flex flex-col items-center gap-1">
                     <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-600 rounded"></div>
                     <span className="text-xs text-gray-300">Sepia</span>
                   </div>
                 </button>
-                <button className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">
+                <button className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" title="Apply blur effect">
                   <div className="flex flex-col items-center gap-1">
                     <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-600 rounded"></div>
                     <span className="text-xs text-gray-300">Blur</span>
                   </div>
                 </button>
-                <button className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors">
+                <button className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" title="Apply sharpen effect">
                   <div className="flex flex-col items-center gap-1">
                     <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-teal-600 rounded"></div>
                     <span className="text-xs text-gray-300">Sharpen</span>
@@ -888,7 +921,7 @@ const Toolbox = ({
                     }`}
                     style={{ backgroundColor: color }}
                     onClick={() => handleCanvasBackgroundChange(color)}
-                    title={color}
+                    title={`Set background to ${color}`}
                   />
                 ))}
               </div>
@@ -906,13 +939,14 @@ const Toolbox = ({
                   onChange={(e) => handleCanvasBackgroundChange(e.target.value)}
                   className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                   placeholder="#FFFFFF"
+                  title="Enter custom color code"
                 />
               </div>
             </div>
             
             {/* Instructions */}
             <div className="p-3 bg-gray-700 rounded-lg">
-              <p className="text-xs text-gray-300">
+              <p className="text-xs text-gray-300" title="Instructions for color selection">
                 {selectedElement 
                   ? `Applying colors to selected ${selectedElement.type}`
                   : "Select an element or click a color to create a new card"
@@ -929,7 +963,7 @@ const Toolbox = ({
                     className="w-10 h-10 rounded-lg border-2 border-gray-600 hover:border-white transition-colors hover:scale-110 transform"
                     style={{ backgroundColor: color }}
                     onClick={() => handleColorSelect(color)}
-                    title={color}
+                    title={`Apply color ${color}`}
                   />
                 ))}
               </div>
@@ -944,7 +978,7 @@ const Toolbox = ({
                     className="h-10 rounded-lg border-2 border-gray-600 hover:border-white transition-colors hover:scale-105 transform"
                     style={{ background: gradient }}
                     onClick={() => handleGradientSelect(gradient)}
-                    title="Apply gradient"
+                    title={`Apply gradient ${index + 1}`}
                   />
                 ))}
               </div>
@@ -959,7 +993,7 @@ const Toolbox = ({
                     className="h-10 rounded-lg border-2 border-gray-600 hover:border-white transition-colors hover:scale-105 transform"
                     style={{ background: pattern }}
                     onClick={() => handlePatternSelect(pattern)}
-                    title="Apply pattern"
+                    title={`Apply pattern ${index + 1}`}
                   />
                 ))}
               </div>
@@ -976,13 +1010,89 @@ const Toolbox = ({
             </div>
           </div>
         )}
+        
+        {/* Animations Tab */}
+        {activeTab === 'animations' && (
+          <div className="space-y-4">
+            <div className="p-3 bg-gray-700 rounded-lg">
+              <p className="text-xs text-gray-300" title="Animation instructions">
+                {selectedElement 
+                  ? `Applying animations to selected ${selectedElement.type}`
+                  : "Select an element to apply animations"
+                }
+              </p>
+            </div>
+            
+            <div>
+              <h3 className="text-sm font-medium text-gray-300 mb-3">Animations</h3>
+              <div className="grid grid-cols-2 gap-2">
+                {animations.map((animation) => (
+                  <button
+                    key={animation.id}
+                    onClick={() => handleAnimationSelect(animation.id)}
+                    className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors flex flex-col items-center gap-2"
+                    title={`Apply ${animation.name} animation`}
+                  >
+                    <animation.icon size={20} className="text-blue-400" />
+                    <span className="text-xs text-gray-300">{animation.name}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="text-sm font-medium text-gray-300 mb-3">Animation Settings</h3>
+              <div className="space-y-3">
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Duration</label>
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="5"
+                    step="0.1"
+                    defaultValue="1"
+                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                    title="Set animation duration"
+                  />
+                  <div className="text-sm text-gray-400 text-center mt-1">1.0s</div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Delay</label>
+                  <input
+                    type="range"
+                    min="0"
+                    max="5"
+                    step="0.1"
+                    defaultValue="0"
+                    className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                    title="Set animation delay"
+                  />
+                  <div className="text-sm text-gray-400 text-center mt-1">0.0s</div>
+                </div>
+                
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Easing</label>
+                  <select className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" title="Select animation easing">
+                    <option>Linear</option>
+                    <option>Ease In</option>
+                    <option>Ease Out</option>
+                    <option>Ease In Out</option>
+                    <option>Bounce</option>
+                    <option>Elastic</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
       
       {/* Footer Info */}
       <div className="p-4 border-t border-gray-700 text-xs text-gray-400">
         <div className="flex items-center justify-between">
-          <span>Elements: {selectedElement ? '1 selected' : 'None selected'}</span>
-          <span>Ready to design</span>
+          <span title="Selection status">Elements: {selectedElement ? '1 selected' : 'None selected'}</span>
+          <span title="Application status">Ready to design</span>
         </div>
       </div>
     </div>
