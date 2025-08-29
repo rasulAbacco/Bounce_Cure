@@ -2,13 +2,13 @@ import React, { useState, useRef, useEffect } from "react";
 import { useLocation, useNavigate } from 'react-router-dom';
 import CanvasArea from "../Components/Editor/CanvasArea";
 import Toolbox from "../Components/Editor/Toolbox";
-import PropertiesPanel from "../components/Editor/PropertiesPanel";
+import PropertiesPanel from "../Components/Editor/PropertiesPanel";
 
 const EditorPage = () => {
   const location = useLocation();
   const navigate = useNavigate();
   const template = location.state?.template;
-  
+
   // Shared state for pages
   const [pages, setPages] = useState([{ id: 1, elements: [] }]);
   const [activePage, setActivePage] = useState(0);
@@ -17,22 +17,23 @@ const EditorPage = () => {
   const [showGrid, setShowGrid] = useState(true);
   const [undoStack, setUndoStack] = useState([]);
   const [redoStack, setRedoStack] = useState([]);
-  
+
   // Add state for canvas background color
   const [canvasBackgroundColor, setCanvasBackgroundColor] = useState('#FFFFFF');
-  
+
   // Load template if provided
   useEffect(() => {
-    if (template && template.content) {
-      const templateElements = template.content.map((item, index) => ({
-        id: `template-${index}`,
+    if (template && template.elements) {
+      // Convert template elements to the format expected by the editor
+      const templateElements = template.elements.map((item) => ({
+        id: item.id,
         type: item.type === 'text' ? 'heading' : item.type,
-        content: item.value || item.content || '',
-        src: item.type === 'image' ? item.value : null,
-        x: 50 + (index * 20),
-        y: 50 + (index * 80),
-        width: item.type === 'text' ? 300 : item.type === 'image' ? 200 : 150,
-        height: item.type === 'text' ? 40 : item.type === 'image' ? 150 : 100,
+        content: item.content || '',
+        src: item.type === 'image' ? item.src : null,
+        x: item.x,
+        y: item.y,
+        width: item.width,
+        height: item.height,
         style: item.style || {},
         fontSize: item.style?.fontSize || 24,
         color: item.style?.color || '#000000',
@@ -41,13 +42,18 @@ const EditorPage = () => {
         rotation: 0,
         opacity: 1
       }));
-      
+
       const updatedPages = [...pages];
       updatedPages[0].elements = templateElements;
       setPages(updatedPages);
+
+      // Set canvas background color if provided
+      if (template.canvasBackgroundColor) {
+        setCanvasBackgroundColor(template.canvasBackgroundColor);
+      }
     }
   }, [template]);
-  
+
   // Add element from Toolbox
   const handleAddElement = (type, options = {}) => {
     const newElement = {
@@ -74,20 +80,20 @@ const EditorPage = () => {
       textDecoration: 'none',
       ...options // Spread any additional options passed
     };
-    
+
     const updatedPages = [...pages];
     updatedPages[activePage].elements.push(newElement);
     setPages(updatedPages);
     setSelectedElement(newElement.id);
     saveToUndoStack();
   };
-  
+
   // Add layout
   const handleAddLayout = (layoutId) => {
     // Define layout elements based on layoutId
     let layoutElements = [];
-    
-    switch(layoutId) {
+
+    switch (layoutId) {
       case 1: // Header + Content - Campaign Newsletter
         layoutElements = [
           {
@@ -95,7 +101,7 @@ const EditorPage = () => {
             type: "rectangle",
             x: 0,
             y: 0,
-            width: 728,
+            width: 800,
             height: 100,
             backgroundColor: "#4ECDC4",
             borderRadius: 0,
@@ -174,7 +180,7 @@ const EditorPage = () => {
           }
         ];
         break;
-        
+
       case 2: // Two Columns - Marketing Campaign
         layoutElements = [
           {
@@ -182,7 +188,7 @@ const EditorPage = () => {
             type: "rectangle",
             x: 0,
             y: 0,
-            width: 390,
+            width: 400,
             height: 600,
             backgroundColor: "#F8F9FA",
             borderRadius: 0,
@@ -192,9 +198,9 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "rectangle",
-            x: 385,
+            x: 400,
             y: 0,
-            width: 390,
+            width: 400,
             height: 600,
             backgroundColor: "#F8F9FA",
             borderRadius: 0,
@@ -204,9 +210,9 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "heading",
-            x: 100,
+            x: 80,
             y: 30,
-            width: 200,
+            width: 235,
             height: 40,
             content: "Campaign Highlights",
             color: "#000000",
@@ -241,7 +247,7 @@ const EditorPage = () => {
             type: "paragraph",
             x: 50,
             y: 290,
-            width: 290,
+            width: 300,
             height: 80,
             content: "Our summer campaign is live! Enjoy exclusive discounts on all products. Limited time offer - don't miss out!",
             fontSize: 14
@@ -296,7 +302,7 @@ const EditorPage = () => {
           }
         ];
         break;
-        
+
       case 3: // Three Columns - Marketing Services
         layoutElements = [
           {
@@ -304,7 +310,7 @@ const EditorPage = () => {
             type: "rectangle",
             x: 0,
             y: 0,
-            width: 260,
+            width: 300,
             height: 600,
             backgroundColor: "#F8F9FA",
             borderRadius: 0,
@@ -314,9 +320,9 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "rectangle",
-            x: 253,
+            x: 300,
             y: 0,
-            width: 260,
+            width: 300,
             height: 600,
             backgroundColor: "#F8F9FA",
             borderRadius: 0,
@@ -326,9 +332,9 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "rectangle",
-            x: 495,
+            x: 500,
             y: 0,
-            width: 260,
+            width: 300,
             height: 600,
             backgroundColor: "#F8F9FA",
             borderRadius: 0,
@@ -460,7 +466,7 @@ const EditorPage = () => {
           }
         ];
         break;
-        
+
       case 4: // Header + Two Columns - Thank You Letter
         layoutElements = [
           {
@@ -468,7 +474,7 @@ const EditorPage = () => {
             type: "rectangle",
             x: 0,
             y: 0,
-            width: 728,
+            width: 800,
             height: 100,
             backgroundColor: "#4ECDC4",
             borderRadius: 0,
@@ -492,7 +498,7 @@ const EditorPage = () => {
             type: "rectangle",
             x: 0,
             y: 100,
-            width: 374,
+            width: 400,
             height: 500,
             backgroundColor: "#F8F9FA",
             borderRadius: 0,
@@ -502,9 +508,9 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "rectangle",
-            x: 372,
+            x: 400,
             y: 100,
-            width: 356,
+            width: 400,
             height: 500,
             backgroundColor: "#F8F9FA",
             borderRadius: 0,
@@ -516,7 +522,7 @@ const EditorPage = () => {
             type: "heading",
             x: 56,
             y: 140,
-            width: 270,
+            width: 300,
             height: 45,
             content: "Order Confirmation",
             color: "#000000",
@@ -542,7 +548,7 @@ const EditorPage = () => {
             type: "paragraph",
             x: 55,
             y: 207,
-            width: 290,
+            width: 300,
             height: 120,
             content: "Dear Customer,\n\nThank you for your recent purchase! Your order has been confirmed and will be processed within 1-2 business days.",
             fontSize: 14
@@ -552,7 +558,7 @@ const EditorPage = () => {
             type: "paragraph",
             x: 408,
             y: 204,
-            width: 310,
+            width: 300,
             height: 160,
             content: "• You'll receive a shipping confirmation email once your order has been dispatched.\n• Track your order using the link in the confirmation email.\n• Contact our support team if you have any questions.\n• Don't forget to check out our loyalty program for exclusive benefits!",
             fontSize: 14
@@ -562,7 +568,7 @@ const EditorPage = () => {
             type: "paragraph",
             x: 50,
             y: 350,
-            width: 290,
+            width: 300,
             height: 80,
             content: "We appreciate your business and hope you enjoy your purchase. Your support helps us continue to provide quality products and services.",
             fontSize: 14,
@@ -607,7 +613,7 @@ const EditorPage = () => {
           }
         ];
         break;
-        
+
       case 5: // Sidebar + Content - Marketing Campaign
         layoutElements = [
           {
@@ -615,7 +621,7 @@ const EditorPage = () => {
             type: "rectangle",
             x: 0,
             y: 0,
-            width: 200,
+            width: 230,
             height: 600,
             backgroundColor: "#E9ECEF",
             borderRadius: 0,
@@ -627,7 +633,7 @@ const EditorPage = () => {
             type: "rectangle",
             x: 210,
             y: 0,
-            width: 590,
+            width: 600,
             height: 600,
             backgroundColor: "#F8F9FA",
             borderRadius: 0,
@@ -637,7 +643,7 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "heading",
-            x: 100,
+            x: 0,
             y: 30,
             width: 200,
             height: 40,
@@ -650,7 +656,7 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "heading",
-            x: 505,
+            x: 300,
             y: 30,
             width: 400,
             height: 50,
@@ -739,7 +745,7 @@ const EditorPage = () => {
             id: crypto.randomUUID(),
             type: "heading",
             x: 260,
-            y: 440,
+            y: 400,
             width: 200,
             height: 40,
             content: "Campaign Benefits:",
@@ -751,7 +757,7 @@ const EditorPage = () => {
             id: crypto.randomUUID(),
             type: "paragraph",
             x: 260,
-            y: 490,
+            y: 450,
             width: 490,
             height: 60,
             content: "• Up to 40% discount on selected items\n• Free shipping on all orders\n• Exclusive access to limited edition products\n• Double loyalty points on all purchases",
@@ -761,7 +767,7 @@ const EditorPage = () => {
             id: crypto.randomUUID(),
             type: "button",
             x: 405,
-            y: 560,
+            y: 520,
             width: 200,
             height: 40,
             content: "Join Campaign",
@@ -774,7 +780,7 @@ const EditorPage = () => {
           }
         ];
         break;
-        
+
       case 6: // Hero Section - Product Launch
         layoutElements = [
           {
@@ -791,7 +797,7 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "heading",
-            x: 400,
+            x: 100,
             y: 80,
             width: 600,
             height: 60,
@@ -804,7 +810,7 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "paragraph",
-            x: 400,
+            x: 100,
             y: 160,
             width: 600,
             height: 40,
@@ -832,9 +838,9 @@ const EditorPage = () => {
             id: crypto.randomUUID(),
             type: "rectangle",
             x: 0,
-            y: 320,
+            y: 300,
             width: 800,
-            height: 280,
+            height: 300,
             backgroundColor: "#F8F9FA",
             borderRadius: 0,
             borderWidth: 1,
@@ -843,7 +849,7 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "heading",
-            x: 400,
+            x: 200,
             y: 350,
             width: 400,
             height: 40,
@@ -880,15 +886,15 @@ const EditorPage = () => {
           }
         ];
         break;
-        
+
       case 7: // Card Layout - Product Showcase
         layoutElements = [
           {
             id: crypto.randomUUID(),
             type: "heading",
-            x: 400,
+            x: 150,
             y: 30,
-            width: 400,
+            width: 500,
             height: 40,
             content: "Featured Campaign Products",
             color: "#000000",
@@ -944,9 +950,9 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "heading",
-            x: 160,
+            x: 60,
             y: 230,
-            width: 140,
+            width: 200,
             height: 30,
             content: "Premium Headphones",
             color: "#000000",
@@ -957,7 +963,7 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "paragraph",
-            x: 160,
+            x: 90,
             y: 260,
             width: 140,
             height: 20,
@@ -979,10 +985,10 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "heading",
-            x: 400,
+            x: 330,
             y: 230,
             width: 140,
-            height: 30,
+            height: 20,
             content: "Smart Watch",
             color: "#000000",
             fontSize: 16,
@@ -992,7 +998,7 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "paragraph",
-            x: 400,
+            x: 330,
             y: 260,
             width: 140,
             height: 20,
@@ -1014,9 +1020,9 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "heading",
-            x: 640,
+            x: 540,
             y: 230,
-            width: 140,
+            width: 200,
             height: 30,
             content: "Wireless Earbuds",
             color: "#000000",
@@ -1027,7 +1033,7 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "paragraph",
-            x: 640,
+            x: 570,
             y: 260,
             width: 140,
             height: 20,
@@ -1123,7 +1129,7 @@ const EditorPage = () => {
           }
         ];
         break;
-        
+
       case 8: // Newsletter - Marketing Signup
         layoutElements = [
           {
@@ -1132,7 +1138,7 @@ const EditorPage = () => {
             x: 0,
             y: 0,
             width: 800,
-            height: 100,
+            height: 150,
             backgroundColor: "#45B7D1",
             borderRadius: 0,
             borderWidth: 0
@@ -1140,9 +1146,9 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "heading",
-            x: 400,
+            x: 180,
             y: 35,
-            width: 400,
+            width: 500,
             height: 40,
             content: "Join Our Marketing Community",
             color: "#FFFFFF",
@@ -1156,7 +1162,7 @@ const EditorPage = () => {
             x: 0,
             y: 120,
             width: 800,
-            height: 380,
+            height: 500,
             backgroundColor: "#F8F9FA",
             borderRadius: 0,
             borderWidth: 1,
@@ -1165,9 +1171,9 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "paragraph",
-            x: 100,
+            x: 50,
             y: 150,
-            width: 600,
+            width: 700,
             height: 80,
             content: "Subscribe to our newsletter and get exclusive marketing tips, campaign strategies, and special offers delivered straight to your inbox.",
             fontSize: 16
@@ -1175,7 +1181,7 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "heading",
-            x: 400,
+            x: 200,
             y: 250,
             width: 400,
             height: 40,
@@ -1188,9 +1194,9 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "paragraph",
-            x: 150,
+            x: 100,
             y: 300,
-            width: 500,
+            width: 550,
             height: 80,
             content: "• Weekly marketing insights and trends\n• Exclusive campaign templates and resources\n• Early access to new tools and features\n• Special discounts on marketing services",
             fontSize: 14
@@ -1224,7 +1230,7 @@ const EditorPage = () => {
           }
         ];
         break;
-        
+
       case 9: // Product Showcase - Campaign Special
         layoutElements = [
           {
@@ -1232,7 +1238,7 @@ const EditorPage = () => {
             type: "rectangle",
             x: 0,
             y: 0,
-            width: 400,
+            width: 500,
             height: 600,
             backgroundColor: "#F8F9FA",
             borderRadius: 0,
@@ -1263,9 +1269,9 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "heading",
-            x: 610,
+            x: 500,
             y: 50,
-            width: 200,
+            width: 300,
             height: 40,
             content: "Campaign Special",
             color: "#000000",
@@ -1285,7 +1291,7 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "heading",
-            x: 610,
+            x: 510,
             y: 210,
             width: 200,
             height: 40,
@@ -1336,8 +1342,8 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "heading",
-            x: 200,
-            y: 380,
+            x: 100,
+            y: 360,
             width: 200,
             height: 30,
             content: "Customer Reviews",
@@ -1350,7 +1356,7 @@ const EditorPage = () => {
             id: crypto.randomUUID(),
             type: "paragraph",
             x: 100,
-            y: 420,
+            y: 400,
             width: 200,
             height: 20,
             content: "★★★★★ (4.9 out of 5)",
@@ -1361,9 +1367,9 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "paragraph",
-            x: 100,
-            y: 450,
-            width: 200,
+            x: 50,
+            y: 430,
+            width: 300,
             height: 60,
             content: "\"This toolkit transformed our marketing strategy. Thank you for creating such a valuable resource!\"",
             fontSize: 12,
@@ -1374,7 +1380,7 @@ const EditorPage = () => {
             id: crypto.randomUUID(),
             type: "paragraph",
             x: 100,
-            y: 520,
+            y: 480,
             width: 200,
             height: 20,
             content: "- Marketing Director, TechCorp",
@@ -1385,7 +1391,7 @@ const EditorPage = () => {
             id: crypto.randomUUID(),
             type: "paragraph",
             x: 50,
-            y: 560,
+            y: 520,
             width: 300,
             height: 40,
             content: "Thank you for supporting our campaign! 10% of all proceeds go to marketing education programs.",
@@ -1395,7 +1401,7 @@ const EditorPage = () => {
           }
         ];
         break;
-        
+
       case 10: // Testimonial - Customer Appreciation
         layoutElements = [
           {
@@ -1413,9 +1419,9 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "heading",
-            x: 400,
+            x: 150,
             y: 50,
-            width: 400,
+            width: 500,
             height: 40,
             content: "Customer Appreciation Campaign",
             color: "#000000",
@@ -1441,7 +1447,7 @@ const EditorPage = () => {
             x: 100,
             y: 170,
             width: 600,
-            height: 300,
+            height: 200,
             backgroundColor: "#FFFFFF",
             borderRadius: 8,
             borderWidth: 1,
@@ -1450,9 +1456,9 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "paragraph",
-            x: 150,
-            y: 200,
-            width: 500,
+            x: 100,
+            y: 190,
+            width: 600,
             height: 120,
             content: "This campaign has been incredible! The results exceeded our expectations and the team's dedication was outstanding. Thank you for helping us achieve our marketing goals and for the exceptional service throughout the process.",
             fontSize: 16,
@@ -1461,8 +1467,8 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "heading",
-            x: 400,
-            y: 340,
+            x: 300,
+            y: 270,
             width: 200,
             height: 30,
             content: "Sarah Johnson",
@@ -1474,8 +1480,8 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "paragraph",
-            x: 400,
-            y: 380,
+            x: 300,
+            y: 300,
             width: 200,
             height: 20,
             content: "Marketing Director, GrowthCo",
@@ -1486,9 +1492,9 @@ const EditorPage = () => {
             id: crypto.randomUUID(),
             type: "rectangle",
             x: 100,
-            y: 490,
+            y: 400,
             width: 180,
-            height: 80,
+            height: 100,
             backgroundColor: "#FFFFFF",
             borderRadius: 8,
             borderWidth: 1,
@@ -1498,9 +1504,9 @@ const EditorPage = () => {
             id: crypto.randomUUID(),
             type: "rectangle",
             x: 310,
-            y: 490,
+            y: 400,
             width: 180,
-            height: 80,
+            height: 100,
             backgroundColor: "#FFFFFF",
             borderRadius: 8,
             borderWidth: 1,
@@ -1510,9 +1516,9 @@ const EditorPage = () => {
             id: crypto.randomUUID(),
             type: "rectangle",
             x: 520,
-            y: 490,
+            y: 400,
             width: 180,
-            height: 80,
+            height: 100,
             backgroundColor: "#FFFFFF",
             borderRadius: 8,
             borderWidth: 1,
@@ -1521,9 +1527,9 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "paragraph",
-            x: 190,
-            y: 510,
-            width: 100,
+            x: 110,
+            y: 400,
+            width: 150,
             height: 60,
             content: "\"Outstanding results and professional service!\"",
             fontSize: 12,
@@ -1533,8 +1539,8 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "paragraph",
-            x: 190,
-            y: 560,
+            x: 130,
+            y: 460,
             width: 100,
             height: 20,
             content: "- Mike T.",
@@ -1544,9 +1550,9 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "paragraph",
-            x: 400,
-            y: 510,
-            width: 100,
+            x: 320,
+            y: 400,
+            width: 150,
             height: 60,
             content: "\"Exceeded all our expectations!\"",
             fontSize: 12,
@@ -1556,9 +1562,9 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "paragraph",
-            x: 400,
-            y: 560,
-            width: 100,
+            x: 320,
+            y: 460,
+            width: 150,
             height: 20,
             content: "- Lisa K.",
             fontSize: 12,
@@ -1567,9 +1573,9 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "paragraph",
-            x: 610,
-            y: 510,
-            width: 100,
+            x: 530,
+            y: 400,
+            width: 150,
             height: 60,
             content: "\"Highly recommend their services!\"",
             fontSize: 12,
@@ -1579,8 +1585,8 @@ const EditorPage = () => {
           {
             id: crypto.randomUUID(),
             type: "paragraph",
-            x: 610,
-            y: 560,
+            x: 560,
+            y: 460,
             width: 100,
             height: 20,
             content: "- John D.",
@@ -1591,7 +1597,7 @@ const EditorPage = () => {
             id: crypto.randomUUID(),
             type: "button",
             x: 300,
-            y: 590,
+            y: 540,
             width: 200,
             height: 40,
             content: "Start Your Campaign",
@@ -1604,7 +1610,7 @@ const EditorPage = () => {
           }
         ];
         break;
-        
+
       default:
         // Default to a simple layout
         layoutElements = [
@@ -1633,13 +1639,13 @@ const EditorPage = () => {
           }
         ];
     }
-    
+
     const updatedPages = [...pages];
     updatedPages[activePage].elements = [...updatedPages[activePage].elements, ...layoutElements];
     setPages(updatedPages);
     saveToUndoStack();
   };
-  
+
   // Upload image
   const handleUploadImage = (src) => {
     const newElement = {
@@ -1654,21 +1660,21 @@ const EditorPage = () => {
       opacity: 1,
       borderRadius: 0
     };
-    
+
     const updatedPages = [...pages];
     updatedPages[activePage].elements.push(newElement);
     setPages(updatedPages);
     setSelectedElement(newElement.id);
     saveToUndoStack();
   };
-  
+
   // Update elements after drag/resize/edit
   const handleUpdate = (updatedElements) => {
     const updatedPages = [...pages];
     updatedPages[activePage].elements = updatedElements;
     setPages(updatedPages);
   };
-  
+
   // Update single element
   const updateElement = (id, updates) => {
     const updatedPages = [...pages];
@@ -1677,13 +1683,13 @@ const EditorPage = () => {
     );
     setPages(updatedPages);
   };
-  
+
   // Undo/Redo functionality
   const saveToUndoStack = () => {
     setUndoStack(prev => [...prev.slice(-19), JSON.parse(JSON.stringify(pages))]);
     setRedoStack([]);
   };
-  
+
   const undo = () => {
     if (undoStack.length > 0) {
       const previousState = undoStack[undoStack.length - 1];
@@ -1693,7 +1699,7 @@ const EditorPage = () => {
       setSelectedElement(null);
     }
   };
-  
+
   const redo = () => {
     if (redoStack.length > 0) {
       const nextState = redoStack[0];
@@ -1703,7 +1709,7 @@ const EditorPage = () => {
       setSelectedElement(null);
     }
   };
-  
+
   // Delete selected element
   const deleteElement = () => {
     if (selectedElement) {
@@ -1716,7 +1722,7 @@ const EditorPage = () => {
       saveToUndoStack();
     }
   };
-  
+
   // Duplicate element
   const duplicateElement = () => {
     if (selectedElement) {
@@ -1736,17 +1742,17 @@ const EditorPage = () => {
       }
     }
   };
-  
+
   // Handle send campaign
   const handleSendCampaign = () => {
-    navigate('/send-campaign', { 
-      state: { 
+    navigate('/send-campaign', {
+      state: {
         canvasData: pages[activePage].elements,
         subject: "Your Campaign Subject" // You can make this dynamic
-      } 
+      }
     });
   };
-  
+
   return (
     <div className="flex h-screen bg-gray-900 text-white">
       {/* Toolbox */}
@@ -1769,7 +1775,7 @@ const EditorPage = () => {
         setCanvasBackgroundColor={setCanvasBackgroundColor}
         onAddLayout={handleAddLayout}
       />
-      
+
       {/* Canvas */}
       <div className="flex-1 overflow-hidden">
         <CanvasArea
@@ -1787,7 +1793,7 @@ const EditorPage = () => {
           onSendCampaign={handleSendCampaign}
         />
       </div>
-      
+
       {/* Properties Panel */}
       <PropertiesPanel
         elements={pages[activePage].elements}
@@ -1799,4 +1805,5 @@ const EditorPage = () => {
     </div>
   );
 };
+
 export default EditorPage;
