@@ -329,10 +329,12 @@ export default function CanvasArea({
             }`}
           style={{
             transform: `rotate(${element.rotation || 0}deg)`,
-            opacity: element.opacity || 1
+            opacity: element.opacity || 1,
+            ...getAnimationStyle(element)   // ✅ Apply animation here too
           }}
           onClick={(e) => handleElementClick(element.id, e)}
         >
+
           {/* Text Elements */}
           {(element.type === "heading" || element.type === "paragraph" ||
             element.type === "subheading" || element.type === "blockquote") && (
@@ -872,6 +874,7 @@ export default function CanvasArea({
 
   return (
     <div className="flex-1 bg-gray-700 flex flex-col overflow-hidden">
+
       {/* Top Controls */}
       <div className="h-16 bg-gray-800 border-b border-gray-600 flex items-center justify-between px-6 flex-shrink-0">
         {/* Page Tabs */}
@@ -1058,6 +1061,7 @@ export default function CanvasArea({
       </div>
       
       {/* Canvas Container */}
+      
       <div className="flex-1 overflow-auto bg-gray-700 p-8" onClick={handleCanvasClick}>
         <div className="flex justify-center items-center min-w-full min-h-full">
           <div
@@ -1112,6 +1116,7 @@ export default function CanvasArea({
           </div>
         </div>
       </div>
+      
     </div>
   );
 }
