@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield, Zap, Users, CheckCircle } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { useNavigate } from "react-router-dom";
+import toast from 'react-hot-toast';
+const API_URL = import.meta.env.VITE_API_URL;
+
 const ModernLogin = () => {
 
     const navigate = useNavigate();
@@ -14,18 +17,17 @@ const ModernLogin = () => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         console.log("Login submitted:", formData);
 
         try {
-            const res = await fetch(`http://localhost:5000/api/auth/login`, {
+            const res = await fetch(`${API_URL}/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(formData)
             });
-
-            console.log("Status code:", res.status);
 
             const data = await res.json().catch(err => {
                 console.error("JSON parse error:", err);
@@ -33,19 +35,39 @@ const ModernLogin = () => {
             });
 
             console.log("Response data:", data);
+            console.log("Status code:", res.status);
 
-            if (res.status === 200) {
+            if (res.ok && data.token) {
+                // Store token securely (localStorage for now)
                 localStorage.setItem("token", data.token);
-                alert("Login successful!");
+
+                if (data.user) {
+                    localStorage.setItem("userName", data.user.name || "");
+                    localStorage.setItem("userEmail", data.user.email || "");
+                }
+
+                // Optional: store user info
+                if (data.user) {
+                    if (data.token) {
+                        localStorage.setItem("token", data.token); // ✅ Save token here
+                    }
+                }
+                toast.success("Login successful 🎉");
+                console.log("Token saved, redirecting to dashboard...");
                 navigate("/dashboard");
+                window.location.reload();
             } else {
-                alert(data.message || "Login failed");
+                // Clear any old token to avoid using stale credentials
+                localStorage.removeItem("token");
+                toast.error(data.message || "Login failed");
             }
+
         } catch (err) {
             console.error("Error:", err);
-            alert("Something went wrong!");
+            toast.error("Something went wrong!");
         }
     };
+
 
 
 
@@ -93,7 +115,7 @@ const ModernLogin = () => {
 
     return (
         <PageLayout>
-            <div className="min-h-screen bg-black flex flex-col md:flex-row w-full ">
+            <div className="min-h-screen mt-[5%] sm:mt-0  flex flex-col md:flex-row w-full ">
                 {/* Animated Background Elements */}
                 <div className="absolute inset-0 overflow-hidden">
                     <div className="absolute -top-40 -right-40 w-80 h-80 bg-white rounded-full mix-blend-difference filter blur-xl opacity-3 animate-pulse"></div>
@@ -105,7 +127,7 @@ const ModernLogin = () => {
                 <div className="flex-1 flex items-center justify-center p-6 sm:p-8 relative z-10 mt-[5%]">
                     <div className="w-full max-w-lg text-center md:text-left">
                         {/* Welcome Section */}
-                        <div className="mb-8 sm:mb-12">
+                        <div className="mb-8 sm:mb-12 mt-8 md:mt-0">
                             <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-3xl mb-6 sm:mb-8 transform hover:scale-110 transition-transform duration-300">
                                 <Mail className="w-8 h-8 sm:w-10 sm:h-10 text-[#dea923]" />
                             </div>
