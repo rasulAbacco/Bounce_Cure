@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Rnd } from "react-rnd";
 import { Send, Save, Trash2 } from 'lucide-react';
 import {
-  Eye, X, Plus, Download, Play, Layers,
+  Eye, X, Plus, Download, Play, Layers, Eraser ,
   Type, Square, Circle, Minus, Image, Video, Music,
   Frame, Star, Triangle, Hexagon, ArrowRight,
   PenTool, Hash, FileText, ChevronDown, ChevronUp,
@@ -214,7 +214,7 @@ export default function CanvasArea({
     const iconName = element.name || element.iconName || 'Star';
     const color = element.color || element.style?.color || '#000000';
     const size = Math.min(element.width, element.height) * zoomLevel || 24 * zoomLevel;
-    
+
     const iconMap = {
       'star': Star,
       'heart': Heart,
@@ -873,19 +873,20 @@ export default function CanvasArea({
   };
 
   return (
-    <div className="flex-1 bg-gray-700 flex flex-col overflow-hidden">
+
+    <div className="flex-1 bg-gray-700 flex flex-col overflow-hidden ">
 
       {/* Top Controls */}
-      <div className="h-16 bg-gray-800 border-b border-gray-600 flex items-center justify-between px-6 flex-shrink-0">
+      <div className="h-16 bg-black border-b border-[#c2831f] flex items-center justify-between px-6 p-5 flex-shrink-0">
         {/* Page Tabs */}
         <div className="flex items-center gap-2">
-          <div className="flex items-center space-x-1 bg-gray-700 rounded-lg p-1">
+          <div className="flex items-center space-x-1 bg-gray-700 rounded-lg ">
             {pages.map((page, idx) => (
               <div key={page.id} className="flex items-center">
                 <button
                   onClick={() => setActivePage(idx)}
                   className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${idx === activePage
-                    ? "bg-blue-600 text-white shadow-lg"
+                    ? "bg-[#c2831f] text-white shadow-lg"
                     : "text-gray-300 hover:bg-gray-600 hover:text-white"
                     }`}
                 >
@@ -907,7 +908,9 @@ export default function CanvasArea({
           </div>
           <button
             onClick={addPage}
-            className="relative group flex items-center gap-2 px-3 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors shadow-lg"
+            className="relative group flex items-center gap-2 px-3 py-2 
+             bg-black border border-[#c2831f] hover:bg-[#c2831f] hover:text-black
+             text-white rounded-lg text-sm font-medium transition-colors shadow-lg cursor-pointer"
           >
             <Plus size={16} />
             Add Page
@@ -921,6 +924,7 @@ export default function CanvasArea({
               Add a New Page
             </span>
           </button>
+
 
         </div>
 
@@ -958,28 +962,31 @@ export default function CanvasArea({
           {/* Clear Button */}
           <button
             onClick={handleClear}
-            className="relative group flex items-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-sm font-medium transition-colors"
+            className="relative group flex items-center gap-2 px-4 py-2 
+   bg-black border border-[#c2831f] hover:bg-[#c2831f] hover:text-black
+   text-white rounded-lg text-sm font-medium transition-colors shadow-lg cursor-pointer"
           >
-            <Trash2 size={16} />
-
+             <Trash2 size={16} />
             {/* Tooltip */}
             <span
               className="absolute left-1/2 -translate-x-1/2 top-full mt-2
-               opacity-0 group-hover:opacity-100 transition
-               bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap"
+     opacity-0 group-hover:opacity-100 transition
+     bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap"
             >
               Clear
             </span>
           </button>
 
 
+
           {/* Save Button */}
           <button
             onClick={handleSave}
             disabled={saveStatus === "saving"}
-            className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors group ${saveStatus === "saving"
-              ? "bg-yellow-600 text-white cursor-not-allowed"
-              : "bg-indigo-600 hover:bg-indigo-700 text-white"
+            className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors group shadow-lg
+    ${saveStatus === "saving"
+                ? "bg-yellow-600 text-white cursor-not-allowed"
+                : "bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text-black cursor-pointer"
               }`}
           >
             <Save size={16} />
@@ -988,15 +995,19 @@ export default function CanvasArea({
             <span
               className="absolute left-1/2 -translate-x-1/2 top-full mt-2
                opacity-0 group-hover:opacity-100 transition
-               bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap"
+               bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap "
             >
               Save
             </span>
           </button>
 
 
+
           <button
-            className="relative group flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg text-sm font-medium transition-colors"
+            className="relative group flex items-center gap-2 px-4 py-2 
+             bg-black border border-[#c2831f] text-white 
+             hover:bg-[#c2831f] hover:text-black
+             rounded-lg text-sm font-medium transition-colors shadow-lg cursor-pointer"
           >
             <Play size={16} />
 
@@ -1011,11 +1022,13 @@ export default function CanvasArea({
           </button>
 
 
+
           <button
             onClick={() => setPreview(!preview)}
-            className={`relative group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors ${preview
-              ? "bg-red-600 hover:bg-red-700 text-white"
-              : "bg-blue-600 hover:bg-blue-700 text-white"
+            className={`relative group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg
+    ${preview
+                ? "bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text-black cursor-pointer"
+                : "bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text-black cursor-pointer"
               }`}
           >
             {preview ? (
@@ -1042,7 +1055,10 @@ export default function CanvasArea({
 
           <button
             onClick={onSendCampaign}
-            className="relative group flex items-center gap-2 px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+            className="relative group flex items-center gap-2 px-4 py-2 
+             bg-black border border-[#c2831f] text-white 
+             hover:bg-[#c2831f] hover:text-black
+             rounded-lg text-sm font-medium transition-colors shadow-lg cursor-pointer"
           >
             <Send size={16} />
             Send
@@ -1057,12 +1073,14 @@ export default function CanvasArea({
             </span>
           </button>
 
+
         </div>
       </div>
-      
+
       {/* Canvas Container */}
-      
-      <div className="flex-1 overflow-auto bg-gray-700 p-8" onClick={handleCanvasClick}>
+
+      <div className="flex-1 overflow-auto bg-black p-8" onClick={handleCanvasClick}>
+
         <div className="flex justify-center items-center min-w-full min-h-full">
           <div
             ref={canvasRef}
