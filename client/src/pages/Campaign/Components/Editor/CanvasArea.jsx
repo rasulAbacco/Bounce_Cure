@@ -906,7 +906,7 @@ export default function CanvasArea({
             onClick={addPage}
             className="relative group flex items-center gap-2 px-3 py-2 
              bg-black border border-[#c2831f] hover:bg-[#c2831f] hover:text-black
-             text-white rounded-lg text-sm font-medium transition-colors shadow-lg"
+             text-white rounded-lg text-sm font-medium transition-colors shadow-lg cursor-pointer"
           >
             <Plus size={16} />
             Add Page
@@ -960,7 +960,7 @@ export default function CanvasArea({
             onClick={handleClear}
             className="relative group flex items-center gap-2 px-4 py-2 
    bg-black border border-[#c2831f] hover:bg-[#c2831f] hover:text-black
-   text-white rounded-lg text-sm font-medium transition-colors shadow-lg"
+   text-white rounded-lg text-sm font-medium transition-colors shadow-lg cursor-pointer"
           >
              <Trash2 size={16} />
             {/* Tooltip */}
@@ -982,7 +982,7 @@ export default function CanvasArea({
             className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors group shadow-lg
     ${saveStatus === "saving"
                 ? "bg-yellow-600 text-white cursor-not-allowed"
-                : "bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text-black"
+                : "bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text-black cursor-pointer"
               }`}
           >
             <Save size={16} />
@@ -991,7 +991,7 @@ export default function CanvasArea({
             <span
               className="absolute left-1/2 -translate-x-1/2 top-full mt-2
                opacity-0 group-hover:opacity-100 transition
-               bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap"
+               bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap "
             >
               Save
             </span>
@@ -1003,7 +1003,7 @@ export default function CanvasArea({
             className="relative group flex items-center gap-2 px-4 py-2 
              bg-black border border-[#c2831f] text-white 
              hover:bg-[#c2831f] hover:text-black
-             rounded-lg text-sm font-medium transition-colors shadow-lg"
+             rounded-lg text-sm font-medium transition-colors shadow-lg cursor-pointer"
           >
             <Play size={16} />
 
@@ -1023,8 +1023,8 @@ export default function CanvasArea({
             onClick={() => setPreview(!preview)}
             className={`relative group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg
     ${preview
-                ? "bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text-black"
-                : "bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text-black"
+                ? "bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text-black cursor-pointer"
+                : "bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text-black cursor-pointer"
               }`}
           >
             {preview ? (
@@ -1054,7 +1054,7 @@ export default function CanvasArea({
             className="relative group flex items-center gap-2 px-4 py-2 
              bg-black border border-[#c2831f] text-white 
              hover:bg-[#c2831f] hover:text-black
-             rounded-lg text-sm font-medium transition-colors shadow-lg"
+             rounded-lg text-sm font-medium transition-colors shadow-lg cursor-pointer"
           >
             <Send size={16} />
             Send

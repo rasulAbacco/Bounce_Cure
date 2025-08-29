@@ -1755,18 +1755,6 @@ const EditorPage = () => {
   };
   
 
-
-  // Handle send campaign
-  const handleSendCampaign = () => {
-    navigate('/send-campaign', {
-      state: {
-        canvasData: pages[activePage].elements,
-        subject: "Your Campaign Subject" // You can make this dynamic
-      }
-    });
-  };
-
-
   return (
     <div className="flex h-screen bg-gray-900 text-white">
       {/* Toolbox */}

@@ -385,7 +385,7 @@ const Toolbox = ({
     <div className="w-80 bg-black border-r border-[#c2831f] flex flex-col h-full">
       {/* Header */}
       <div className="h-16 p-4 border-b border-[#c2831f]">
-        <h2 className="text-2xl font-bold text-[#c2831f] flex items-center gap-2" title="Design Tools">
+        <h2 className="text-2xl font-bold text-[#c2831f] flex items-center gap-2 px-15" title="Design Tools">
           Design Tools
         </h2>
       </div>
@@ -456,7 +456,7 @@ const Toolbox = ({
         <button
           onClick={() => setShowGrid(!showGrid)}
           className={`w-full flex items-center justify-between p-2 rounded-lg transition-colors ${
-            showGrid ? 'bg-[#c2831f] text-white' : 'bg-gray-700 hover:bg-gray-600'
+            showGrid ? 'bg-[#c2831f] text-white cursor-pointer' : 'bg-gray-700 hover:bg-gray-600 '
           }`}
           title="Toggle grid display"
         >
@@ -508,31 +508,31 @@ const Toolbox = ({
                     title="Add heading text"
                   >
                     <Type size={20} className="text-blue-400" />
-                    <span className="text-xs text-gray-300 group-hover:text-white">Heading</span>
+                    <span className="text-xs text-gray-300 group-hover:text-white cursor-pointer">Heading</span>
                   </button>
                   <button
                     onClick={() => onAddElement("paragraph")}
-                    className="flex flex-col items-center gap-2 p-3 bg-transparent hover:bg-gray-600 rounded-lg transition-colors group"
+                    className="flex flex-col items-center gap-2 cursor-pointer p-3 bg-transparent hover:bg-gray-600 rounded-lg transition-colors group"
                     title="Add paragraph text"
                   >
                     <Type size={16} className="text-green-400" />
-                    <span className="text-xs text-gray-300 group-hover:text-white">Paragraph</span>
+                    <span className="text-xs text-gray-300 group-hover:text-white cursor-pointer">Paragraph</span>
                   </button>
                   <button
                     onClick={() => onAddElement("subheading")}
-                    className="flex flex-col items-center gap-2 p-3 bg-transparent hover:bg-gray-600 rounded-lg transition-colors group"
+                    className="flex flex-col items-center gap-2 p-3 bg-transparent  hover:bg-gray-600 rounded-lg transition-colors group"
                     title="Add subheading text"
                   >
-                    <Type size={18} className="text-purple-400" />
-                    <span className="text-xs text-gray-300 group-hover:text-white">Subheading</span>
+                    <Type size={18} className="text-purple-400 " />
+                    <span className="text-xs text-gray-300 group-hover:text-white cursor-pointer">Subheading</span>
                   </button>
                   <button
                     onClick={() => onAddElement("blockquote")}
                     className="flex flex-col items-center gap-2 p-3 bg-transparent hover:bg-gray-600 rounded-lg transition-colors group"
                     title="Add blockquote text"
                   >
-                    <FileText size={16} className="text-yellow-400" />
-                    <span className="text-xs text-gray-300 group-hover:text-white">Quote</span>
+                    <FileText size={16} className="text-yellow-400 " />
+                    <span className="text-xs text-gray-300 group-hover:text-white cursor-pointer">Quote</span>
                   </button>
                 </div>
               )}
