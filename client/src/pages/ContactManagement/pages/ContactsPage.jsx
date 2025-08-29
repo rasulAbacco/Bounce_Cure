@@ -30,7 +30,6 @@ const statusColors = {
 
 function ContactsPage() {
 
-
   const badgeStyle = {
     Active:
       "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700",
@@ -76,7 +75,6 @@ function ContactsPage() {
       return acc;
     }, {})
   ).map(([status, count]) => ({ name: status, value: count }));
-
 
 
   const headers = [
@@ -509,7 +507,6 @@ function ContactsPage() {
                         setNewContact({ ...newContact, [field]: e.target.value })
                       }
                       className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg outline-none text-zinc-800 dark:text-zinc-100"
-
                     />
                   </div>
                 )

@@ -177,86 +177,10 @@ const TemplatesPage = () => {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [previewTemplate, setPreviewTemplate] = React.useState(null);
 
-  // const handleSelect = (template) => {
-  //   navigate("/editor", { state: { template: { ...template, fixed: true } } });
-  // };
   const handleSelect = (template) => {
-  const elements = template.content.map((block, index) => {
-    let defaults = {};
+    navigate("/editor", { state: { template: { ...template, fixed: true } } });
+  };
 
-    switch (block.type) {
-      case "text":
-        defaults = {
-          x: 200,
-          y: 60 + index * 70,
-          width: 400,
-          height: 50,
-        };
-        break;
-
-      case "paragraph":
-        defaults = {
-          x: 200,
-          y: 150 + index * 80,
-          width: 500,
-          height: 80,
-        };
-        break;
-
-      case "button":
-        defaults = {
-          x: 300,
-          y: 300 + index * 80,
-          width: 180,
-          height: 50,
-          backgroundColor: "#2563eb",
-          color: "#fff",
-          borderRadius: 6,
-        };
-        break;
-
-      case "image":
-        defaults = {
-          x: 250,
-          y: 120 + index * 120,
-          width: 300,
-          height: 200,
-        };
-        break;
-
-      default:
-        defaults = {
-          x: 100,
-          y: 100 + index * 80,
-          width: 300,
-          height: 60,
-        };
-    }
- return {
-      id: crypto.randomUUID(),
-      type: block.type === "text" ? "heading" : block.type,
-      content: block.value || "",
-      src: block.type === "image" ? block.value : null,
-      ...defaults,
-      style: block.style || {},
-      fontSize: block.style?.fontSize || 16,
-      color: block.style?.color || "#000000",
-      backgroundColor: block.style?.backgroundColor || "transparent",
-      fontFamily: "Arial",
-      rotation: 0,
-      opacity: 1,
-    };
-  });
-
-  navigate("/editor", {
-    state: {
-      template: {
-        elements,
-        canvasBackgroundColor: "#FFFFFF",
-      },
-    },
-  });
-};
   const filteredTemplates = templates.filter((template) => {
     const matchesCategory =
       selectedCategory === "All" || template.category === selectedCategory;
