@@ -5,10 +5,12 @@ import { saveAs } from "file-saver";
 import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
 import { HiOutlineDownload } from "react-icons/hi";
 import DashboardLayout from "../../components/DashboardLayout";
+import { useNavigate } from "react-router-dom";
 
 
 const VRI_URL = import.meta.env.VITE_VRI_URL;
 const Verification = () => {
+
   const [activeTab, setActiveTab] = useState("single");
   const [singleEmail, setSingleEmail] = useState("");
   const [singleResult, setSingleResult] = useState(null);
@@ -20,7 +22,7 @@ const Verification = () => {
   const [loadingBulk, setLoadingBulk] = useState(false);
   const [loadingSingle, setLoadingSingle] = useState(false);
   const [progress, setProgress] = useState(0);
-
+  const navigate = useNavigate();
   // --- SINGLE VERIFICATION ---
   const verifySingle = async () => {
     if (!singleEmail) return alert("Enter an email");
@@ -189,7 +191,7 @@ const Verification = () => {
           <div className="text-gray-300">Disposable</div>
           <div className="font-bold">{result.disposable ? '❌' : '✅'}</div>
         </div>
-        <div className={`p-2 rounded ${result.role_based ? 'bg-yellow-900' : 'bg-green-900'}`}>
+        <div className={`p-2 rounded ${result.role_based ? 'bg-green-900' : 'bg-green-900'}`}>
           <div className="text-gray-300">Role-Based</div>
           <div className="font-bold">{result.role_based ? '⚠️' : '✅'}</div>
         </div>
@@ -229,14 +231,17 @@ const Verification = () => {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`${activeTab === tab
-                ? "bg-white text-yellow-700 border-2 border-yellow-600 shadow-md font-bold"
-                : "bg-transparent text-gray-200 border border-yellow-600 font-semibold"
+
+                  ? "bg-white text-yellow-700 border-2 border-yellow-600 shadow-md font-bold"
+                  : "bg-transparent text-gray-200 border border-yellow-600 font-semibold"
+
                 } px-6 py-2 rounded-md transition-all duration-300 w-full sm:w-[300px] text-center`}
             >
               {tab === "single" ? "Single Verification" : "Bulk Verification"}
             </button>
           ))}
         </div>
+
 
         {/* SINGLE VERIFICATION */}
         {activeTab === "single" && (
@@ -256,8 +261,10 @@ const Verification = () => {
                 onClick={verifySingle}
                 disabled={loadingSingle}
                 className={`px-4 py-2 rounded-md font-bold ${loadingSingle
-                  ? "bg-gray-600 text-gray-300 cursor-not-allowed"
-                  : "bg-white text-yellow-700 hover:bg-gray-100"
+
+                    ? "bg-gray-600 text-gray-300 cursor-not-allowed"
+                    : "bg-white text-yellow-700 hover:bg-gray-100"
+
                   }`}
               >
                 {loadingSingle ? "Verifying..." : "Verify"}
@@ -311,6 +318,13 @@ const Verification = () => {
                 disabled={loadingBulk}
                 className="bg-black text-yellow-600 border border-gray-600 rounded-md px-4 py-2 w-full cursor-pointer disabled:opacity-50"
               />
+              {/* New Campaign Button */}
+              <button
+                onClick={() => navigate("/email-campaign")}
+                className="fixed top-10% right-20 bg-black border-2 border-[#c2831f] text-white px-5 py-2 rounded-md font-bold hover:bg-gray-900 transition-colors duration-300 z-50"
+              >
+                New Campaign
+              </button>
             </div>
 
             {/* Summary Stats */}
@@ -473,12 +487,16 @@ const Verification = () => {
                         <FaTrash />
                       </button>
                     </div>
+
                   </div>
                 ))}
               </div>
             )}
+
           </div>
+
         )}
+
       </div>
     </DashboardLayout>
   );
