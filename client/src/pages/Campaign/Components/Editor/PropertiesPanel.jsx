@@ -1,4 +1,3 @@
-// src/components/Editor/PropertiesPanel.jsx
 import React from "react";
 import {
   Type,
@@ -34,7 +33,8 @@ import {
   Move,
   ZoomIn,
   RotateCcw,
-  Play
+  Play,
+  CreditCard
 } from "lucide-react";
 
 const PropertiesPanel = ({
@@ -86,7 +86,7 @@ const PropertiesPanel = ({
     { value: "spin", label: "Spin" },
     { value: "pulse", label: "Pulse" }
   ];
-
+  
   // Function to get the appropriate icon for an element type
   const getElementIcon = (elementType, size = 14) => {
     const iconProps = { size };
@@ -97,6 +97,7 @@ const PropertiesPanel = ({
       case "paragraph": return <Type {...iconProps} className="text-green-400" />;
       case "blockquote": return <FileText {...iconProps} className="text-yellow-400" />;
       case "button": return <Square {...iconProps} className="text-orange-400" />;
+      case "card": return <CreditCard {...iconProps} className="text-indigo-400" />;
       case "rectangle": return <Square {...iconProps} className="text-purple-400" />;
       case "circle": return <Circle {...iconProps} className="text-pink-400" />;
       case "triangle": return <Triangle {...iconProps} className="text-green-400" />;
@@ -115,7 +116,7 @@ const PropertiesPanel = ({
       default: return <Square {...iconProps} className="text-gray-400" />;
     }
   };
-
+  
   return (
     <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col h-full text-white overflow-hidden">
       {/* Header */}
@@ -154,7 +155,8 @@ const PropertiesPanel = ({
                         <div className="text-xs text-gray-400 truncate max-w-32">
                           {element.content || 
                            (element.type === "image" || element.type === "video" ? "Media" : 
-                            element.type === "icon" || element.type === "social" ? element.name || "Icon" : "Empty")}
+                            element.type === "icon" || element.type === "social" ? element.name || "Icon" : 
+                            element.type === "card" ? "Card" : "Empty")}
                         </div>
                       </div>
                     </div>
@@ -308,7 +310,8 @@ const PropertiesPanel = ({
               selectedElementData.type === "subheading" ||
               selectedElementData.type === "paragraph" ||
               selectedElementData.type === "blockquote" ||
-              selectedElementData.type === "button") && (
+              selectedElementData.type === "button" ||
+              selectedElementData.type === "card") && (
               <div>
                 <h4 className="font-medium mb-3 text-gray-300">Text</h4>
                 <div className="space-y-3">
@@ -471,6 +474,125 @@ const PropertiesPanel = ({
                         className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         placeholder="#000000"
                       />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {/* Card Properties */}
+            {selectedElementData.type === "card" && (
+              <div>
+                <h4 className="font-medium mb-3 text-gray-300">Card Settings</h4>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Background Color</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={selectedElementData.backgroundColor || "#FFFFFF"}
+                        onChange={(e) =>
+                          updateElement(selectedElementData.id, {
+                            backgroundColor: e.target.value,
+                          })
+                        }
+                        className="w-12 h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={selectedElementData.backgroundColor || "#FFFFFF"}
+                        onChange={(e) =>
+                          updateElement(selectedElementData.id, {
+                            backgroundColor: e.target.value,
+                          })
+                        }
+                        className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="#FFFFFF"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-2">Border Color</label>
+                    <div className="flex gap-2">
+                      <input
+                        type="color"
+                        value={selectedElementData.borderColor || "#E2E8F0"}
+                        onChange={(e) =>
+                          updateElement(selectedElementData.id, {
+                            borderColor: e.target.value,
+                          })
+                        }
+                        className="w-12 h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
+                      />
+                      <input
+                        type="text"
+                        value={selectedElementData.borderColor || "#E2E8F0"}
+                        onChange={(e) =>
+                          updateElement(selectedElementData.id, {
+                            borderColor: e.target.value,
+                          })
+                        }
+                        className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="#E2E8F0"
+                      />
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Border Width</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="10"
+                      value={selectedElementData.borderWidth || 1}
+                      onChange={(e) =>
+                        updateElement(selectedElementData.id, {
+                          borderWidth: parseInt(e.target.value),
+                        })
+                      }
+                      className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="text-sm text-gray-400 text-center mt-1">
+                      {selectedElementData.borderWidth || 1}px
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Border Radius</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="50"
+                      value={selectedElementData.borderRadius || 8}
+                      onChange={(e) =>
+                        updateElement(selectedElementData.id, {
+                          borderRadius: parseInt(e.target.value),
+                        })
+                      }
+                      className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="text-sm text-gray-400 text-center mt-1">
+                      {selectedElementData.borderRadius || 8}px
+                    </div>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Padding</label>
+                    <input
+                      type="range"
+                      min="0"
+                      max="50"
+                      value={selectedElementData.padding || 16}
+                      onChange={(e) =>
+                        updateElement(selectedElementData.id, {
+                          padding: parseInt(e.target.value),
+                        })
+                      }
+                      className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                    />
+                    <div className="text-sm text-gray-400 text-center mt-1">
+                      {selectedElementData.padding || 16}px
                     </div>
                   </div>
                 </div>
@@ -1143,7 +1265,8 @@ const PropertiesPanel = ({
                         selectedElementData.type === "subheading" ||
                         selectedElementData.type === "paragraph" ||
                         selectedElementData.type === "blockquote" ||
-                        selectedElementData.type === "button"
+                        selectedElementData.type === "button" ||
+                        selectedElementData.type === "card"
                       ) {
                         updateElement(selectedElementData.id, { color });
                       } else if (

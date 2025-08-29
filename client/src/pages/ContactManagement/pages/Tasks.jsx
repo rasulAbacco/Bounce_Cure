@@ -61,44 +61,93 @@ function Tasks() {
   };
 
   // Handle form submit (add or edit)
-  const handleAddOrEditTask = (e) => {
+  const handleAddOrEditTask = async (e) => {
     e.preventDefault();
+
     if (!newTask.title.trim()) return;
 
-    if (editingId) {
-      // Editing existing task
-      setTasks((prev) =>
-        prev.map((t) => (t.id === editingId ? { ...t, ...newTask } : t))
-      );
-      setEditingId(null);
-    } else {
-      // Adding new task
-      setTasks((prev) => [
-        ...prev,
-        { id: prev.length + 1, ...newTask },
-      ]);
+    try {
+      if (editingId) {
+        // EDIT existing task (PUT)
+        await fetch(`http://localhost:5000/tasks/${editingId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newTask),
+        });
+
+        // Update task locally
+        setTasks((prev) =>
+          prev.map((t) => (t.id === editingId ? { ...t, ...newTask } : t))
+        );
+
+        setEditingId(null);
+      } else {
+        // ADD new task (POST)
+        const res = await fetch("http://localhost:5000/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newTask),
+        });
+
+        const createdTask = await res.json();
+
+        // Add returned task from backend (with real ID)
+        setTasks((prev) => [...prev, createdTask]);
+      }
+
+      // Clear form
+      setNewTask({
+        title: "",
+        due: "",
+        status: "Pending",
+        priority: "Medium",
+        notes: "",
+      });
+
+      setShowForm(false);
+    } catch (error) {
+      console.error("Failed to save task:", error);
     }
-    setNewTask({ title: "", due: "", status: "Pending", priority: "Medium", notes: "" });
-    setShowForm(false);
   };
 
+
   // Delete task
-  const handleDelete = (id) => {
-    if (window.confirm("Are you sure you want to delete this task?")) {
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this task?")) return;
+
+    try {
+      // DELETE request to backend
+      await fetch(`http://localhost:5000/tasks/${id}`, {
+        method: "DELETE",
+      });
+
+      // Remove from local state
       setTasks((prev) => prev.filter((t) => t.id !== id));
+
+      // Close form if deleting currently edited task
       if (editingId === id) {
         setEditingId(null);
         setShowForm(false);
       }
+    } catch (error) {
+      console.error("Error deleting task:", error);
     }
   };
 
+
   // Edit task - populate form
   const handleEdit = (task) => {
-    setNewTask(task);
+    setNewTask({
+      title: task.title,
+      due: task.due,
+      status: task.status,
+      priority: task.priority,
+      notes: task.notes || "",
+    });
     setEditingId(task.id);
     setShowForm(true);
   };
+
 
   // Toggle task completion status
   const toggleComplete = (id) => {
@@ -190,6 +239,16 @@ function Tasks() {
     const diffDays = (dueDate - today) / (1000 * 3600 * 24);
     return diffDays >= 0 && diffDays <= 3;
   };
+
+  useEffect(() => {
+    fetch("http://localhost:5000/tasks")
+      .then((res) => res.json())
+      .then((data) => setTasks(data))
+      .catch((err) => console.error(err));
+  }, []);
+
+
+
 
   return (
     <div className="space-y-8">
