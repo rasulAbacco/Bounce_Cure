@@ -7,6 +7,8 @@ import { HiOutlineDownload } from "react-icons/hi";
 import DashboardLayout from "../../components/DashboardLayout";
 import { useNavigate } from "react-router-dom";
 
+
+const VRI_URL = import.meta.env.VITE_VRI_URL;
 const Verification = () => {
 
   const [activeTab, setActiveTab] = useState("single");
@@ -28,7 +30,7 @@ const Verification = () => {
     setLoadingSingle(true);
 
     try {
-      const res = await axios.post("http://localhost:5000/verification/verify-single", {
+      const res = await axios.post(`${VRI_URL}/verification/verify-single`, {
         email: singleEmail,
       });
 
@@ -69,7 +71,7 @@ const Verification = () => {
     }, 200);
 
     try {
-      const res = await axios.post("http://localhost:5000/verification/verify-bulk", formData, {
+      const res = await axios.post(`${VRI_URL}/verification/verify-bulk`, formData, {
         headers: { "Content-Type": "multipart/form-data" },
       });
 
@@ -229,8 +231,10 @@ const Verification = () => {
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`${activeTab === tab
+
                   ? "bg-white text-yellow-700 border-2 border-yellow-600 shadow-md font-bold"
                   : "bg-transparent text-gray-200 border border-yellow-600 font-semibold"
+
                 } px-6 py-2 rounded-md transition-all duration-300 w-full sm:w-[300px] text-center`}
             >
               {tab === "single" ? "Single Verification" : "Bulk Verification"}
@@ -257,8 +261,10 @@ const Verification = () => {
                 onClick={verifySingle}
                 disabled={loadingSingle}
                 className={`px-4 py-2 rounded-md font-bold ${loadingSingle
+
                     ? "bg-gray-600 text-gray-300 cursor-not-allowed"
                     : "bg-white text-yellow-700 hover:bg-gray-100"
+
                   }`}
               >
                 {loadingSingle ? "Verifying..." : "Verify"}
