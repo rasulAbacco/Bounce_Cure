@@ -385,7 +385,8 @@ const Toolbox = ({
     <div className="w-80 bg-black border-r border-[#c2831f] flex flex-col h-full">
       {/* Header */}
       <div className="h-16 p-4 border-b border-[#c2831f]">
-        <h2 className="text-2xl font-bold text-[#c2831f] flex items-center gap-2 px-15" title="Design Tools">
+        <h2 className="text-2xl font-bold text-[#c2831f] flex items-center gap-2 px-10" title="Design Tools">
+          <Layers size={24} />
           Design Tools
         </h2>
       </div>
