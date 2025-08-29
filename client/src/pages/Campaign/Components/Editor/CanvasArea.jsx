@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect, useCallback } from "react";
 import { Rnd } from "react-rnd";
 import { Send, Save, Trash2 } from 'lucide-react';
 import {
-  Eye, X, Plus, Download, Play, Layers, Eraser ,
+  Eye, X, Plus, Download, Play, Layers, Eraser,
   Type, Square, Circle, Minus, Image, Video, Music,
   Frame, Star, Triangle, Hexagon, ArrowRight,
   PenTool, Hash, FileText, ChevronDown, ChevronUp,
@@ -11,7 +11,6 @@ import {
   Facebook, Twitter, Instagram, Linkedin, Youtube,
   CreditCard
 } from 'lucide-react';
-
 export default function CanvasArea({
   pages,
   setPages,
@@ -31,7 +30,6 @@ export default function CanvasArea({
   const [saveStatus, setSaveStatus] = useState(''); // 'saved', 'saving', 'error'
   const canvasRef = useRef(null);
   const containerRef = useRef(null);
-
   // Load saved data from localStorage on component mount
   useEffect(() => {
     const savedData = localStorage.getItem('canvasData');
@@ -47,7 +45,6 @@ export default function CanvasArea({
       }
     }
   }, [setPages, setActivePage]);
-
   // Add animation styles
   useEffect(() => {
     if (document.getElementById('animation-styles')) return;
@@ -121,7 +118,6 @@ export default function CanvasArea({
     `;
     document.head.appendChild(style);
   }, []);
-
   const addPage = () => {
     const newPage = { id: pages.length + 1, elements: [] };
     const updatedPages = [...pages, newPage];
@@ -130,7 +126,6 @@ export default function CanvasArea({
     // Auto-save when adding a page
     saveToLocalStorage(updatedPages, pages.length, canvasBackgroundColor);
   };
-
   const deletePage = (pageIndex) => {
     if (pages.length > 1) {
       const updatedPages = pages.filter((_, index) => index !== pageIndex);
@@ -144,18 +139,15 @@ export default function CanvasArea({
       }
     }
   };
-
   const handleElementClick = (elementId, e) => {
     e.stopPropagation();
     setSelectedElement(elementId);
   };
-
   const handleCanvasClick = (e) => {
     if (e.target === canvasRef.current || e.target.closest('.canvas-background')) {
       setSelectedElement(null);
     }
   };
-
   const handleElementUpdate = (elementId, newProps) => {
     updateElement(elementId, newProps);
     const updatedElements = pages[activePage].elements.map(el =>
@@ -168,7 +160,6 @@ export default function CanvasArea({
     // Auto-save when element is updated
     saveToLocalStorage(updatedPages, activePage, canvasBackgroundColor);
   };
-
   // Save data to localStorage
   const saveToLocalStorage = useCallback((pagesToSave, activePageToSave, bgColor) => {
     const dataToSave = {
@@ -178,43 +169,34 @@ export default function CanvasArea({
     };
     localStorage.setItem('canvasData', JSON.stringify(dataToSave));
   }, []);
-
   // Clear canvas and localStorage
   const handleClear = useCallback(() => {
     // Reset to initial state with one empty page
     const initialPages = [{ id: 1, elements: [] }];
     setPages(initialPages);
     setActivePage(0);
-
     // Clear localStorage
     localStorage.removeItem('canvasData');
-
     // Update save status
     setSaveStatus('');
-
     console.log('Canvas cleared and saved data removed');
   }, [setPages, setActivePage]);
-
   // Fixed save functionality
   const handleSave = useCallback(() => {
     setSaveStatus('saving');
-
     // Save to localStorage
     saveToLocalStorage(pages, activePage, canvasBackgroundColor);
-
     // Simulate API call to save data
     setTimeout(() => {
       setSaveStatus('saved');
       console.log('Save completed successfully');
     }, 1000);
   }, [pages, activePage, canvasBackgroundColor, saveToLocalStorage]);
-
   // Fixed and more robust icon rendering function
   const renderIcon = (element) => {
     const iconName = element.name || element.iconName || 'Star';
     const color = element.color || element.style?.color || '#000000';
     const size = Math.min(element.width, element.height) * zoomLevel || 24 * zoomLevel;
-
     const iconMap = {
       'star': Star,
       'heart': Heart,
@@ -243,9 +225,7 @@ export default function CanvasArea({
       'LinkedIn': Linkedin,
       'YouTube': Youtube
     };
-
     // Get the icon component
-
     const IconComponent = iconMap[iconName.toLowerCase()];
     if (IconComponent) {
       return <IconComponent color={color} size={size} />;
@@ -268,7 +248,6 @@ export default function CanvasArea({
       );
     }
   };
-
   // Helper function to get animation style
   const getAnimationStyle = (element) => {
     if (!element.animation || element.animation === 'none') {
@@ -281,14 +260,12 @@ export default function CanvasArea({
       animation: `${element.animation} ${duration} ${delay} ${timing} both`
     };
   };
-
   // Handle link click
   const handleLinkClick = (link) => {
     if (link) {
       window.open(link, '_blank');
     }
   };
-
   const renderElement = (element) => {
     const isSelected = selectedElement === element.id;
     return (
@@ -334,7 +311,6 @@ export default function CanvasArea({
           }}
           onClick={(e) => handleElementClick(element.id, e)}
         >
-
           {/* Text Elements */}
           {(element.type === "heading" || element.type === "paragraph" ||
             element.type === "subheading" || element.type === "blockquote") && (
@@ -608,11 +584,9 @@ export default function CanvasArea({
       </Rnd>
     );
   };
-
   // New function to render preview elements with absolute positioning
   const renderPreviewElement = (element) => {
     const animationStyle = preview ? getAnimationStyle(element) : {};
-
     return (
       <div
         key={element.id}
@@ -871,11 +845,8 @@ export default function CanvasArea({
       </div>
     );
   };
-
   return (
-
     <div className="flex-1 bg-gray-700 flex flex-col overflow-hidden ">
-
       {/* Top Controls */}
       <div className="h-16 bg-black border-b border-[#c2831f] flex items-center justify-between px-6 p-5 flex-shrink-0">
         {/* Page Tabs */}
@@ -914,7 +885,6 @@ export default function CanvasArea({
           >
             <Plus size={16} />
             Add Page
-
             {/* Tooltip */}
             <span
               className="absolute left-1/2 -translate-x-1/2 top-full mt-2
@@ -925,9 +895,7 @@ export default function CanvasArea({
             </span>
           </button>
 
-
         </div>
-
         {/* Right Controls */}
         <div className="flex items-center gap-3">
           {/* Save Status */}
@@ -951,33 +919,28 @@ export default function CanvasArea({
               </div>
             )}
           </div>
-
           <div className="flex items-center gap-2 text-sm text-gray-300">
             <Layers size={16} />
             <span>{pages[activePage].elements.length} elements</span>
           </div>
-
           <div className="w-px h-6 bg-gray-600"></div>
-
           {/* Clear Button */}
           <button
             onClick={handleClear}
             className="relative group flex items-center gap-2 px-4 py-2 
-   bg-black border border-[#c2831f] hover:bg-[#c2831f] hover:text-black
-   text-white rounded-lg text-sm font-medium transition-colors shadow-lg cursor-pointer"
+             bg-black border border-[#c2831f] hover:bg-[#c2831f] hover:text-black
+             text-white rounded-lg text-sm font-medium transition-colors shadow-lg cursor-pointer"
           >
-             <Trash2 size={16} />
+            <Eraser size={16} />
             {/* Tooltip */}
             <span
               className="absolute left-1/2 -translate-x-1/2 top-full mt-2
-     opacity-0 group-hover:opacity-100 transition
-     bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap"
+               opacity-0 group-hover:opacity-100 transition
+               bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap "
             >
               Clear
             </span>
           </button>
-
-
 
           {/* Save Button */}
           <button
@@ -990,7 +953,6 @@ export default function CanvasArea({
               }`}
           >
             <Save size={16} />
-
             {/* Tooltip */}
             <span
               className="absolute left-1/2 -translate-x-1/2 top-full mt-2
@@ -1001,8 +963,6 @@ export default function CanvasArea({
             </span>
           </button>
 
-
-
           <button
             className="relative group flex items-center gap-2 px-4 py-2 
              bg-black border border-[#c2831f] text-white 
@@ -1010,7 +970,6 @@ export default function CanvasArea({
              rounded-lg text-sm font-medium transition-colors shadow-lg cursor-pointer"
           >
             <Play size={16} />
-
             {/* Tooltip */}
             <span
               className="absolute left-1/2 -translate-x-1/2 top-full mt-2
@@ -1020,8 +979,6 @@ export default function CanvasArea({
               Play
             </span>
           </button>
-
-
 
           <button
             onClick={() => setPreview(!preview)}
@@ -1042,7 +999,6 @@ export default function CanvasArea({
                 Preview
               </>
             )}
-
             {/* Tooltip */}
             <span
               className="absolute left-1/2 -translate-x-1/2 top-full mt-2
@@ -1052,7 +1008,6 @@ export default function CanvasArea({
               {preview ? "Exit Preview" : "Preview"}
             </span>
           </button>
-
           <button
             onClick={onSendCampaign}
             className="relative group flex items-center gap-2 px-4 py-2 
@@ -1062,7 +1017,6 @@ export default function CanvasArea({
           >
             <Send size={16} />
             Send
-
             {/* Tooltip */}
             <span
               className="absolute left-1/2 -translate-x-1/2 top-full mt-2
@@ -1073,14 +1027,10 @@ export default function CanvasArea({
             </span>
           </button>
 
-
         </div>
       </div>
-
       {/* Canvas Container */}
-
       <div className="flex-1 overflow-auto bg-black p-8" onClick={handleCanvasClick}>
-
         <div className="flex justify-center items-center min-w-full min-h-full">
           <div
             ref={canvasRef}
@@ -1102,7 +1052,6 @@ export default function CanvasArea({
           >
             {/* Edit Mode */}
             {!preview && pages[activePage].elements.map(element => renderElement(element))}
-
             {/* Preview Mode */}
             {preview && (
               <div className="relative w-full h-full">
@@ -1120,7 +1069,6 @@ export default function CanvasArea({
                   .map(element => renderPreviewElement(element))}
               </div>
             )}
-
             {/* Empty State */}
             {!preview && pages[activePage].elements.length === 0 && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
@@ -1134,7 +1082,6 @@ export default function CanvasArea({
           </div>
         </div>
       </div>
-      
     </div>
   );
 }
