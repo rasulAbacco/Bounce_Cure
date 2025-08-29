@@ -1,13 +1,12 @@
 .help-support-container {
     min-height: 100vh;
     padding: 3rem 1.5rem;
-    padding-left: 200px; /* Adjusted for sidebar */
     margin-top: 20px;
     transition: padding-left 0.3s ease;
 }
 
 .help-support-inner {
-    max-width: 1200px;
+    max-width: 80vw;
     margin: 0 auto;
     display: flex;
     flex-direction: column;
