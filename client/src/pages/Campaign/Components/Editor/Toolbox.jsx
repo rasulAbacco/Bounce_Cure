@@ -823,88 +823,58 @@ const Toolbox = ({
         )}
         
         {/* Images Tab */}
-        {activeTab === 'images' && (
-          <div className="space-y-4">
-            <div>
-              <h3 className="text-sm font-medium text-gray-300 mb-3">Upload Image</h3>
-              <div className="space-y-3">
-                <label className="flex items-center justify-center gap-2 p-4 border-2 border-dashed border-gray-600 hover:border-gray-500 rounded-lg cursor-pointer transition-colors group">
-                  <Upload size={20} className="text-gray-400 group-hover:text-gray-300" />
-                  <span className="text-sm text-gray-400 group-hover:text-gray-300">Choose file</span>
-                  <input type="file" accept="image/*" onChange={handleUpload} className="hidden" title="Upload image from device" />
-                </label>
-                
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
-                    placeholder="Enter image URL..."
-                    className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    title="Enter image URL"
-                  />
-                  <button
-                    onClick={handleUrlSubmit}
-                    className="px-3 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors"
-                    title="Add image from URL"
-                  >
-                    <Link size={16} />
-                  </button>
-                </div>
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium text-gray-300 mb-3">Stock Images</h3>
-              <div className="grid grid-cols-2 gap-2">
-                {stockImages.map((img, i) => (
-                  <div key={i} className="relative group">
-                    <img
-                      src={img}
-                      alt={`Stock ${i + 1}`}
-                      className="w-full h-20 object-cover rounded-lg cursor-pointer border-2 border-transparent hover:border-blue-400 transition-all"
-                      onClick={() => handleStockImageSelect(img)}
-                      title={`Add stock image ${i + 1}`}
-                    />
-                    <div className="absolute inset-0 bg-blue-600/20 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg flex items-center justify-center">
-                      <Plus size={16} className="text-white" />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <div>
-              <h3 className="text-sm font-medium text-gray-300 mb-3">Image Effects</h3>
-              <div className="grid grid-cols-2 gap-2">
-                <button className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" title="Apply grayscale effect">
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="w-8 h-8 bg-gradient-to-r from-gray-400 to-gray-600 rounded"></div>
-                    <span className="text-xs text-gray-300">Grayscale</span>
-                  </div>
-                </button>
-                <button className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" title="Apply sepia effect">
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="w-8 h-8 bg-gradient-to-r from-yellow-400 to-orange-600 rounded"></div>
-                    <span className="text-xs text-gray-300">Sepia</span>
-                  </div>
-                </button>
-                <button className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" title="Apply blur effect">
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="w-8 h-8 bg-gradient-to-r from-blue-400 to-purple-600 rounded"></div>
-                    <span className="text-xs text-gray-300">Blur</span>
-                  </div>
-                </button>
-                <button className="p-3 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors" title="Apply sharpen effect">
-                  <div className="flex flex-col items-center gap-1">
-                    <div className="w-8 h-8 bg-gradient-to-r from-green-400 to-teal-600 rounded"></div>
-                    <span className="text-xs text-gray-300">Sharpen</span>
-                  </div>
-                </button>
-              </div>
+      {/* Images Tab */}
+      {activeTab === 'images' && (
+        <div className="space-y-4">
+          {/* Upload Image */}
+          <div className="bg-gray-700/50 rounded-lg p-3">
+            <h3 className="text-sm font-medium text-gray-300 mb-3">Upload Image</h3>
+            <input
+              type="file"
+              accept="image/*"
+              onChange={handleUpload}
+              className="block w-full text-sm text-gray-300 file:mr-3 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-blue-600 file:text-white hover:file:bg-blue-700"
+            />
+          </div>
+
+          {/* Image from URL */}
+          <div className="bg-gray-700/50 rounded-lg p-3">
+            <h3 className="text-sm font-medium text-gray-300 mb-3">From URL</h3>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="Paste image URL"
+                className="flex-1 p-2 rounded bg-gray-800 text-gray-300"
+              />
+              <button
+                onClick={handleUrlSubmit}
+                className="px-3 py-2 bg-blue-600 hover:bg-blue-700 rounded text-white text-sm"
+              >
+                Add
+              </button>
             </div>
           </div>
-        )}
+
+          {/* Stock Images */}
+          <div className="bg-gray-700/50 rounded-lg p-3">
+            <h3 className="text-sm font-medium text-gray-300 mb-3">Stock Images</h3>
+            <div className="grid grid-cols-2 gap-2">
+              {stockImages.map((src, idx) => (
+                <img
+                  key={idx}
+                  src={src}
+                  alt="stock"
+                  className="w-full h-24 object-cover rounded-lg cursor-pointer hover:opacity-80"
+                  onClick={() => handleStockImageSelect(src)}
+                />
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
         
         {/* Colors Tab */}
         {activeTab === 'colors' && (

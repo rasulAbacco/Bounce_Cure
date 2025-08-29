@@ -489,6 +489,8 @@ const AllTemplates = ({ onNavigateBack }) => {
                   <div className="p-4">
                     <h3 className="font-semibold text-white mb-1">{template.name}</h3>
                     <p className="text-sm text-gray-400 mb-3">{template.category}</p>
+                    <p className="text-sm text-gray-400 mb-3">{template.tags}</p>
+                    <p className="text-sm text-gray-400 mb-3">{template.rating}</p>
                     <div className="flex flex-wrap gap-1">
                       {template.tags.slice(0, 3).map((tag) => (
                         <span
