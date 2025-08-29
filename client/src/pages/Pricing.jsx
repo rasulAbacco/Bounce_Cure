@@ -1,11 +1,15 @@
-import React, { useState, useEffect } from 'react';
-import { Check, Mail, Users, TrendingUp } from 'lucide-react';
+import React, { useState } from 'react';
+import { Check, Mail, Users, TrendingUp, Star } from 'lucide-react';
 import PageLayout from "../components/PageLayout";
+import { useNavigate } from "react-router-dom";
 
 const Pricing = () => {
   const [billingPeriod, setBillingPeriod] = useState('monthly');
   const [slots, setSlots] = useState(100);
   const [selectedIntegrations, setSelectedIntegrations] = useState([]);
+
+  // for dashboard pricing page
+  const navigate = useNavigate();
 
   // Base pricing structure
   const basePricing = {
@@ -51,8 +55,8 @@ const Pricing = () => {
   }, 0);
 
   const toggleIntegration = (integrationId) => {
-    setSelectedIntegrations(prev => 
-      prev.includes(integrationId) 
+    setSelectedIntegrations(prev =>
+      prev.includes(integrationId)
         ? prev.filter(id => id !== integrationId)
         : [...prev, integrationId]
     );
@@ -63,8 +67,11 @@ const Pricing = () => {
   const proPrice = calculateSlotPrice(currentPricing.proPlan, slots) + integrationCosts;
   const growthPrice = calculateSlotPrice(currentPricing.growthPlan, slots) + integrationCosts;
 
+  // ✅ Flat enterprise plan price
+  const enterprisePrice = 299.99;
+
   const formatPeriod = () => {
-    switch(billingPeriod) {
+    switch (billingPeriod) {
       case 'monthly': return 'month';
       case 'quarterly': return 'quarter';
       case 'annually': return 'year';
@@ -78,13 +85,13 @@ const Pricing = () => {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-4xl font-bold text-[#c2831f] mb-4 mt-15">Pricing Calculator</h1>
+            <h1 className="text-6xl font-bold text-[#c2831f] mb-4 mt-8">Pricing Calculator</h1>
             <p className="text-xl text-gray-300">Calculate pricing based on your needs</p>
           </div>
 
           {/* Billing Period Selector */}
           <div className="flex justify-center mb-8">
-            <div className="bg-gray-900 rounded-xl p-2 shadow-lg border border-gray-700">
+            <div className="bg-gray-900 rounded-xl p-2 shadow-lg border border-gray-700 ">
               {[
                 { key: 'monthly', label: 'Monthly' },
                 { key: 'quarterly', label: 'Quarterly' },
@@ -93,11 +100,10 @@ const Pricing = () => {
                 <button
                   key={key}
                   onClick={() => setBillingPeriod(key)}
-                  className={`relative px-6 py-3 rounded-lg font-medium transition-all duration-200 ${
-                    billingPeriod === key
-                      ? 'bg-[#c2831f] text-white shadow-md'
-                      : 'text-gray-300 hover:text-white hover:bg-gray-800'
-                  }`}
+                  className={` cursor-pointer relative px-6 py-3 rounded-lg font-medium transition-all duration-200 ${billingPeriod === key
+                    ? 'bg-[#c2831f] text-white shadow-md'
+                    : 'text-gray-300 hover:text-white hover:bg-gray-800'
+                    }`}
                 >
                   {label}
                   {badge && (
@@ -110,37 +116,22 @@ const Pricing = () => {
             </div>
           </div>
 
-          {/* Slots Input */}
-        <div className="flex justify-center mb-8">
-            <div className="bg-gray-900 rounded-xl p-6 shadow-lg border border-gray-700 w-full max-w-230"> {/* Changed max-w-md → max-w-lg */}
-              <label className="block text-sm font-medium text- mb-2">
-                Number of Slots
-              </label>
-             <input
-                type="number"
-                min="1"
-                max="10000"
-                value={slots}
-                onChange={(e) => setSlots(parseInt(e.target.value) || 1)}
-                className="w-full px-4 py-3 border border-[#c2831f] rounded-lg text-lg font-semibold text-center text-white  focus:outline-none focus:ring-2 focus:ring-teal-400 focus:border-transparent"
-                style={{
-                  WebkitAppearance: 'none',
-                  MozAppearance: 'textfield',
-                }}
-              />
-
-           
-              <p className="text-sm text-gray-400 mt-2">
-                First 50 slots included • Additional slots from $
-                {billingPeriod === 'monthly'
-                  ? '0.50'
-                  : billingPeriod === 'quarterly'
-                  ? '0.45'
-                  : '0.40'} each
-              </p>
-            </div>
+          {/* ✅ Slots Input */}
+          <div className="mb-12 max-w-md mx-auto">
+            <h3 className="text-2xl font-bold text-center text-[#c2831f] mb-6">
+              Choose Slots
+            </h3>
+            <input
+              type="number"
+              min="50"
+              value={slots}
+              onChange={(e) => setSlots(parseInt(e.target.value) || 50)}
+              className="w-full p-4 rounded-xl bg-gray-900 border border-gray-700 text-white text-center focus:ring-2 focus:ring-[#c2831f] focus:outline-none"
+            />
+            <p className="text-center text-gray-400 mt-2">
+              First 50 slots included. Extra slots add cost.
+            </p>
           </div>
-
 
           {/* Integrations */}
           <div className="mb-12">
@@ -150,11 +141,10 @@ const Pricing = () => {
                 <button
                   key={integration.id}
                   onClick={() => toggleIntegration(integration.id)}
-                  className={`p-4 rounded-xl border-2 transition-all duration-200 ${
-                    selectedIntegrations.includes(integration.id)
-                      ? 'border-[#c2831f] bg-gray-800 text-white'
-                      : 'border-gray-700 bg-gray-900 hover:border-[#c2831f]'
-                  }`}
+                  className={`p-4 rounded-xl border-2 transition-all duration-200 ${selectedIntegrations.includes(integration.id)
+                    ? 'border-[#c2831f] bg-gray-800 text-white'
+                    : 'border-gray-700 bg-gray-900 hover:border-[#c2831f]'
+                    }`}
                 >
                   <div className="text-sm font-medium">{integration.name}</div>
                   <div className="text-xs text-gray-400 mt-1">
@@ -169,7 +159,7 @@ const Pricing = () => {
           </div>
 
           {/* Pricing Cards */}
-          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 max-w-7xl mx-auto">
             {/* Email Warm Up */}
             <div className="bg-gray-900 rounded-2xl shadow-xl border border-gray-700 overflow-hidden">
               <div className="p-8">
@@ -182,9 +172,7 @@ const Pricing = () => {
                 </p>
 
                 <div className="mb-6">
-                  <div className="text-4xl font-bold text-white">
-                    ${emailWarmUpPrice.toFixed(2)}
-                  </div>
+                  <div className="text-4xl font-bold text-white">${emailWarmUpPrice.toFixed(2)}</div>
                   <div className="text-gray-400">per {formatPeriod()}, billed {billingPeriod}</div>
                 </div>
 
@@ -203,7 +191,69 @@ const Pricing = () => {
                   </li>
                 </ul>
 
-                <button className="w-full bg-[#c2831f] text-white py-4 px-6 cursor-pointer rounded-xl font-semibold hover:bg-[#a87119] transition-colors duration-200">
+                <button
+                  onClick={() =>
+                    navigate("/pricingdash", {
+                      state: {
+                        planName: "Email Warm Up",
+                        planPrice: emailWarmUpPrice.toFixed(2),
+                        billingPeriod: formatPeriod(),
+                      },
+                    })
+                  }
+                  className="w-full bg-[#c2831f] text-white py-4 px-6 rounded-xl font-semibold hover:bg-[#a87119] transition-colors duration-200"
+                >
+                  Get Started
+                </button>
+              </div>
+            </div>
+
+            {/* Enterprise Plan */}
+            <div className="bg-gray-900 rounded-2xl shadow-xl border border-gray-700 overflow-hidden">
+              <div className="p-8">
+                <div className="flex items-center mb-4">
+                  <Star className="w-8 h-8 text-[#c2831f] mr-3" />
+                  <h3 className="text-2xl font-bold text-white">Enterprise Plan</h3>
+                  <span className="ml-2 bg-yellow-900 text-xs px-2 py-1 rounded-full font-medium">
+                    Best Value
+                  </span>
+                </div>
+                <p className="text-gray-400 mb-6">
+                  Designed for large teams and organizations with advanced recruitment needs
+                </p>
+
+                <div className="mb-6">
+                  <div className="text-4xl font-bold text-white">${enterprisePrice.toFixed(2)}</div>
+                  <div className="text-gray-400">per {formatPeriod()}, billed {billingPeriod}</div>
+                </div>
+
+                <ul className="space-y-3 mb-8">
+                  {[
+                    "Unlimited slots",
+                    "Unlimited candidates per slot",
+                    "Dedicated support team",
+                    "Custom SLA agreements",
+                    "Full API access",
+                  ].map((feature, i) => (
+                    <li key={i} className="flex items-center">
+                      <Check className="w-5 h-5 text-[#c2831f] mr-3" />
+                      <span className="text-gray-300">{feature}</span>
+                    </li>
+                  ))}
+                </ul>
+
+                <button
+                  onClick={() =>
+                    navigate("/pricingdash", {
+                      state: {
+                        planName: "Enterprise Plan",
+                        planPrice: enterprisePrice.toFixed(2),
+                        billingPeriod: formatPeriod(),
+                      },
+                    })
+                  }
+                  className="w-full bg-[#c2831f] text-white py-4 px-6 rounded-xl font-semibold hover:bg-[#a87119] transition-colors duration-200"
+                >
                   Get Started
                 </button>
               </div>
@@ -224,32 +274,36 @@ const Pricing = () => {
                 </p>
 
                 <div className="mb-6">
-                  <div className="text-4xl font-bold text-white">
-                    ${proPrice.toFixed(2)}
-                  </div>
+                  <div className="text-4xl font-bold text-white">${proPrice.toFixed(2)}</div>
                   <div className="text-gray-400">per {formatPeriod()}, billed {billingPeriod}</div>
                 </div>
 
                 <ul className="space-y-3 mb-8">
-                  <li className="flex items-center">
-                    <Check className="w-5 h-5 text-[#c2831f] mr-3" />
-                    <span className="text-gray-300">Up to {slots} slots per {formatPeriod()}</span>
-                  </li>
-                  <li className="flex items-center">
-                    <Check className="w-5 h-5 text-[#c2831f] mr-3" />
-                    <span className="text-gray-300">25 candidates per slot</span>
-                  </li>
-                  <li className="flex items-center">
-                    <Check className="w-5 h-5 text-[#c2831f] mr-3" />
-                    <span className="text-gray-300">Advanced analytics</span>
-                  </li>
-                  <li className="flex items-center">
-                    <Check className="w-5 h-5 text-[#c2831f] mr-3" />
-                    <span className="text-gray-300">Team collaboration</span>
-                  </li>
+                  {[
+                    `Up to ${slots} slots per ${formatPeriod()}`,
+                    "25 candidates per slot",
+                    "Advanced analytics",
+                    "Team collaboration",
+                  ].map((feature, i) => (
+                    <li key={i} className="flex items-center">
+                      <Check className="w-5 h-5 text-[#c2831f] mr-3" />
+                      <span className="text-gray-300">{feature}</span>
+                    </li>
+                  ))}
                 </ul>
 
-                <button className="w-full bg-[#c2831f] text-white py-4 cursor-pointer px-6 rounded-xl font-semibold hover:bg-[#a87119] transition-colors duration-200">
+                <button
+                  onClick={() =>
+                    navigate("/pricingdash", {
+                      state: {
+                        planName: "Pro Plan",
+                        planPrice: proPrice.toFixed(2),
+                        billingPeriod: formatPeriod(),
+                      },
+                    })
+                  }
+                  className="w-full bg-[#c2831f] text-white py-4 px-6 rounded-xl font-semibold hover:bg-[#a87119] transition-colors duration-200"
+                >
                   Get Started
                 </button>
               </div>
@@ -270,36 +324,37 @@ const Pricing = () => {
                 </p>
 
                 <div className="mb-6">
-                  <div className="text-4xl font-bold text-white">
-                    ${growthPrice.toFixed(2)}
-                  </div>
+                  <div className="text-4xl font-bold text-white">${growthPrice.toFixed(2)}</div>
                   <div className="text-gray-400">per {formatPeriod()}, billed {billingPeriod}</div>
                 </div>
 
                 <ul className="space-y-3 mb-8">
-                  <li className="flex items-center">
-                    <Check className="w-5 h-5 text-[#c2831f] mr-3" />
-                    <span className="text-gray-300">Up to {slots} slots per {formatPeriod()}</span>
-                  </li>
-                  <li className="flex items-center">
-                    <Check className="w-5 h-5 text-[#c2831f] mr-3" />
-                    <span className="text-gray-300">200 candidates per slot</span>
-                  </li>
-                  <li className="flex items-center">
-                    <Check className="w-5 h-5 text-[#c2831f] mr-3" />
-                    <span className="text-gray-300">Priority support</span>
-                  </li>
-                  <li className="flex items-center">
-                    <Check className="w-5 h-5 text-[#c2831f] mr-3" />
-                    <span className="text-gray-300">Custom integrations</span>
-                  </li>
-                  <li className="flex items-center">
-                    <Check className="w-5 h-5 text-[#c2831f] mr-3" />
-                    <span className="text-gray-300">Dedicated account manager</span>
-                  </li>
+                  {[
+                    `Up to ${slots} slots per ${formatPeriod()}`,
+                    "200 candidates per slot",
+                    "Priority support",
+                    "Custom integrations",
+                    "Dedicated account manager",
+                  ].map((feature, i) => (
+                    <li key={i} className="flex items-center">
+                      <Check className="w-5 h-5 text-[#c2831f] mr-3" />
+                      <span className="text-gray-300">{feature}</span>
+                    </li>
+                  ))}
                 </ul>
 
-                <button className="w-full bg-[#c2831f] text-white py-4 cursor-pointer px-6 rounded-xl font-semibold hover:bg-[#a87119] transition-colors duration-200">
+                <button
+                  onClick={() =>
+                    navigate("/pricingdash", {
+                      state: {
+                        planName: "Growth Plan",
+                        planPrice: growthPrice.toFixed(2),
+                        billingPeriod: formatPeriod(),
+                      },
+                    })
+                  }
+                  className="w-full bg-[#c2831f] text-white py-4 px-6 rounded-xl font-semibold hover:bg-[#a87119] transition-colors duration-200"
+                >
                   Get Started
                 </button>
               </div>
@@ -345,6 +400,7 @@ const Pricing = () => {
             <button className="px-8 py-3 cursor-pointer bg-[#c2831f] text-white rounded-xl font-medium hover:bg-[#a87119] transition-colors duration-200">
               Email me this quote
             </button>
+
           </div>
         </div>
       </div>

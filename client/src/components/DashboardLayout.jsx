@@ -5,14 +5,15 @@ import TopNavbar from './TopNavbar';
 
 const pageNameMap = {
     '/dashboard': 'Dashboard',
-    '/contacts': 'Contact Management',
-    '/builder': 'Email Campaign',
+    '/contacts': 'CRM ',
+    '/email-campaign': 'Email Campaign',
     '/automation': 'Automation',
     '/analytics': 'Analytics',
     '/verification': 'Email Verification',
     '/settings': 'Settings',
     '/auth': 'User Authentication',
     '/support': 'Help & Support',
+    '/pricingdash':'Pricing',
 };
 
 const DashboardLayout = ({ children }) => {
@@ -37,7 +38,7 @@ const DashboardLayout = ({ children }) => {
 
     return (
         <div className="min-h-screen bg-black text-white flex">
-            
+
             <Sidebar
                 isOpen={sidebarOpen}
                 toggleSidebar={toggleSidebar}

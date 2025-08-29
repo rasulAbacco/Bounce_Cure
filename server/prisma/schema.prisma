@@ -8,15 +8,26 @@ datasource db {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  firstName String
-  lastName  String
-  email     String   @unique
-  password  String
-  createdAt DateTime @default(now())
-
-  // Inverse relation to Content
-  contents Content[]
+  id                  Int                      @id @default(autoincrement())
+  firstName           String
+  lastName            String
+  email               String                   @unique
+  password            String
+  createdAt           DateTime                 @default(now())
+  twoFASecret         String?
+  is2FAEnabled        Boolean                  @default(false)
+  profileImage        Bytes?
+  updatedAt           DateTime                 @updatedAt
+  apiKeys             ApiKey[]
+  contents            Content[]
+  verificationTokens  EmailVerificationToken[]
+  inAppNotifications  InAppNotification[]
+  loginLogs           LoginLog[]
+  notificationSetting NotificationSetting?
+  otpCodes            OTPCode[]
+  passwordResetTokens PasswordResetToken[]     @relation("UserTokens")
+  sessions            Session[]
+  Contact             Contact[]
 }
 
 model Content {
@@ -27,7 +38,175 @@ model Content {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
   createdBy    Int
+  user         User     @relation(fields: [createdBy], references: [id])
+}
 
-  // Relation to User
-  user User @relation(fields: [createdBy], references: [id])
+model Session {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  device    String
+  ipAddress String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model LoginLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  device    String
+  ipAddress String
+  location  String?
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model EmailVerificationToken {
+  id        Int      @id @default(autoincrement())
+  token     String
+  userId    Int
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model OTPCode {
+  id        Int      @id @default(autoincrement())
+  code      String
+  userId    Int
+  expiresAt DateTime
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Verification {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  status         String
+  catch_all      Boolean
+  createdAt      DateTime @default(now())
+  disposable     Boolean
+  domain_valid   Boolean
+  error          String?
+  greylisted     Boolean
+  mailbox_exists Boolean
+  role_based     Boolean
+  score          Int
+  syntax_valid   Boolean
+}
+
+model SupportMessage {
+  id        Int      @id @default(autoincrement())
+  name      String
+  message   String
+  createdAt DateTime @default(now())
+  userEmail String?
+  userId    Int?
+}
+
+model SupportTicket {
+  id          Int           @id @default(autoincrement())
+  subject     String
+  description String
+  createdAt   DateTime      @default(now())
+  userEmail   String?
+  userId      Int?
+  files       SupportFile[]
+}
+
+model SupportFile {
+  id        Int           @id @default(autoincrement())
+  filename  String
+  mimetype  String
+  data      Bytes
+  createdAt DateTime      @default(now())
+  ticketId  Int
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id])
+}
+
+model NotificationSetting {
+  id        Int     @id @default(autoincrement())
+  userId    Int     @unique
+  email     Boolean @default(true)
+  sms       Boolean @default(false)
+  frequency String  @default("daily")
+  user      User    @relation(fields: [userId], references: [id])
+}
+
+model InAppNotification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model ApiKey {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  name      String
+  createdAt DateTime @default(now())
+  revoked   Boolean  @default(false)
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model DeletedAccount {
+  id        Int      @id @default(autoincrement())
+  userEmail String
+  reason    String?
+  deletedAt DateTime @default(now())
+}
+
+model PasswordResetToken {
+  id    Int    @id @default(autoincrement())
+  token String @unique
+
+  createdAt DateTime @default(now())
+
+  // FIXED: userId must be Int (to match User.id)
+  userId Int
+  user   User @relation("UserTokens", fields: [userId], references: [id], onDelete: Cascade)
+
+  expiresAt DateTime
+}
+
+model Contact {
+  id        Int      @id @default(autoincrement())
+  name      String?
+  email     String?
+  phone     String?
+  company   String?
+  status    String?  @default("active")
+  priority  String?   // vip, subscriber, new, etc.
+  last      String?
+  userId    Int?
+  user      User?    @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("Contact") // 👈 explicitly map to "Contact" in DB
+}
+
+  
+
+
+model Task {
+  id       Int      @id @default(autoincrement())
+  title    String
+  due      DateTime
+  status   String
+  priority String
+  notes    String?
+}
+
+model Deal {
+  id        Int      @id @default(autoincrement())
+  name      String
+  client    String
+  stage     String
+  value     Float
+  closing   DateTime
+  status    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

@@ -31,7 +31,8 @@ body {
 
 .chat-float-button:hover {
   transform: scale(1.1);
-  background: #000; /* Hover color change */
+  color:#c2831f;
+  background: white; /* Hover color change */
 }
 
 .icon {
