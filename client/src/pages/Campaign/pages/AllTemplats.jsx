@@ -18,6 +18,7 @@ const AllTemplates = ({ onNavigateBack }) => {
   const [viewMode, setViewMode] = useState("grid");
   const [searchTerm, setSearchTerm] = useState("");
   const navigate = useNavigate();
+  
 
   const categories = [
     { name: "All", icon: Grid, count: 24 },
@@ -360,7 +361,7 @@ const AllTemplates = ({ onNavigateBack }) => {
         <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
-              onClick={onNavigateBack}
+              onClick={() => navigate("/email-campaign")} // 👈 change this to your route path
               className="p-2 hover:bg-gray-800 rounded-lg transition-colors"
             >
               <ArrowLeft className="w-5 h-5" />
@@ -488,6 +489,8 @@ const AllTemplates = ({ onNavigateBack }) => {
                   <div className="p-4">
                     <h3 className="font-semibold text-white mb-1">{template.name}</h3>
                     <p className="text-sm text-gray-400 mb-3">{template.category}</p>
+                    <p className="text-sm text-gray-400 mb-3">{template.tags}</p>
+                    <p className="text-sm text-gray-400 mb-3">{template.rating}</p>
                     <div className="flex flex-wrap gap-1">
                       {template.tags.slice(0, 3).map((tag) => (
                         <span

@@ -9,58 +9,74 @@ const templates = [
     id: 1,
     name: "Welcome Email",
     category: "Email",
-    preview:
-      "https://blog-cdn.engagebay.com/blog/wp-content/uploads/2024/09/welcome-email-series-1.jpg",
+    preview: "https://static.vecteezy.com/system/resources/thumbnails/036/324/708/small/ai-generated-picture-of-a-tiger-walking-in-the-forest-photo.jpg",
     rating: 4.8,
-    likes: 234,
+    likes: 324,
     content: [
       {
         type: "text",
-        value: "Welcome to our service!",
-        style: { fontSize: 28, color: "#2563eb", fontWeight: "bold" },
+        value: "👋 Welcome to Our Family!",
+        style: { fontSize: 32, color: "#2563eb", fontWeight: "bold", textAlign: "center" },
       },
       {
         type: "paragraph",
-        value:
-          "We're excited to have you on board. Get started with our amazing features and create something incredible today.",
-        style: { fontSize: 16, color: "#374151" },
+        value: "We’re thrilled to have you on board. Explore features, discover insights, and start your journey today.",
+        style: { fontSize: 16, color: "#374151", textAlign: "center" },
+      },
+      {
+        type: "image",
+        value: "https://static.vecteezy.com/system/resources/thumbnails/036/324/708/small/ai-generated-picture-of-a-tiger-walking-in-the-forest-photo.jpg",
       },
       {
         type: "button",
-        value: "Get Started",
+        value: "Get Started →",
         style: {
-          backgroundColor: "#3b82f6",
+          backgroundColor: "#2563eb",
           color: "#fff",
-          padding: "12px 24px",
+          padding: "14px 32px",
           borderRadius: "8px",
+          fontSize: "16px",
+          fontWeight: "bold",
+          margin: "20px auto",
+          display: "block",
         },
       },
     ],
   },
   {
     id: 2,
-    name: "Newsletter",
+    name: "Modern Newsletter",
     category: "Marketing",
-    preview:
-      "https://klifftechnologies.com/assets/uploads/media-uploader/digital-marketing-company-in-hauz-khas1713515064.jpg",
+    preview: "https://img.freepik.com/free-vector/modern-email-newsletter-template.jpg",
     rating: 4.9,
-    likes: 189,
+    likes: 451,
     content: [
       {
         type: "text",
-        value: "Monthly Newsletter",
-        style: { fontSize: 32, color: "#1f2937", fontWeight: "bold" },
+        value: "📢 Monthly Marketing Insights",
+        style: { fontSize: 30, color: "#111827", fontWeight: "bold", textAlign: "center" },
       },
       {
         type: "image",
-        value:
-          "https://images.unsplash.com/photo-1586953208448-b95a79798f07?w=300&h=200&fit=crop",
+        value: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600&h=200&fit=crop",
       },
       {
         type: "paragraph",
-        value:
-          "Stay updated with our latest news, features, and exclusive content delivered right to your inbox.",
-        style: { fontSize: 16, color: "#6b7280" },
+        value: "Stay ahead of the curve with the latest updates, exclusive offers, and curated insights just for you.",
+        style: { fontSize: 16, color: "#4b5563", textAlign: "center" },
+      },
+      {
+        type: "button",
+        value: "Read More",
+        style: {
+          backgroundColor: "#059669",
+          color: "#fff",
+          padding: "12px 28px",
+          borderRadius: "6px",
+          fontWeight: "600",
+          display: "block",
+          margin: "20px auto",
+        },
       },
     ],
   },
@@ -68,21 +84,23 @@ const templates = [
     id: 3,
     name: "Social Media Post",
     category: "Social",
-    preview:
-      "https://www.youngurbanproject.com/wp-content/uploads/2025/05/What-is-social-marketing.jpg",
+    preview: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=400&fit=crop",
     rating: 4.7,
-    likes: 312,
+    likes: 512,
     content: [
       {
+        type: "image",
+        value: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=400&fit=crop",
+      },
+      {
         type: "text",
-        value: "Follow Your Dreams",
-        style: { fontSize: 36, color: "#ffffff", fontWeight: "bold" },
+        value: "🌟 Believe in Yourself",
+        style: { fontSize: 36, color: "#eb1111ff", fontWeight: "bold", textAlign: "center" },
       },
       {
         type: "paragraph",
-        value:
-          "Success is not final, failure is not fatal: it is the courage to continue that counts.",
-        style: { fontSize: 18, color: "#f3f4f6" },
+        value: "Success is built on small daily actions. Start today. Keep moving forward.",
+        style: { fontSize: 18, color: "#c01ff1ff", textAlign: "center" },
       },
     ],
   },
@@ -90,21 +108,19 @@ const templates = [
     id: 4,
     name: "Event Invitation",
     category: "Event",
-    preview:
-      "https://outofthe925.com/wp-content/uploads/2022/02/You-are-invited-to-like-this-facebook-page.jpg",
+    preview: "https://img.freepik.com/free-vector/event-invitation-design-template.jpg",
     rating: 4.6,
-    likes: 156,
+    likes: 298,
     content: [
       {
         type: "text",
-        value: "You're Invited!",
-        style: { fontSize: 30, color: "#7c3aed", fontWeight: "bold" },
+        value: "🎉 You’re Invited!",
+        style: { fontSize: 34, color: "#7c3aed", fontWeight: "bold", textAlign: "center" },
       },
       {
         type: "paragraph",
-        value:
-          "Join us for an unforgettable evening of networking, learning, and fun.",
-        style: { fontSize: 16, color: "#374151" },
+        value: "Join us for an unforgettable evening of networking, knowledge-sharing, and fun.",
+        style: { fontSize: 16, color: "#374151", textAlign: "center" },
       },
       {
         type: "button",
@@ -112,8 +128,11 @@ const templates = [
         style: {
           backgroundColor: "#7c3aed",
           color: "#fff",
-          padding: "12px 24px",
-          borderRadius: "6px",
+          padding: "14px 32px",
+          borderRadius: "8px",
+          fontWeight: "600",
+          display: "block",
+          margin: "20px auto",
         },
       },
     ],
@@ -122,26 +141,36 @@ const templates = [
     id: 5,
     name: "Product Launch",
     category: "Marketing",
-    preview:
-      "https://cdn-cjhkj.nitrocdn.com/krXSsXVqwzhduXLVuGLToUwHLNnSxUxO/assets/images/optimized/rev-ff94111/spotme.com/wp-content/uploads/2021/03/Blog-Product-Launch-Event-1.png",
+    preview: "https://img.freepik.com/free-vector/product-launch-email-template.jpg",
     rating: 4.8,
-    likes: 278,
+    likes: 387,
     content: [
       {
-        type: "text",
-        value: "Introducing Our Latest Product",
-        style: { fontSize: 26, color: "#059669", fontWeight: "bold" },
+        type: "image",
+        value: "https://images.unsplash.com/photo-1593642532973-d31b6557fa68?w=600&h=300&fit=crop",
       },
       {
-        type: "image",
-        value:
-          "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=300&h=200&fit=crop",
+        type: "text",
+        value: "🚀 Introducing Our New Product",
+        style: { fontSize: 28, color: "#059669", fontWeight: "bold", textAlign: "center" },
       },
       {
         type: "paragraph",
-        value:
-          "Revolutionary design meets cutting-edge technology. Experience the future today.",
-        style: { fontSize: 16, color: "#374151" },
+        value: "Revolutionary design meets cutting-edge technology. Be the first to experience the future.",
+        style: { fontSize: 16, color: "#374151", textAlign: "center" },
+      },
+      {
+        type: "button",
+        value: "Pre-Order Now",
+        style: {
+          backgroundColor: "#10b981",
+          color: "#fff",
+          padding: "12px 28px",
+          borderRadius: "6px",
+          fontWeight: "600",
+          margin: "20px auto",
+          display: "block",
+        },
       },
     ],
   },
@@ -149,25 +178,24 @@ const templates = [
     id: 6,
     name: "Thank You Card",
     category: "Personal",
-    preview:
-      "https://footnotespaper.com/cdn/shop/articles/small-gestures-big-impacts-5-thank-you-card-ideas-854276.png?v=1749487078&width=1100",
+    preview: "https://img.freepik.com/free-vector/thank-you-card-template.jpg",
     rating: 4.9,
-    likes: 198,
+    likes: 401,
     content: [
       {
         type: "text",
-        value: "Thank You!",
-        style: { fontSize: 32, color: "#dc2626", fontWeight: "bold" },
+        value: "❤️ Thank You!",
+        style: { fontSize: 32, color: "#dc2626", fontWeight: "bold", textAlign: "center" },
       },
       {
         type: "paragraph",
-        value:
-          "Your support means the world to us. We couldn't have done it without you.",
-        style: { fontSize: 18, color: "#374151" },
+        value: "Your support means the world to us. We couldn’t have done it without you.",
+        style: { fontSize: 18, color: "#374151", textAlign: "center" },
       },
     ],
   },
 ];
+
 
 const categories = ["All", "Email", "Marketing", "Social", "Event", "Personal"];
 
@@ -177,10 +205,86 @@ const TemplatesPage = () => {
   const [searchTerm, setSearchTerm] = React.useState("");
   const [previewTemplate, setPreviewTemplate] = React.useState(null);
 
+  // const handleSelect = (template) => {
+  //   navigate("/editor", { state: { template: { ...template, fixed: true } } });
+  // };
   const handleSelect = (template) => {
-    navigate("/editor", { state: { template: { ...template, fixed: true } } });
-  };
+  const elements = template.content.map((block, index) => {
+    let defaults = {};
 
+    switch (block.type) {
+      case "text":
+        defaults = {
+          x: 200,
+          y: 60 + index * 70,
+          width: 400,
+          height: 50,
+        };
+        break;
+
+      case "paragraph":
+        defaults = {
+          x: 200,
+          y: 150 + index * 80,
+          width: 500,
+          height: 80,
+        };
+        break;
+
+      case "button":
+        defaults = {
+          x: 300,
+          y: 300 + index * 80,
+          width: 180,
+          height: 50,
+          backgroundColor: "#2563eb",
+          color: "#fff",
+          borderRadius: 6,
+        };
+        break;
+
+      case "image":
+        defaults = {
+          x: 250,
+          y: 120 + index * 120,
+          width: 300,
+          height: 200,
+        };
+        break;
+
+      default:
+        defaults = {
+          x: 100,
+          y: 100 + index * 80,
+          width: 300,
+          height: 60,
+        };
+    }
+ return {
+      id: crypto.randomUUID(),
+      type: block.type === "text" ? "heading" : block.type,
+      content: block.value || "",
+      src: block.type === "image" ? block.value : null,
+      ...defaults,
+      style: block.style || {},
+      fontSize: block.style?.fontSize || 16,
+      color: block.style?.color || "#000000",
+      backgroundColor: block.style?.backgroundColor || "transparent",
+      fontFamily: "Arial",
+      rotation: 0,
+      opacity: 1,
+    };
+  });
+
+  navigate("/editor", {
+    state: {
+      template: {
+        elements,
+        canvasBackgroundColor: "#FFFFFF",
+      },
+    },
+  });
+};
   const filteredTemplates = templates.filter((template) => {
     const matchesCategory =
       selectedCategory === "All" || template.category === selectedCategory;
