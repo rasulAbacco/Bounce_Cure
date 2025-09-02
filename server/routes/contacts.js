@@ -9,7 +9,7 @@ let contacts = [
   { id: uuidv4(), name: 'Jane Smith', email: 'rasulabaccofgtech@gmail.com', type: 'new-customer' },
   { id: uuidv4(), name: 'Robert Johnson', email: 'abacco83@gmail.com', type: 'vip-client' },
   { id: uuidv4(), name: 'Emily Davis', email: 'anusha.abacco@gmail.com', type: 'all-subscribers' },
-  { id: uuidv4(), name: 'Michael Wilson', email: 'vamsimohan2692000@gmail.com', type: 'new-customer' },
+  { id: uuidv4(), name: 'Michael Wilson', email: 'vamsimdohan2692000@gmail.com', type: 'new-customer' },
   { id: uuidv4(), name: 'Sarah Brown', email: 'sarah@example.com', type: 'vip-client' },
 ];
 
