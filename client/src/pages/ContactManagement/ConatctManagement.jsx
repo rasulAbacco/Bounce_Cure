@@ -192,7 +192,7 @@ export default function ConatctManagement() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-white text-black dark:bg-black dark:text-white pt-40 transition-colors duration-300">
+      <div className="min-h-screen  text-black dark:bg-black dark:text-white pt-40 transition-colors duration-300">
 
         {/* --- Header Navbar --- */}
         <header className="fixed top-20 left-0 right-0  bg-white/70 dark:bg-black/40 backdrop-blur border-b border-zinc-200 dark:border-zinc-800">

@@ -1,200 +1,1027 @@
 // src/pages/TemplatesPage.jsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Star, Eye, Heart } from "lucide-react";
+import { Plus, Star, Eye, Heart, Mail, Megaphone, Share2, Calendar, Rocket, Users, Award, TrendingUp, Gift, AlignCenter } from "lucide-react";
 
 // Enhanced templates with more variety
 const templates = [
   {
     id: 1,
-    name: "Welcome Email",
+    name: "Professional Welcome Email",
     category: "Email",
-    preview: "https://static.vecteezy.com/system/resources/thumbnails/036/324/708/small/ai-generated-picture-of-a-tiger-walking-in-the-forest-photo.jpg",
+    preview: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=300&fit=crop",
     rating: 4.8,
     likes: 324,
+    icon: Mail,
+    description: "Warm and professional welcome email template perfect for onboarding new customers",
     content: [
       {
         type: "text",
-        value: "👋 Welcome to Our Family!",
-        style: { fontSize: 32, color: "#2563eb", fontWeight: "bold", textAlign: "center" },
+        value: "Welcome to Our Community",
+        style: { 
+          fontSize: 36, 
+          color: "#1e40af", 
+          fontWeight: "700", 
+          textAlign: "center",
+          marginBottom: "20px",
+          letterSpacing: "-0.025em"
+        },
       },
       {
         type: "paragraph",
-        value: "We’re thrilled to have you on board. Explore features, discover insights, and start your journey today.",
-        style: { fontSize: 16, color: "#374151", textAlign: "center" },
+        value: "We're excited to have you join thousands of satisfied customers who trust us with their business needs. Your journey starts here, and we're committed to providing you with exceptional service every step of the way.",
+        style: { 
+          fontSize: 18, 
+          color: "#374151", 
+          textAlign: "center",
+          lineHeight: "1.6",
+          marginBottom: "30px",
+          maxWidth: "600px"
+        },
       },
       {
         type: "image",
-        value: "https://static.vecteezy.com/system/resources/thumbnails/036/324/708/small/ai-generated-picture-of-a-tiger-walking-in-the-forest-photo.jpg",
+        value: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=300&fit=crop",
+        style: {
+          borderRadius: "12px",
+          marginBottom: "30px"
+        }
+      },
+      {
+        type: "paragraph",
+        value: "Here's what you can expect: 24/7 customer support, exclusive member benefits, and access to our premium resources. If you have any questions, our team is always ready to help.",
+        style: { 
+          fontSize: 16, 
+          color: "#6b7280", 
+          textAlign: "center",
+          lineHeight: "1.5",
+          marginBottom: "25px"
+        },
       },
       {
         type: "button",
-        value: "Get Started →",
+        value: "Get Started Now",
         style: {
-          backgroundColor: "#2563eb",
-          color: "#fff",
-          padding: "14px 32px",
+          backgroundColor: "#1e40af",
+          color: "#ffffff",
+          padding: "16px 32px",
           borderRadius: "8px",
           fontSize: "16px",
-          fontWeight: "bold",
+          fontWeight: "600",
           margin: "20px auto",
           display: "block",
+          border: "none",
+          cursor: "pointer",
+          boxShadow: "0 4px 14px 0 rgba(30, 64, 175, 0.3)"
         },
       },
     ],
   },
   {
     id: 2,
-    name: "Modern Newsletter",
+    name: "Marketing Newsletter Campaign",
     category: "Marketing",
-    preview: "https://img.freepik.com/free-vector/modern-email-newsletter-template.jpg",
+    preview: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop",
     rating: 4.9,
     likes: 451,
+    icon: Megaphone,
+    description: "High-conversion newsletter template with modern design and clear call-to-actions",
     content: [
       {
         type: "text",
-        value: "📢 Monthly Marketing Insights",
-        style: { fontSize: 30, color: "#111827", fontWeight: "bold", textAlign: "center" },
-      },
-      {
-        type: "image",
-        value: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?w=600&h=200&fit=crop",
+        value: "Your Weekly Business Insights",
+        style: { 
+          fontSize: 32, 
+          color: "#111827", 
+          fontWeight: "700", 
+          textAlign: "center",
+          marginBottom: "15px"
+        },
       },
       {
         type: "paragraph",
-        value: "Stay ahead of the curve with the latest updates, exclusive offers, and curated insights just for you.",
-        style: { fontSize: 16, color: "#4b5563", textAlign: "center" },
+        value: "This week's edition features market trends, growth strategies, and exclusive insights from industry leaders that you won't find anywhere else.",
+        style: { 
+          fontSize: 18, 
+          color: "#4b5563", 
+          textAlign: "center",
+          lineHeight: "1.6",
+          marginBottom: "25px"
+        },
+      },
+     {
+        type: "image",
+        value: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop",
+        style: {
+          borderRadius: "8px",
+          marginBottom: "25px",
+          display: "block",
+          marginLeft: "30px",
+          marginRight: "auto",
+        }
+      },
+      {
+        type: "text",
+        value: "Featured This Week",
+        style: { 
+          fontSize: 24, 
+          color: "#059669", 
+          fontWeight: "600", 
+          textAlign: "left",
+          marginBottom: "15px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "• 5 proven strategies to increase customer retention\n• Market analysis: Q3 trends every business owner should know\n• Exclusive interview with successful entrepreneurs\n• Tools and resources to streamline your workflow",
+        style: { 
+          fontSize: 16, 
+          color: "#374151", 
+          textAlign: "left",
+          lineHeight: "1.8",
+          marginBottom: "25px"
+        },
       },
       {
         type: "button",
-        value: "Read More",
+        value: "Read Full Newsletter",
         style: {
           backgroundColor: "#059669",
-          color: "#fff",
-          padding: "12px 28px",
-          borderRadius: "6px",
+          color: "#ffffff",
+          padding: "14px 28px",
+          borderRadius: "8px",
           fontWeight: "600",
           display: "block",
           margin: "20px auto",
+          fontSize: "16px",
+          border: "none",
+          cursor: "pointer"
         },
       },
     ],
   },
   {
     id: 3,
-    name: "Social Media Post",
+    name: "Motivational Social Post",
     category: "Social",
-    preview: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=400&fit=crop",
+    preview: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=600&fit=crop",
     rating: 4.7,
     likes: 512,
+    icon: Share2,
+    description: "Inspiring social media template designed to engage and motivate your audience",
     content: [
       {
         type: "image",
         value: "https://images.unsplash.com/photo-1507525428034-b723cf961d3e?w=600&h=400&fit=crop",
+        style: {
+          borderRadius: "12px",
+          marginBottom: "20px"
+        }
       },
       {
         type: "text",
-        value: "🌟 Believe in Yourself",
-        style: { fontSize: 36, color: "#eb1111ff", fontWeight: "bold", textAlign: "center" },
+        value: "Transform Your Dreams Into Reality",
+        style: { 
+          fontSize: 38, 
+          color: "#dc2626", 
+          fontWeight: "800", 
+          textAlign: "center",
+          marginBottom: "20px",
+          textShadow: "2px 2px 4px rgba(0,0,0,0.1)"
+        },
       },
       {
         type: "paragraph",
-        value: "Success is built on small daily actions. Start today. Keep moving forward.",
-        style: { fontSize: 18, color: "#c01ff1ff", textAlign: "center" },
+        value: "Every successful journey begins with a single step. Whether you're starting a business, learning a new skill, or chasing a personal goal, remember that consistency beats perfection every time.",
+        style: { 
+          fontSize: 18, 
+          color: "#4338ca", 
+          textAlign: "center",
+          lineHeight: "1.6",
+          fontWeight: "500",
+          marginBottom: "20px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "What small action will you take today to move closer to your dreams?",
+        style: { 
+          fontSize: 16, 
+          color: "#6b7280", 
+          textAlign: "center",
+          fontStyle: "italic",
+          marginBottom: "20px"
+        },
+      },
+      {
+        type: "text",
+        value: "#MotivationMonday #DreamBig #Success #Inspiration",
+        style: { 
+          fontSize: 14, 
+          color: "#2563eb", 
+          textAlign: "center",
+          fontWeight: "500"
+        },
       },
     ],
   },
   {
     id: 4,
-    name: "Event Invitation",
+    name: "Corporate Event Invitation",
     category: "Event",
-    preview: "https://img.freepik.com/free-vector/event-invitation-design-template.jpg",
+    preview: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=600&h=400&fit=crop",
     rating: 4.6,
     likes: 298,
+    icon: Calendar,
+    description: "Elegant invitation template perfect for corporate events, conferences, and networking gatherings",
     content: [
       {
         type: "text",
-        value: "🎉 You’re Invited!",
-        style: { fontSize: 34, color: "#7c3aed", fontWeight: "bold", textAlign: "center" },
+        value: "You're Cordially Invited",
+        style: { 
+          fontSize: 36, 
+          color: "#7c3aed", 
+          fontWeight: "700", 
+          textAlign: "center",
+          marginBottom: "20px",
+          letterSpacing: "-0.02em"
+        },
+      },
+      {
+        type: "text",
+        value: "Annual Business Summit 2025",
+        style: { 
+          fontSize: 28, 
+          color: "#111827", 
+          fontWeight: "600", 
+          textAlign: "center",
+          marginBottom: "25px"
+        },
+      },
+      {
+        type: "image",
+        value: "https://images.unsplash.com/photo-1511578314322-379afb476865?w=600&h=300&fit=crop",
+        style: {
+          borderRadius: "10px",
+          marginBottom: "25px"
+        }
       },
       {
         type: "paragraph",
-        value: "Join us for an unforgettable evening of networking, knowledge-sharing, and fun.",
-        style: { fontSize: 16, color: "#374151", textAlign: "center" },
+        value: "Join industry leaders, entrepreneurs, and innovators for two days of insightful presentations, networking opportunities, and collaborative workshops. This year's theme focuses on 'Building Sustainable Business in the Digital Age'.",
+        style: { 
+          fontSize: 16, 
+          color: "#374151", 
+          textAlign: "center",
+          lineHeight: "1.6",
+          marginBottom: "25px",
+          maxWidth: "500px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "📅 Date: March 15-16, 2025\n📍 Location: Grand Convention Center\n🕒 Time: 9:00 AM - 6:00 PM\n👔 Dress Code: Business Professional",
+        style: { 
+          fontSize: 16, 
+          color: "#4b5563", 
+          textAlign: "left",
+          lineHeight: "1.8",
+          marginBottom: "30px",
+          backgroundColor: "#f9fafb",
+          padding: "20px",
+          borderRadius: "8px",
+          borderLeft: "4px solid #7c3aed"
+        },
       },
       {
         type: "button",
-        value: "RSVP Now",
+        value: "RSVP Now - Limited Seats",
         style: {
           backgroundColor: "#7c3aed",
-          color: "#fff",
-          padding: "14px 32px",
+          color: "#ffffff",
+          padding: "16px 32px",
           borderRadius: "8px",
           fontWeight: "600",
           display: "block",
           margin: "20px auto",
+          fontSize: "16px",
+          border: "none",
+          cursor: "pointer",
+          boxShadow: "0 4px 14px 0 rgba(124, 58, 237, 0.3)"
         },
       },
     ],
   },
   {
     id: 5,
-    name: "Product Launch",
+    name: "Product Launch Announcement",
     category: "Marketing",
-    preview: "https://img.freepik.com/free-vector/product-launch-email-template.jpg",
+    preview: "https://images.unsplash.com/photo-1593642532973-d31b6557fa68?w=600&h=400&fit=crop",
     rating: 4.8,
     likes: 387,
+    icon: Rocket,
+    description: "Dynamic product launch template designed to create buzz and drive pre-orders",
     content: [
       {
+        type: "text",
+        value: "Revolutionary Innovation Unveiled",
+        style: { 
+          fontSize: 34, 
+          color: "#059669", 
+          fontWeight: "800", 
+          textAlign: "center",
+          marginBottom: "15px",
+          textTransform: "uppercase",
+          letterSpacing: "0.05em"
+        },
+      },
+      {
         type: "image",
-        value: "https://images.unsplash.com/photo-1593642532973-d31b6557fa68?w=600&h=300&fit=crop",
+        value: "https://images.unsplash.com/photo-1593642532973-d31b6557fa68?w=600&h=350&fit=crop",
+        style: {
+          borderRadius: "12px",
+          marginBottom: "25px",
+          boxShadow: "0 10px 30px rgba(0,0,0,0.2)"
+        }
       },
       {
         type: "text",
-        value: "🚀 Introducing Our New Product",
-        style: { fontSize: 28, color: "#059669", fontWeight: "bold", textAlign: "center" },
+        value: "Introducing the Future of Smart Technology",
+        style: { 
+          fontSize: 26, 
+          color: "#111827", 
+          fontWeight: "600", 
+          textAlign: "center",
+          marginBottom: "20px"
+        },
       },
       {
         type: "paragraph",
-        value: "Revolutionary design meets cutting-edge technology. Be the first to experience the future.",
-        style: { fontSize: 16, color: "#374151", textAlign: "center" },
+        value: "After three years of intensive research and development, we're proud to present our groundbreaking solution that will transform how you work, create, and connect. This isn't just another product – it's a paradigm shift.",
+        style: { 
+          fontSize: 18, 
+          color: "#374151", 
+          textAlign: "center",
+          lineHeight: "1.6",
+          marginBottom: "25px",
+          maxWidth: "550px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "Key Features:\n• AI-powered automation that learns your preferences\n• Seamless integration with 200+ popular tools\n• Enterprise-grade security with end-to-end encryption\n• 99.9% uptime guarantee with 24/7 support\n• Intuitive interface designed for maximum productivity",
+        style: { 
+          fontSize: 16, 
+          color: "#4b5563", 
+          textAlign: "left",
+          lineHeight: "1.7",
+          marginBottom: "25px",
+          backgroundColor: "#f8fafc",
+          padding: "20px",
+          borderRadius: "10px",
+          border: "2px solid #e5e7eb"
+        },
+      },
+      {
+        type: "text",
+        value: "Early Bird Special: 40% Off",
+        style: { 
+          fontSize: 22, 
+          color: "#dc2626", 
+          fontWeight: "700", 
+          textAlign: "center",
+          marginBottom: "15px"
+        },
       },
       {
         type: "button",
-        value: "Pre-Order Now",
+        value: "Pre-Order Now - Limited Time",
         style: {
           backgroundColor: "#10b981",
-          color: "#fff",
-          padding: "12px 28px",
-          borderRadius: "6px",
+          color: "#ffffff",
+          padding: "16px 36px",
+          borderRadius: "8px",
           fontWeight: "600",
           margin: "20px auto",
           display: "block",
+          fontSize: "16px",
+          border: "none",
+          cursor: "pointer",
+          boxShadow: "0 4px 14px 0 rgba(16, 185, 129, 0.4)"
         },
       },
     ],
   },
   {
     id: 6,
-    name: "Thank You Card",
+    name: "Heartfelt Thank You Message",
     category: "Personal",
-    preview: "https://img.freepik.com/free-vector/thank-you-card-template.jpg",
+    preview: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=600&h=400&fit=crop",
     rating: 4.9,
     likes: 401,
+    icon: Heart,
+    description: "Elegant thank you template to express genuine gratitude and appreciation",
     content: [
       {
         type: "text",
-        value: "❤️ Thank You!",
-        style: { fontSize: 32, color: "#dc2626", fontWeight: "bold", textAlign: "center" },
+        value: "With Heartfelt Gratitude",
+        style: { 
+          fontSize: 34, 
+          color: "#dc2626", 
+          fontWeight: "600", 
+          textAlign: "center",
+          marginBottom: "20px",
+          fontFamily: "serif"
+        },
+      },
+      {
+        type: "image",
+        value: "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0?w=600&h=300&fit=crop",
+        style: {
+          borderRadius: "12px",
+          marginBottom: "25px"
+        }
       },
       {
         type: "paragraph",
-        value: "Your support means the world to us. We couldn’t have done it without you.",
-        style: { fontSize: 18, color: "#374151", textAlign: "center" },
+        value: "Your kindness and support have made an incredible difference in our journey. From the bottom of our hearts, we want to express how much your trust and partnership mean to us.",
+        style: { 
+          fontSize: 18, 
+          color: "#374151", 
+          textAlign: "center",
+          lineHeight: "1.7",
+          marginBottom: "25px",
+          fontStyle: "italic"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "Whether it was your encouraging words, your business, or simply being part of our community, you've contributed to something special. We're honored to have you with us and look forward to continuing this wonderful relationship.",
+        style: { 
+          fontSize: 16, 
+          color: "#6b7280", 
+          textAlign: "center",
+          lineHeight: "1.6",
+          marginBottom: "20px"
+        },
+      },
+      {
+        type: "text",
+        value: "Thank you for being amazing!",
+        style: { 
+          fontSize: 20, 
+          color: "#7c3aed", 
+          fontWeight: "600", 
+          textAlign: "center",
+          marginBottom: "20px"
+        },
+      },
+    ],
+  },
+  {
+    id: 7,
+    name: "Team Achievement Celebration",
+    category: "Corporate",
+    preview: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=400&fit=crop",
+    rating: 4.7,
+    likes: 289,
+    icon: Award,
+    description: "Celebrate team milestones and achievements with this professional template",
+    content: [
+      {
+        type: "text",
+        value: "Celebrating Our Success Together",
+        style: { 
+          fontSize: 32, 
+          color: "#1f2937", 
+          fontWeight: "700", 
+          textAlign: "center",
+          marginBottom: "20px"
+        },
+      },
+      {
+        type: "image",
+        value: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=600&h=300&fit=crop",
+        style: {
+          borderRadius: "10px",
+          marginBottom: "25px"
+        }
+      },
+      {
+        type: "paragraph",
+        value: "We're proud to announce that our team has achieved a remarkable milestone this quarter. Through dedication, collaboration, and innovative thinking, we've exceeded our targets and set new standards of excellence.",
+        style: { 
+          fontSize: 18, 
+          color: "#374151", 
+          textAlign: "center",
+          lineHeight: "1.6",
+          marginBottom: "25px"
+        },
+      },
+      {
+        type: "text",
+        value: "Key Achievements",
+        style: { 
+          fontSize: 24, 
+          color: "#0f172a", 
+          fontWeight: "600", 
+          textAlign: "center",
+          marginBottom: "15px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "• 150% increase in customer satisfaction scores\n• Successful launch of 3 major product features\n• 25% improvement in operational efficiency\n• Recognition as 'Innovation Team of the Year'\n• Zero security incidents maintained for 12 months",
+        style: { 
+          fontSize: 16, 
+          color: "#4b5563", 
+          textAlign: "left",
+          lineHeight: "1.8",
+          marginBottom: "25px",
+          backgroundColor: "#fef3c7",
+          padding: "20px",
+          borderRadius: "8px",
+          borderLeft: "4px solid #f59e0b"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "This success belongs to every team member who contributed their unique skills and unwavering commitment. Here's to continued growth and even greater achievements ahead!",
+        style: { 
+          fontSize: 16, 
+          color: "#374151", 
+          textAlign: "center",
+          lineHeight: "1.6",
+          marginBottom: "25px",
+          fontWeight: "500"
+        },
+      },
+    ],
+  },
+  {
+    id: 8,
+    name: "Sales Performance Report",
+    category: "Business",
+    preview: "https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=600&h=400&fit=crop",
+    rating: 4.8,
+    likes: 356,
+    icon: TrendingUp,
+    description: "Professional sales report template with data visualization and key insights",
+    content: [
+      {
+        type: "text",
+        value: "Q3 Sales Performance Report",
+        style: { 
+          fontSize: 32, 
+          color: "#1e40af", 
+          fontWeight: "700", 
+          textAlign: "center",
+          marginBottom: "15px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "Comprehensive analysis of our third quarter performance, highlighting key metrics, achievements, and strategic opportunities for continued growth.",
+        style: { 
+          fontSize: 16, 
+          color: "#6b7280", 
+          textAlign: "center",
+          marginBottom: "25px"
+        },
+      },
+      {
+        type: "image",
+        value: "https://images.unsplash.com/photo-1551288049-bebda4e38f71?w=600&h=250&fit=crop",
+        style: {
+          borderRadius: "8px",
+          marginBottom: "25px"
+        }
+      },
+      {
+        type: "text",
+        value: "Executive Summary",
+        style: { 
+          fontSize: 24, 
+          color: "#111827", 
+          fontWeight: "600", 
+          textAlign: "left",
+          marginBottom: "15px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "Revenue Growth: $2.4M (up 32% YoY)\nNew Customer Acquisition: 1,847 clients\nCustomer Retention Rate: 94.2%\nAverage Deal Size: $15,600 (up 18%)\nSales Team Performance: 112% of quota achieved",
+        style: { 
+          fontSize: 16, 
+          color: "#374151", 
+          textAlign: "left",
+          lineHeight: "1.8",
+          marginBottom: "25px",
+          backgroundColor: "#f0fdf4",
+          padding: "20px",
+          borderRadius: "8px",
+          fontFamily: "monospace"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "Our strategic focus on enterprise clients and enhanced product offerings has yielded exceptional results. The team's dedication to customer success has established us as a market leader in our sector.",
+        style: { 
+          fontSize: 16, 
+          color: "#4b5563", 
+          textAlign: "left",
+          lineHeight: "1.6",
+          marginBottom: "20px"
+        },
+      },
+    ],
+  },
+  {
+    id: 9,
+    name: "Customer Appreciation",
+    category: "Marketing",
+    preview: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=600&h=400&fit=crop",
+    rating: 4.6,
+    likes: 445,
+    icon: Users,
+    description: "Show appreciation to loyal customers with this warm and engaging template",
+    content: [
+      {
+        type: "text",
+        value: "Our Valued Customers",
+        style: { 
+          fontSize: 34, 
+          color: "#0f172a", 
+          fontWeight: "700", 
+          textAlign: "center",
+          marginBottom: "20px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "Today, we want to take a moment to celebrate you – our incredible customers who have made our journey possible and our mission meaningful.",
+        style: { 
+          fontSize: 18, 
+          color: "#374151", 
+          textAlign: "center",
+          lineHeight: "1.6",
+          marginBottom: "25px"
+        },
+      },
+      {
+        type: "image",
+        value: "https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=600&h=300&fit=crop",
+        style: {
+          borderRadius: "12px",
+          marginBottom: "25px"
+        }
+      },
+      {
+        type: "text",
+        value: "By the Numbers",
+        style: { 
+          fontSize: 24, 
+          color: "#2563eb", 
+          fontWeight: "600", 
+          textAlign: "center",
+          marginBottom: "15px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "🎯 50,000+ happy customers worldwide\n📈 99.2% customer satisfaction rate\n⭐ 4.9/5 average review rating\n🤝 5+ years serving our community\n🌍 Available in 25+ countries",
+        style: { 
+          fontSize: 16, 
+          color: "#4b5563", 
+          textAlign: "left",
+          lineHeight: "1.8",
+          marginBottom: "25px",
+          backgroundColor: "#dbeafe",
+          padding: "20px",
+          borderRadius: "10px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "Your feedback drives our innovation, your trust fuels our passion, and your success stories inspire us to keep pushing boundaries. Thank you for choosing us as your partner.",
+        style: { 
+          fontSize: 16, 
+          color: "#374151", 
+          textAlign: "center",
+          lineHeight: "1.6",
+          marginBottom: "25px",
+          fontWeight: "500"
+        },
+      },
+      {
+        type: "button",
+        value: "Explore New Features",
+        style: {
+          backgroundColor: "#2563eb",
+          color: "#ffffff",
+          padding: "14px 30px",
+          borderRadius: "8px",
+          fontWeight: "600",
+          display: "block",
+          margin: "20px auto",
+          fontSize: "16px",
+          border: "none",
+          cursor: "pointer"
+        },
+      },
+    ],
+  },
+  {
+    id: 10,
+    name: "Holiday Season Promotion",
+    category: "Marketing",
+    preview: "https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=600&h=400&fit=crop",
+    rating: 4.7,
+    likes: 378,
+    icon: Gift,
+    description: "Festive promotional template perfect for holiday campaigns and seasonal offers",
+    content: [
+      {
+        type: "text",
+        value: "Holiday Special Offer",
+        style: { 
+          fontSize: 36, 
+          color: "#dc2626", 
+          fontWeight: "800", 
+          textAlign: "center",
+          marginBottom: "20px",
+          textShadow: "2px 2px 4px rgba(0,0,0,0.1)"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "This holiday season, we're spreading joy with incredible savings on all our premium products and services. It's our way of saying thank you for an amazing year!",
+        style: { 
+          fontSize: 18, 
+          color: "#374151", 
+          textAlign: "center",
+          lineHeight: "1.6",
+          marginBottom: "25px"
+        },
+      },
+      {
+        type: "image",
+        value: "https://images.unsplash.com/photo-1512389142860-9c449e58a543?w=600&h=300&fit=crop",
+        style: {
+          borderRadius: "10px",
+          marginBottom: "25px"
+        }
+      },
+      {
+        type: "text",
+        value: "Limited Time Offers",
+        style: { 
+          fontSize: 26, 
+          color: "#059669", 
+          fontWeight: "700", 
+          textAlign: "center",
+          marginBottom: "20px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "🎁 Up to 60% off on selected items\n🚚 Free worldwide shipping on orders over $100\n⚡ Flash deals every day until New Year\n🎉 Buy 2, get 1 free on gift bundles\n💳 0% interest financing available",
+        style: { 
+          fontSize: 16, 
+          color: "#4b5563", 
+          textAlign: "left",
+          lineHeight: "1.8",
+          marginBottom: "25px",
+          backgroundColor: "#fef2f2",
+          padding: "20px",
+          borderRadius: "10px",
+          border: "2px dashed #dc2626"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "Offer valid until December 31st or while supplies last. Don't miss out on these exclusive holiday savings – perfect for treating yourself or finding the perfect gift for loved ones.",
+        style: { 
+          fontSize: 14, 
+          color: "#6b7280", 
+          textAlign: "center",
+          lineHeight: "1.5",
+          marginBottom: "25px",
+          fontStyle: "italic"
+        },
+      },
+      {
+        type: "button",
+        value: "Shop Holiday Deals Now",
+        style: {
+          backgroundColor: "#dc2626",
+          color: "#ffffff",
+          padding: "16px 32px",
+          borderRadius: "8px",
+          fontWeight: "600",
+          display: "block",
+          margin: "20px auto",
+          fontSize: "16px",
+          border: "none",
+          cursor: "pointer",
+          boxShadow: "0 4px 14px 0 rgba(220, 38, 38, 0.4)"
+        },
+      },
+    ],
+  },
+  {
+    id: 11,
+    name: "Webinar Registration",
+    category: "Event",
+    preview: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=600&h=400&fit=crop",
+    rating: 4.5,
+    likes: 267,
+    icon: Users,
+    description: "Professional webinar invitation template to maximize registration and attendance",
+    content: [
+      {
+        type: "text",
+        value: "Exclusive Webinar Invitation",
+        style: { 
+          fontSize: 32, 
+          color: "#1e40af", 
+          fontWeight: "700", 
+          textAlign: "center",
+          marginBottom: "15px"
+        },
+      },
+      {
+        type: "text",
+        value: "Mastering Digital Marketing in 2025",
+        style: { 
+          fontSize: 26, 
+          color: "#374151", 
+          fontWeight: "600", 
+          textAlign: "center",
+          marginBottom: "25px"
+        },
+      },
+      {
+        type: "image",
+        value: "https://images.unsplash.com/photo-1531482615713-2afd69097998?w=600&h=300&fit=crop",
+        style: {
+          borderRadius: "10px",
+          marginBottom: "25px"
+        }
+      },
+      {
+        type: "paragraph",
+        value: "Join marketing experts Sarah Johnson and Michael Chen as they reveal cutting-edge strategies, tools, and tactics that are driving results for businesses worldwide. This 90-minute session will transform how you approach digital marketing.",
+        style: { 
+          fontSize: 16, 
+          color: "#4b5563", 
+          textAlign: "center",
+          lineHeight: "1.6",
+          marginBottom: "25px"
+        },
+      },
+      {
+        type: "text",
+        value: "What You'll Learn",
+        style: { 
+          fontSize: 22, 
+          color: "#059669", 
+          fontWeight: "600", 
+          textAlign: "center",
+          marginBottom: "15px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "• Advanced social media strategies that convert\n• AI-powered marketing automation techniques\n• Data analytics for better decision making\n• Building authentic brand communities\n• ROI optimization across all channels",
+        style: { 
+          fontSize: 16, 
+          color: "#374151", 
+          textAlign: "left",
+          lineHeight: "1.7",
+          marginBottom: "25px",
+          backgroundColor: "#f0fdf4",
+          padding: "20px",
+          borderRadius: "8px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "📅 Date: September 15, 2025\n🕐 Time: 2:00 PM - 3:30 PM EST\n💻 Platform: Zoom (link provided after registration)\n🎫 Cost: Free for first 500 registrants",
+        style: { 
+          fontSize: 16, 
+          color: "#4b5563", 
+          textAlign: "left",
+          lineHeight: "1.6",
+          marginBottom: "25px",
+          backgroundColor: "#eff6ff",
+          padding: "20px",
+          borderRadius: "8px",
+          fontFamily: "monospace"
+        },
+      },
+      {
+        type: "button",
+        value: "Reserve Your Spot Now",
+        style: {
+          backgroundColor: "#1e40af",
+          color: "#ffffff",
+          padding: "16px 32px",
+          borderRadius: "8px",
+          fontWeight: "600",
+          display: "block",
+          margin: "20px auto",
+          fontSize: "16px",
+          border: "none",
+          cursor: "pointer",
+          boxShadow: "0 4px 14px 0 rgba(30, 64, 175, 0.3)"
+        },
+      },
+    ],
+  },
+  {
+    id: 12,
+    name: "Company Milestone",
+    category: "Corporate",
+    preview: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&h=400&fit=crop",
+    rating: 4.8,
+    likes: 423,
+    icon: Award,
+    description: "Celebrate company milestones and achievements with stakeholders and team members",
+    content: [
+      {
+        type: "text",
+        value: "10 Years of Innovation",
+        style: { 
+          fontSize: 38, 
+          color: "#7c3aed", 
+          fontWeight: "800", 
+          textAlign: "center",
+          marginBottom: "20px",
+          letterSpacing: "-0.02em"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "A decade ago, we started with a simple vision: to revolutionize how businesses connect with their customers. Today, we're proud to celebrate 10 years of growth, innovation, and incredible partnerships.",
+        style: { 
+          fontSize: 18, 
+          color: "#374151", 
+          textAlign: "center",
+          lineHeight: "1.6",
+          marginBottom: "25px"
+        },
+      },
+      {
+        type: "image",
+        value: "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&h=300&fit=crop",
+        style: {
+          borderRadius: "12px",
+          marginBottom: "25px"
+        }
+      },
+      {
+        type: "text",
+        value: "Our Journey in Numbers",
+        style: { 
+          fontSize: 24, 
+          color: "#111827", 
+          fontWeight: "600", 
+          textAlign: "center",
+          marginBottom: "20px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "🏢 From 3 to 250+ employees\n🌎 Serving customers in 40+ countries\n💼 $50M+ in annual revenue\n🚀 500+ successful product launches\n🏆 15 industry awards and recognitions\n💡 100+ patents filed and approved",
+        style: { 
+          fontSize: 16, 
+          color: "#4b5563", 
+          textAlign: "left",
+          lineHeight: "1.8",
+          marginBottom: "25px",
+          backgroundColor: "#faf5ff",
+          padding: "20px",
+          borderRadius: "10px",
+          border: "2px solid #e5e7eb"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "None of this would have been possible without our amazing team, loyal customers, and supportive partners. Here's to the next decade of breakthrough innovations and shared success!",
+        style: { 
+          fontSize: 16, 
+          color: "#374151", 
+          textAlign: "center",
+          lineHeight: "1.6",
+          marginBottom: "20px",
+          fontWeight: "500"
+        },
       },
     ],
   },
 ];
+ 
 
 
 const categories = ["All", "Email", "Marketing", "Social", "Event", "Personal"];
@@ -547,13 +1374,17 @@ const TemplatesPage = () => {
           title="Template preview modal"
         >
           <div className="bg-white rounded-xl shadow-lg p-6 w-[700px] relative text-gray-900 max-h-[90vh] overflow-y-auto">
-            <button
-              onClick={() => setPreviewTemplate(null)}
-              className="absolute top-3 right-3 text-gray-600 hover:text-red-500 text-xl"
-              title="Close preview"
-            >
-              ✖
-            </button>
+           <button
+            onClick={() => setPreviewTemplate(null)}
+            className="absolute top-3 right-3 w-10 h-10 flex items-center justify-center 
+                      rounded-full bg-white/90 shadow-md 
+                      text-gray-600 hover:bg-red-500 hover:text-white 
+                      transition-all duration-300 ease-in-out cursor-pointer"
+            title="Close preview"
+          >
+            X
+          </button>
+
             <h2 className="text-2xl font-bold mb-4" title={`Previewing: ${previewTemplate.name}`}>
               {previewTemplate.name}
             </h2>

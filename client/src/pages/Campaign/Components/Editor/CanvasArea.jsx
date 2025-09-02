@@ -648,6 +648,7 @@ export default function CanvasArea({
             {element.content || "Click Me"}
           </div>
         )}
+        
         {/* Card Element */}
         {element.type === "card" && (
           <div
