@@ -209,82 +209,82 @@ const TemplatesPage = () => {
   //   navigate("/editor", { state: { template: { ...template, fixed: true } } });
   // };
   const handleSelect = (template) => {
-  const elements = template.content.map((block, index) => {
-    let defaults = {};
+    const elements = template.content.map((block, index) => {
+      let defaults = {};
 
-    switch (block.type) {
-      case "text":
-        defaults = {
-          x: 200,
-          y: 60 + index * 70,
-          width: 400,
-          height: 50,
-        };
-        break;
+      switch (block.type) {
+        case "text":
+          defaults = {
+            x: 200,
+            y: 60 + index * 70,
+            width: 400,
+            height: 50,
+          };
+          break;
 
-      case "paragraph":
-        defaults = {
-          x: 200,
-          y: 150 + index * 80,
-          width: 500,
-          height: 80,
-        };
-        break;
+        case "paragraph":
+          defaults = {
+            x: 200,
+            y: 150 + index * 80,
+            width: 500,
+            height: 80,
+          };
+          break;
 
-      case "button":
-        defaults = {
-          x: 300,
-          y: 300 + index * 80,
-          width: 180,
-          height: 50,
-          backgroundColor: "#2563eb",
-          color: "#fff",
-          borderRadius: 6,
-        };
-        break;
+        case "button":
+          defaults = {
+            x: 300,
+            y: 300 + index * 80,
+            width: 180,
+            height: 50,
+            backgroundColor: "#2563eb",
+            color: "#fff",
+            borderRadius: 6,
+          };
+          break;
 
-      case "image":
-        defaults = {
-          x: 250,
-          y: 120 + index * 120,
-          width: 300,
-          height: 200,
-        };
-        break;
+        case "image":
+          defaults = {
+            x: 250,
+            y: 120 + index * 120,
+            width: 300,
+            height: 200,
+          };
+          break;
 
-      default:
-        defaults = {
-          x: 100,
-          y: 100 + index * 80,
-          width: 300,
-          height: 60,
-        };
-    }
- return {
-      id: crypto.randomUUID(),
-      type: block.type === "text" ? "heading" : block.type,
-      content: block.value || "",
-      src: block.type === "image" ? block.value : null,
-      ...defaults,
-      style: block.style || {},
-      fontSize: block.style?.fontSize || 16,
-      color: block.style?.color || "#000000",
-      backgroundColor: block.style?.backgroundColor || "transparent",
-      fontFamily: "Arial",
-      rotation: 0,
-      opacity: 1,
-    };
-  });
+        default:
+          defaults = {
+            x: 100,
+            y: 100 + index * 80,
+            width: 300,
+            height: 60,
+          };
+      }
+      return {
+        id: crypto.randomUUID(),
+        type: block.type === "text" ? "heading" : block.type,
+        content: block.value || "",
+        src: block.type === "image" ? block.value : null,
+        ...defaults,
+        style: block.style || {},
+        fontSize: block.style?.fontSize || 16,
+        color: block.style?.color || "#000000",
+        backgroundColor: block.style?.backgroundColor || "transparent",
+        fontFamily: "Arial",
+        rotation: 0,
+        opacity: 1,
+      };
+    });
 
-  navigate("/editor", {
-    state: {
-      template: {
-        elements,
-        canvasBackgroundColor: "#FFFFFF",
+    navigate("/editor", {
+      state: {
+        template: {
+          elements,
+          canvasBackgroundColor: "#FFFFFF",
+        },
       },
-    },
-  });
-};
+    });
+  };
   const filteredTemplates = templates.filter((template) => {
     const matchesCategory =
       selectedCategory === "All" || template.category === selectedCategory;
@@ -309,25 +309,30 @@ const TemplatesPage = () => {
               match your vision
             </p>
             {/* Search Bar */}
-            <div className="max-w-md mx-auto mb-8">
+            <div className="max-w-2xl mx-auto mb-8 flex items-center justify-between gap-4">
+              {/* Search Input */}
               <input
                 type="text"
                 placeholder="Search templates..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full px-6 py-3 bg-gray-800 border border-gray-700 rounded-full text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c2831f] focus:border-transparent"
+                className="flex-1 px-6 py-3 bg-gray-800 border border-gray-700 rounded-full text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c2831f] focus:border-transparent"
                 title="Search for templates by name"
               />
+
+              {/* Start from Blank Button */}
+              <button
+                onClick={() => navigate("/editor")}
+                className="inline-flex items-center space-x-2 px-8 py-4 bg-[#c2831f] from-[#c2831f] hover:border-[#c2831f] border border-transparent focus:ring-[#c2831f] hover:bg-black hover:text-white text-white font-semibold rounded-full transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
+                title="Start with a blank canvas"
+              >
+                <Plus size={20} />
+                <span>Start from Blank</span>
+              </button>
             </div>
+
             {/* Create Blank */}
-            <button
-              onClick={() => navigate("/editor")}
-              className="inline-flex items-center space-x-2 px-8 py-4 bg-[#c2831f] from-[#c2831f] hover:border-[#c2831f] border border-transparent focus:ring-[#c2831f] hover:bg-black hover:text-white text-white font-semibold rounded-full transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-              title="Start with a blank canvas"
-            >
-              <Plus size={20} />
-              <span>Start from Blank</span>
-            </button>
+
           </div>
         </div>
       </div>
@@ -335,22 +340,25 @@ const TemplatesPage = () => {
       {/* Category Filters */}
       <div className="px-6 pb-8">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-wrap justify-center gap-3 mb-12">
+          <div className="flex flex-wrap justify-center gap-4 mb-12">
             {categories.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
-                className={`px-6 py-3 rounded-full font-medium transition-all duration-200 ${
-                  selectedCategory === category
-                    ? "bg-[#c2831f] text-white shadow-lg"
-                    : "bg-gray-800 text-gray-300 hover:bg-gray-700 hover:text-white"
-                }`}
+                className={`px-6 py-2.5 text-sm font-semibold transition-all duration-300 transform
+                        ${selectedCategory === category
+                    ? "bg-[#c2831f] text-white shadow-md scale-105"
+                    : " text-white hover:bg-black hover:text-[#c2831f] border border-[#c2831f]"
+                  }`}
                 title={`Filter by ${category} templates`}
               >
                 {category}
               </button>
+
             ))}
           </div>
+
+
 
           {/* Templates Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
@@ -370,10 +378,10 @@ const TemplatesPage = () => {
                     title={`Preview of ${template.name} template`}
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-900/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  
+
                   {/* Overlay Actions */}
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <button 
+                    <button
                       className="flex items-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-medium shadow-lg transform translate-y-2 group-hover:translate-y-0 transition-transform duration-300"
                       title="Preview this template"
                       onClick={(e) => {
@@ -385,10 +393,10 @@ const TemplatesPage = () => {
                       <span>Preview</span>
                     </button>
                   </div>
-                  
+
                   {/* Category Badge */}
                   <div className="absolute top-4 left-4">
-                    <span 
+                    <span
                       className="px-3 py-1 bg-blue-600/90 backdrop-blur-sm text-white text-sm font-medium rounded-full"
                       title={`Category: ${template.category}`}
                     >
@@ -396,17 +404,17 @@ const TemplatesPage = () => {
                     </span>
                   </div>
                 </div>
-                
+
                 {/* Content */}
                 <div className="p-6">
                   <div className="flex items-start justify-between mb-3">
-                    <h3 
+                    <h3
                       className="text-xl font-semibold text-white group-hover:text-blue-400 transition-colors duration-200"
                       title={`Template name: ${template.name}`}
                     >
                       {template.name}
                     </h3>
-                    <button 
+                    <button
                       className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-2 hover:bg-gray-700 rounded-full"
                       title="Like this template"
                       onClick={(e) => {
@@ -420,17 +428,17 @@ const TemplatesPage = () => {
                       />
                     </button>
                   </div>
-                  
+
                   {/* Stats */}
                   <div className="flex items-center justify-between text-sm text-gray-400">
-                    <div 
+                    <div
                       className="flex items-center space-x-1"
                       title={`Rating: ${template.rating} out of 5 stars`}
                     >
                       <Star size={14} className="text-yellow-400 fill-current" />
                       <span>{template.rating}</span>
                     </div>
-                    <div 
+                    <div
                       className="flex items-center space-x-1"
                       title={`${template.likes} people liked this template`}
                     >
@@ -438,7 +446,7 @@ const TemplatesPage = () => {
                       <span>{template.likes}</span>
                     </div>
                   </div>
-                  
+
                   {/* Preview Content */}
                   <div className="mt-4 space-y-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     {template.content.slice(0, 2).map((element, index) => (
@@ -484,7 +492,7 @@ const TemplatesPage = () => {
 
       {/* Preview Modal */}
       {previewTemplate && (
-        <div 
+        <div
           className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50"
           title="Template preview modal"
         >
@@ -503,8 +511,8 @@ const TemplatesPage = () => {
               {previewTemplate.content.map((block, index) => {
                 if (block.type === "text") {
                   return (
-                    <h3 
-                      key={index} 
+                    <h3
+                      key={index}
                       style={block.style}
                       title="Text element"
                     >
@@ -514,8 +522,8 @@ const TemplatesPage = () => {
                 }
                 if (block.type === "paragraph") {
                   return (
-                    <p 
-                      key={index} 
+                    <p
+                      key={index}
                       style={block.style}
                       title="Paragraph element"
                     >
@@ -525,8 +533,8 @@ const TemplatesPage = () => {
                 }
                 if (block.type === "button") {
                   return (
-                    <button 
-                      key={index} 
+                    <button
+                      key={index}
                       style={block.style}
                       title="Button element"
                     >
