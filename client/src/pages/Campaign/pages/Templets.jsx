@@ -212,7 +212,56 @@ const TemplatesPage = () => {
   const elements = template.content.map((block, index) => {
     let defaults = {};
 
-    switch (block.type) {
+    // switch (block.type) {
+    //   case "text":
+    //   defaults = {
+    //     x: "20%",        // 20% from left edge
+    //     y: `${10 + index * 15}%`, // stacked vertically with spacing
+    //     width: "60%",    // 60% of canvas width
+    //     height: "auto"
+    //   };
+    //   break;
+
+    // case "paragraph":
+    //   defaults = {
+    //     x: "15%",
+    //     y: `${20 + index * 18}%`,
+    //     width: "70%",
+    //     height: "auto"
+    //   };
+    //   break;
+
+    // case "button":
+    //   defaults = {
+    //     x: "35%",
+    //     y: `${40 + index * 15}%`,
+    //     width: "30%",
+    //     height: "50px",   // buttons usually need fixed height
+    //     backgroundColor: "#2563eb",
+    //     color: "#fff",
+    //     borderRadius: 6,
+    //   };
+    //   break;
+
+    // case "image":
+    //   defaults = {
+    //     x: "25%",
+    //     y: `${20 + index * 20}%`,
+    //     width: "50%",
+    //     height: "auto"
+    //   };
+    //   break;
+
+
+    //   default:
+    //     defaults = {
+    //       x: 100,
+    //       y: 100 + index * 80,
+    //       width: 300,
+    //       height: 60,
+    //     };
+    // }
+     switch (block.type) {
       case "text":
         defaults = {
           x: 200,
@@ -320,14 +369,23 @@ const TemplatesPage = () => {
               />
             </div>
             {/* Create Blank */}
-            <button
-              onClick={() => navigate("/editor")}
-              className="inline-flex items-center space-x-2 px-8 py-4 bg-[#c2831f] from-[#c2831f] hover:border-[#c2831f] border border-transparent focus:ring-[#c2831f] hover:bg-black hover:text-white text-white font-semibold rounded-full transition-all duration-200 shadow-lg hover:shadow-xl transform hover:scale-105"
-              title="Start with a blank canvas"
-            >
-              <Plus size={20} />
-              <span>Start from Blank</span>
-            </button>
+           <button
+            onClick={() => {
+              localStorage.removeItem("canvasData"); // clear old design
+              navigate("/editor", {
+                state: {
+                  template: {
+                    elements: [],              // empty canvas
+                  },
+                },
+              });
+            }}
+            className="inline-flex items-center space-x-2 px-8 py-4 bg-[#c2831f] text-white rounded-full cursor-pointer"
+          >
+            <Plus size={20} />
+            <span>Start from Blank</span>
+          </button>
+
           </div>
         </div>
       </div>

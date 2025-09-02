@@ -12,6 +12,7 @@ import {
   CreditCard
 } from 'lucide-react';
 
+
 export default function CanvasArea({
   pages,
   setPages,
@@ -289,6 +290,7 @@ export default function CanvasArea({
     }
   };
 
+  
   const renderElement = (element) => {
     const isSelected = selectedElement === element.id;
     return (
@@ -1026,7 +1028,7 @@ export default function CanvasArea({
           <button
             onClick={() => setPreview(!preview)}
             className={`relative group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg
-    ${preview
+              ${preview
                 ? "bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text-black cursor-pointer"
                 : "bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text-black cursor-pointer"
               }`}
