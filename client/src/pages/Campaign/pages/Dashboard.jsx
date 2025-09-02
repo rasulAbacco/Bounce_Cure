@@ -166,7 +166,7 @@ const Dashboard = () => {
                     </p>
                 </div>
 
-                <div className="flex flex-row items-center justify-center text-white gap-5">
+                <div className="flex flex-row items-center justify-center gap-5">
                     {/* Top Row Actions */}
                     <div className="flex space-x-3 cursor-pointer z-index">
                         <button
@@ -181,7 +181,7 @@ const Dashboard = () => {
                     {/* New Campaign Button */}
                     <Button
                         onClick={() => setShowOptions(true)}
-                        className="text-white px-6 py-3 rounded-xl transition duration-200"
+                        className="border border-yellow-400 hover:bg-yellow-300/20 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-yellow-400 cursor-pointer"
                     >
                         New Campaign
                     </Button>
@@ -318,17 +318,22 @@ const Dashboard = () => {
                         <div className="bg-[#111] p-6 rounded-xl border border-gray-700 col-span-1">
                             <h3 className="text-lg font-semibold mb-4 text-white">Quick Actions</h3>
                             <div className="grid grid-cols-2 gap-4">
-                                <Link to="/create">
+
+                                <Link to="/editor">
                                     <div className="border border-yellow-400 hover:bg-yellow-300/20 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-yellow-400 cursor-pointer">
                                         <MdCampaign className="text-xl mb-1" />
+                                        
                                         <span className="text-sm font-semibold">New Campaign</span>
                                     </div>
                                 </Link>
+
+                       
                                 <Link to="/analytics">
                                     <div className="border border-blue-400 hover:bg-blue-600/30 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-blue-400 cursor-pointer">
                                         <MdAnalytics className="text-xl mb-1" />
                                         <span className="text-sm font-semibold">Analytics</span>
-                                    </div></Link>
+                                    </div>
+                                </Link>
 
                                 <Link to="/contacts">
                                     <div onClick={() => setActiveTab("contacts")} className="border border-green-400 hover:bg-green-600/20 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-green-400 cursor-pointer">

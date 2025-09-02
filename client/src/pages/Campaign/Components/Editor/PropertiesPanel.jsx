@@ -36,6 +36,7 @@ import {
   Play,
   CreditCard
 } from "lucide-react";
+import { LuTableProperties } from "react-icons/lu";
 
 const PropertiesPanel = ({
   elements,
@@ -45,7 +46,7 @@ const PropertiesPanel = ({
 }) => {
   // Get selected element data
   const selectedElementData = elements.find((el) => el.id === selectedElement);
-  
+
   // Color palettes
   const colorPalette = [
     "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7",
@@ -53,12 +54,12 @@ const PropertiesPanel = ({
     "#000000", "#FFFFFF", "#808080", "#FF0000", "#00FF00",
     "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF", "#FFA500",
   ];
-  
+
   const fonts = [
     "Arial", "Helvetica", "Times New Roman", "Georgia", "Verdana",
     "Courier New", "Impact", "Comic Sans MS", "Trebuchet MS", "Palatino",
   ];
-  
+
   const iconOptions = [
     { value: "Star", label: "Star" },
     { value: "Heart", label: "Heart" },
@@ -69,7 +70,7 @@ const PropertiesPanel = ({
     { value: "Settings", label: "Settings" },
     { value: "Mail", label: "Mail" }
   ];
-  
+
   const socialIconOptions = [
     { value: "Facebook", label: "Facebook" },
     { value: "Twitter", label: "Twitter" },
@@ -77,7 +78,7 @@ const PropertiesPanel = ({
     { value: "LinkedIn", label: "LinkedIn" },
     { value: "YouTube", label: "YouTube" }
   ];
-  
+
   const animations = [
     { value: "fade", label: "Fade In" },
     { value: "slide", label: "Slide In" },
@@ -86,12 +87,12 @@ const PropertiesPanel = ({
     { value: "spin", label: "Spin" },
     { value: "pulse", label: "Pulse" }
   ];
-  
+
   // Function to get the appropriate icon for an element type
   const getElementIcon = (elementType, size = 14) => {
     const iconProps = { size };
-    
-    switch(elementType) {
+
+    switch (elementType) {
       case "heading": return <Type {...iconProps} className="text-blue-400" />;
       case "subheading": return <Type {...iconProps} className="text-purple-400" />;
       case "paragraph": return <Type {...iconProps} className="text-green-400" />;
@@ -116,20 +117,23 @@ const PropertiesPanel = ({
       default: return <Square {...iconProps} className="text-gray-400" />;
     }
   };
-  
+
   return (
-    <div className="w-80 bg-gray-800 border-l border-gray-700 flex flex-col h-full text-white overflow-hidden">
+    <div className="w-80 bg-black border-l border-[#c2831f] flex flex-col h-full text-white overflow-hidden">
       {/* Header */}
-      <div className="p-4 border-b border-gray-700">
-        <h2 className="text-lg font-bold text-blue-400">Properties</h2>
+      <div className="h-16 border-b border-[#c2831f]">
+        <h2 className="text-2xl font-bold text-[#c2831f] py-5 mb-6 flex gap-2 items-center justify-center">
+
+          <LuTableProperties />
+          Properties</h2>
       </div>
-      
+
       <div className="flex-1 overflow-y-auto">
         {!selectedElementData && (
           <div className="p-6">
             {/* Layer Management */}
             <div className="mb-6">
-              <h3 className="font-medium mb-3 text-gray-300 flex items-center">
+              <h3 className="font-medium mb-3 text-white flex items-center">
                 <Layers size={16} className="mr-2" />
                 Layers ({elements.length})
               </h3>
@@ -137,11 +141,10 @@ const PropertiesPanel = ({
                 {elements.map((element, index) => (
                   <div
                     key={element.id}
-                    className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${
-                      selectedElement === element.id
-                        ? "bg-blue-600 ring-2 ring-blue-400"
-                        : "bg-gray-700 hover:bg-gray-600"
-                    }`}
+                    className={`flex items-center justify-between p-3 rounded-lg cursor-pointer transition-all ${selectedElement === element.id
+                      ? "bg-blue-600 ring-2 ring-blue-400"
+                      : "bg-gray-700 hover:bg-gray-600"
+                      }`}
                     onClick={() => setSelectedElement(element.id)}
                   >
                     <div className="flex items-center space-x-3">
@@ -153,10 +156,10 @@ const PropertiesPanel = ({
                           {element.type.charAt(0).toUpperCase() + element.type.slice(1)} {index + 1}
                         </div>
                         <div className="text-xs text-gray-400 truncate max-w-32">
-                          {element.content || 
-                           (element.type === "image" || element.type === "video" ? "Media" : 
-                            element.type === "icon" || element.type === "social" ? element.name || "Icon" : 
-                            element.type === "card" ? "Card" : "Empty")}
+                          {element.content ||
+                            (element.type === "image" || element.type === "video" ? "Media" :
+                              element.type === "icon" || element.type === "social" ? element.name || "Icon" :
+                                element.type === "card" ? "Card" : "Empty")}
                         </div>
                       </div>
                     </div>
@@ -179,7 +182,7 @@ const PropertiesPanel = ({
                 )}
               </div>
             </div>
-            
+
             {/* Quick Tips */}
             <div className="bg-gray-900 rounded-lg p-4">
               <h4 className="font-medium text-gray-300 mb-2">💡 Quick Tips</h4>
@@ -192,7 +195,7 @@ const PropertiesPanel = ({
             </div>
           </div>
         )}
-        
+
         {selectedElementData && (
           <div className="p-4 space-y-6">
             {/* Element Info */}
@@ -217,35 +220,35 @@ const PropertiesPanel = ({
                 </button>
               </div>
             </div>
-            
+
             {/* Link Properties */}
-            {(selectedElementData.type === "button" || 
-              selectedElementData.type === "icon" || 
+            {(selectedElementData.type === "button" ||
+              selectedElementData.type === "icon" ||
               selectedElementData.type === "social") && (
-              <div>
-                <h4 className="font-medium mb-3 text-gray-300">Link</h4>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">URL</label>
-                    <input
-                      type="text"
-                      value={selectedElementData.link || ""}
-                      onChange={(e) =>
-                        updateElement(selectedElementData.id, {
-                          link: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="https://example.com"
-                    />
-                  </div>
-                  <div className="text-xs text-gray-400">
-                    Leave empty to disable link functionality
+                <div>
+                  <h4 className="font-medium mb-3 text-gray-300">Link</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-1">URL</label>
+                      <input
+                        type="text"
+                        value={selectedElementData.link || ""}
+                        onChange={(e) =>
+                          updateElement(selectedElementData.id, {
+                            link: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="https://example.com"
+                      />
+                    </div>
+                    <div className="text-xs text-gray-400">
+                      Leave empty to disable link functionality
+                    </div>
                   </div>
                 </div>
-              </div>
-            )}
-            
+              )}
+
             {/* Position & Size */}
             <div>
               <h4 className="font-medium mb-3 text-gray-300">Position & Size</h4>
@@ -304,7 +307,7 @@ const PropertiesPanel = ({
                 </div>
               </div>
             </div>
-            
+
             {/* Text Properties */}
             {(selectedElementData.type === "heading" ||
               selectedElementData.type === "subheading" ||
@@ -312,174 +315,170 @@ const PropertiesPanel = ({
               selectedElementData.type === "blockquote" ||
               selectedElementData.type === "button" ||
               selectedElementData.type === "card") && (
-              <div>
-                <h4 className="font-medium mb-3 text-gray-300">Text</h4>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">Content</label>
-                    <textarea
-                      value={selectedElementData.content || ""}
-                      onChange={(e) =>
-                        updateElement(selectedElementData.id, {
-                          content: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      rows="3"
-                      placeholder="Enter your text..."
-                    />
-                  </div>
-                  
-                  <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <h4 className="font-medium mb-3 text-gray-300">Text</h4>
+                  <div className="space-y-3">
                     <div>
-                      <label className="block text-sm text-gray-400 mb-1">Font Family</label>
-                      <select
-                        value={selectedElementData.fontFamily || "Arial"}
+                      <label className="block text-sm text-gray-400 mb-1">Content</label>
+                      <textarea
+                        value={selectedElementData.content || ""}
                         onChange={(e) =>
                           updateElement(selectedElementData.id, {
-                            fontFamily: e.target.value,
+                            content: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        {fonts.map((font) => (
-                          <option key={font} value={font}>{font}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-sm text-gray-400 mb-1">Font Size</label>
-                      <input
-                        type="number"
-                        value={selectedElementData.fontSize || 16}
-                        onChange={(e) =>
-                          updateElement(selectedElementData.id, {
-                            fontSize: parseInt(e.target.value) || 12,
-                          })
-                        }
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        min="8"
-                        max="200"
+                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        rows="3"
+                        placeholder="Enter your text..."
                       />
                     </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">Text Style</label>
-                    <div className="flex space-x-2">
-                      <button
-                        onClick={() =>
-                          updateElement(selectedElementData.id, {
-                            fontWeight:
-                              selectedElementData.fontWeight === "bold"
-                                ? "normal"
-                                : "bold",
-                          })
-                        }
-                        className={`p-2 rounded transition-colors ${
-                          selectedElementData.fontWeight === "bold"
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                        }`}
-                        title="Bold"
-                      >
-                        <Bold size={16} />
-                      </button>
-                      <button
-                        onClick={() =>
-                          updateElement(selectedElementData.id, {
-                            fontStyle:
-                              selectedElementData.fontStyle === "italic"
-                                ? "normal"
-                                : "italic",
-                          })
-                        }
-                        className={`p-2 rounded transition-colors ${
-                          selectedElementData.fontStyle === "italic"
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                        }`}
-                        title="Italic"
-                      >
-                        <Italic size={16} />
-                      </button>
-                      <button
-                        onClick={() =>
-                          updateElement(selectedElementData.id, {
-                            textDecoration:
-                              selectedElementData.textDecoration === "underline"
-                                ? "none"
-                                : "underline",
-                          })
-                        }
-                        className={`p-2 rounded transition-colors ${
-                          selectedElementData.textDecoration === "underline"
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                        }`}
-                        title="Underline"
-                      >
-                        <Underline size={16} />
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">Text Alignment</label>
-                    <div className="flex space-x-2">
-                      {["left", "center", "right"].map((align) => (
-                        <button
-                          key={align}
-                          onClick={() =>
+
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Font Family</label>
+                        <select
+                          value={selectedElementData.fontFamily || "Arial"}
+                          onChange={(e) =>
                             updateElement(selectedElementData.id, {
-                              textAlign: align,
+                              fontFamily: e.target.value,
                             })
                           }
-                          className={`p-2 rounded transition-colors ${
-                            selectedElementData.textAlign === align
+                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          {fonts.map((font) => (
+                            <option key={font} value={font}>{font}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Font Size</label>
+                        <input
+                          type="number"
+                          value={selectedElementData.fontSize || 16}
+                          onChange={(e) =>
+                            updateElement(selectedElementData.id, {
+                              fontSize: parseInt(e.target.value) || 12,
+                            })
+                          }
+                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          min="8"
+                          max="200"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-2">Text Style</label>
+                      <div className="flex space-x-2">
+                        <button
+                          onClick={() =>
+                            updateElement(selectedElementData.id, {
+                              fontWeight:
+                                selectedElementData.fontWeight === "bold"
+                                  ? "normal"
+                                  : "bold",
+                            })
+                          }
+                          className={`p-2 rounded transition-colors ${selectedElementData.fontWeight === "bold"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                            }`}
+                          title="Bold"
+                        >
+                          <Bold size={16} />
+                        </button>
+                        <button
+                          onClick={() =>
+                            updateElement(selectedElementData.id, {
+                              fontStyle:
+                                selectedElementData.fontStyle === "italic"
+                                  ? "normal"
+                                  : "italic",
+                            })
+                          }
+                          className={`p-2 rounded transition-colors ${selectedElementData.fontStyle === "italic"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                            }`}
+                          title="Italic"
+                        >
+                          <Italic size={16} />
+                        </button>
+                        <button
+                          onClick={() =>
+                            updateElement(selectedElementData.id, {
+                              textDecoration:
+                                selectedElementData.textDecoration === "underline"
+                                  ? "none"
+                                  : "underline",
+                            })
+                          }
+                          className={`p-2 rounded transition-colors ${selectedElementData.textDecoration === "underline"
+                            ? "bg-blue-600 text-white"
+                            : "bg-gray-700 hover:bg-gray-600 text-gray-300"
+                            }`}
+                          title="Underline"
+                        >
+                          <Underline size={16} />
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-2">Text Alignment</label>
+                      <div className="flex space-x-2">
+                        {["left", "center", "right"].map((align) => (
+                          <button
+                            key={align}
+                            onClick={() =>
+                              updateElement(selectedElementData.id, {
+                                textAlign: align,
+                              })
+                            }
+                            className={`p-2 rounded transition-colors ${selectedElementData.textAlign === align
                               ? "bg-blue-600 text-white"
                               : "bg-gray-700 hover:bg-gray-600 text-gray-300"
-                          }`}
-                          title={align.charAt(0).toUpperCase() + align.slice(1)}
-                        >
-                          {align === "left" && <AlignLeft size={16} />}
-                          {align === "center" && <AlignCenter size={16} />}
-                          {align === "right" && <AlignRight size={16} />}
-                        </button>
-                      ))}
+                              }`}
+                            title={align.charAt(0).toUpperCase() + align.slice(1)}
+                          >
+                            {align === "left" && <AlignLeft size={16} />}
+                            {align === "center" && <AlignCenter size={16} />}
+                            {align === "right" && <AlignRight size={16} />}
+                          </button>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">Text Color</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="color"
-                        value={selectedElementData.color || "#000000"}
-                        onChange={(e) =>
-                          updateElement(selectedElementData.id, {
-                            color: e.target.value,
-                          })
-                        }
-                        className="w-12 h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={selectedElementData.color || "#000000"}
-                        onChange={(e) =>
-                          updateElement(selectedElementData.id, {
-                            color: e.target.value,
-                          })
-                        }
-                        className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="#000000"
-                      />
+
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-2">Text Color</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          value={selectedElementData.color || "#000000"}
+                          onChange={(e) =>
+                            updateElement(selectedElementData.id, {
+                              color: e.target.value,
+                            })
+                          }
+                          className="w-12 h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedElementData.color || "#000000"}
+                          onChange={(e) =>
+                            updateElement(selectedElementData.id, {
+                              color: e.target.value,
+                            })
+                          }
+                          className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="#000000"
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            )}
-            
+              )}
+
             {/* Card Properties */}
             {selectedElementData.type === "card" && (
               <div>
@@ -511,7 +510,7 @@ const PropertiesPanel = ({
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm text-gray-400 mb-2">Border Color</label>
                     <div className="flex gap-2">
@@ -538,7 +537,7 @@ const PropertiesPanel = ({
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Border Width</label>
                     <input
@@ -557,7 +556,7 @@ const PropertiesPanel = ({
                       {selectedElementData.borderWidth || 1}px
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Border Radius</label>
                     <input
@@ -576,7 +575,7 @@ const PropertiesPanel = ({
                       {selectedElementData.borderRadius || 8}px
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Padding</label>
                     <input
@@ -598,7 +597,7 @@ const PropertiesPanel = ({
                 </div>
               </div>
             )}
-            
+
             {/* Shape Properties */}
             {(selectedElementData.type === "rectangle" ||
               selectedElementData.type === "circle" ||
@@ -608,111 +607,111 @@ const PropertiesPanel = ({
               selectedElementData.type === "arrow" ||
               selectedElementData.type === "button" ||
               selectedElementData.type === "frame") && (
-              <div>
-                <h4 className="font-medium mb-3 text-gray-300">Fill & Stroke</h4>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">Fill Color</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="color"
-                        value={selectedElementData.backgroundColor || "#4ECDC4"}
-                        onChange={(e) =>
-                          updateElement(selectedElementData.id, {
-                            backgroundColor: e.target.value,
-                          })
-                        }
-                        className="w-12 h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={selectedElementData.backgroundColor || "#4ECDC4"}
-                        onChange={(e) =>
-                          updateElement(selectedElementData.id, {
-                            backgroundColor: e.target.value,
-                          })
-                        }
-                        className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="#4ECDC4"
-                      />
+                <div>
+                  <h4 className="font-medium mb-3 text-gray-300">Fill & Stroke</h4>
+                  <div className="space-y-3">
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-2">Fill Color</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          value={selectedElementData.backgroundColor || "#4ECDC4"}
+                          onChange={(e) =>
+                            updateElement(selectedElementData.id, {
+                              backgroundColor: e.target.value,
+                            })
+                          }
+                          className="w-12 h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedElementData.backgroundColor || "#4ECDC4"}
+                          onChange={(e) =>
+                            updateElement(selectedElementData.id, {
+                              backgroundColor: e.target.value,
+                            })
+                          }
+                          className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="#4ECDC4"
+                        />
+                      </div>
                     </div>
+
+                    {(selectedElementData.type === "rectangle" ||
+                      selectedElementData.type === "circle" ||
+                      selectedElementData.type === "button" ||
+                      selectedElementData.type === "frame") && (
+                        <>
+                          <div>
+                            <label className="block text-sm text-gray-400 mb-1">Border Radius</label>
+                            <input
+                              type="range"
+                              min="0"
+                              max="150"
+                              value={selectedElementData.borderRadius || 0}
+                              onChange={(e) =>
+                                updateElement(selectedElementData.id, {
+                                  borderRadius: parseInt(e.target.value),
+                                })
+                              }
+                              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                            />
+                            <div className="text-sm text-gray-400 text-center mt-1">
+                              {selectedElementData.borderRadius || 0}px
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm text-gray-400 mb-2">Border Color</label>
+                            <div className="flex gap-2">
+                              <input
+                                type="color"
+                                value={selectedElementData.borderColor || "#000000"}
+                                onChange={(e) =>
+                                  updateElement(selectedElementData.id, {
+                                    borderColor: e.target.value,
+                                  })
+                                }
+                                className="w-12 h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
+                              />
+                              <input
+                                type="text"
+                                value={selectedElementData.borderColor || "#000000"}
+                                onChange={(e) =>
+                                  updateElement(selectedElementData.id, {
+                                    borderColor: e.target.value,
+                                  })
+                                }
+                                className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                placeholder="#000000"
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm text-gray-400 mb-1">Border Width</label>
+                            <input
+                              type="range"
+                              min="0"
+                              max="20"
+                              value={selectedElementData.borderWidth || 2}
+                              onChange={(e) =>
+                                updateElement(selectedElementData.id, {
+                                  borderWidth: parseInt(e.target.value),
+                                })
+                              }
+                              className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                            />
+                            <div className="text-sm text-gray-400 text-center mt-1">
+                              {selectedElementData.borderWidth || 2}px
+                            </div>
+                          </div>
+                        </>
+                      )}
                   </div>
-                  
-                  {(selectedElementData.type === "rectangle" ||
-                    selectedElementData.type === "circle" ||
-                    selectedElementData.type === "button" ||
-                    selectedElementData.type === "frame") && (
-                    <>
-                      <div>
-                        <label className="block text-sm text-gray-400 mb-1">Border Radius</label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="150"
-                          value={selectedElementData.borderRadius || 0}
-                          onChange={(e) =>
-                            updateElement(selectedElementData.id, {
-                              borderRadius: parseInt(e.target.value),
-                            })
-                          }
-                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                        />
-                        <div className="text-sm text-gray-400 text-center mt-1">
-                          {selectedElementData.borderRadius || 0}px
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm text-gray-400 mb-2">Border Color</label>
-                        <div className="flex gap-2">
-                          <input
-                            type="color"
-                            value={selectedElementData.borderColor || "#000000"}
-                            onChange={(e) =>
-                              updateElement(selectedElementData.id, {
-                                borderColor: e.target.value,
-                              })
-                            }
-                            className="w-12 h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
-                          />
-                          <input
-                            type="text"
-                            value={selectedElementData.borderColor || "#000000"}
-                            onChange={(e) =>
-                              updateElement(selectedElementData.id, {
-                                borderColor: e.target.value,
-                              })
-                            }
-                            className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="#000000"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm text-gray-400 mb-1">Border Width</label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="20"
-                          value={selectedElementData.borderWidth || 2}
-                          onChange={(e) =>
-                            updateElement(selectedElementData.id, {
-                              borderWidth: parseInt(e.target.value),
-                            })
-                          }
-                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                        />
-                        <div className="text-sm text-gray-400 text-center mt-1">
-                          {selectedElementData.borderWidth || 2}px
-                        </div>
-                      </div>
-                    </>
-                  )}
                 </div>
-              </div>
-            )}
-            
+              )}
+
             {/* Line Properties */}
             {selectedElementData.type === "line" && (
               <div>
@@ -744,7 +743,7 @@ const PropertiesPanel = ({
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Thickness</label>
                     <input
@@ -766,229 +765,229 @@ const PropertiesPanel = ({
                 </div>
               </div>
             )}
-            
+
             {/* Media Properties */}
             {(selectedElementData.type === "image" ||
               selectedElementData.type === "video" ||
               selectedElementData.type === "audio") && (
-              <div>
-                <h4 className="font-medium mb-3 text-gray-300">Media Settings</h4>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">Source URL</label>
-                    <input
-                      type="text"
-                      value={selectedElementData.src || ""}
-                      onChange={(e) =>
-                        updateElement(selectedElementData.id, {
-                          src: e.target.value,
-                        })
-                      }
-                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      placeholder="Enter media URL..."
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">Border Radius</label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={selectedElementData.borderRadius || 0}
-                      onChange={(e) =>
-                        updateElement(selectedElementData.id, {
-                          borderRadius: parseInt(e.target.value),
-                        })
-                      }
-                      className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                    />
-                    <div className="text-sm text-gray-400 text-center mt-1">
-                      {selectedElementData.borderRadius || 0}px
-                    </div>
-                  </div>
-                  
-                  {(selectedElementData.type === "image" || selectedElementData.type === "video") && (
-                    <>
-                      <div>
-                        <label className="block text-sm text-gray-400 mb-2">Border Color</label>
-                        <div className="flex gap-2">
-                          <input
-                            type="color"
-                            value={selectedElementData.borderColor || "#000000"}
-                            onChange={(e) =>
-                              updateElement(selectedElementData.id, {
-                                borderColor: e.target.value,
-                              })
-                            }
-                            className="w-12 h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
-                          />
-                          <input
-                            type="text"
-                            value={selectedElementData.borderColor || "#000000"}
-                            onChange={(e) =>
-                              updateElement(selectedElementData.id, {
-                                borderColor: e.target.value,
-                              })
-                            }
-                            className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            placeholder="#000000"
-                          />
-                        </div>
-                      </div>
-                      
-                      <div>
-                        <label className="block text-sm text-gray-400 mb-1">Border Width</label>
-                        <input
-                          type="range"
-                          min="0"
-                          max="20"
-                          value={selectedElementData.borderWidth || 0}
-                          onChange={(e) =>
-                            updateElement(selectedElementData.id, {
-                              borderWidth: parseInt(e.target.value),
-                            })
-                          }
-                          className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                        />
-                        <div className="text-sm text-gray-400 text-center mt-1">
-                          {selectedElementData.borderWidth || 0}px
-                        </div>
-                      </div>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-            
-            {/* Interactive Elements Properties */}
-            {(selectedElementData.type === "input" ||
-              selectedElementData.type === "checkbox") && (
-              <div>
-                <h4 className="font-medium mb-3 text-gray-300">Input Settings</h4>
-                <div className="space-y-3">
-                  {selectedElementData.type === "input" && (
+                <div>
+                  <h4 className="font-medium mb-3 text-gray-300">Media Settings</h4>
+                  <div className="space-y-3">
                     <div>
-                      <label className="block text-sm text-gray-400 mb-1">Placeholder</label>
+                      <label className="block text-sm text-gray-400 mb-1">Source URL</label>
                       <input
                         type="text"
-                        value={selectedElementData.placeholder || ""}
+                        value={selectedElementData.src || ""}
                         onChange={(e) =>
                           updateElement(selectedElementData.id, {
-                            placeholder: e.target.value,
+                            src: e.target.value,
                           })
                         }
                         className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="Enter placeholder text..."
+                        placeholder="Enter media URL..."
                       />
                     </div>
-                  )}
-                  
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">Background Color</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="color"
-                        value={selectedElementData.backgroundColor || "#FFFFFF"}
-                        onChange={(e) =>
-                          updateElement(selectedElementData.id, {
-                            backgroundColor: e.target.value,
-                          })
-                        }
-                        className="w-12 h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={selectedElementData.backgroundColor || "#FFFFFF"}
-                        onChange={(e) =>
-                          updateElement(selectedElementData.id, {
-                            backgroundColor: e.target.value,
-                          })
-                        }
-                        className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="#FFFFFF"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-2">Border Color</label>
-                    <div className="flex gap-2">
-                      <input
-                        type="color"
-                        value={selectedElementData.borderColor || "#CBD5E0"}
-                        onChange={(e) =>
-                          updateElement(selectedElementData.id, {
-                            borderColor: e.target.value,
-                          })
-                        }
-                        className="w-12 h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
-                      />
-                      <input
-                        type="text"
-                        value={selectedElementData.borderColor || "#CBD5E0"}
-                        onChange={(e) =>
-                          updateElement(selectedElementData.id, {
-                            borderColor: e.target.value,
-                          })
-                        }
-                        className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        placeholder="#CBD5E0"
-                      />
-                    </div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm text-gray-400 mb-1">Border Radius</label>
-                    <input
-                      type="range"
-                      min="0"
-                      max="50"
-                      value={selectedElementData.borderRadius || 4}
-                      onChange={(e) =>
-                        updateElement(selectedElementData.id, {
-                          borderRadius: parseInt(e.target.value),
-                        })
-                      }
-                      className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
-                    />
-                    <div className="text-sm text-gray-400 text-center mt-1">
-                      {selectedElementData.borderRadius || 4}px
-                    </div>
-                  </div>
-                  
-                  {selectedElementData.type === "checkbox" && (
+
                     <div>
-                      <label className="block text-sm text-gray-400 mb-2">Check Color</label>
+                      <label className="block text-sm text-gray-400 mb-1">Border Radius</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={selectedElementData.borderRadius || 0}
+                        onChange={(e) =>
+                          updateElement(selectedElementData.id, {
+                            borderRadius: parseInt(e.target.value),
+                          })
+                        }
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <div className="text-sm text-gray-400 text-center mt-1">
+                        {selectedElementData.borderRadius || 0}px
+                      </div>
+                    </div>
+
+                    {(selectedElementData.type === "image" || selectedElementData.type === "video") && (
+                      <>
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-2">Border Color</label>
+                          <div className="flex gap-2">
+                            <input
+                              type="color"
+                              value={selectedElementData.borderColor || "#000000"}
+                              onChange={(e) =>
+                                updateElement(selectedElementData.id, {
+                                  borderColor: e.target.value,
+                                })
+                              }
+                              className="w-12 h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
+                            />
+                            <input
+                              type="text"
+                              value={selectedElementData.borderColor || "#000000"}
+                              onChange={(e) =>
+                                updateElement(selectedElementData.id, {
+                                  borderColor: e.target.value,
+                                })
+                              }
+                              className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="#000000"
+                            />
+                          </div>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm text-gray-400 mb-1">Border Width</label>
+                          <input
+                            type="range"
+                            min="0"
+                            max="20"
+                            value={selectedElementData.borderWidth || 0}
+                            onChange={(e) =>
+                              updateElement(selectedElementData.id, {
+                                borderWidth: parseInt(e.target.value),
+                              })
+                            }
+                            className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                          />
+                          <div className="text-sm text-gray-400 text-center mt-1">
+                            {selectedElementData.borderWidth || 0}px
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
+
+            {/* Interactive Elements Properties */}
+            {(selectedElementData.type === "input" ||
+              selectedElementData.type === "checkbox") && (
+                <div>
+                  <h4 className="font-medium mb-3 text-gray-300">Input Settings</h4>
+                  <div className="space-y-3">
+                    {selectedElementData.type === "input" && (
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-1">Placeholder</label>
+                        <input
+                          type="text"
+                          value={selectedElementData.placeholder || ""}
+                          onChange={(e) =>
+                            updateElement(selectedElementData.id, {
+                              placeholder: e.target.value,
+                            })
+                          }
+                          className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="Enter placeholder text..."
+                        />
+                      </div>
+                    )}
+
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-2">Background Color</label>
                       <div className="flex gap-2">
                         <input
                           type="color"
-                          value={selectedElementData.color || "#4299E1"}
+                          value={selectedElementData.backgroundColor || "#FFFFFF"}
                           onChange={(e) =>
                             updateElement(selectedElementData.id, {
-                              color: e.target.value,
+                              backgroundColor: e.target.value,
                             })
                           }
                           className="w-12 h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
                         />
                         <input
                           type="text"
-                          value={selectedElementData.color || "#4299E1"}
+                          value={selectedElementData.backgroundColor || "#FFFFFF"}
                           onChange={(e) =>
                             updateElement(selectedElementData.id, {
-                              color: e.target.value,
+                              backgroundColor: e.target.value,
                             })
                           }
                           className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                          placeholder="#4299E1"
+                          placeholder="#FFFFFF"
                         />
                       </div>
                     </div>
-                  )}
+
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-2">Border Color</label>
+                      <div className="flex gap-2">
+                        <input
+                          type="color"
+                          value={selectedElementData.borderColor || "#CBD5E0"}
+                          onChange={(e) =>
+                            updateElement(selectedElementData.id, {
+                              borderColor: e.target.value,
+                            })
+                          }
+                          className="w-12 h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
+                        />
+                        <input
+                          type="text"
+                          value={selectedElementData.borderColor || "#CBD5E0"}
+                          onChange={(e) =>
+                            updateElement(selectedElementData.id, {
+                              borderColor: e.target.value,
+                            })
+                          }
+                          className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          placeholder="#CBD5E0"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm text-gray-400 mb-1">Border Radius</label>
+                      <input
+                        type="range"
+                        min="0"
+                        max="50"
+                        value={selectedElementData.borderRadius || 4}
+                        onChange={(e) =>
+                          updateElement(selectedElementData.id, {
+                            borderRadius: parseInt(e.target.value),
+                          })
+                        }
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                      />
+                      <div className="text-sm text-gray-400 text-center mt-1">
+                        {selectedElementData.borderRadius || 4}px
+                      </div>
+                    </div>
+
+                    {selectedElementData.type === "checkbox" && (
+                      <div>
+                        <label className="block text-sm text-gray-400 mb-2">Check Color</label>
+                        <div className="flex gap-2">
+                          <input
+                            type="color"
+                            value={selectedElementData.color || "#4299E1"}
+                            onChange={(e) =>
+                              updateElement(selectedElementData.id, {
+                                color: e.target.value,
+                              })
+                            }
+                            className="w-12 h-10 bg-gray-700 border border-gray-600 rounded cursor-pointer"
+                          />
+                          <input
+                            type="text"
+                            value={selectedElementData.color || "#4299E1"}
+                            onChange={(e) =>
+                              updateElement(selectedElementData.id, {
+                                color: e.target.value,
+                              })
+                            }
+                            className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            placeholder="#4299E1"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </div>
-            )}
-            
+              )}
+
             {/* Icon Properties */}
             {selectedElementData.type === "icon" && (
               <div>
@@ -1012,7 +1011,7 @@ const PropertiesPanel = ({
                       ))}
                     </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm text-gray-400 mb-2">Icon Color</label>
                     <div className="flex gap-2">
@@ -1039,7 +1038,7 @@ const PropertiesPanel = ({
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Icon Size</label>
                     <input
@@ -1061,7 +1060,7 @@ const PropertiesPanel = ({
                 </div>
               </div>
             )}
-            
+
             {/* Social Icon Properties */}
             {selectedElementData.type === "social" && (
               <div>
@@ -1085,7 +1084,7 @@ const PropertiesPanel = ({
                       ))}
                     </select>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm text-gray-400 mb-2">Icon Color</label>
                     <div className="flex gap-2">
@@ -1112,7 +1111,7 @@ const PropertiesPanel = ({
                       />
                     </div>
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Icon Size</label>
                     <input
@@ -1134,7 +1133,7 @@ const PropertiesPanel = ({
                 </div>
               </div>
             )}
-            
+
             {/* Animation Properties */}
             <div>
               <h4 className="font-medium mb-3 text-gray-300">Animation</h4>
@@ -1158,7 +1157,7 @@ const PropertiesPanel = ({
                     ))}
                   </select>
                 </div>
-                
+
                 {selectedElementData.animation && selectedElementData.animation !== "none" && (
                   <>
                     <div>
@@ -1180,7 +1179,7 @@ const PropertiesPanel = ({
                         {selectedElementData.animationDuration || 1}s
                       </div>
                     </div>
-                    
+
                     <div>
                       <label className="block text-sm text-gray-400 mb-1">Delay (s)</label>
                       <input
@@ -1204,7 +1203,7 @@ const PropertiesPanel = ({
                 )}
               </div>
             </div>
-            
+
             {/* Transform Properties */}
             <div>
               <h4 className="font-medium mb-3 text-gray-300">Transform</h4>
@@ -1227,7 +1226,7 @@ const PropertiesPanel = ({
                     {selectedElementData.rotation || 0}°
                   </div>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Opacity</label>
                   <input
@@ -1249,7 +1248,7 @@ const PropertiesPanel = ({
                 </div>
               </div>
             </div>
-            
+
             {/* Quick Color Palette */}
             <div>
               <h4 className="font-medium mb-3 text-gray-300">Quick Colors</h4>
@@ -1287,8 +1286,8 @@ const PropertiesPanel = ({
                           strokeColor: color,
                         });
                       } else if (selectedElementData.type === "checkbox" ||
-                               selectedElementData.type === "icon" ||
-                               selectedElementData.type === "social") {
+                        selectedElementData.type === "icon" ||
+                        selectedElementData.type === "social") {
                         updateElement(selectedElementData.id, {
                           color: color,
                         });

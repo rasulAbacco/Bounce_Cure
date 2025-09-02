@@ -193,7 +193,7 @@ export default class AdvancedVerifier {
   let status = "valid";
   if (!domainR.valid || mailbox.exists === false || score < 40) {
     status = "invalid";
-  } else if (disposable || role || score < 60) {
+  } else if (disposable || score < 60) {
     status = "risky";
   }
 
