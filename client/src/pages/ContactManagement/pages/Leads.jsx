@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 
 const Leads = () => {
+
   const [leads] = useState([
     {
       id: 1,
@@ -90,11 +91,11 @@ const Leads = () => {
       {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
         <div className="flex items-center gap-2 bg-black dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-lg px-3 py-2 w-full sm:w-1/3">
-          <Search className="w-4 h-4 text-zinc-400" />
+          <Search className="w-4 h-4 text-zinc-500" />
           <input
             type="text"
             placeholder="Search leads..."
-            className="bg-transparent outline-none w-full text-sm text-zinc-800 dark:text-white"
+            className="bg-transparent outline-none w-full text-sm text-zinc-200 dark:text-white"
           />
         </div>
         <div className="flex gap-3">
@@ -129,14 +130,14 @@ const Leads = () => {
                   {lead.name}
                 </td>
                 <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300">{lead.email}</td>
-                <td className="px-4 py-3">{lead.campaign}</td>
+                <td className="px-4 py-3 text-zinc-600">{lead.campaign}</td>
                 <td className="px-4 py-3 text-zinc-500">{lead.source}</td>
                 <td className="px-4 py-3">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeStyle[lead.status]}`}>
                     {lead.status}
                   </span>
                 </td>
-                <td className="px-4 py-3 flex items-center gap-2">
+                <td className="px-4 py-3 flex items-center gap-2 text-zinc-600">
                   <Activity className="w-4 h-4 text-green-500" />
                   {lead.score}%
                 </td>

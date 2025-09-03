@@ -452,8 +452,8 @@ export default function CampaignBuilder() {
     const [completedSteps, setCompletedSteps] = useState(["setup"]);
     const [formData, setFormData] = useState({
         recipients: "",
-        fromName: "Abacco Technology",
-        fromEmail: "info@abaccotech.com",
+        fromName: "Bounce Cure",
+        fromEmail: "keithburtb2bleads@gmail.com",
         subject: "",
         sendTime: "",
         template: "basic",
@@ -520,76 +520,104 @@ export default function CampaignBuilder() {
         markComplete("template");
     };
     
-    const handleSendCampaign = async () => {
-        setIsSending(true);
-        try {
-            // Fetch the latest contacts to ensure we have the most up-to-date list
-            const contactsResponse = await fetch('http://localhost:5000/api/campaigncontacts');
-            if (!contactsResponse.ok) {
-                throw new Error('Failed to fetch contacts');
-            }
-            const contactsData = await contactsResponse.json();
-            
-            // Filter contacts based on selected recipients
-            let recipientsList = [];
-            
-            if (formData.recipients === "all-subscribers") {
-                recipientsList = contactsData;
-            } else if (formData.recipients === "new-customers") {
-                recipientsList = contactsData.filter(contact => contact.type === "new-customer");
-            } else if (formData.recipients === "vip-clients") {
-                recipientsList = contactsData.filter(contact => contact.type === "vip-client");
-            }
-            
-            if (recipientsList.length === 0) {
-                setSendStatus({ 
-                    success: false, 
-                    message: 'No contacts found for the selected audience.' 
-                });
-                setIsSending(false);
-                return;
-            }
-            
-            // Prepare email data
-            const emailData = {
-                recipients: recipientsList,
-                fromName: formData.fromName,
-                fromEmail: formData.fromEmail,
-                subject: formData.subject,
-                canvasData: canvasPages[0].elements // Send the canvas elements
-            };
-            
-            // Backend API call to send emails
-            const response = await fetch('http://localhost:5000/api/campaigns/send', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(emailData),
-            });
-            
-            const data = await response.json();
-            if (response.ok) {
-                setSendStatus({ 
-                    success: true, 
-                    message: data.message 
-                });
-            } else {
-                setSendStatus({ 
-                    success: false, 
-                    message: data.error || 'Failed to send campaign' 
-                });
-            }
-        } catch (error) {
-            console.error('Error sending campaign:', error);
+ const handleSendCampaign = async () => {
+    setIsSending(true);
+    try {
+        // Fetch the latest contacts
+        const contactsResponse = await fetch('http://localhost:5000/api/campaigncontacts');
+        if (!contactsResponse.ok) {
+            throw new Error('Failed to fetch contacts');
+        }
+        const contactsData = await contactsResponse.json();
+
+        // Filter contacts based on selected recipients
+        let recipientsList = [];
+        
+        if (formData.recipients === "all-subscribers") {
+            recipientsList = contactsData;
+        } else if (formData.recipients === "new-customers") {
+            recipientsList = contactsData.filter(contact => contact.type === "new-customer");
+        } else if (formData.recipients === "vip-clients") {
+            recipientsList = contactsData.filter(contact => contact.type === "vip-client");
+        }
+
+        if (recipientsList.length === 0) {
             setSendStatus({ 
                 success: false, 
-                message: 'Network error. Please try again.' 
+                message: 'No contacts found for the selected audience.' 
             });
-        } finally {
-            setIsSending(false);
+            return;
         }
-    };
+
+        // Prepare email data
+        const emailData = {
+            recipients: recipientsList,
+            fromName: formData.fromName,
+            fromEmail: formData.fromEmail,
+            subject: formData.subject,
+            canvasData: canvasPages[0].elements
+        };
+
+        // Send campaign
+        const response = await fetch('http://localhost:5000/api/campaigns/send', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(emailData),
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            setSendStatus({ success: true, message: data.message });
+
+            // Log success
+            await fetch('http://localhost:5000/api/automationlogs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    date: new Date().toISOString().split("T")[0],
+                    automation: formData.subject || "Unnamed Campaign",
+                    status: "Success"
+                }),
+            });
+        } else {
+            setSendStatus({ success: false, message: data.error || 'Failed to send campaign' });
+
+            // Log failure
+            await fetch('http://localhost:5000/api/automationlogs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    date: new Date().toISOString().split("T")[0],
+                    automation: formData.subject || "Unnamed Campaign",
+                    status: "Failed"
+                }),
+            });
+        }
+    } catch (error) {
+        console.error('Error sending campaign:', error);
+        setSendStatus({ 
+            success: false, 
+            message: 'Network error. Please try again.' 
+        });
+
+        // Log network error
+        await fetch('http://localhost:5000/api/automationlogs', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                date: new Date().toISOString().split("T")[0],
+                automation: formData.subject || "Unnamed Campaign",
+                status: "Failed"
+            }),
+        });
+    } finally {
+        setIsSending(false);
+    }
+};
+
     
     return (
         <div className="flex flex-col min-h-screen bg-black text-white">
@@ -731,44 +759,69 @@ export default function CampaignBuilder() {
                                                     </button>
                                                 </div>
                                             )}
-                                            {id === "setup" && (
-                                                <div className="space-y-4">
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-300 mb-1">From name</label>
-                                                        <input
-                                                            name="fromName"
-                                                            className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
-                                                            value={formData.fromName}
-                                                            onChange={handleChange}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-300 mb-1">From email address</label>
-                                                        <input
-                                                            name="fromEmail"
-                                                            type="email"
-                                                            className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
-                                                            value={formData.fromEmail}
-                                                            onChange={handleChange}
-                                                        />
-                                                    </div>
-                                                    <div>
-                                                        <label className="block text-sm font-medium text-gray-300 mb-1">Email subject</label>
-                                                        <input
-                                                            name="subject"
-                                                            className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
-                                                            value={formData.subject}
-                                                            onChange={handleChange}
-                                                        />
-                                                    </div>
-                                                    <button
-                                                        onClick={() => markComplete(id)}
-                                                        className="mt-2 bg-[#c2831f] text-white px-4 py-2 rounded-md hover:bg-[#d09025]"
-                                                    >
-                                                        Save and Continue
-                                                    </button>
+                                           {id === "setup" && (
+                                            <div className="space-y-4">
+                                                <div>
+                                                <label className="block text-sm font-medium text-gray-300 mb-1">
+                                                    From name
+                                                </label>
+                                                <input
+                                                    name="fromName"
+                                                    className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 
+                                                            focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
+                                                    value={formData.fromName}
+                                                    onChange={handleChange}
+                                                />
                                                 </div>
+                                                <div>
+                                                <label className="block text-sm font-medium text-gray-300 mb-1">
+                                                    From email address
+                                                </label>
+                                                <input
+                                                    name="fromEmail"
+                                                    type="email"
+                                                    className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 
+                                                            focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
+                                                    value={formData.fromEmail}
+                                                    onChange={handleChange}
+                                                />
+                                                </div>
+                                                <div>
+                                                <label className="block text-sm font-medium text-gray-300 mb-1">
+                                                    Email subject
+                                                </label>
+                                                <input
+                                                    name="subject"
+                                                    className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 
+                                                            focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
+                                                    value={formData.subject}
+                                                    onChange={handleChange}
+                                                />
+                                                </div>
+                                                {/* NEW Schedule Send Time field */}
+                                                <div>
+                                                <label className="block text-sm font-medium text-gray-300 mb-1">
+                                                    Schedule send time (optional)
+                                                </label>
+                                                <input
+                                                    type="datetime-local"
+                                                    name="sendTime"
+                                                    className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 
+                                                            focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
+                                                    value={formData.sendTime}
+                                                    onChange={handleChange}
+                                                />
+                                                </div>
+                                                <button
+                                                onClick={() => markComplete(id)}
+                                                className="mt-2 bg-[#c2831f] text-white px-4 py-2 rounded-md hover:bg-[#d09025]"
+                                                >
+                                                Save and Continue
+                                                </button>
+                                            </div>
                                             )}
+
+
                                             {id === "template" && (
                                                 <div className="space-y-4">
                                                     <label className="block text-sm font-medium text-gray-300 mb-3">Choose a template</label>

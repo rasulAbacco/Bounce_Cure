@@ -22,48 +22,111 @@ const EditorPage = () => {
   const [canvasBackgroundColor, setCanvasBackgroundColor] = useState('#FFFFFF');
 
   // Load template if provided
- useEffect(() => {
-  if (template && template.elements) {
-    const templateElements = Object.entries(template.elements).map(
-      ([key, value], index) => {
-        const fontSize =
-          (typeof value === "object" && value.style?.fontSize) || 20;
+//  useEffect(() => {
+//   if (template && template.elements) {
+//     const templateElements = Object.entries(template.elements).map(
+//       ([key, value], index) => {
+//         const fontSize =
+//           (typeof value === "object" && value.style?.fontSize) || 20;
+
+//         return {
+//           id: `${key}-${template.id || index}`,
+//           type: "heading",
+//           content: value || "",
+//           src: null,
+//           x: 80,
+//           y: 100 + index * (fontSize + 20), // ✅ space depends on font size
+//           width: 300,
+//           height: fontSize + 10,
+//           style: {
+//             fontSize,
+//             color: "#000000",
+//             backgroundColor: "transparent",
+//             ...(typeof value === "object" ? value.style : {}),
+//           },
+//           fontSize,
+//           color:
+//             (typeof value === "object" && value.style?.color) || "#000000",
+//           backgroundColor:
+//             (typeof value === "object" &&
+//               value.style?.backgroundColor) ||
+//             "transparent",
+//           fontFamily: "Arial",
+//           rotation: 0,
+//           opacity: 1,
+//         };
+//       }
+//     );
+
+//     const updatedPages = [...pages];
+//     updatedPages[0] = {
+//       ...updatedPages[0],
+//       elements: templateElements,
+//     };
+//     setPages(updatedPages);
+
+//     if (template.canvasBackgroundColor) {
+//       setCanvasBackgroundColor(template.canvasBackgroundColor);
+//     }
+//   }
+// }, [template]);
+
+
+//template page
+useEffect(() => {
+  if (template) {
+    // Handle new format (array of pre-formatted elements)
+    if (template.content && Array.isArray(template.content) && template.content[0]?.id) {
+      const updatedPages = [...pages];
+      updatedPages[0] = {
+        ...updatedPages[0],
+        elements: template.content,
+      };
+      setPages(updatedPages);
+
+      if (template.canvasBackgroundColor) {
+        setCanvasBackgroundColor(template.canvasBackgroundColor);
+      }
+      return;
+    }
+    
+    // Handle old format (needs conversion)
+    if (template.content && Array.isArray(template.content)) {
+      const templateElements = template.content.map((item, index) => {
+        const fontSize = item.style?.fontSize || 20;
+        let mappedType = item.type;
+        
+        if (item.type === "text") {
+          mappedType = "heading";
+        }
 
         return {
-          id: `${key}-${template.id || index}`,
-          type: "heading",
-          content: value || "",
-          src: null,
+          id: crypto.randomUUID(),
+          type: mappedType,
+          content: mappedType === "image" ? "" : item.value || "",
+          src: mappedType === "image" ? item.value : null,
           x: 80,
-          y: 100 + index * (fontSize + 20), // ✅ space depends on font size
-          width: 300,
-          height: fontSize + 10,
-          style: {
-            fontSize,
-            color: "#000000",
-            backgroundColor: "transparent",
-            ...(typeof value === "object" ? value.style : {}),
-          },
+          y: 100 + index * (fontSize + 30),
+          width: item.style?.width || (mappedType === "image" ? 400 : 300),
+          height: item.style?.height || (mappedType === "image" ? 200 : fontSize + 20),
           fontSize,
-          color:
-            (typeof value === "object" && value.style?.color) || "#000000",
-          backgroundColor:
-            (typeof value === "object" &&
-              value.style?.backgroundColor) ||
-            "transparent",
-          fontFamily: "Arial",
+          color: item.style?.color || "#000000",
+          backgroundColor: item.style?.backgroundColor || "transparent",
+          fontFamily: item.style?.fontFamily || "Arial",
+          fontWeight: item.style?.fontWeight || "normal",
+          textAlign: item.style?.textAlign || "left",
           rotation: 0,
           opacity: 1,
         };
-      }
-    );
+      });
 
-    const updatedPages = [...pages];
-    updatedPages[0] = {
-      ...updatedPages[0],
-      elements: templateElements,
-    };
-    setPages(updatedPages);
+      const updatedPages = [...pages];
+      updatedPages[0] = {
+        ...updatedPages[0],
+        elements: templateElements,
+      };
+      setPages(updatedPages);
+    }
 
     if (template.canvasBackgroundColor) {
       setCanvasBackgroundColor(template.canvasBackgroundColor);
@@ -71,6 +134,23 @@ const EditorPage = () => {
   }
 }, [template]);
 
+
+// For AllTemplates page
+useEffect(() => {
+  if (template && template.content && Array.isArray(template.content)) {
+    const updatedPages = [...pages];
+    updatedPages[0] = {
+      ...updatedPages[0],
+      elements: template.content, // Direct assignment since it's already formatted
+    };
+    setPages(updatedPages);
+
+    // Set canvas background if provided
+    if (template.canvasBackgroundColor) {
+      setCanvasBackgroundColor(template.canvasBackgroundColor);
+    }
+  }
+}, [template]);
 
   // Add element from Toolbox
   const handleAddElement = (type, options = {}) => {

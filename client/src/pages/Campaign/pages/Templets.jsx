@@ -1035,132 +1035,180 @@ const TemplatesPage = () => {
   // const handleSelect = (template) => {
   //   navigate("/editor", { state: { template: { ...template, fixed: true } } });
   // };
-  const handleSelect = (template) => {
+  // Complete updated handleSelect function for Templets.jsx
+const handleSelect = (template) => {
+  let currentY = 60; // Start from top with margin
+  const canvasWidth = 800; // Canvas width
+  const leftMargin = 80;
+  const rightMargin = 80;
+  const contentWidth = canvasWidth - leftMargin - rightMargin;
+
   const elements = template.content.map((block, index) => {
-    let defaults = {};
+    let elementConfig = {};
+    const baseSpacing = 40; // Base spacing between elements
 
-    // switch (block.type) {
-    //   case "text":
-    //   defaults = {
-    //     x: "20%",        // 20% from left edge
-    //     y: `${10 + index * 15}%`, // stacked vertically with spacing
-    //     width: "60%",    // 60% of canvas width
-    //     height: "auto"
-    //   };
-    //   break;
-
-    // case "paragraph":
-    //   defaults = {
-    //     x: "15%",
-    //     y: `${20 + index * 18}%`,
-    //     width: "70%",
-    //     height: "auto"
-    //   };
-    //   break;
-
-    // case "button":
-    //   defaults = {
-    //     x: "35%",
-    //     y: `${40 + index * 15}%`,
-    //     width: "30%",
-    //     height: "50px",   // buttons usually need fixed height
-    //     backgroundColor: "#2563eb",
-    //     color: "#fff",
-    //     borderRadius: 6,
-    //   };
-    //   break;
-
-    // case "image":
-    //   defaults = {
-    //     x: "25%",
-    //     y: `${20 + index * 20}%`,
-    //     width: "50%",
-    //     height: "auto"
-    //   };
-    //   break;
-
-
-    //   default:
-    //     defaults = {
-    //       x: 100,
-    //       y: 100 + index * 80,
-    //       width: 300,
-    //       height: 60,
-    //     };
-    // }
-     switch (block.type) {
+    switch (block.type) {
       case "text":
-        defaults = {
-          x: 200,
-          y: 60 + index * 70,
-          width: 400,
-          height: 50,
+        // Headers/Headings
+        const headingHeight = 50;
+        elementConfig = {
+          id: crypto.randomUUID(),
+          type: "heading",
+          content: block.value || "Heading",
+          x: leftMargin,
+          y: currentY,
+          width: contentWidth,
+          height: headingHeight,
+          fontSize: block.style?.fontSize || 32,
+          color: block.style?.color || "#1f2937",
+          backgroundColor: block.style?.backgroundColor || "transparent",
+          fontFamily: block.style?.fontFamily || "Arial",
+          fontWeight: block.style?.fontWeight || "bold",
+          textAlign: block.style?.textAlign || "center",
+          fontStyle: block.style?.fontStyle || "normal",
+          textDecoration: block.style?.textDecoration || "none",
+          opacity: 1,
+          rotation: 0,
+          borderRadius: 0,
+          borderWidth: 0,
+          borderColor: "#000000"
         };
+        currentY += headingHeight + baseSpacing;
         break;
 
       case "paragraph":
-        defaults = {
-          x: 200,
-          y: 150 + index * 80,
-          width: 500,
-          height: 80,
+        // Calculate height based on content length and font size
+        const fontSize = block.style?.fontSize || 16;
+        const estimatedLines = Math.ceil(block.value.length / 60); // Rough estimate
+        const paragraphHeight = Math.max(60, estimatedLines * (fontSize + 4));
+        
+        elementConfig = {
+          id: crypto.randomUUID(),
+          type: "paragraph",
+          content: block.value || "Paragraph text",
+          x: leftMargin,
+          y: currentY,
+          width: contentWidth,
+          height: paragraphHeight,
+          fontSize: fontSize,
+          color: block.style?.color || "#4b5563",
+          backgroundColor: block.style?.backgroundColor || "transparent",
+          fontFamily: block.style?.fontFamily || "Arial",
+          fontWeight: block.style?.fontWeight || "normal",
+          textAlign: block.style?.textAlign || "left",
+          fontStyle: block.style?.fontStyle || "normal",
+          textDecoration: block.style?.textDecoration || "none",
+          opacity: 1,
+          rotation: 0,
+          borderRadius: block.style?.borderRadius || 0,
+          borderWidth: 0,
+          borderColor: "#000000"
         };
+        currentY += paragraphHeight + baseSpacing;
         break;
 
       case "button":
-        defaults = {
-          x: 300,
-          y: 300 + index * 80,
-          width: 180,
-          height: 50,
-          backgroundColor: "#2563eb",
-          color: "#fff",
-          borderRadius: 6,
+        // Buttons
+        const buttonWidth = 220;
+        const buttonHeight = 50;
+        elementConfig = {
+          id: crypto.randomUUID(),
+          type: "button",
+          content: block.value || "Click Me",
+          x: leftMargin + (contentWidth - buttonWidth) / 2, // Center the button
+          y: currentY,
+          width: buttonWidth,
+          height: buttonHeight,
+          fontSize: block.style?.fontSize || 16,
+          color: block.style?.color || "#ffffff",
+          backgroundColor: block.style?.backgroundColor || "#3b82f6",
+          fontFamily: block.style?.fontFamily || "Arial",
+          fontWeight: block.style?.fontWeight || "600",
+          textAlign: "center",
+          fontStyle: "normal",
+          textDecoration: "none",
+          opacity: 1,
+          rotation: 0,
+          borderRadius: block.style?.borderRadius || 8,
+          borderWidth: 0,
+          borderColor: "#000000"
         };
+        currentY += buttonHeight + baseSpacing + 10; // Extra spacing after buttons
         break;
 
       case "image":
-        defaults = {
-          x: 250,
-          y: 120 + index * 120,
-          width: 300,
-          height: 200,
+        // Images
+        const imageWidth = Math.min(500, contentWidth);
+        const imageHeight = block.style?.height || 300;
+        elementConfig = {
+          id: crypto.randomUUID(),
+          type: "image",
+          content: "",
+          src: block.value || "https://images.unsplash.com/photo-1557683316-973673baf926?w=500&h=300&fit=crop",
+          x: leftMargin + (contentWidth - imageWidth) / 2, // Center the image
+          y: currentY,
+          width: imageWidth,
+          height: imageHeight,
+          fontSize: 16,
+          color: "#000000",
+          backgroundColor: "transparent",
+          fontFamily: "Arial",
+          fontWeight: "normal",
+          textAlign: "left",
+          fontStyle: "normal",
+          textDecoration: "none",
+          opacity: 1,
+          rotation: 0,
+          borderRadius: block.style?.borderRadius || 12,
+          borderWidth: 0,
+          borderColor: "#000000"
         };
+        currentY += imageHeight + baseSpacing;
         break;
 
       default:
-        defaults = {
-          x: 100,
-          y: 100 + index * 80,
-          width: 300,
+        // Default fallback
+        elementConfig = {
+          id: crypto.randomUUID(),
+          type: "paragraph",
+          content: block.value || "Content",
+          x: leftMargin,
+          y: currentY,
+          width: contentWidth,
           height: 60,
+          fontSize: 16,
+          color: "#374151",
+          backgroundColor: "transparent",
+          fontFamily: "Arial",
+          fontWeight: "normal",
+          textAlign: "left",
+          fontStyle: "normal",
+          textDecoration: "none",
+          opacity: 1,
+          rotation: 0,
+          borderRadius: 0,
+          borderWidth: 0,
+          borderColor: "#000000"
         };
+        currentY += 60 + baseSpacing;
     }
- return {
-      id: crypto.randomUUID(),
-      type: block.type === "text" ? "heading" : block.type,
-      content: block.value || "",
-      src: block.type === "image" ? block.value : null,
-      ...defaults,
-      style: block.style || {},
-      fontSize: block.style?.fontSize || 16,
-      color: block.style?.color || "#000000",
-      backgroundColor: block.style?.backgroundColor || "transparent",
-      fontFamily: "Arial",
-      rotation: 0,
-      opacity: 1,
-    };
+
+    return elementConfig;
   });
 
+  // Navigate to editor with properly formatted template
   navigate("/editor", {
     state: {
       template: {
-        elements,
+        id: template.id,
+        name: template.name,
+        content: elements,
         canvasBackgroundColor: "#FFFFFF",
       },
     },
   });
 };
+
   const filteredTemplates = templates.filter((template) => {
     const matchesCategory =
       selectedCategory === "All" || template.category === selectedCategory;
