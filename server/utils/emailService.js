@@ -1,21 +1,23 @@
-import { Resend } from 'resend';
-
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 // utils/sendEmail.js
-export const sendEmail = async ({ to, subject, text, html }) => {
-  try {
-    const data = await resend.emails.send({
-      from: "onboarding@resend.dev",
-      to:"xemail.test.2025@gmail.com",              // use passed value
-      subject,         // use passed value
-      text,            // plain text fallback
-      html: html || `<p>${text}</p>`, // ensure html always exists
-    });
 
-    return data;
+import sgMail from '@sendgrid/mail';
+
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+export const sendEmail = async ({ to, subject, text, html }) => {
+  const msg = {
+    to,                                  // Recipient
+    from: 'info@abaccotech.com', // Must be a verified sender in SendGrid
+    subject,                             // Subject
+    text,                                // Plain text content
+    html: html || `<p>${text}</p>`,     // HTML content fallback
+  };
+
+  try {
+    const response = await sgMail.send(msg);
+    return response;
   } catch (error) {
-    console.error("Error sending email:", error);
+    console.error("Error sending email:", error.response?.body || error.message);
     throw new Error("Email send failed");
   }
 };

@@ -194,62 +194,62 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
 
       const batchResults = await Promise.allSettled(batchPromises);
 
-      
+
       for (const r of batchResults) {
-  let finalResult;
-  if (r.status === "fulfilled") {
-    finalResult = r.value;
-  } else {
-    summary.invalid++;
-    finalResult = {
-      email: "unknown",
-      status: "invalid",
-      score: 0,
-      syntax_valid: false,
-      domain_valid: false,
-      mailbox_exists: false,
-      catch_all: false,
-      disposable: false,
-      role_based: false,
-      greylisted: false,
-      error: "Processing failed",
-    };
-  }
+        let finalResult;
+        if (r.status === "fulfilled") {
+          finalResult = r.value;
+        } else {
+          summary.invalid++;
+          finalResult = {
+            email: "unknown",
+            status: "invalid",
+            score: 0,
+            syntax_valid: false,
+            domain_valid: false,
+            mailbox_exists: false,
+            catch_all: false,
+            disposable: false,
+            role_based: false,
+            greylisted: false,
+            error: "Processing failed",
+          };
+        }
 
-  results.push(finalResult);
+        results.push(finalResult);
 
-  // Save to DB
-  if (finalResult.email !== "unknown") {
-    await prisma.verification.upsert({
-      where: { email: finalResult.email },
-      update: {
-        status: finalResult.status,
-        score: finalResult.score,
-        syntax_valid: finalResult.syntax_valid,
-        domain_valid: finalResult.domain_valid,
-        mailbox_exists: finalResult.mailbox_exists,
-        catch_all: finalResult.catch_all,
-        disposable: finalResult.disposable,
-        role_based: finalResult.role_based,
-        greylisted: finalResult.greylisted,
-        error: finalResult.error || null,
-      },
-      create: {
-        email: finalResult.email,
-        status: finalResult.status,
-        score: finalResult.score,
-        syntax_valid: finalResult.syntax_valid,
-        domain_valid: finalResult.domain_valid,
-        mailbox_exists: finalResult.mailbox_exists,
-        catch_all: finalResult.catch_all,
-        disposable: finalResult.disposable,
-        role_based: finalResult.role_based,
-        greylisted: finalResult.greylisted,
-        error: finalResult.error || null,
-      },
-    });
-  }
-}
+        // Save to DB
+        if (finalResult.email !== "unknown") {
+          await prisma.verification.upsert({
+            where: { email: finalResult.email },
+            update: {
+              status: finalResult.status,
+              score: finalResult.score,
+              syntax_valid: finalResult.syntax_valid,
+              domain_valid: finalResult.domain_valid,
+              mailbox_exists: finalResult.mailbox_exists,
+              catch_all: finalResult.catch_all,
+              disposable: finalResult.disposable,
+              role_based: finalResult.role_based,
+              greylisted: finalResult.greylisted,
+              error: finalResult.error || null,
+            },
+            create: {
+              email: finalResult.email,
+              status: finalResult.status,
+              score: finalResult.score,
+              syntax_valid: finalResult.syntax_valid,
+              domain_valid: finalResult.domain_valid,
+              mailbox_exists: finalResult.mailbox_exists,
+              catch_all: finalResult.catch_all,
+              disposable: finalResult.disposable,
+              role_based: finalResult.role_based,
+              greylisted: finalResult.greylisted,
+              error: finalResult.error || null,
+            },
+          });
+        }
+      }
 
 
       if (i + BATCH_SIZE < uniqueEmails.length) {

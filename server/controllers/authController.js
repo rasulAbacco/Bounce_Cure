@@ -164,10 +164,11 @@ export const sendVerificationEmail = async (req, res) => {
         // 🛠 Make sure you're sending to the actual user's email
         await sendEmail({
             to: email, // ✅ Not hardcoded anymore
+            from: "info@abaccotech.com",
             subject: "Verify your email",
             text: `Click this link to verify your email: ${link}`,
             html: `<p>Please verify your email by clicking the link below:</p>
-                   <a href="${link}">Verify Email</a>`
+                <a href="${link}">Verify Email</a>`
         });
 
         console.log(`✅ Verification email sent to: ${email}`);
@@ -178,7 +179,6 @@ export const sendVerificationEmail = async (req, res) => {
         res.status(500).json({ message: "Failed to send verification email", error: error.message });
     }
 };
-;
 
 
 // Verify email
