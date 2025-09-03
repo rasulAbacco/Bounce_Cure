@@ -138,7 +138,7 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
             </button>
 
             {showProfileMenu && (
-              <div className="absolute right-3 w-[70%]  top-17 z-[999] bg-black backdrop-blur-lg border border-white/50 rounded-lg shadow-xl">
+              <div className="absolute right-3 w-[70%] min-w-30 top-17 z-[999] bg-black backdrop-blur-lg border border-white/50 rounded-lg shadow-xl">
                 <div className="p-2">
                   <Link
                     to="/auth"
@@ -154,7 +154,7 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
                     <Settings className="w-4 h-4" />
                     <span>Settings</span>
                   </Link>
-                  <hr className="border-white/10 my-2" />
+                  <hr className="border-white/80 my-1" />
                   <button
                     onClick={handleLogout}
                     className="w-full flex items-center space-x-2 text-red-600 hover:bg-white/10 p-2 rounded-lg transition-colors"

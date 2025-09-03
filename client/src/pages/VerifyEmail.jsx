@@ -1,15 +1,44 @@
-import React from 'react'
+import { useEffect, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import authService from '../services/authService'; // Adjust path if needed
+import toast from 'react-hot-toast';
 
 const VerifyEmail = () => {
+    const [status, setStatus] = useState('verifying'); // 'verifying', 'success', 'error'
+    const location = useLocation();
+    const navigate = useNavigate();
+
+    useEffect(() => {
+        const query = new URLSearchParams(location.search);
+        const token = query.get('token');
+
+        if (!token) {
+            setStatus('error');
+            return;
+        }
+
+        const verify = async () => {
+            try {
+                await authService.verifyEmailToken(token);
+                setStatus('success');
+                toast.success('✅ Email verified successfully!');
+                setTimeout(() => navigate('/login'), 3000); // Redirect after 3 seconds
+            } catch (err) {
+                setStatus('error');
+                toast.error('❌ Verification failed or token expired');
+            }
+        };
+
+        verify();
+    }, [location.search]);
+
     return (
-        <div>
-            <div style={{ padding: "2rem", textAlign: "center" }}>
-                <h2>🎉 Email Verified!</h2>
-                <p>You can now log in to your account.</p>
-
-            </div>
+        <div className="min-h-screen flex items-center justify-center bg-gray-900 text-white text-xl">
+            {status === 'verifying' && <p>Verifying your email...</p>}
+            {status === 'success' && <p>Email verified! Redirecting to login...</p>}
+            {status === 'error' && <p>Verification failed. The token is invalid or expired.</p>}
         </div>
-    )
-}
+    );
+};
 
-export default VerifyEmail
+export default VerifyEmail;
