@@ -186,6 +186,7 @@ model Contact {
   user      User?    @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  replies   Reply[]
 
   @@map("Contact") // 👈 explicitly map to "Contact" in DB
 }
@@ -209,4 +210,14 @@ model Deal {
   status    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Reply {
+  id         Int      @id @default(autoincrement())
+  contactId  Int
+  campaignId Int?
+  message    String
+  createdAt  DateTime @default(now())
+
+  contact Contact @relation(fields: [contactId], references: [id])
 }
