@@ -179,12 +179,13 @@ const Dashboard = () => {
 
 
                     {/* New Campaign Button */}
-                    <Button
-                        onClick={() => setShowOptions(true)}
-                        className="border border-yellow-400 hover:bg-yellow-300/20 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-yellow-400 cursor-pointer"
+                   <div
+                    onClick={() => setShowOptions(true)}
+                    className="border border-yellow-400 hover:bg-yellow-300/20 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-yellow-400 cursor-pointer"
                     >
-                        New Campaign
-                    </Button>
+                    
+                    <span className="text-sm font-semibold">New Campaign</span>
+                    </div>
 
 
                     {/* Modal */}
@@ -215,10 +216,18 @@ const Dashboard = () => {
                                     <div
                                         onClick={() => {
                                             setShowOptions(false);
-                                            navigate("/editor", { state: { template: null } });
+                                            localStorage.removeItem("canvasData"); // clear any old saved design
+                                            navigate("/editor", {
+                                            state: {
+                                                template: {
+                                                pages: [{ id: 1, elements: [] }], // empty page
+                                                activePage: 0,
+                                                 },
+                                            },
+                                            });
                                         }}
                                         className="cursor-pointer bg-gray-900 p-8 rounded-xl hover:bg-gray-800 transition flex flex-col items-center text-center"
-                                    >
+                                        >
                                         <h3 className="text-xl font-semibold mb-2">Start from Scratch</h3>
                                         <p className="text-gray-400 text-sm">
                                             Create a brand new design with an empty canvas
