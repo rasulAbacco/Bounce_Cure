@@ -1208,7 +1208,6 @@ const handleSelect = (template) => {
     },
   });
 };
-
   const filteredTemplates = templates.filter((template) => {
     const matchesCategory =
       selectedCategory === "All" || template.category === selectedCategory;

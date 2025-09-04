@@ -10,7 +10,6 @@ import {
 } from "lucide-react";
 
 const Leads = () => {
-
   const [leads] = useState([
     {
       id: 1,
@@ -81,21 +80,21 @@ const Leads = () => {
           { label: "Open Rate", value: "68%" },
           { label: "Click Rate", value: "42%" },
         ].map((stat) => (
-          <div key={stat.label} className="bg-black dark:bg-white-900 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-            <p className="text-white  dark:text-white-900">{stat.label}</p>
-            <p className="text-2xl font-bold text-white mt-1">{stat.value}</p>
+          <div key={stat.label} className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+            <p className="text-sm text-zinc-500 dark:text-zinc-400">{stat.label}</p>
+            <p className="text-2xl font-bold text-zinc-800 dark:text-white mt-1">{stat.value}</p>
           </div>
         ))}
       </div>
 
       {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
-        <div className="flex items-center gap-2 bg-black dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-lg px-3 py-2 w-full sm:w-1/3">
-          <Search className="w-4 h-4 text-zinc-500" />
+        <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-lg px-3 py-2 w-full sm:w-1/3">
+          <Search className="w-4 h-4 text-zinc-400" />
           <input
             type="text"
             placeholder="Search leads..."
-            className="bg-transparent outline-none w-full text-sm text-zinc-200 dark:text-white"
+            className="bg-transparent outline-none w-full text-sm text-zinc-800 dark:text-white"
           />
         </div>
         <div className="flex gap-3">
@@ -112,7 +111,7 @@ const Leads = () => {
       <div className="overflow-x-auto border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
         <table className="min-w-full text-sm">
           <thead>
-            <tr className="bg-black-100 dark:bg-zinc-900 text-white dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800">
+            <tr className="bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800">
               <th className="px-4 py-3 text-left">Name</th>
               <th className="px-4 py-3 text-left">Email</th>
               <th className="px-4 py-3 text-left">Campaign</th>
@@ -130,14 +129,14 @@ const Leads = () => {
                   {lead.name}
                 </td>
                 <td className="px-4 py-3 text-zinc-600 dark:text-zinc-300">{lead.email}</td>
-                <td className="px-4 py-3 text-zinc-600">{lead.campaign}</td>
+                <td className="px-4 py-3">{lead.campaign}</td>
                 <td className="px-4 py-3 text-zinc-500">{lead.source}</td>
                 <td className="px-4 py-3">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeStyle[lead.status]}`}>
                     {lead.status}
                   </span>
                 </td>
-                <td className="px-4 py-3 flex items-center gap-2 text-zinc-600">
+                <td className="px-4 py-3 flex items-center gap-2">
                   <Activity className="w-4 h-4 text-green-500" />
                   {lead.score}%
                 </td>
@@ -149,7 +148,7 @@ const Leads = () => {
       </div>
 
       {/* Campaign Insights Chart Placeholder */}
-      <div className="bg-black dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800">
+      <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800">
         <h2 className="text-xl font-semibold text-yellow-500 mb-4 flex items-center gap-2">
           <BarChart3 className="w-5 h-5" />
           Campaign Insights
