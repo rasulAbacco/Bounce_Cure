@@ -22,6 +22,9 @@ import dealsRoutes from "./routes/deals.js";
 import contactCRMRoutes from "./routes/contactCRM.js";
 import { router as campaignContactsRoutes } from './routes/contacts.js';
 import { router as campaignsRoutes } from './routes/campaigns.js';
+import replyRoutes from "./routes/SendCampaignReply.js";
+// import fetchReplies from "./routes/FetchReplies.js";
+
 
 dotenv.config();
 
@@ -89,6 +92,8 @@ app.use("/notifications", notificationsRoutes);
 // Routes
 app.use('/api/sendContacts', sendContactsRoutes);
 app.use('/api/sendCampaigns', sendCampaignsRoutes);
+app.use("/api/replies", replyRoutes);
+// app.use("/api", fetchReplies);
 
 app.use("/tasks", taskRoutes);
 app.use("/deals", dealsRoutes);
@@ -102,6 +107,20 @@ app.get('/', (req, res) => {
   res.send('Backend is running...');
 });
 
+// Temporary in-memory store (replace with DB later)
+let automationLogs = [];
+
+// Save log
+app.post("/api/automation/logs", (req, res) => {
+  const { name, status, date } = req.body;
+  automationLogs.push({ name, status, date });
+  res.json({ success: true });
+});
+
+// Get logs
+app.get("/api/automation/logs", (req, res) => {
+  res.json(automationLogs.slice(-20).reverse()); // last 20
+});
 
 
 // ✅ Start server
