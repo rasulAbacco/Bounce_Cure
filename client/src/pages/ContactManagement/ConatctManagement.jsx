@@ -311,9 +311,9 @@ export default function ContactManagement() {
               <div className="w-10 h-10 rounded-xl bg-yellow-500/10 border border-yellow-500/30 flex items-center justify-center">
                 <BarChart3 className="w-5 h-5 text-yellow-400" />
               </div>
-              <h1 className="text-lg font-semibold text-yellow-500 dark:text-yellow-400">
+              {/* <h1 className="text-lg font-semibold text-yellow-500 dark:text-yellow-400">
                 CRM Dashboard
-              </h1>
+              </h1> */}
             </div>
             {/* Nav Tabs */}
             <nav className="flex items-center gap-4">
@@ -324,7 +324,7 @@ export default function ContactManagement() {
                   className={`cursor-pointer flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition ${
                     activeTab === item.label
                       ? "bg-zinc-900 border-zinc-300 dark:border-zinc-800 text-yellow-500"
-                      : "hover:bg-zinc-100 dark:hover:bg-zinc-900 border-transparent text-zinc-200 hover:text-black dark:text-zinc-300"
+                      : "hover:bg-zinc-100 dark:hover:bg-zinc-900 border-transparent text-zinc-200 hover:text-white hover:border hover:border-yellow-500 dark:text-zinc-300"
                   }`}
                 >
                   <item.icon className="w-4 h-4" />
