@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   User,
   Search,
@@ -29,44 +29,6 @@ const statusColors = {
 };
 
 function ContactsPage() {
-  const initialContacts = [
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john@example.com",
-      phone: "+1 555-0100",
-      company: "Acme Inc.",
-      status: "Active",
-      last: "Aug 20",
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane@example.com",
-      phone: "+1 555-0110",
-      company: "XYZ Corp",
-      status: "Prospect",
-      last: "Aug 18",
-    },
-    {
-      id: 3,
-      name: "Sam Brown",
-      email: "sam@example.com",
-      phone: "+1 555-0120",
-      company: "Freelance",
-      status: "Customer",
-      last: "Aug 17",
-    },
-    {
-      id: 4,
-      name: "Alice Johnson",
-      email: "alice@example.com",
-      phone: "+1 555-0130",
-      company: "Startup Hub",
-      status: "Inactive",
-      last: "Aug 15",
-    },
-  ];
 
   const badgeStyle = {
     Active:
@@ -79,7 +41,8 @@ function ContactsPage() {
       "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 border border-yellow-300 dark:border-yellow-700",
   };
 
-  const [contacts, setContacts] = useState(initialContacts);
+
+
   const [modalOpen, setModalOpen] = useState(false);
   const [newContact, setNewContact] = useState({
     name: "",
@@ -87,8 +50,23 @@ function ContactsPage() {
     phone: "",
     company: "",
     status: "Prospect",
+    priority: "new",  // default priority
     last: "",
   });
+
+
+
+
+  const [contacts, setContacts] = useState([]);
+  const [page, setPage] = useState(1);
+  const [currentPage, setCurrentPage] = useState(1); // REMOVE THIS LINE
+
+  const [search, setSearch] = useState('');
+  const [editPriority, setEditPriority] = useState({});
+
+
+  const [totalPages, setTotalPages] = useState(1);
+
 
   // Chart data aggregation
   const chartData = Object.entries(
@@ -98,11 +76,6 @@ function ContactsPage() {
     }, {})
   ).map(([status, count]) => ({ name: status, value: count }));
 
-  const addContact = (e) => {
-    e.preventDefault();
-    setContacts([{ id: Date.now(), ...newContact }, ...contacts]);
-    setModalOpen(false);
-  };
 
   const headers = [
     { label: "Name", key: "name" },
@@ -113,7 +86,116 @@ function ContactsPage() {
     { label: "Last Interaction", key: "last" },
   ];
 
-  
+  const handleImport = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+
+    try {
+      const res = await fetch("http://localhost:5000/contact/import", {
+        method: "POST",
+        body: formData, // let browser set the headers
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.error || 'Import failed');
+      }
+
+      alert('Import successful!');
+      e.target.reset();
+      setPage(1);
+    } catch (err) {
+      alert(`Import failed: ${err.message}`);
+    }
+  };
+
+
+
+  const addContact = async (e) => {
+    e.preventDefault();
+
+    // Call the backend to create new contact
+    const res = await fetch("http://localhost:5000/contact", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(newContact),
+    });
+
+    if (!res.ok) {
+      console.error("Failed to add contact:", res.statusText);
+      return;
+    }
+
+    const created = await res.json();
+
+    // Option 1: Refresh page from server
+    // setContacts((prev) => [created, ...prev]);
+
+    // Option 2: Refetch page 1 so regen pagination and stats
+    setPage(1);
+
+    setModalOpen(false);
+  };
+
+  const updatePriority = async (id) => {
+    const newVal = editPriority[id];
+
+    console.log("Sending update for ID:", id, "with priority:", newVal);
+
+    try {
+      const res = await fetch(`http://localhost:5000/contact/${id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ priority: newVal }),
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        console.error("Failed to update:", res.status, text);
+        return;
+      }
+
+      const updated = await res.json();
+      console.log("Update successful:", updated);
+
+      // Clear local state and re-fetch
+      setEditPriority((prev) => {
+        const copy = { ...prev };
+        delete copy[id];
+        return copy;
+      });
+
+      setPage(page); // This triggers useEffect to re-fetch from DB
+    } catch (err) {
+      console.error("Error:", err);
+    }
+  };
+
+  const deleteContact = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this contact?")) return;
+
+    await fetch(`http://localhost:5000/contact/${id}`, {
+      method: "DELETE",
+    });
+
+    // Refresh list after deletion
+    setContacts(contacts.filter((c) => c.id !== id));
+  };
+
+
+
+
+  useEffect(() => {
+    fetch(`http://localhost:5000/contact?page=${page}&search=${search}`)
+      .then((res) => res.json())
+      .then((data) => {
+        setContacts(data.data);
+        setTotalPages(data.totalPages);
+      });
+  }, [page, search]);
+
 
   return (
     <div className="space-y-10 px-4 py-8 sm:px-6 lg:px-8">
@@ -157,6 +239,7 @@ function ContactsPage() {
             placeholder="Search contacts..."
             className="bg-transparent outline-none w-full text-sm text-zinc-800 dark:text-white"
           />
+
         </div>
         <div className="flex gap-3">
           <button className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">
@@ -193,6 +276,36 @@ function ContactsPage() {
         </div>
       </div>
 
+      { /*Import Files*/}
+      {/* <form
+        onSubmit={handleImport}
+        encType="multipart/form-data"
+        className="w-full max-w-md mx-auto p-6 bg-white shadow-md rounded-lg flex flex-col gap-4"
+      >
+        <h2 className="text-xl font-semibold text-gray-800">Import Contacts</h2>
+
+        <input
+          type="file"
+          name="file"
+          accept=".csv,.xlsx,.txt"
+          required
+          className="block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4
+              file:rounded-md file:border-0
+              file:text-sm file:font-semibold
+              file:bg-blue-50 file:text-blue-700
+              hover:file:bg-blue-100 cursor-pointer"
+        />
+
+        <button
+          type="submit"
+          className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition"
+        >
+          Import
+        </button>
+      </form> */}
+
+
+
       {/* Contacts Table */}
       <div className="overflow-x-auto border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
         <table className="min-w-full text-sm">
@@ -203,8 +316,10 @@ function ContactsPage() {
                 "Email",
                 "Phone",
                 "Company",
+                "Priority",
                 "Status",
                 "Last Interaction",
+                "Action"
               ].map((header) => (
                 <th
                   key={header}
@@ -245,6 +360,38 @@ function ContactsPage() {
                     {c.company}
                   </div>
                 </td>
+                <td className="px-4 py-3 whitespace-nowrap text-zinc-500 dark:text-zinc-400">
+                  <select
+                    value={editPriority[c.id] ?? c.priority}
+                    onChange={(e) =>
+                      setEditPriority({
+                        ...editPriority,
+                        [c.id]: e.target.value,
+                      })
+                    }
+                    className="border px-2 py-1 rounded"
+                  >
+                    <option value="vip">VIP</option>
+                    <option value="subscriber">Subscriber</option>
+                    <option value="new">New</option>
+                  </select>
+
+                  <button
+                    onClick={() => updatePriority(c.id)}
+                    disabled={
+                      editPriority[c.id] === undefined ||
+                      editPriority[c.id] === c.priority
+                    }
+                    className={`ml-2 px-2 py-1 rounded ${editPriority[c.id] !== undefined &&
+                      editPriority[c.id] !== c.priority
+                      ? "bg-yellow-500 hover:bg-yellow-400 text-black font-bold"
+                      : "bg-gray-300 text-black font-bold cursor-not-allowed"
+                      }`}
+                  >
+                    Save
+                  </button>
+                </td>
+
                 <td className="px-4 py-3 whitespace-nowrap">
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium ${badgeStyle[c.status]}`}
@@ -255,10 +402,56 @@ function ContactsPage() {
                 <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
                   {c.last}
                 </td>
+                <td className="px-4 py-3 whitespace-nowrap">
+                  <button
+                    onClick={() => deleteContact(c.id)}
+                    className="text-red-600 hover:text-red-800 text-sm font-bold"
+                  >
+                    Delete
+                  </button>
+                </td>
+
               </tr>
             ))}
           </tbody>
         </table>
+      </div>
+
+      <div className="flex justify-between items-center mt-4">
+        <p className="text-sm text-zinc-400">
+          Page {page} of {totalPages}
+        </p>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setPage(1)}
+            disabled={page === 1}
+            className="px-3 py-1 text-sm rounded bg-zinc-700 text-white hover:bg-zinc-600 disabled:opacity-40"
+          >
+            First
+          </button>
+          <button
+            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+            disabled={page === 1}
+            className="px-3 py-1 text-sm rounded bg-zinc-700 text-white hover:bg-zinc-600 disabled:opacity-40"
+          >
+            Prev
+          </button>
+          <button
+            onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+            disabled={page === totalPages}
+            className="px-3 py-1 text-sm rounded bg-zinc-700 text-white hover:bg-zinc-600 disabled:opacity-40"
+          >
+            Next
+          </button>
+          <button
+            onClick={() => setPage(totalPages)}
+            disabled={page === totalPages}
+            className="px-3 py-1 text-sm rounded bg-zinc-700 text-white hover:bg-zinc-600 disabled:opacity-40"
+          >
+            Last
+          </button>
+        </div>
+
       </div>
 
       {/* Bar Chart Insights */}
@@ -273,7 +466,7 @@ function ContactsPage() {
               <YAxis stroke="#FBBF24" />
 
               <Legend />
-              <Bar dataKey="value" fill="#F59E0B" className="w-[1rem]" />
+              <Bar dataKey="value" fill="#F59E0B" barSize={30} />
             </BarChart>
           </ResponsiveContainer>
         </div>
@@ -297,7 +490,7 @@ function ContactsPage() {
               Add New Contact
             </h3>
             <form onSubmit={addContact} className="space-y-4">
-              {["name", "email", "phone", "company", "status", "last"].map(
+              {["name", "email", "phone", "company", "priority", "status",].map(
                 (field) => (
                   <div key={field} className="flex flex-col">
                     <label className="text-sm text-zinc-700 dark:text-zinc-400 mb-1 capitalize">
@@ -309,7 +502,6 @@ function ContactsPage() {
                         setNewContact({ ...newContact, [field]: e.target.value })
                       }
                       className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg outline-none text-zinc-800 dark:text-zinc-100"
-                      required
                     />
                   </div>
                 )

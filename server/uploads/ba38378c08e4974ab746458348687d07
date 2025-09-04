@@ -1,0 +1,5 @@
+﻿"Name","Email","Phone","Company","Status","Last Interaction"
+"John Doe","john@example.com","+1 555-0100","Acme Inc.","Active","Aug 20"
+"Jane Smith","jane@example.com","+1 555-0110","XYZ Corp","Prospect","Aug 18"
+"Sam Brown","sam@example.com","+1 555-0120","Freelance","Customer","Aug 17"
+"Alice Johnson","alice@example.com","+1 555-0130","Startup Hub","Inactive","Aug 15"

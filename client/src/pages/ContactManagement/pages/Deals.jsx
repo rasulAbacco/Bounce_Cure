@@ -465,7 +465,7 @@ function Deals() {
       </div>
 
       {/* Insights Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 w-[100vw]">
+      <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 w-[96vw]">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <div className="bg-zinc-900/60 p-6 rounded-xl border border-zinc-800">
             <h2 className="text-lg font-semibold text-yellow-400 mb-4 flex items-center gap-2">

@@ -19,6 +19,7 @@ import sendContactsRoutes from "./routes/SendCampaignContact.js";
 import sendCampaignsRoutes from "./routes/CampaignRoutes.js";
 import taskRoutes from "./routes/tasks.js";
 import dealsRoutes from "./routes/deals.js";
+import contactCRMRoutes from "./routes/contactCRM.js";
 import { router as campaignContactsRoutes } from './routes/contacts.js';
 import { router as campaignsRoutes } from './routes/campaigns.js';
 import replyRoutes from "./routes/SendCampaignReply.js";
@@ -96,6 +97,7 @@ app.use("/api/replies", replyRoutes);
 
 app.use("/tasks", taskRoutes);
 app.use("/deals", dealsRoutes);
+app.use("/contact", contactCRMRoutes);
 //
 app.use('/api/campaigncontacts', campaignContactsRoutes);
 app.use('/api/campaigns', campaignsRoutes);

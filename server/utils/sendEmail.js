@@ -6,6 +6,7 @@ export const sendEmail = async (to, subject, html) => {
 
     if (process.env.NODE_ENV === "production") {
         // Use Gmail in production
+        console.log('Sending verification email to:', email);
         transporter = nodemailer.createTransport({
             service: "gmail",
             auth: {
