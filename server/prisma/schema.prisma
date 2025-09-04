@@ -77,19 +77,22 @@ model OTPCode {
 }
 
 model Verification {
-  id             String   @id @default(cuid())
+  id             Int      @id @default(autoincrement())
   email          String   @unique
   status         String
-  catch_all      Boolean
-  createdAt      DateTime @default(now())
-  disposable     Boolean
-  domain_valid   Boolean
-  error          String?
-  greylisted     Boolean
-  mailbox_exists Boolean
-  role_based     Boolean
   score          Int
   syntax_valid   Boolean
+  domain_valid   Boolean
+  mailbox_exists Boolean?
+  catch_all      Boolean?
+  disposable     Boolean
+  role_based     Boolean
+  greylisted     Boolean
+  provider       String?
+  mxRecord       String?
+  isFreeDomain   Boolean?
+  error          String?
+  createdAt      DateTime @default(now())
 }
 
 model SupportMessage {
@@ -174,17 +177,18 @@ model Contact {
   id        Int      @id @default(autoincrement())
   name      String?
   email     String?
-  phone     String? // ✅ optional
-  company   String? // ✅ optional
+  phone     String?
+  company   String?
   status    String?  @default("active")
+  priority  String? // vip, subscriber, new, etc.
+  last      String?
   userId    Int?
   user      User?    @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   replies   Reply[]
 
-  @@unique([userId, email], name: "user_email_unique")
-  @@index([userId, status])
+  @@map("Contact") // 👈 explicitly map to "Contact" in DB
 }
 
 model Task {
