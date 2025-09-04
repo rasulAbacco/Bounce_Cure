@@ -46,7 +46,6 @@ const PropertiesPanel = ({
 }) => {
   // Get selected element data
   const selectedElementData = elements.find((el) => el.id === selectedElement);
-
   // Color palettes
   const colorPalette = [
     "#FF6B6B", "#4ECDC4", "#45B7D1", "#96CEB4", "#FFEAA7",
@@ -54,12 +53,10 @@ const PropertiesPanel = ({
     "#000000", "#FFFFFF", "#808080", "#FF0000", "#00FF00",
     "#0000FF", "#FFFF00", "#FF00FF", "#00FFFF", "#FFA500",
   ];
-
   const fonts = [
     "Arial", "Helvetica", "Times New Roman", "Georgia", "Verdana",
     "Courier New", "Impact", "Comic Sans MS", "Trebuchet MS", "Palatino",
   ];
-
   const iconOptions = [
     { value: "Star", label: "Star" },
     { value: "Heart", label: "Heart" },
@@ -70,7 +67,6 @@ const PropertiesPanel = ({
     { value: "Settings", label: "Settings" },
     { value: "Mail", label: "Mail" }
   ];
-
   const socialIconOptions = [
     { value: "Facebook", label: "Facebook" },
     { value: "Twitter", label: "Twitter" },
@@ -78,7 +74,6 @@ const PropertiesPanel = ({
     { value: "LinkedIn", label: "LinkedIn" },
     { value: "YouTube", label: "YouTube" }
   ];
-
   const animations = [
     { value: "fade", label: "Fade In" },
     { value: "slide", label: "Slide In" },
@@ -117,7 +112,6 @@ const PropertiesPanel = ({
       default: return <Square {...iconProps} className="text-gray-400" />;
     }
   };
-
   return (
     <div className="w-80 bg-black border-l border-[#c2831f] flex flex-col h-full text-white overflow-hidden">
       {/* Header */}
@@ -182,7 +176,6 @@ const PropertiesPanel = ({
                 )}
               </div>
             </div>
-
             {/* Quick Tips */}
             <div className="bg-gray-900 rounded-lg p-4">
               <h4 className="font-medium text-gray-300 mb-2">💡 Quick Tips</h4>
@@ -195,7 +188,6 @@ const PropertiesPanel = ({
             </div>
           </div>
         )}
-
         {selectedElementData && (
           <div className="p-4 space-y-6">
             {/* Element Info */}
@@ -307,7 +299,6 @@ const PropertiesPanel = ({
                 </div>
               </div>
             </div>
-
             {/* Text Properties */}
             {(selectedElementData.type === "heading" ||
               selectedElementData.type === "subheading" ||
@@ -510,7 +501,6 @@ const PropertiesPanel = ({
                       />
                     </div>
                   </div>
-
                   <div>
                     <label className="block text-sm text-gray-400 mb-2">Border Color</label>
                     <div className="flex gap-2">
@@ -537,7 +527,6 @@ const PropertiesPanel = ({
                       />
                     </div>
                   </div>
-
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Border Width</label>
                     <input
@@ -556,7 +545,6 @@ const PropertiesPanel = ({
                       {selectedElementData.borderWidth || 1}px
                     </div>
                   </div>
-
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Border Radius</label>
                     <input
@@ -575,7 +563,6 @@ const PropertiesPanel = ({
                       {selectedElementData.borderRadius || 8}px
                     </div>
                   </div>
-
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Padding</label>
                     <input
@@ -597,7 +584,6 @@ const PropertiesPanel = ({
                 </div>
               </div>
             )}
-
             {/* Shape Properties */}
             {(selectedElementData.type === "rectangle" ||
               selectedElementData.type === "circle" ||
@@ -743,7 +729,6 @@ const PropertiesPanel = ({
                       />
                     </div>
                   </div>
-
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Thickness</label>
                     <input
@@ -765,7 +750,6 @@ const PropertiesPanel = ({
                 </div>
               </div>
             )}
-
             {/* Media Properties */}
             {(selectedElementData.type === "image" ||
               selectedElementData.type === "video" ||
@@ -1011,7 +995,6 @@ const PropertiesPanel = ({
                       ))}
                     </select>
                   </div>
-
                   <div>
                     <label className="block text-sm text-gray-400 mb-2">Icon Color</label>
                     <div className="flex gap-2">
@@ -1038,7 +1021,6 @@ const PropertiesPanel = ({
                       />
                     </div>
                   </div>
-
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Icon Size</label>
                     <input
@@ -1060,7 +1042,6 @@ const PropertiesPanel = ({
                 </div>
               </div>
             )}
-
             {/* Social Icon Properties */}
             {selectedElementData.type === "social" && (
               <div>
@@ -1084,7 +1065,6 @@ const PropertiesPanel = ({
                       ))}
                     </select>
                   </div>
-
                   <div>
                     <label className="block text-sm text-gray-400 mb-2">Icon Color</label>
                     <div className="flex gap-2">
@@ -1111,7 +1091,6 @@ const PropertiesPanel = ({
                       />
                     </div>
                   </div>
-
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Icon Size</label>
                     <input
@@ -1133,7 +1112,6 @@ const PropertiesPanel = ({
                 </div>
               </div>
             )}
-
             {/* Animation Properties */}
             <div>
               <h4 className="font-medium mb-3 text-gray-300">Animation</h4>
@@ -1157,7 +1135,6 @@ const PropertiesPanel = ({
                     ))}
                   </select>
                 </div>
-
                 {selectedElementData.animation && selectedElementData.animation !== "none" && (
                   <>
                     <div>
@@ -1179,7 +1156,6 @@ const PropertiesPanel = ({
                         {selectedElementData.animationDuration || 1}s
                       </div>
                     </div>
-
                     <div>
                       <label className="block text-sm text-gray-400 mb-1">Delay (s)</label>
                       <input
@@ -1203,7 +1179,6 @@ const PropertiesPanel = ({
                 )}
               </div>
             </div>
-
             {/* Transform Properties */}
             <div>
               <h4 className="font-medium mb-3 text-gray-300">Transform</h4>
@@ -1226,7 +1201,6 @@ const PropertiesPanel = ({
                     {selectedElementData.rotation || 0}°
                   </div>
                 </div>
-
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Opacity</label>
                   <input
@@ -1248,7 +1222,6 @@ const PropertiesPanel = ({
                 </div>
               </div>
             </div>
-
             {/* Quick Color Palette */}
             <div>
               <h4 className="font-medium mb-3 text-gray-300">Quick Colors</h4>

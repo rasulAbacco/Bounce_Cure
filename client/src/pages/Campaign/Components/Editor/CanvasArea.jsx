@@ -12,7 +12,6 @@ import {
   CreditCard
 } from 'lucide-react';
 
-
 export default function CanvasArea({
   pages,
   setPages,
