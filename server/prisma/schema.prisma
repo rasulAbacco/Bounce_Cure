@@ -181,6 +181,7 @@ model Contact {
   user      User?    @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  replies   Reply[]
 
   @@unique([userId, email], name: "user_email_unique")
   @@index([userId, status])
@@ -205,4 +206,14 @@ model Deal {
   status    String
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+model Reply {
+  id         Int      @id @default(autoincrement())
+  contactId  Int
+  campaignId Int?
+  message    String
+  createdAt  DateTime @default(now())
+
+  contact Contact @relation(fields: [contactId], references: [id])
 }
