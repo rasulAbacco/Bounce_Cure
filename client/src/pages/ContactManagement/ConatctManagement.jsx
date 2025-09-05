@@ -114,7 +114,85 @@ const Modal = ({ open, onClose, title, children, footer }) => {
   );
 };
 
-// === Data ===
+
+// === Call Log Component ===
+const CallLog = () => {
+  // Sample call log data
+  const callLogs = [
+    { id: 1, contact: "John Doe", number: "+1 (555) 123-4567", date: "2023-08-20", time: "10:30 AM", duration: "5:23", type: "Outgoing", status: "Completed" },
+    { id: 2, contact: "Jane Smith", number: "+1 (555) 987-6543", date: "2023-08-19", time: "2:15 PM", duration: "2:45", type: "Incoming", status: "Completed" },
+    { id: 3, contact: "Acme Inc.", number: "+1 (555) 456-7890", date: "2023-08-18", time: "4:45 PM", duration: "0:00", type: "Outgoing", status: "Missed" },
+    { id: 4, contact: "Sam Brown", number: "+1 (555) 234-5678", date: "2023-08-17", time: "11:20 AM", duration: "12:18", type: "Incoming", status: "Completed" },
+  ];
+
+  return (
+    <Section title="Call History">
+      <div className="overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b border-zinc-700">
+              <th className="py-3 px-4 text-left text-zinc-400">Contact</th>
+              <th className="py-3 px-4 text-left text-zinc-400">Number</th>
+              <th className="py-3 px-4 text-left text-zinc-400">Date & Time</th>
+              <th className="py-3 px-4 text-left text-zinc-400">Duration</th>
+              <th className="py-3 px-4 text-left text-zinc-400">Type</th>
+              <th className="py-3 px-4 text-left text-zinc-400">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {callLogs.map((log) => (
+              <tr key={log.id} className="border-b border-zinc-800 hover:bg-zinc-900/50">
+                <td className="py-3 px-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-full bg-zinc-800">
+                      <User className="w-4 h-4 text-yellow-500" />
+                    </div>
+                    <span>{log.contact}</span>
+                  </div>
+                </td>
+                <td className="py-3 px-4 text-zinc-300">{log.number}</td>
+                <td className="py-3 px-4 text-zinc-300">
+                  <div>
+                    <div>{log.date}</div>
+                    <div className="text-xs text-zinc-500">{log.time}</div>
+                  </div>
+                </td>
+                <td className="py-3 px-4">
+                  <div className="flex items-center gap-1">
+                    <Clock3 className="w-3.5 h-3.5 text-zinc-500" />
+                    <span>{log.duration}</span>
+                  </div>
+                </td>
+                <td className="py-3 px-4">
+                  <Badge tone={log.type === "Outgoing" ? "info" : "success"}>
+                    {log.type}
+                  </Badge>
+                </td>
+                <td className="py-3 px-4">
+                  <Badge tone={log.status === "Completed" ? "success" : "danger"}>
+                    {log.status}
+                  </Badge>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <div className="mt-6 flex justify-between items-center">
+        <div className="text-sm text-zinc-500">
+          Showing 4 of 24 call records
+        </div>
+        <button className="flex items-center gap-2 px-4 py-2 bg-yellow-500 hover:bg-yellow-600 text-black rounded-lg text-sm font-medium transition-colors">
+          <Plus size={16} />
+          Add Call Record
+        </button>
+      </div>
+    </Section>
+  );
+};
+
+// === Seed Data ===
 const seedActivities = [
   { id: 1, text: "John Doe added a new contact", when: "Just now" },
   { id: 2, text: 'Jane Smith updated Deal status to "Proposal Sent"', when: "2h ago" },
@@ -215,10 +293,10 @@ export default function ConatctManagement() {
                 <button
                   key={item.label}
                   onClick={() => setActiveTab(item.label)}
-
                   className={`cursor-pointer flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition ${activeTab === item.label
-                    ? "bg-zinc-100 dark:bg-zinc-900 border-zinc-300 dark:border-zinc-800 text-yellow-500"
-                    : "hover:bg-zinc-100 dark:hover:bg-zinc-900 border-transparent text-zinc-700 dark:text-zinc-300"
+                      ? "bg-zinc-900 border-zinc-300 dark:border-zinc-800 text-yellow-500"
+                      : "hover:bg-zinc-100 dark:hover:bg-zinc-900 border-transparent text-zinc-200 hover:text-white hover:border hover:border-yellow-500 dark:text-zinc-300"
+
                     }`}
                 >
                   <item.icon className="w-4 h-4" />
@@ -227,15 +305,7 @@ export default function ConatctManagement() {
               ))}
             </nav>
 
-            {/* Theme Toggle */}
-            {/* <div className="absolute right-6">
-              <button
-                onClick={toggleTheme}
-                className="p-2 rounded-xl hover:bg-zinc-100 dark:hover:bg-zinc-900 border border-zinc-300 dark:border-zinc-700"
-              >
-                {theme === "dark" ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-              </button>
-            </div> */}
+
           </div>
         </header>
 
@@ -318,6 +388,7 @@ export default function ConatctManagement() {
                             <p className="text-xs text-zinc-500">Due: {t.due}</p>
                           </div>
                         </div>
+
                         <Badge tone={t.status === "Scheduled" ? "info" : t.status === "Completed" ? "success" : "warn"}>{t.status}</Badge>
                       </li>
                     ))}
@@ -330,6 +401,29 @@ export default function ConatctManagement() {
           {activeTab === "Contacts" && <ContactsPage />}
           {activeTab === "Deals" && <Deals />}
           {activeTab === "Tasks" && <Tasks />}
+          {activeTab === "Call Log" && <CallLog />} {/* Added Call Log tab */}
+          {/* Placeholder sections */}
+          {activeTab === "Lists" && (
+            <Section title="Lists">
+              <Lists />
+            </Section>
+          )}
+          {activeTab === "Inbox" && (
+            <Section title="Inbox">
+              <Inboxs />
+            </Section>
+          )}
+          {activeTab === "Tickets" && (
+            <Section title="Tickets">
+              <Tickets />
+            </Section>
+          )}
+          {activeTab === "Orders" && (
+            <Section title="Orders">
+              <Orders />
+            </Section>
+          )}
+
         </main>
 
         {/* --- Modals --- */}

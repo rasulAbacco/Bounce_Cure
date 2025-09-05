@@ -11,19 +11,53 @@ import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
+// Helper function to detect fake/example emails automatically
+function isExampleOrFakeEmail(email) {
+  const fakePatterns = [
+    /example/i,
+    /test/i,
+    /demo/i,
+    /fake/i,
+    /invalid/i,
+    /sample/i,
+    /noreply/i,
+    /no-reply/i,
+    /admin/i,
+    /contact/i,
+    /^j[_.\-]?doe@/i, // matches j_doe@, j-doe@, j.doe@ etc.
+    /^john\.doe@/i,
+    /^user\d+@/i,
+    /^abc@/i,
+  ];
 
+  const disposableDomains = new Set([
+    "example.com",
+    "mailinator.com",
+    "tempmail.com",
+    "fakeemail.com",
+    "disposablemail.com",
+    "maildrop.cc",
+  ]);
+
+  const [local, domain] = email.toLowerCase().split("@");
+
+  if (!local || !domain) return true; // treat as fake/invalid
+
+  if (disposableDomains.has(domain)) return true;
+
+  return fakePatterns.some((pattern) => pattern.test(email));
+}
 const router = express.Router();
 const verifier = new AdvancedVerifier({
-  maxRetries: 5,
-  dnsTimeout: 5000,
-  smtpTimeout: 8000,
-  concurrency: 3
+  maxRetries: 1,
+  dnsTimeout: 200,
+  smtpTimeout: 500,
+  concurrency: 20
 });
 
 const unlinkFile = promisify(fs.unlink);
 const upload = multer({ dest: "uploads/" });
 
-// --------- 1. Single Verify ----------
 // --------- 1. Single Verify ----------
 router.post("/verify-single", async (req, res) => {
   const { email } = req.body;
@@ -72,6 +106,8 @@ router.post("/verify-single", async (req, res) => {
 });
 
 // --------- 2. Bulk Verify ----------
+import pLimit from "p-limit"; // Add at the top of the file
+
 router.post("/verify-bulk", upload.single("file"), async (req, res) => {
   const filePath = req.file?.path;
   const ext = path.extname(req.file?.originalname || "").toLowerCase();
@@ -83,58 +119,44 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
   const emails = [];
 
   try {
-    // ---- Parse CSV ----
+    // ---- Parse input file based on extension ----
     if (ext === ".csv") {
       await new Promise((resolve, reject) => {
         fs.createReadStream(filePath)
           .pipe(csvParser())
           .on("data", (row) => {
-            const e = row.email || row.Email || row.EMAIL || row.eMail ||
-              row.E_Mail || row["Email Address"] || row["email_address"] ||
-              row.mail || row.Mail || row.MAIL;
-            if (e && typeof e === 'string' && e.trim()) {
-              emails.push(e.trim().toLowerCase());
-            }
+            const e = Object.values(row).find(val =>
+              typeof val === "string" && val.includes("@")
+            );
+            if (e) emails.push(e.trim().toLowerCase());
           })
           .on("end", resolve)
           .on("error", reject);
       });
 
-      // ---- Parse XLSX ----
     } else if (ext === ".xlsx") {
       const workbook = XLSX.readFile(filePath);
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet, { defval: "" });
 
       rows.forEach((r) => {
-        const e = r.email || r.Email || r.EMAIL || r.eMail ||
-          r.E_Mail || r["Email Address"] || r["email_address"] ||
-          r.mail || r.Mail || r.MAIL;
-        if (e && typeof e === 'string' && e.trim()) {
-          emails.push(e.trim().toLowerCase());
-        }
+        const e = Object.values(r).find(val =>
+          typeof val === "string" && val.includes("@")
+        );
+        if (e) emails.push(e.trim().toLowerCase());
       });
 
-      // ---- Parse TXT ----
     } else if (ext === ".txt") {
       const content = fs.readFileSync(filePath, "utf-8");
       const lines = content.split(/\r?\n/);
       lines.forEach((line) => {
-        const cleanLine = line.trim();
-        if (cleanLine && cleanLine.includes('@')) {
-          const emailMatch = cleanLine.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
-          if (emailMatch) {
-            emails.push(emailMatch[0].toLowerCase());
-          }
-        }
+        const match = line.trim().match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/);
+        if (match) emails.push(match[0].toLowerCase());
       });
 
-      // ---- Unsupported ----
     } else {
       await unlinkFile(filePath);
-      return res.status(400).json({
-        error: "Unsupported file type. Only CSV, XLSX, or TXT are allowed.",
-      });
+      return res.status(400).json({ error: "Unsupported file type." });
     }
 
     const uniqueEmails = [...new Set(emails)];
@@ -144,7 +166,7 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
       return res.status(400).json({ error: "No valid emails found in file." });
     }
 
-    const BATCH_SIZE = 5;
+    // ---------- NEW OPTIMIZED PROCESSING ----------
     const results = [];
     const summary = {
       total: uniqueEmails.length,
@@ -157,106 +179,47 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
       greylisted: 0
     };
 
-    for (let i = 0; i < uniqueEmails.length; i += BATCH_SIZE) {
-      const batch = uniqueEmails.slice(i, i + BATCH_SIZE);
+    const limit = pLimit(200); // Up to 50 concurrent validations
 
-      const batchPromises = batch.map(async (email) => {
-        try {
-          const result = await verifier.verify(email);
+    const jobs = uniqueEmails.map(email => limit(async () => {
+      try {
+        // **ENABLED SMTP CHECK**
+        const result = await verifier.verify(email, { smtpCheck: true });
 
-          if (result.status === 'valid') summary.valid++;
-          else if (result.status === 'invalid') summary.invalid++;
-          else if (result.status === 'risky') summary.risky++;
-
-          if (result.disposable) summary.disposable++;
-          if (result.role_based) summary.role_based++;
-          if (result.catch_all) summary.catch_all++;
-          if (result.greylisted) summary.greylisted++;
-
-          return result;
-        } catch (error) {
-          summary.invalid++;
-          return {
-            email,
-            status: "invalid",
-            score: 0,
-            syntax_valid: false,
-            domain_valid: false,
-            mailbox_exists: false,
-            catch_all: false,
-            disposable: false,
-            role_based: false,
-            greylisted: false,
-            error: error.message
-          };
-        }
-      });
-
-      const batchResults = await Promise.allSettled(batchPromises);
-
-
-      for (const r of batchResults) {
-        let finalResult;
-        if (r.status === "fulfilled") {
-          finalResult = r.value;
-        } else {
-          summary.invalid++;
-          finalResult = {
-            email: "unknown",
-            status: "invalid",
-            score: 0,
-            syntax_valid: false,
-            domain_valid: false,
-            mailbox_exists: false,
-            catch_all: false,
-            disposable: false,
-            role_based: false,
-            greylisted: false,
-            error: "Processing failed",
-          };
-        }
-
-        results.push(finalResult);
+        // Update summary
+        summary[result.status]++;
+        if (result.disposable) summary.disposable++;
+        if (result.role_based) summary.role_based++;
+        if (result.catch_all) summary.catch_all++;
+        if (result.greylisted) summary.greylisted++;
 
         // Save to DB
-        if (finalResult.email !== "unknown") {
-          await prisma.verification.upsert({
-            where: { email: finalResult.email },
-            update: {
-              status: finalResult.status,
-              score: finalResult.score,
-              syntax_valid: finalResult.syntax_valid,
-              domain_valid: finalResult.domain_valid,
-              mailbox_exists: finalResult.mailbox_exists,
-              catch_all: finalResult.catch_all,
-              disposable: finalResult.disposable,
-              role_based: finalResult.role_based,
-              greylisted: finalResult.greylisted,
-              error: finalResult.error || null,
-            },
-            create: {
-              email: finalResult.email,
-              status: finalResult.status,
-              score: finalResult.score,
-              syntax_valid: finalResult.syntax_valid,
-              domain_valid: finalResult.domain_valid,
-              mailbox_exists: finalResult.mailbox_exists,
-              catch_all: finalResult.catch_all,
-              disposable: finalResult.disposable,
-              role_based: finalResult.role_based,
-              greylisted: finalResult.greylisted,
-              error: finalResult.error || null,
-            },
-          });
-        }
+        await prisma.verification.upsert({
+          where: { email: result.email },
+          update: result,
+          create: result,
+        });
+
+        results.push(result);
+      } catch (err) {
+        summary.invalid++;
+        results.push({
+          email,
+          status: "invalid",
+          score: 0,
+          syntax_valid: false,
+          domain_valid: false,
+          mailbox_exists: false,
+          catch_all: false,
+          disposable: false,
+          role_based: false,
+          greylisted: false,
+          error: err.message
+        });
       }
+    }));
 
-
-      if (i + BATCH_SIZE < uniqueEmails.length) {
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-    }
-
+    await Promise.all(jobs);
     await unlinkFile(filePath);
 
     return res.json({
@@ -266,12 +229,12 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
 
   } catch (err) {
     if (fs.existsSync(filePath)) await unlinkFile(filePath);
-    res.status(500).json({
-      error: "Bulk verification failed",
-      details: err.message
-    });
+    return res.status(500).json({ error: "Bulk verification failed", details: err.message });
   }
 });
+
+
+
 
 // --------- 3. Health Check Endpoint ----------
 router.get("/health", (req, res) => {

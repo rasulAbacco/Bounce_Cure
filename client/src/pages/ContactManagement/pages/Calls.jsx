@@ -14,6 +14,7 @@ const CallLog = () => {
     setLogs(logs.filter((log) => log.id !== id));
   };
 
+
   const filteredLogs = logs.filter(
     (log) =>
       log.name.toLowerCase().includes(search.toLowerCase()) ||
