@@ -8,6 +8,7 @@ const Tickets = () => {
     { id: "TCK-003", subject: "Feature request", status: "Closed", priority: "Low", date: "2025-08-29" },
   ];
 
+
   return (
     <div className="flex min-h-screen bg-black">
       <div className="flex-1 flex flex-col">
@@ -31,13 +32,12 @@ const Tickets = () => {
                     <td className="px-4 py-3">{ticket.subject}</td>
                     <td className="px-4 py-3">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs ${
-                          ticket.status === "Open"
+                        className={`px-2 py-1 rounded-full text-xs ${ticket.status === "Open"
                             ? "bg-green-100 text-green-600"
                             : ticket.status === "Pending"
-                            ? "bg-yellow-100 text-yellow-600"
-                            : "bg-gray-200 text-gray-600"
-                        }`}
+                              ? "bg-yellow-100 text-yellow-600"
+                              : "bg-gray-200 text-gray-600"
+                          }`}
                       >
                         {ticket.status}
                       </span>

@@ -55,8 +55,6 @@ function ContactsPage() {
   });
 
 
-
-
   const [contacts, setContacts] = useState([]);
   const [page, setPage] = useState(1);
   const [currentPage, setCurrentPage] = useState(1); // REMOVE THIS LINE
