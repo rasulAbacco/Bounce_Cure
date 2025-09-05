@@ -93,9 +93,17 @@ router.post('/send', async (req, res) => {
     `;
     
     // Send emails to all recipients
+    // const emailPromises = recipients.map(recipient => {
+    //   const mailOptions = {
+    //     from: `"${fromName}" <${fromEmail}>`,
+    //     to: recipient.email,
+    //     subject: subject,
+    //     html: htmlContent,
+    //   };
     const emailPromises = recipients.map(recipient => {
       const mailOptions = {
-        from: `"${fromName}" <${fromEmail}>`,
+        from: `"${fromName}" <${process.env.EMAIL_USER}>`,  // always use your verified email
+        replyTo: fromEmail,  // ✅ replies will go to the dynamic email
         to: recipient.email,
         subject: subject,
         html: htmlContent,
