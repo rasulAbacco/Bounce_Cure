@@ -1134,6 +1134,12 @@ const AllTemplates = () => {
   const [previewTemplate, setPreviewTemplate] = useState(null);
   const [viewMode, setViewMode] = useState("grid");
 
+
+  const handleExit = () => {
+    navigate("/email-campaign");
+  };
+
+  
   // Convert template content to editor format
   const handleSelect = (template) => {
     let currentY = 60;
@@ -1363,9 +1369,19 @@ const AllTemplates = () => {
                   <List size={20} />
                 </button>
               </div>
+              <div className="p-4 text-xs text-gray-400 flex justify-between items-center ">
+                <button
+                  onClick={handleExit}
+                  className="px-6 py-2 rounded-full bg-[#c2831f] text-white hover:bg-[#d09025] text-sm cursor-pointer"
+                >
+                  Exit
+                </button>
+              </div>
             </div>
+             
           </div>
         </div>
+        
       </div>
 
       {/* Category Filters */}
@@ -1606,7 +1622,7 @@ const AllTemplates = () => {
       {/* Preview Modal */}
       {previewTemplate && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-4xl w-full max-h-[100vh] overflow-hidden">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
               <div>
