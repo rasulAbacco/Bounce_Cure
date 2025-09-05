@@ -1,13 +1,13 @@
-import React from "react";
+import React from 'react';
+import InboxLayout from '../../../components/inbox/InboxLayout';
 
-const Inbox = () => {
-
-
+const InboxPage = () => {
   return (
-    <div className="flex h-full min-h-screen bg-black rounded-lg shadow overflow-hidden text-white relative">
-      <h1>Inbox</h1>
+    <div className="min-h-screen bg-zinc-900 text-white">
+      <InboxLayout />
+
     </div>
   );
 };
 
-export default Inbox;
+export default InboxPage;
