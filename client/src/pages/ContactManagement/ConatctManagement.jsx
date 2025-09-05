@@ -324,6 +324,7 @@ export default function ContactManagement() {
                   className={`cursor-pointer flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition ${activeTab === item.label
                       ? "bg-zinc-900 border-zinc-300 dark:border-zinc-800 text-yellow-500"
                       : "hover:bg-zinc-100 dark:hover:bg-zinc-900 border-transparent text-zinc-200 hover:text-white hover:border hover:border-yellow-500 dark:text-zinc-300"
+
                     }`}
                 >
                   <item.icon className="w-4 h-4" />
@@ -463,6 +464,8 @@ export default function ContactManagement() {
                         >
                           {t.status}
                         </Badge>
+
+                        <Badge tone={t.status === "Scheduled" ? "info" : t.status === "Completed" ? "success" : "warn"}>{t.status}</Badge>
                       </li>
                     ))}
                   </ul>
@@ -496,6 +499,7 @@ export default function ContactManagement() {
               <Orders />
             </Section>
           )}
+
         </main>
         {/* --- Modals --- */}
         <Modal
