@@ -555,33 +555,24 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
           </div>
         </div>
       ) : (
-        <div>
-          {/* <div className="text-center mb-4">
-            <h2 className="text-xl font-bold text-gray-800">
-              {formData?.subject || "Email Subject"}
-            </h2>
-            <p className="text-sm text-gray-600 mt-1">
-              From: {formData?.fromName || "Sender Name"} &lt;
-              {formData?.fromEmail || "sender@example.com"}&gt;
-            </p>
-          </div> */}
-          <div
-            style={{
-              position: "relative",
-              width: "800px",
-              height: "600px",
-              margin: "0 auto",
-              backgroundColor: "#ffffff",
-            }}
-          >
-            {currentPage.elements
-              .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
-              .map((element) => renderElement(element))}
-          </div>
+        <div
+          style={{
+            position: "relative",
+            width: "100%",       // ✅ full width
+            maxWidth: "900px",   // ✅ template max width
+            minHeight: "600px",  // ✅ keeps height
+            margin: "0 auto",
+            backgroundColor: "#ffffff",
+          }}
+        >
+          {currentPage.elements
+            .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
+            .map((element) => renderElement(element))}
         </div>
       )}
     </div>
   );
+
 }
 
 export default function CampaignBuilder() {
@@ -728,13 +719,23 @@ export default function CampaignBuilder() {
       }
 
       // Prepare email data
+      // const emailData = {
+      //   recipients: recipientsList,
+      //   fromName: formData.fromName,
+      //   fromEmail: formData.fromEmail,
+      //   subject: formData.subject,
+      //   canvasData: canvasPages[0].elements, // Send the canvas elements
+      // };
+      // Prepare email data
       const emailData = {
         recipients: recipientsList,
         fromName: formData.fromName,
         fromEmail: formData.fromEmail,
+        replyTo: formData.fromEmail,   // ✅ Ensure replies go to this email
         subject: formData.subject,
         canvasData: canvasPages[0].elements, // Send the canvas elements
       };
+
 
       // Backend API call to send emails
       const response = await fetch("http://localhost:5000/api/campaigns/send", {
