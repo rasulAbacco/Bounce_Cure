@@ -25,6 +25,8 @@
     "firebase-admin": "^13.4.0",
     "imap": "^0.8.19",
     "imp": "^0.0.1",
+    "googleapis": "^159.0.0",
+    "imapflow": "^1.0.195",
     "jsonwebtoken": "^9.0.2",
     "libphonenumber-js": "^1.12.12",
     "mailparser": "^3.7.4",
