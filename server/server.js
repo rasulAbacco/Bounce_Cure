@@ -22,8 +22,11 @@ import dealsRoutes from "./routes/deals.js";
 import contactCRMRoutes from "./routes/contactCRM.js";
 import { router as campaignContactsRoutes } from './routes/contacts.js';
 import { router as campaignsRoutes } from './routes/campaigns.js';
+import emailRoutes from './routes/emailRoutes.js';
+import emailAccountRoutes from './routes/emailAccountRoutes.js';
 
 dotenv.config();
+console.log("Loaded SG API key:", process.env.SG_EMAIL_VAL_API_KEY?.substring(0, 10));
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -93,10 +96,13 @@ app.use('/api/sendCampaigns', sendCampaignsRoutes);
 app.use("/tasks", taskRoutes);
 app.use("/deals", dealsRoutes);
 app.use("/contact", contactCRMRoutes);
+app.use('/api/emails', emailRoutes);
+app.use('/api/email-account', emailAccountRoutes);
+
+
 //
 app.use('/api/campaigncontacts', campaignContactsRoutes);
 app.use('/api/campaigns', campaignsRoutes);
-
 
 app.get('/', (req, res) => {
   res.send('Backend is running...');

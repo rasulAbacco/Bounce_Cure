@@ -200,7 +200,7 @@ const CallLog = () => {
           </tbody>
         </table>
       </div>
-      
+
       <div className="mt-6 flex justify-between items-center">
         <div className="text-sm text-zinc-500">
           Showing 4 of 24 call records
@@ -268,9 +268,9 @@ export default function ContactManagement() {
     status: "Pending",
   });
 
-  
 
- 
+
+
 
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard" },
@@ -321,18 +321,18 @@ export default function ContactManagement() {
                 <button
                   key={item.label}
                   onClick={() => setActiveTab(item.label)}
-                  className={`cursor-pointer flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition ${
-                    activeTab === item.label
+                  className={`cursor-pointer flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition ${activeTab === item.label
                       ? "bg-zinc-900 border-zinc-300 dark:border-zinc-800 text-yellow-500"
                       : "hover:bg-zinc-100 dark:hover:bg-zinc-900 border-transparent text-zinc-200 hover:text-white hover:border hover:border-yellow-500 dark:text-zinc-300"
-                  }`}
+                    }`}
                 >
                   <item.icon className="w-4 h-4" />
                   <span>{item.label}</span>
                 </button>
               ))}
             </nav>
-            
+
+
           </div>
         </header>
         {/* --- Main Content --- */}
@@ -457,8 +457,8 @@ export default function ContactManagement() {
                             t.status === "Scheduled"
                               ? "info"
                               : t.status === "Completed"
-                              ? "success"
-                              : "warn"
+                                ? "success"
+                                : "warn"
                           }
                         >
                           {t.status}
@@ -483,7 +483,7 @@ export default function ContactManagement() {
           )}
           {activeTab === "Inbox" && (
             <Section title="Inbox">
-              <Inboxs/>
+              <Inboxs />
             </Section>
           )}
           {activeTab === "Tickets" && (
