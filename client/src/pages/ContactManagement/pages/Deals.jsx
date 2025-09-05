@@ -427,7 +427,7 @@ function Deals() {
           </tbody>
         </table>
       </div>
-      
+
       <div className="flex justify-between items-center mt-4">
         <p className="text-sm text-zinc-400">
           Showing {indexOfFirstDeal + 1}-{Math.min(indexOfLastDeal, filteredDeals.length)} of {filteredDeals.length}
@@ -463,6 +463,7 @@ function Deals() {
           </button>
         </div>
       </div>
+
 
       {/* Insights Section */}
       <div className="grid grid-cols-1 lg:grid-cols-1 gap-6 w-[96vw]">

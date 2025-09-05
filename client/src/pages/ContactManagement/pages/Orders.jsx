@@ -8,6 +8,8 @@ const Orders = () => {
     { id: "ORD-1003", plan: "Enterprise Plan", amount: "$199", status: "Paid", date: "2025-09-02" },
   ];
 
+
+
   return (
     <div className="flex min-h-screen bg-black">
       <div className="flex-1 flex flex-col">
@@ -32,11 +34,10 @@ const Orders = () => {
                     <td className="px-4 py-3">{order.amount}</td>
                     <td className="px-4 py-3">
                       <span
-                        className={`px-2 py-1 rounded-full text-xs ${
-                          order.status === "Paid"
-                            ? "bg-green-100 text-green-600"
-                            : "bg-yellow-100 text-yellow-600"
-                        }`}
+                        className={`px-2 py-1 rounded-full text-xs ${order.status === "Paid"
+                          ? "bg-green-100 text-green-600"
+                          : "bg-yellow-100 text-yellow-600"
+                          }`}
                       >
                         {order.status}
                       </span>
