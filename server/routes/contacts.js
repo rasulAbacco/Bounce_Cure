@@ -21,18 +21,11 @@ router.get('/', (req, res) => {
 // Add new contact
 router.post('/', (req, res) => {
   const { name, email, type } = req.body;
-  
   if (!name || !email || !type) {
     return res.status(400).json({ error: 'Name, email, and type are required' });
   }
-  
-  const newContact = {
-    id: uuidv4(),
-    name,
-    email,
-    type
-  };
-  
+
+  const newContact = { id: uuidv4(), name, email, type };
   contacts.push(newContact);
   res.status(201).json(newContact);
 });
@@ -45,3 +38,6 @@ router.delete('/:id', (req, res) => {
 });
 
 export { router };
+
+// ⚠️ Note: The 600-email sending limit is enforced in frontend (SendCampaign.jsx),
+// not here, to keep backend flexible if future scaling is needed.

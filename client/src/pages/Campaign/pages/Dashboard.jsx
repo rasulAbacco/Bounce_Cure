@@ -183,8 +183,7 @@ const Dashboard = () => {
                     onClick={() => setShowOptions(true)}
                     className="border border-yellow-400 hover:bg-yellow-300/20 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-yellow-400 cursor-pointer"
                     >
-                    
-                    <span className="text-sm font-semibold">New Campaign</span>
+                     <span className="text-sm font-semibold">New Campaign</span>
                     </div>
 
 
@@ -328,13 +327,13 @@ const Dashboard = () => {
                             <h3 className="text-lg font-semibold mb-4 text-white">Quick Actions</h3>
                             <div className="grid grid-cols-2 gap-4">
 
-                                <Link to="/editor">
-                                    <div className="border border-yellow-400 hover:bg-yellow-300/20 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-yellow-400 cursor-pointer">
+                                <div
+                                    onClick={() => setShowOptions(true)}
+                                    className="border border-yellow-400 hover:bg-yellow-300/20 transition rounded-lg py-3 px-4 flex flex-col items-center justify-center text-yellow-400 cursor-pointer"
+                                    >
                                         <MdCampaign className="text-xl mb-1" />
-                                        
-                                        <span className="text-sm font-semibold">New Campaign</span>
-                                    </div>
-                                </Link>
+                                    <span className="text-sm font-semibold">New Campaign</span>
+                                </div>
 
                        
                                 <Link to="/analytics">
