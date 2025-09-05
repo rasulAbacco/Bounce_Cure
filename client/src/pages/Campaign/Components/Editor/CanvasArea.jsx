@@ -648,6 +648,7 @@ export default function CanvasArea({
             {element.content || "Click Me"}
           </div>
         )}
+        
         {/* Card Element */}
         {element.type === "card" && (
           <div
@@ -983,7 +984,7 @@ export default function CanvasArea({
           <button
             onClick={() => setPreview(!preview)}
             className={`relative group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg
-    ${preview
+              ${preview
                 ? "bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text-black cursor-pointer"
                 : "bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text-black cursor-pointer"
               }`}
@@ -1030,58 +1031,69 @@ export default function CanvasArea({
         </div>
       </div>
       {/* Canvas Container */}
-      <div className="flex-1 overflow-auto bg-black p-8" onClick={handleCanvasClick}>
-        <div className="flex justify-center items-center min-w-full min-h-full">
-          <div
-            ref={canvasRef}
-            className={`canvas-background relative shadow-2xl rounded-lg overflow-hidden ${preview ? '' : 'ring-1 ring-gray-400/20'
-              }`}
-            style={{
-              width: 800 * zoomLevel,
-              height: 600 * zoomLevel,
-              backgroundColor: canvasBackgroundColor,
-              backgroundImage: showGrid && !preview ? `
-                linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)
-              ` : 'none',
-              backgroundSize: showGrid && !preview ? `${20 * zoomLevel}px ${20 * zoomLevel}px` : 'none',
-              boxSizing: 'border-box',
-              maxWidth: '100%',
-              maxHeight: '100%'
-            }}
-          >
-            {/* Edit Mode */}
-            {!preview && pages[activePage].elements.map(element => renderElement(element))}
-            {/* Preview Mode */}
-            {preview && (
-              <div className="relative w-full h-full">
-                {pages[activePage].elements.length === 0 && (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <div className="text-center text-gray-400">
-                      <div className="text-6xl mb-4">📄</div>
-                      <p className="text-xl">This page is empty</p>
-                      <p className="text-sm mt-2">Add some elements to see them here</p>
-                    </div>
-                  </div>
-                )}
-                {pages[activePage].elements
-                  .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
-                  .map(element => renderPreviewElement(element))}
+{/* Canvas Container */}
+<div className="flex-1 overflow-auto bg-black p-8" onClick={handleCanvasClick}>
+  <div className="flex justify-center items-center min-w-full min-h-full">
+    <div
+      ref={canvasRef}
+      className={`canvas-background relative shadow-2xl rounded-lg overflow-auto ${preview ? "" : "ring-1 ring-gray-400/20"}`}
+      style={{
+        width: 800 * zoomLevel,   // fixed width
+        height: 600 * zoomLevel,  // fixed height
+        backgroundColor: canvasBackgroundColor,
+        backgroundImage:
+          showGrid && !preview
+            ? `
+              linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)
+            `
+            : "none",
+        backgroundSize:
+          showGrid && !preview
+            ? `${20 * zoomLevel}px ${20 * zoomLevel}px`
+            : "none",
+        boxSizing: "border-box",
+      }}
+    >
+      {/* Edit Mode (interactive elements) */}
+      {!preview &&
+        pages[activePage].elements.map((element) => renderElement(element))}
+
+      {/* Preview Mode */}
+      {preview && (
+        <div className="relative w-full h-full">
+          {pages[activePage].elements.length === 0 && (
+            <div className="absolute inset-0 flex items-center justify-center">
+              <div className="text-center text-gray-400">
+                <div className="text-6xl mb-4">📄</div>
+                <p className="text-xl">This page is empty</p>
+                <p className="text-sm mt-2">Add some elements to see them here</p>
               </div>
-            )}
-            {/* Empty State */}
-            {!preview && pages[activePage].elements.length === 0 && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                <div className="text-center text-gray-400">
-                  <div className="text-6xl mb-4">🎨</div>
-                  <p className="text-xl font-medium">Start Creating</p>
-                  <p className="text-sm mt-2">Use the toolbox to add elements to your design</p>
-                </div>
-              </div>
-            )}
+            </div>
+          )}
+          {pages[activePage].elements
+            .sort((a, b) => (a.zIndex || 0) - (b.zIndex || 0))
+            .map((element) => renderPreviewElement(element))}
+        </div>
+      )}
+
+      {/* Empty State */}
+      {!preview && pages[activePage].elements.length === 0 && (
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+          <div className="text-center text-gray-400">
+            <div className="text-6xl mb-4">🎨</div>
+            <p className="text-xl font-medium">Start Creating</p>
+            <p className="text-sm mt-2">
+              Use the toolbox to add elements to your design
+            </p>
           </div>
         </div>
-      </div>
+      )}
+    </div>
+  </div>
+</div>
+
+    
     </div>
   );
 }

@@ -1,16 +1,38 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Line, Pie } from "react-chartjs-2";
 import "chart.js/auto";
 import { Zap, Activity, CheckCircle, Play } from "lucide-react";
 
 const Automation = () => {
+  const [logs, setLogs] = useState([]);
+
+  // Fetch logs from backend
+  useEffect(() => {
+    fetch("http://localhost:5000/api/automation/logs")
+      .then((res) => res.json())
+      .then((data) => setLogs(data))
+      .catch((err) => console.error("Error fetching logs:", err));
+  }, []);
+
+  // --- Prepare Chart Data ---
+  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const runsPerDay = Array(7).fill(0);
+
+  logs.forEach((log) => {
+    const d = new Date(log.date);
+    if (!isNaN(d)) {
+      const day = d.getDay();
+      runsPerDay[day] += 1;
+    }
+  });
+
   const lineData = {
-    labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+    labels: weekdays,
     datasets: [
       {
         label: "Automation Runs",
-        data: [12, 19, 8, 15, 22, 18, 25],
+        data: runsPerDay,
         borderColor: "#c2831f",
         backgroundColor: "rgba(194, 131, 31, 0.3)",
         fill: true,
@@ -21,12 +43,19 @@ const Automation = () => {
     ],
   };
 
+  const statusCounts = { Success: 0, Failed: 0, Pending: 0 };
+  logs.forEach((log) => {
+    if (statusCounts[log.status] !== undefined) {
+      statusCounts[log.status] += 1;
+    }
+  });
+
   const pieData = {
     labels: ["Success", "Failed", "Pending"],
     datasets: [
       {
-        data: [65, 20, 15],
-        backgroundColor: ["#1fc21fff", "#ef4444", "#3b82f6"],
+        data: [statusCounts.Success, statusCounts.Failed, statusCounts.Pending],
+        backgroundColor: ["#1fc21f", "#ef4444", "#3b82f6"],
         borderColor: "#111",
       },
     ],
@@ -77,20 +106,23 @@ const Automation = () => {
     },
   };
 
+  // --- Stats ---
   const stats = [
     {
       title: "Active Automations",
-      value: 12,
+      value: new Set(logs.map((l) => l.automation)).size,
       icon: <Zap className="text-[#c2831f]" size={28} />,
     },
     {
       title: "Total Triggers",
-      value: 256,
+      value: logs.length,
       icon: <Activity className="text-[#c2831f]" size={28} />,
     },
     {
       title: "Success Rate",
-      value: "85%",
+      value: logs.length
+        ? `${Math.round((statusCounts.Success / logs.length) * 100)}%`
+        : "0%",
       icon: <CheckCircle className="text-[#c2831f]" size={28} />,
     },
   ];
@@ -105,7 +137,8 @@ const Automation = () => {
           </h1>
           <p className="text-gray-400 text-sm sm:text-base max-w-2xl mx-auto">
             Monitor, control, and optimize all your automated workflows in one
-            place. Get real-time insights into performance and trigger activities.
+            place. Get real-time insights into performance and trigger
+            activities.
           </p>
         </div>
 
@@ -128,37 +161,30 @@ const Automation = () => {
         </div>
 
         {/* Workflow Diagram */}
-       <div className="p-4 sm:p-6 rounded-xl border border-gray-800">
-            <h2 className="text-lg sm:text-xl font-semibold text-[#c2831f] mb-4">
-                Workflow Overview
-            </h2>
-            <div className="flex flex-col sm:flex-row sm:flex-wrap justify-center items-center gap-4 text-center">
-                <div className="flex flex-col items-center">
-                <Play className="text-green-500" size={28} />
-                <p className="mt-1 text-sm">Trigger</p>
-                </div>
-
-                {/* Connector line for sm and above */}
-                <div className="hidden sm:block w-12 h-[2px] bg-[#c2831f] self-center" />
-
-                <div className="flex flex-col items-center">
-                <Activity className="text-yellow-500" size={28} />
-                <p className="mt-1 text-sm">Process</p>
-                </div>
-
-                <div className="hidden sm:block w-12 h-[2px] bg-[#c2831f] self-center" />
-
-                <div className="flex flex-col items-center">
-                <CheckCircle className="text-green-400" size={28} />
-                <p className="mt-1 text-sm">Completed</p>
-                </div>
+        <div className="p-4 sm:p-6 rounded-xl border border-gray-800">
+          <h2 className="text-lg sm:text-xl font-semibold text-[#c2831f] mb-4">
+            Workflow Overview
+          </h2>
+          <div className="flex flex-col sm:flex-row sm:flex-wrap justify-center items-center gap-4 text-center">
+            <div className="flex flex-col items-center">
+              <Play className="text-green-500" size={28} />
+              <p className="mt-1 text-sm">Trigger</p>
             </div>
+            <div className="hidden sm:block w-12 h-[2px] bg-[#c2831f] self-center" />
+            <div className="flex flex-col items-center">
+              <Activity className="text-yellow-500" size={28} />
+              <p className="mt-1 text-sm">Process</p>
+            </div>
+            <div className="hidden sm:block w-12 h-[2px] bg-[#c2831f] self-center" />
+            <div className="flex flex-col items-center">
+              <CheckCircle className="text-green-400" size={28} />
+              <p className="mt-1 text-sm">Completed</p>
+            </div>
+          </div>
         </div>
-
 
         {/* Charts */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Line Chart */}
           <div className="p-4 rounded-xl border border-gray-800">
             <h2 className="text-lg font-semibold text-[#c2831f] mb-3">
               Automation Runs This Week
@@ -167,8 +193,6 @@ const Automation = () => {
               <Line data={lineData} options={chartOptions} />
             </div>
           </div>
-
-          {/* Pie Chart */}
           <div className="p-4 rounded-xl border border-gray-800">
             <h2 className="text-lg font-semibold text-[#c2831f] mb-3">
               Automation Status
@@ -184,7 +208,7 @@ const Automation = () => {
           <h2 className="text-lg font-semibold text-[#c2831f] mb-4">
             Recent Automation Logs
           </h2>
-          <table className="min-w-full sm:min-w-[100   ] text-sm text-gray-300">
+          <table className="min-w-full text-sm text-gray-300">
             <thead>
               <tr className="text-gray-400 border-b border-gray-700">
                 <th className="p-2 text-left">Date</th>
@@ -193,21 +217,31 @@ const Automation = () => {
               </tr>
             </thead>
             <tbody>
-              <tr className="border-b border-gray-800">
-                <td className="p-2">2025-08-12</td>
-                <td className="p-2">Welcome Email Trigger</td>
-                <td className="p-2 text-green-400">Success</td>
-              </tr>
-              <tr className="border-b border-gray-800">
-                <td className="p-2">2025-08-12</td>
-                <td className="p-2">Bounce Cleanup</td>
-                <td className="p-2 text-red-400">Failed</td>
-              </tr>
-              <tr>
-                <td className="p-2">2025-08-11</td>
-                <td className="p-2">Follow-up Reminder</td>
-                <td className="p-2 text-yellow-400">Pending</td>
-              </tr>
+              {logs.length > 0 ? (
+                logs.map((log, i) => (
+                  <tr key={i} className="border-b border-gray-800">
+                    <td className="p-2">{log.date}</td>
+                    <td className="p-2">{log.automation}</td>
+                    <td
+                      className={`p-2 ${
+                        log.status === "Success"
+                          ? "text-green-400"
+                          : log.status === "Failed"
+                          ? "text-red-400"
+                          : "text-yellow-400"
+                      }`}
+                    >
+                      {log.status}
+                    </td>
+                  </tr>
+                ))
+              ) : (
+                <tr>
+                  <td colSpan="3" className="p-4 text-center text-gray-500">
+                    No automation logs found.
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
