@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Plus, Search, Edit, Trash2, Eye } from "lucide-react";
 
 const Lists = () => {
+
   const [lists, setLists] = useState([
     {
       id: "LST-001",
@@ -114,9 +115,8 @@ const Lists = () => {
               {filteredLists.map((list, index) => (
                 <tr
                   key={list.id}
-                  className={`border-t border-gray-700 ${
-                    index % 2 === 0 ? "bg-gray-800" : "bg-gray-900"
-                  } hover:bg-gray-700 transition`}
+                  className={`border-t border-gray-700 ${index % 2 === 0 ? "bg-gray-800" : "bg-gray-900"
+                    } hover:bg-gray-700 transition`}
                 >
                   <td className="px-4 py-3 text-sm">{list.id}</td>
                   <td className="px-4 py-3 font-medium">{list.name}</td>

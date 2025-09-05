@@ -60,6 +60,7 @@ const Leads = () => {
     Unsubscribed: "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 border border-yellow-300 dark:border-yellow-700",
   };
 
+
   return (
     <div className="space-y-10 px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
