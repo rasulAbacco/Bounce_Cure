@@ -27,7 +27,9 @@ import emailRoutes from './routes/emailRoutes.js';
 import emailAccountRoutes from './routes/emailAccountRoutes.js';
 import replyRoutes from "./routes/SendCampaignReply.js";
 // import fetchReplies from "./routes/FetchReplies.js";
-
+import leadsRouter from "./routes/leads.js";
+import listRoutes from "./routes/listRoutes.js";
+import orderRoutes from "./routes/ordersRoutes.js";
 dotenv.config();
 console.log("Loaded SG API key:", process.env.SG_EMAIL_VAL_API_KEY?.substring(0, 10));
 
@@ -98,9 +100,14 @@ app.use('/api/sendCampaigns', sendCampaignsRoutes);
 
 app.use("/tasks", taskRoutes);
 app.use("/deals", dealsRoutes);
+app.use("/api/leads", leadsRouter);
+app.use("/lists", listRoutes);
 app.use("/contact", contactCRMRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/email-account', emailAccountRoutes);
+
+// Routes
+app.use("/orders", orderRoutes);
 
 
 //
