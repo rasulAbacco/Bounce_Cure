@@ -1,55 +1,728 @@
-import React from "react";
+import React, { useState, useMemo, useEffect } from "react";
 
+const API_URL = "http://localhost:5000/orders"; // Your Express API
 
 const Orders = () => {
-  const orders = [
-    { id: "ORD-1001", plan: "Pro Plan", amount: "$49", status: "Paid", date: "2025-08-30" },
-    { id: "ORD-1002", plan: "Starter Plan", amount: "$19", status: "Pending", date: "2025-09-01" },
-    { id: "ORD-1003", plan: "Enterprise Plan", amount: "$199", status: "Paid", date: "2025-09-02" },
+  const [orders, setOrders] = useState([]);
+  const [deletedOrders, setDeletedOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState("all");
+  const [sortConfig, setSortConfig] = useState({ key: "timestamp", direction: "descending" });
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false);
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [modalMode, setModalMode] = useState("create");
+  const [currentOrder, setCurrentOrder] = useState(null);
+  const [viewOrder, setViewOrder] = useState(null);
+  
+  const statusOptions = ["Open", "Processed", "Delivered", "Paid", "Pending", "Cancelled"];
+  const planOptions = ["Basic Plan", "Starter Plan", "Pro Plan", "Enterprise Plan"];
+  
+  const statusColors = {
+    paid: "bg-emerald-500",
+    pending: "bg-amber-500",
+    cancelled: "bg-rose-500",
+    delivered: "bg-violet-500",
+    processed: "bg-blue-500",
+    open: "bg-gray-500",
+  };
+
+  // Mock data for fallback
+  const mockOrders = [
+    { id: "ORD-1001", name: "John Doe", phone: "+1 (555) 123-4567", plan: "Pro Plan", amount: "$49", status: "Paid", date: "2025-08-30", timestamp: Date.now() - 7 * 24 * 60 * 60 * 1000 },
+    { id: "ORD-1002", name: "Jane Smith", phone: "+1 (555) 987-6543", plan: "Starter Plan", amount: "$19", status: "Pending", date: "2025-09-01", timestamp: Date.now() - 6 * 24 * 60 * 60 * 1000 },
+    { id: "ORD-1003", name: "Robert Johnson", phone: "+1 (555) 456-7890", plan: "Enterprise Plan", amount: "$199", status: "Paid", date: "2025-09-02", timestamp: Date.now() - 5 * 24 * 60 * 60 * 1000 },
   ];
 
+  // Fetch orders from backend on mount
+  useEffect(() => {
+    fetchOrders();
+  }, []);
 
+  async function fetchOrders() {
+    try {
+      setLoading(true);
+      const res = await fetch(API_URL);
+      
+      if (!res.ok) {
+        throw new Error(`Server responded with ${res.status}: ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      setOrders(data);
+    } catch (err) {
+      console.error("Failed to fetch orders:", err);
+      // Fallback to mock data for development
+      setOrders(mockOrders);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function fetchDeletedOrders() {
+    try {
+      const res = await fetch(`${API_URL}/deleted`);
+      
+      if (!res.ok) {
+        if (res.status === 404) {
+          console.warn("Deleted orders endpoint not implemented yet");
+          return;
+        }
+        throw new Error(`Server responded with ${res.status}: ${res.statusText}`);
+      }
+      
+      const data = await res.json();
+      setDeletedOrders(data);
+    } catch (err) {
+      console.error("Failed to fetch deleted orders:", err);
+      // Fallback to empty array
+      setDeletedOrders([]);
+    }
+  }
+
+  const calculateRevenue = () => {
+    return orders.reduce((sum, order) => {
+      // Check if amount exists and is a string
+      if (!order.amount || typeof order.amount !== 'string') return sum;
+      
+      const numericValue = parseInt(order.amount.replace(/[^0-9]/g, ''));
+      return sum + (isNaN(numericValue) ? 0 : numericValue);
+    }, 0);
+  };
+
+  const getStatusBadgeClass = (status) => {
+    const statusLower = status.toLowerCase();
+    const colorClass = statusColors[statusLower] || "bg-gray-500";
+    return `${colorClass} text-white px-3 py-1 rounded-full text-xs font-medium`;
+  };
+
+  const openModal = (mode, order = null) => {
+    setModalMode(mode);
+    setCurrentOrder(order || {
+      name: "",
+      phone: "",
+      plan: "Starter Plan",
+      amount: "$19",
+      status: "Open",
+      date: new Date().toISOString().split('T')[0],
+      timestamp: Date.now()
+    });
+    setIsModalOpen(true);
+  };
+
+  async function handleSave() {
+    try {
+      if (modalMode === "create") {
+        const res = await fetch(API_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(currentOrder),
+        });
+        
+        if (!res.ok) {
+          throw new Error(`Server responded with ${res.status}: ${res.statusText}`);
+        }
+        
+        const newOrder = await res.json();
+        setOrders([newOrder, ...orders]);
+      } else {
+        const res = await fetch(`${API_URL}/${currentOrder.id}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(currentOrder),
+        });
+        
+        if (!res.ok) {
+          throw new Error(`Server responded with ${res.status}: ${res.statusText}`);
+        }
+        
+        const updatedOrder = await res.json();
+        setOrders(orders.map(o => (o.id === updatedOrder.id ? updatedOrder : o)));
+      }
+      setIsModalOpen(false);
+    } catch (err) {
+      console.error("Failed to save order:", err);
+      // Fallback to local state update
+      if (modalMode === "create") {
+        const newOrder = {
+          ...currentOrder,
+          id: `ORD-${1000 + orders.length + 1}`,
+          timestamp: Date.now()
+        };
+        setOrders([newOrder, ...orders]);
+      } else {
+        setOrders(orders.map(o => (o.id === currentOrder.id ? currentOrder : o)));
+      }
+      setIsModalOpen(false);
+    }
+  }
+
+  async function handleDelete(order) {
+    try {
+      const res = await fetch(`${API_URL}/${order.id}`, { method: "DELETE" });
+      
+      if (!res.ok) {
+        throw new Error(`Server responded with ${res.status}: ${res.statusText}`);
+      }
+      
+      setOrders(orders.filter(o => o.id !== order.id));
+      fetchDeletedOrders();
+    } catch (err) {
+      console.error("Failed to delete order:", err);
+      // Fallback to local state update
+      setOrders(orders.filter(o => o.id !== order.id));
+      setDeletedOrders([order, ...deletedOrders]);
+    }
+  }
+
+  async function handleRestore(order) {
+    try {
+      const res = await fetch(`${API_URL}/restore/${order.id}`, { method: "PUT" });
+      
+      if (!res.ok) {
+        if (res.status === 404) {
+          // Fallback to local state update
+          setOrders([order, ...orders]);
+          setDeletedOrders(deletedOrders.filter(o => o.id !== order.id));
+          return;
+        }
+        throw new Error(`Server responded with ${res.status}: ${res.statusText}`);
+      }
+      
+      fetchOrders();
+      fetchDeletedOrders();
+    } catch (err) {
+      console.error("Failed to restore order:", err);
+      // Fallback to local state update
+      setOrders([order, ...orders]);
+      setDeletedOrders(deletedOrders.filter(o => o.id !== order.id));
+    }
+  }
+
+  async function handlePermanentDelete(orderId) {
+    try {
+      const res = await fetch(`${API_URL}/permanent/${orderId}`, { method: "DELETE" });
+      
+      if (!res.ok) {
+        if (res.status === 404) {
+          // Fallback to local state update
+          setDeletedOrders(deletedOrders.filter(o => o.id !== orderId));
+          return;
+        }
+        throw new Error(`Server responded with ${res.status}: ${res.statusText}`);
+      }
+      
+      fetchDeletedOrders();
+    } catch (err) {
+      console.error("Failed to permanently delete order:", err);
+      // Fallback to local state update
+      setDeletedOrders(deletedOrders.filter(o => o.id !== orderId));
+    }
+  }
+
+  const filteredOrders = useMemo(() => {
+    let result = orders;
+    if (filter !== "all") {
+      result = result.filter(order => order.status.toLowerCase() === filter);
+    }
+    if (searchTerm) {
+      const term = searchTerm.toLowerCase();
+      result = result.filter(order =>
+        order.id.toLowerCase().includes(term) || 
+        order.plan.toLowerCase().includes(term) ||
+        (order.name && order.name.toLowerCase().includes(term)) ||
+        (order.phone && order.phone.toLowerCase().includes(term))
+      );
+    }
+    if (sortConfig.key) {
+      result = [...result].sort((a, b) => {
+        if (sortConfig.key === "timestamp") {
+          return sortConfig.direction === "ascending"
+            ? a.timestamp - b.timestamp
+            : b.timestamp - a.timestamp;
+        }
+        if (a[sortConfig.key] < b[sortConfig.key]) {
+          return sortConfig.direction === "ascending" ? -1 : 1;
+        }
+        if (a[sortConfig.key] > b[sortConfig.key]) {
+          return sortConfig.direction === "ascending" ? 1 : -1;
+        }
+        return b.timestamp - a.timestamp;
+      });
+    }
+    return result;
+  }, [filter, orders, searchTerm, sortConfig]);
+
+  const downloadCSV = () => {
+    const headers = ["ID", "Name", "Phone", "Plan", "Amount", "Status", "Date"];
+    const csvContent = [
+      headers.join(','),
+      ...orders.map(order => [
+        order.id,
+        order.name || "",
+        order.phone || "",
+        order.plan,
+        order.amount,
+        order.status,
+        order.date
+      ].join(','))
+    ].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `orders_${new Date().toISOString().split('T')[0]}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const openViewModal = (order) => {
+    setViewOrder(order);
+    setIsViewModalOpen(true);
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-black flex items-center justify-center">
+        <div className="text-white text-xl">Loading orders...</div>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex min-h-screen bg-black">
-      <div className="flex-1 flex flex-col">
-        <div className="p-6">
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Orders</h2>
-          <div className="overflow-x-auto bg-black rounded-lg shadow">
-            <table className="w-full text-white text-left ">
-              <thead className="bg-[#154c7c] text-white">
-                <tr>
-                  <th className="px-4 py-3">Order ID</th>
-                  <th className="px-4 py-3">Plan</th>
-                  <th className="px-4 py-3">Amount</th>
-                  <th className="px-4 py-3">Status</th>
-                  <th className="px-4 py-3">Date</th>
-                </tr>
-              </thead>
-              <tbody>
-                {orders.map((order) => (
-                  <tr key={order.id} className="border-b hover:bg-black">
-                    <td className="px-4 py-3">{order.id}</td>
-                    <td className="px-4 py-3">{order.plan}</td>
-                    <td className="px-4 py-3">{order.amount}</td>
-                    <td className="px-4 py-3">
-                      <span
-                        className={`px-2 py-1 rounded-full text-xs ${order.status === "Paid"
-                          ? "bg-green-100 text-green-600"
-                          : "bg-yellow-100 text-yellow-600"
-                          }`}
-                      >
-                        {order.status}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3">{order.date}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+    <div className="min-h-screen bg-black from-indigo-50 to-white p-4 md:p-8">
+      {/* Header with Buttons */}
+      <header className="mb-8">
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-bold text-white mb-2">Orders Dashboard</h1>
+            <p className="text-gray-300">Track, manage, and analyze your orders in one place</p>
+          </div>
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => openModal("create")}
+              className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-medium flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+              </svg>
+              Create Order
+            </button>
+            <button
+              onClick={downloadCSV}
+              className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-medium flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+              </svg>
+              Download
+            </button>
+            <button
+              onClick={() => {
+                setIsHistoryModalOpen(true);
+                fetchDeletedOrders();
+              }}
+              className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded-lg font-medium flex items-center gap-2"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              History
+            </button>
+          </div>
+        </div>
+      </header>
+      
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+        <div className="bg-gray-900 p-5 rounded-lg shadow-sm border border-gray-700">
+          <div className="text-gray-100 text-lg font-bold mb-1">Total Orders</div>
+          <div className="text-2xl font-bold text-white">{orders.length}</div>
+        </div>
+        <div className="bg-gray-900 p-5 rounded-lg shadow-sm border border-gray-700">
+          <div className="text-gray-300 text-lg font-bold mb-1">Pending</div>
+          <div className="text-2xl font-bold text-amber-400">
+            {orders.filter((o) => o.status === "Pending").length}
+          </div>
+        </div>
+        <div className="bg-gray-900 p-5 rounded-lg shadow-sm border border-gray-700">
+          <div className="text-gray-300 text-lg font-bold mb-1">Completed</div>
+          <div className="text-2xl font-bold text-emerald-400">
+            {orders.filter((o) => o.status === "Paid" || o.status === "Delivered").length}
+          </div>
+        </div>
+        <div className="bg-gray-900 p-5 rounded-lg shadow-sm border border-gray-700">
+          <div className="text-gray-300 text-lg font-bold mb-1">Revenue</div>
+          <div className="text-2xl font-bold text-indigo-400">
+            ${calculateRevenue()}
           </div>
         </div>
       </div>
+      
+      {/* Filters and Search */}
+      <div className="bg-black p-5 rounded-lg shadow-sm border border-gray-700 mb-8">
+        <div className="flex flex-col md:flex-row gap-4 items-start md:items-center justify-between">
+          {/* Status Filters */}
+          <div className="flex flex-wrap gap-2">
+            {["all", ...statusOptions.map((s) => s.toLowerCase())].map((status) => (
+              <button
+                key={status}
+                onClick={() => setFilter(status)}
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${filter === status
+                    ? "bg-indigo-600 text-white"
+                    : "bg-gray-800 text-gray-300 hover:bg-gray-700"
+                  }`}
+              >
+                {status === "all" ? "All" : status}
+              </button>
+            ))}
+          </div>
+          {/* Search Bar */}
+          <div className="relative w-full md:w-64">
+            <input
+              type="text"
+              placeholder="Search orders..."
+              className="w-full pl-10 pr-4 py-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+            <svg
+              className="w-5 h-5 text-gray-400 absolute left-3 top-2.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
+              />
+            </svg>
+          </div>
+        </div>
+      </div>
+      
+      {/* Orders Table */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+        <table className="w-full">
+          <thead className="bg-gray-50">
+            <tr>
+              {["id", "name", "phone", "plan", "amount", "status", "date"].map((key) => (
+                <th
+                  key={key}
+                  className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700"
+                  onClick={() => setSortConfig({
+                    key,
+                    direction: sortConfig.key === key && sortConfig.direction === "ascending"
+                      ? "descending" : "ascending"
+                  })}
+                >
+                  <div className="flex items-center">
+                    {key}
+                    {sortConfig.key === key && (
+                      <span className="ml-1">
+                        {sortConfig.direction === "ascending" ? "↑" : "↓"}
+                      </span>
+                    )}
+                  </div>
+                </th>
+              ))}
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200">
+            {filteredOrders.map((order) => (
+              <tr key={order.id} className="hover:bg-gray-50">
+                <td className="px-4 py-3 font-medium text-gray-900">{order.id}</td>
+                <td className="px-4 py-3 text-gray-900">{order.name || "N/A"}</td>
+                <td className="px-4 py-3 text-gray-700">{order.phone || "N/A"}</td>
+                <td className="px-4 py-3 text-gray-700">{order.plan}</td>
+                <td className="px-4 py-3 font-medium text-gray-900">{order.amount}</td>
+                <td className="px-4 py-3">
+                  <span className={getStatusBadgeClass(order.status)}>
+                    {order.status}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-gray-500">{order.date}</td>
+                <td className="px-4 py-3 text-right">
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={() => openModal("edit", order)}
+                      className="text-indigo-600 hover:text-indigo-900 p-1 rounded-full hover:bg-indigo-50"
+                      title="Edit"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => openViewModal(order)}
+                      className="text-blue-600 hover:text-blue-900 p-1 rounded-full hover:bg-blue-50"
+                      title="View"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                      </svg>
+                    </button>
+                    <button
+                      onClick={() => handleDelete(order)}
+                      className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50"
+                      title="Delete"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {filteredOrders.length === 0 && (
+          <div className="text-center py-12">
+            <div className="text-gray-400 mb-2">📭</div>
+            <p className="text-lg font-medium text-gray-900">No orders found</p>
+            <p className="text-gray-500">Try adjusting filters or search terms</p>
+          </div>
+        )}
+      </div>
+      
+      {/* Create/Edit Modal */}
+      {isModalOpen && currentOrder && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md animate-fade-in">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">
+                {modalMode === "create" ? "Create Order" : "Edit Order"}
+              </h3>
+              <div className="space-y-4">
+                {modalMode === "edit" && (
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Order ID</label>
+                    <div className="px-3 py-2 bg-gray-100 rounded-lg text-gray-900">{currentOrder.id}</div>
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+                  <input
+                    type="text"
+                    value={currentOrder.name || ""}
+                    onChange={(e) => setCurrentOrder({ ...currentOrder, name: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Enter customer name"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                  <input
+                    type="text"
+                    value={currentOrder.phone || ""}
+                    onChange={(e) => setCurrentOrder({ ...currentOrder, phone: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Enter phone number"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Plan</label>
+                  <select
+                    value={currentOrder.plan}
+                    onChange={(e) => setCurrentOrder({ ...currentOrder, plan: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    {planOptions.map(plan => <option key={plan}>{plan}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                  <input
+                    type="text"
+                    value={currentOrder.amount}
+                    onChange={(e) => setCurrentOrder({ ...currentOrder, amount: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <select
+                    value={currentOrder.status}
+                    onChange={(e) => setCurrentOrder({ ...currentOrder, status: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    {statusOptions.map(status => <option key={status}>{status}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                  <input
+                    type="date"
+                    value={currentOrder.date}
+                    onChange={(e) => setCurrentOrder({ ...currentOrder, date: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
+                  />
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  onClick={() => setIsModalOpen(false)}
+                  className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleSave}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                >
+                  {modalMode === "create" ? "Create" : "Save"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* View Modal */}
+      {isViewModalOpen && viewOrder && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md animate-fade-in">
+            <div className="p-6">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Order Details</h3>
+              <div className="space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Order ID</label>
+                  <div className="px-3 py-2 bg-gray-100 rounded-lg text-gray-900">{viewOrder.id}</div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Customer Name</label>
+                  <div className="px-3 py-2 bg-gray-100 rounded-lg text-gray-900">{viewOrder.name || "N/A"}</div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number</label>
+                  <div className="px-3 py-2 bg-gray-100 rounded-lg text-gray-900">{viewOrder.phone || "N/A"}</div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Plan</label>
+                  <div className="px-3 py-2 bg-gray-100 rounded-lg text-gray-900">{viewOrder.plan}</div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Amount</label>
+                  <div className="px-3 py-2 bg-gray-100 rounded-lg text-gray-900">{viewOrder.amount}</div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                  <span className={getStatusBadgeClass(viewOrder.status)}>
+                    {viewOrder.status}
+                  </span>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Date</label>
+                  <div className="px-3 py-2 bg-gray-100 rounded-lg text-gray-900">{viewOrder.date}</div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Created</label>
+                  <div className="px-3 py-2 bg-gray-100 rounded-lg text-gray-900">
+                    {viewOrder.timestamp ? new Date(viewOrder.timestamp).toLocaleString() : 'Unknown'}
+                  </div>
+                </div>
+              </div>
+              <div className="mt-6 flex justify-end">
+                <button
+                  onClick={() => setIsViewModalOpen(false)}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {/* History Modal */}
+      {isHistoryModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl animate-fade-in max-h-[80vh] overflow-hidden flex flex-col">
+            <div className="p-6 border-b">
+              <h3 className="text-xl font-bold text-gray-900">Deleted Orders History</h3>
+            </div>
+            <div className="overflow-y-auto flex-grow">
+              {deletedOrders.length === 0 ? (
+                <div className="text-center py-12">
+                  <div className="text-gray-400 mb-2">📋</div>
+                  <p className="text-lg font-medium text-gray-900">No deleted orders</p>
+                  <p className="text-gray-500">Deleted orders will appear here</p>
+                </div>
+              ) : (
+                <table className="w-full">
+                  <thead className="bg-gray-50 sticky top-0">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Plan</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {deletedOrders.map((order) => (
+                      <tr key={order.id} className="hover:bg-gray-50">
+                        <td className="px-4 py-3 font-medium text-gray-900">{order.id}</td>
+                        <td className="px-4 py-3 text-gray-900">{order.name || "N/A"}</td>
+                        <td className="px-4 py-3 text-gray-700">{order.plan}</td>
+                        <td className="px-4 py-3">
+                          <span className={getStatusBadgeClass(order.status)}>
+                            {order.status}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-gray-500">{order.date}</td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="flex justify-end gap-2">
+                            <button
+                              onClick={() => handleRestore(order)}
+                              className="text-emerald-600 hover:text-emerald-900 p-1 rounded-full hover:bg-emerald-50"
+                              title="Restore"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                              </svg>
+                            </button>
+                            <button
+                              onClick={() => handlePermanentDelete(order.id)}
+                              className="text-red-600 hover:text-red-900 p-1 rounded-full hover:bg-red-50"
+                              title="Delete"
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                              </svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              )}
+            </div>
+            <div className="p-4 border-t flex justify-end">
+              <button
+                onClick={() => setIsHistoryModalOpen(false)}
+                className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
