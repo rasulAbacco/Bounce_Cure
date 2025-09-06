@@ -1,21 +1,29 @@
-import crypto from 'crypto';
+import crypto from "crypto";
 
-const algorithm = 'aes-256-cbc';
-const key = crypto.scryptSync(process.env.ENCRYPTION_SECRET, 'salt', 32);
+const algorithm = "aes-256-ctr";
+const secretKey = process.env.ENCRYPTION_KEY;
 
-export function encrypt(text) {
-    const iv = crypto.randomBytes(16);
-    const cipher = crypto.createCipheriv(algorithm, key, iv);
-    let encrypted = cipher.update(text, 'utf8', 'hex');
-    encrypted += cipher.final('hex');
-    return iv.toString('hex') + ':' + encrypted;
+if (!secretKey) {
+  console.warn("⚠️ ENCRYPTION_KEY missing, encryption disabled.");
 }
 
-export function decrypt(encrypted) {
-    const [ivHex, encryptedText] = encrypted.split(':');
-    const iv = Buffer.from(ivHex, 'hex');
-    const decipher = crypto.createDecipheriv(algorithm, key, iv);
-    let decrypted = decipher.update(encryptedText, 'hex', 'utf8');
-    decrypted += decipher.final('utf8');
-    return decrypted;
-}
+export const encrypt = (text) => {
+  if (!secretKey) return text; // just return plain text
+  const iv = crypto.randomBytes(16);
+  const key = crypto.scryptSync(secretKey, "salt", 32);
+  const cipher = crypto.createCipheriv(algorithm, key, iv);
+  const encrypted = Buffer.concat([cipher.update(text), cipher.final()]);
+  return { iv: iv.toString("hex"), content: encrypted.toString("hex") };
+};
+
+export const decrypt = (hash) => {
+  if (!secretKey) return hash.content; // return plain
+  const iv = Buffer.from(hash.iv, "hex");
+  const key = crypto.scryptSync(secretKey, "salt", 32);
+  const decipher = crypto.createDecipheriv(algorithm, key, iv);
+  const decrypted = Buffer.concat([
+    decipher.update(Buffer.from(hash.content, "hex")),
+    decipher.final(),
+  ]);
+  return decrypted.toString();
+};
