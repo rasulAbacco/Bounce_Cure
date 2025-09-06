@@ -236,6 +236,8 @@ model EmailAccount {
   encryptedPass String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+}
+
 model Reply {
   id         Int      @id @default(autoincrement())
   contactId  Int
@@ -244,4 +246,40 @@ model Reply {
   createdAt  DateTime @default(now())
 
   contact Contact @relation(fields: [contactId], references: [id])
+}
+
+model Lead {
+  id       Int    @id @default(autoincrement())
+  name     String
+  email    String @unique
+  campaign String
+  source   String
+  status   String
+  score    Int
+  last     String
+}
+
+model List {
+  id           Int      @id @default(autoincrement()) // ID
+  name         String // List Name
+  count        Int // Contacts Count
+  email        String // Email
+  phone        String // Phone Number
+  createdAt    DateTime @default(now()) // Created Timestamp
+  uploadedFile Bytes? // must be Bytes, not String
+
+  @@map("lists") // optional: maps model to 'lists' table
+}
+
+model Order {
+  id        Int     @id @default(autoincrement()) // ✅ INT PRIMARY KEY
+  orderCode String  @unique
+  name      String?
+  phone     String?
+  plan      String
+  amount    String
+  status    String
+  date      String
+  timestamp BigInt  @default(0)
+  deleted   Boolean @default(false)
 }
