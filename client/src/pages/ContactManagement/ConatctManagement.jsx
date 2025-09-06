@@ -15,6 +15,8 @@ import {
   Moon,
   List,       // For Lists
   Inbox,      // For Inbox
+  Package,    // For Orders
+  Eraser,     // For Clear action
   Ticket,     // For Tickets
   Package,    // For Orders
   Eraser,     // For Clear action
@@ -38,23 +40,29 @@ import ContactsPage from "./pages/ContactsPage";
 import Deals from "./pages/Deals";
 import Tasks from "./pages/Tasks";
 import Lists from "./pages/Lists";
+import Orders from "./pages/Orders";
+import Inboxs from "./pages/Inbox";
 import Tickets from "./pages/Tickets";
 import Orders from "./pages/Orders";
 import Inboxs from "./pages/Inbox";
-
 // === UI Components ===
 const Section = ({ title, children, right }) => (
   <section className="bg-black/80 dark:bg-black/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 shadow-xl transition">
     <div className="flex items-center justify-between mb-4">
+
+      {/* <h2 className="text-xl font-semibold tracking-wide text-yellow-500 dark:text-yellow-400">
+        {title}
+      </h2> */}
+
       <h2 className="text-xl font-semibold tracking-wide text-yellow-500 dark:text-yellow-400">
         {title}
       </h2>
+
       {right}
     </div>
     <div>{children}</div>
   </section>
 );
-
 const StatCard = ({ label, value, icon: Icon }) => (
   <motion.div
     initial={{ opacity: 0, y: 12 }}
@@ -72,7 +80,6 @@ const StatCard = ({ label, value, icon: Icon }) => (
     </div>
   </motion.div>
 );
-
 const ProgressBar = ({ percent, label }) => (
   <div className="mb-3">
     <div className="flex justify-between text-sm mb-1">
@@ -84,7 +91,6 @@ const ProgressBar = ({ percent, label }) => (
     </div>
   </div>
 );
-
 const Badge = ({ children, tone = "default" }) => {
   const tones = {
     default:
@@ -104,7 +110,6 @@ const Badge = ({ children, tone = "default" }) => {
     </span>
   );
 };
-
 const Modal = ({ open, onClose, title, children, footer }) => {
   if (!open) return null;
   return (
@@ -136,6 +141,7 @@ const Modal = ({ open, onClose, title, children, footer }) => {
     </div>
   );
 };
+
 
 // === Call Log Component ===
 const CallLog = () => {
@@ -214,24 +220,22 @@ const CallLog = () => {
   );
 };
 
+
 // === Seed Data ===
 const seedActivities = [
   { id: 1, text: "John Doe added a new contact", when: "Just now" },
   { id: 2, text: 'Jane Smith updated Deal status to "Proposal Sent"', when: "2h ago" },
   { id: 3, text: "Call scheduled with Client X", when: "Today 4:00 PM" },
 ];
-
 const seedTasks = [
   { id: 1, title: "Follow-up Email with Jane", due: "Aug 20", status: "Pending" },
   { id: 2, title: "Product Demo for XYZ", due: "Aug 21", status: "Scheduled" },
 ];
-
 const seedLeads = [
   { id: 1, name: "John Doe", company: "Acme Inc.", status: "New", last: "Aug 18" },
   { id: 2, name: "Jane Smith", company: "XYZ Corp", status: "Contacted", last: "Aug 17" },
   { id: 3, name: "Sam Brown", company: "Freelance", status: "Qualified", last: "Aug 19" },
 ];
-
 const pipelinePercents = [
   { label: "Stage 1: Prospecting", value: 40 },
   { label: "Stage 2: Qualified", value: 25 },
@@ -239,7 +243,6 @@ const pipelinePercents = [
   { label: "Stage 4: Closed Won", value: 10 },
   { label: "Stage 5: Closed Lost", value: 10 },
 ];
-
 const chartData = [
   { month: "Apr", leads: 80, deals: 24 },
   { month: "May", leads: 110, deals: 28 },
@@ -247,7 +250,6 @@ const chartData = [
   { month: "Jul", leads: 130, deals: 33 },
   { month: "Aug", leads: 124, deals: 34 },
 ];
-
 // === Main Component ===
 export default function ContactManagement() {
   const [leads, setLeads] = useState(seedLeads);
@@ -268,10 +270,6 @@ export default function ContactManagement() {
     status: "Pending",
   });
 
-
-
-
-
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard" },
     { icon: Users, label: "Leads" },
@@ -280,10 +278,14 @@ export default function ContactManagement() {
     { icon: ClipboardList, label: "Tasks" },
     { icon: List, label: "Lists" },
     { icon: Inbox, label: "Inbox" },
+    { icon: Package, label: "Orders" },
+  ];
+
     { icon: Ticket, label: "Tickets" },
     { icon: Package, label: "Orders" },
     { icon: Phone, label: "Call Log" }, // Added Call Log navigation
   ];
+
 
   // Handlers
   const addLead = (e) => {
@@ -292,14 +294,12 @@ export default function ContactManagement() {
     setLeads([{ id, ...newLead }, ...leads]);
     setLeadModal(false);
   };
-
   const addTask = (e) => {
     e.preventDefault();
     const id = tasks.length ? Math.max(...tasks.map((t) => t.id)) + 1 : 1;
     setTasks([{ id, ...newTask }, ...tasks]);
     setTaskModal(false);
   };
-
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-black text-white dark:bg-black dark:text-white pt-40 transition-colors duration-300">
@@ -324,7 +324,6 @@ export default function ContactManagement() {
                   className={`cursor-pointer flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition ${activeTab === item.label
                       ? "bg-zinc-900 border-zinc-300 dark:border-zinc-800 text-yellow-500"
                       : "hover:bg-zinc-100 dark:hover:bg-zinc-900 border-transparent text-zinc-200 hover:text-white hover:border hover:border-yellow-500 dark:text-zinc-300"
-
                     }`}
                 >
                   <item.icon className="w-4 h-4" />
@@ -332,7 +331,6 @@ export default function ContactManagement() {
                 </button>
               ))}
             </nav>
-
 
           </div>
         </header>
@@ -465,7 +463,10 @@ export default function ContactManagement() {
                           {t.status}
                         </Badge>
 
+
+
                         <Badge tone={t.status === "Scheduled" ? "info" : t.status === "Completed" ? "success" : "warn"}>{t.status}</Badge>
+
                       </li>
                     ))}
                   </ul>
@@ -477,7 +478,6 @@ export default function ContactManagement() {
           {activeTab === "Contacts" && <ContactsPage />}
           {activeTab === "Deals" && <Deals />}
           {activeTab === "Tasks" && <Tasks />}
-          {activeTab === "Call Log" && <CallLog />} {/* Added Call Log tab */}
           {/* Placeholder sections */}
           {activeTab === "Lists" && (
             <Section title="Lists">
@@ -489,17 +489,11 @@ export default function ContactManagement() {
               <Inboxs />
             </Section>
           )}
-          {activeTab === "Tickets" && (
-            <Section title="Tickets">
-              <Tickets />
-            </Section>
-          )}
           {activeTab === "Orders" && (
             <Section title="Orders">
               <Orders />
             </Section>
           )}
-
         </main>
         {/* --- Modals --- */}
         <Modal
