@@ -30,6 +30,10 @@ import replyRoutes from "./routes/SendCampaignReply.js";
 import leadsRouter from "./routes/leads.js";
 import listRoutes from "./routes/listRoutes.js";
 import orderRoutes from "./routes/ordersRoutes.js";
+import crmDashRoutes from "./routes/crmDashRoutes.js";
+import cron from 'node-cron';
+
+
 dotenv.config();
 console.log("Loaded SG API key:", process.env.SG_EMAIL_VAL_API_KEY?.substring(0, 10));
 
@@ -105,9 +109,8 @@ app.use("/lists", listRoutes);
 app.use("/contact", contactCRMRoutes);
 app.use('/api/emails', emailRoutes);
 app.use('/api/email-account', emailAccountRoutes);
-
-// Routes
 app.use("/orders", orderRoutes);
+app.use("/stats", crmDashRoutes);
 
 
 //
@@ -118,6 +121,21 @@ app.get('/', (req, res) => {
   res.send('Backend is running...');
 });
 
+
+
+
+// delete batches older than 30 days daily at 03:00
+cron.schedule('0 3 * * *', async () => {
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+  // Delete child results first or use cascading FK delete if configured in Prisma
+  await prisma.batchResult.deleteMany({ where: { createdAt: { lt: cutoff } } });
+  await prisma.verificationBatch.deleteMany({ where: { createdAt: { lt: cutoff } } });
+
+  // Optional: clean verification table older than 30 days (if you want)
+  // await prisma.verification.deleteMany({ where: { updatedAt: { lt: cutoff } } });
+
+  console.log('Old verification batches pruned older than 30 days.');
+});
 
 
 // ✅ Start server

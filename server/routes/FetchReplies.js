@@ -11,8 +11,8 @@ export async function fetchRepliesFromGmail() {
     port: 993,
     secure: true,
     auth: {
-      user: "keithburtb2bleads@gmail.com",
-      pass: "keith@124" // from Gmail App Password
+      user: "xemail.test.2025@gmail.com",
+      pass: "pkmnunzrelmzqeer" // from Gmail App Password
     }
   });
 
