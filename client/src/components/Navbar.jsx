@@ -27,8 +27,12 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
 
         {/* Logo */}
-        <div className="text-2xl font-bold text-blue-600 tracking-wide w-45">
-          <img src="../Logo/2.png" alt="Logo" />
+        <div className="w-45 text-center">
+          <img
+            src="../Logo/2.png"
+            alt="Logo"
+            className="h-20 w-70  mx-auto"
+          />
         </div>
 
         {/* Desktop Links (visible only on lg and above) */}
