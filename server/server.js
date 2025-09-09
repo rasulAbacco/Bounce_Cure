@@ -31,11 +31,16 @@ import orderRoutes from "./routes/ordersRoutes.js";
 import crmDashRoutes from "./routes/crmDashRoutes.js";
 import cron from 'node-cron';
 import { fetchAndStoreInboxMails } from "./routes/imapService.js";
+import { startEmailScheduler } from "./services/imapScheduler.js";
+
+// start background email fetcher
+
 
 
 
 dotenv.config();
 console.log("Loaded SG API key:", process.env.SG_EMAIL_VAL_API_KEY?.substring(0, 10));
+startEmailScheduler();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
