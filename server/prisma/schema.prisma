@@ -229,7 +229,7 @@ model Email {
 }
 
 model EmailAccount {
-  id            String   @id @default(cuid())
+  id            String   @id @default(autoincrement())
   userId        String
   email         String
   imapHost      String
@@ -244,6 +244,9 @@ model Reply {
   id         Int      @id @default(autoincrement())
   contactId  Int
   campaignId Int?
+  fromEmail  String // who replied (client email)
+  toEmail    String // your campaign fromEmail
+  subject    String? // optional, store subject
   message    String
   createdAt  DateTime @default(now())
 

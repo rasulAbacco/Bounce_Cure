@@ -1847,7 +1847,7 @@ useEffect(() => {
     navigate('/send-campaign', { 
       state: { 
         canvasData: pages[activePage].elements,
-        subject: "Your Campaign Subject" // You can make this dynamic
+        subject: "" // You can make this dynamic
       } 
     });
   };

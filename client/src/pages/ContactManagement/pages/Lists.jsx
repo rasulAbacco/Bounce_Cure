@@ -11,7 +11,8 @@ const API_URL = "http://localhost:5000"; // ✅ centralize API
 const CreateListModal = ({ onClose, onListCreated }) => {
   const handleSave = async (e) => {
     e.preventDefault();
-    const formData = new FormData(e.target);
+    setIsSubmitting(true);
+    
     try {
       const response = await fetch(`${API_URL}/lists`, {
         method: "POST",
@@ -23,7 +24,10 @@ const CreateListModal = ({ onClose, onListCreated }) => {
       onListCreated(); // ✅ re-fetch parent
       onClose();
     } catch (error) {
-      console.error("❌ Error saving list:", error);
+      console.error(`❌ Error ${editData ? 'updating' : 'saving'} list:`, error);
+      alert(`Error ${editData ? 'updating' : 'creating'} list: ${error.message}`);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -111,6 +115,8 @@ const Lists = () => {
         } else {
           fileData = { type: "text", raw: text };
         }
+      } catch (err) {
+        console.error("Error fetching file:", err);
       }
 
       setViewData({ ...list, uploadedFile: fileData });
@@ -136,7 +142,6 @@ const Lists = () => {
       day: "numeric"
     });
   };
-
 
   return (
     <div className="flex min-h-screen bg-black text-white">
@@ -279,8 +284,6 @@ const Lists = () => {
             </div>
           </div>
         )}
-
-
       </div>
     </div>
   );
