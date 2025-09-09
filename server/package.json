@@ -19,6 +19,7 @@
     "csv-parser": "^3.2.0",
     "dotenv": "^17.2.1",
     "email-deep-validator": "^3.3.0",
+    "email-reply-parser": "^2.0.1",
     "express": "^4.21.2",
     "express-rate-limit": "^8.0.1",
     "file-type": "^21.0.0",

@@ -13,16 +13,14 @@ import {
   XCircle,
   Sun,
   Moon,
-  List,       // For Lists
-  Inbox,      // For Inbox
-  Package,    // For Orders
-  Eraser,     // For Clear action
-  Ticket,     // For Tickets
-  Package,    // For Orders
-  Eraser,     // For Clear action
-  Phone,      // For Call Log
-  User,       // For caller
-  Clock3      // For call duration
+  List,       
+  Inbox,      
+  Package,  
+  Eraser,    
+  Ticket,     
+  Package as PackageIcon,   
+  Phone,
+
 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
@@ -42,9 +40,7 @@ import Tasks from "./pages/Tasks";
 import Lists from "./pages/Lists";
 import Orders from "./pages/Orders";
 import Inboxs from "./pages/Inbox";
-import Tickets from "./pages/Tickets";
-import Orders from "./pages/Orders";
-import Inboxs from "./pages/Inbox";
+
 // === UI Components ===
 const Section = ({ title, children, right }) => (
   <section className="bg-black/80 dark:bg-black/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 shadow-xl transition">
@@ -279,11 +275,7 @@ export default function ContactManagement() {
     { icon: List, label: "Lists" },
     { icon: Inbox, label: "Inbox" },
     { icon: Package, label: "Orders" },
-  ];
 
-    { icon: Ticket, label: "Tickets" },
-    { icon: Package, label: "Orders" },
-    { icon: Phone, label: "Call Log" }, // Added Call Log navigation
   ];
 
 
