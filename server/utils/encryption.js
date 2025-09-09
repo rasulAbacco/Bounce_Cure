@@ -53,3 +53,4 @@ export const decrypt = (hash) => {
 
   return decrypted.toString();
 };
+

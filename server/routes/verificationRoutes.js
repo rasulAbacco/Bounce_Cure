@@ -9,7 +9,8 @@ import path from "path";
 import { promisify } from "util";
 import { PrismaClient } from "@prisma/client";
 import pLimit from "p-limit";
-
+import dayjs from 'dayjs';
+import cron from 'node-cron';
 const prisma = new PrismaClient();
 const router = express.Router();
 
@@ -231,19 +232,16 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
     };
 
     const results = [];
-    const batch = [];
+    const batchResults = [];
 
-    // High-but-safe concurrency (tune per server)
-    const limit = pLimit(1000);
+    const limit = pLimit(500); // concurrency
 
     const jobs = filteredEmails.map((email) =>
       limit(async () => {
         try {
-          // Fast path: SMTP OFF for bulk (massive speedup)
           const result = await verifier.verify(email, { smtpCheck: false, isBulk: true });
 
           if (["valid", "invalid", "risky"].includes(result.status)) summary[result.status]++;
-
           if (result.disposable) summary.disposable++;
           if (result.role_based) summary.role_based++;
           if (result.catch_all) summary.catch_all++;
@@ -251,7 +249,7 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
           if (result.reason === "invalid_domain") summary.invalid_domain++;
 
           results.push(result);
-          batch.push(result);
+          batchResults.push(result);
         } catch (err) {
           const result = {
             email,
@@ -270,17 +268,48 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
           };
           summary.invalid++;
           results.push(result);
-          batch.push(result);
+          batchResults.push(result);
         }
       })
     );
 
     await Promise.all(jobs);
 
-    // Persist in chunks
+    // ✅ Save VerificationBatch + child results
+    const batch = await prisma.verificationBatch.create({
+      data: {
+        name: req.file?.originalname || "bulk_upload",
+        source: "bulk",
+        includeOnlyValid: false,
+        maxRich: false,
+        total: filteredEmails.length,
+        validCount: summary.valid,
+        invalidCount: summary.invalid,
+        riskyCount: summary.risky,
+        results: {
+          create: batchResults.map(r => ({
+            email: r.email,
+            status: r.status,
+            score: r.score,
+            syntax_valid: r.syntax_valid,
+            domain_valid: r.domain_valid,
+            mailbox_exists: r.mailbox_exists ?? false,
+            catch_all: r.catch_all,
+            disposable: r.disposable,
+            role_based: r.role_based,
+            greylisted: r.greylisted,
+            mx: Array.isArray(r.mx) ? r.mx.join(",") : null,
+            error: r.error || null
+          }))
+        }
+      },
+      include: { results: true }
+    });
+
+    // ✅ Upsert into Verification (latest state)
     const chunkSize = 500;
-    for (let i = 0; i < batch.length; i += chunkSize) {
-      const chunk = batch.slice(i, i + chunkSize);
+    for (let i = 0; i < batchResults.length; i += chunkSize) {
+      const chunk = batchResults.slice(i, i + chunkSize);
       await prisma.$transaction(
         chunk.map((data) =>
           prisma.verification.upsert({
@@ -295,8 +324,6 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
               disposable: data.disposable,
               role_based: data.role_based,
               greylisted: data.greylisted,
-              // mx: Array.isArray(data.mx) ? data.mx.join(",") : null,
-              // reason: data.reason || null,
               error: data.error || null,
             },
             create: {
@@ -310,8 +337,6 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
               disposable: data.disposable,
               role_based: data.role_based,
               greylisted: data.greylisted,
-              // mx: Array.isArray(data.mx) ? data.mx.join(",") : null,
-              // reason: data.reason || null,
               error: data.error || null,
             },
           })
@@ -322,6 +347,7 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
     await unlinkFile(filePath);
 
     return res.json({
+      batchId: batch.id,
       ...summary,
       results: results.sort((a, b) => b.score - a.score),
       stats: verifier.getStats(),
@@ -331,6 +357,7 @@ router.post("/verify-bulk", upload.single("file"), async (req, res) => {
     return res.status(500).json({ error: "Bulk verification failed", details: err.message });
   }
 });
+
 
 // --------- 3. Health Check ----------
 router.get("/health", (req, res) => {
@@ -357,5 +384,277 @@ router.get("/stats", (req, res) => {
   const stats = verifier.getStats();
   res.json(stats);
 });
+
+
+// ... existing imports (prisma, verifier, etc)
+
+// router.post('/verify-manual', async (req, res) => {
+//   const { text = "", includeOnlyValid = false, maxRich = false, name = "manual_paste" } = req.body || {};
+//   if (!text || typeof text !== 'string') return res.status(400).json({ error: "text (pasted emails) required" });
+
+//   // extract emails using same regex you used in txt parsing
+//   const lines = text.split(/\r?\n/);
+//   const emails = new Set();
+//   lines.forEach(line => {
+//     const match = line.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}/g);
+//     if (match) match.forEach(m => emails.add(m.trim().toLowerCase()));
+//   });
+
+//   const emailList = Array.from(emails);
+//   if (!emailList.length) return res.status(400).json({ error: "No emails found in pasted text." });
+
+
+
+//   const limit = pLimit(200); // tune as needed
+
+//   const results = [];
+//   const summary = { total: emailList.length, valid: 0, invalid: 0, risky: 0, disposable: 0, role_based: 0, catch_all: 0, greylisted: 0 };
+
+//   await Promise.all(
+//     emailList.map(e => limit(async () => {
+//       try {
+//         // If maxRich true, we keep DNS/MX details -- the verifier already returns mx (advancedVerification.js)
+//         const r = await verifier.verify(e, { smtpCheck: false, isBulk: false });
+//         // Optionally do extra MX resolution when maxRich requested (the verifier.validateDomain already does MX)
+//         results.push(r);
+//         if (["valid", "invalid", "risky"].includes(r.status)) summary[r.status]++;
+//         if (r.disposable) summary.disposable++;
+//         if (r.role_based) summary.role_based++;
+//         if (r.catch_all) summary.catch_all++;
+//         if (r.greylisted) summary.greylisted++;
+//       } catch (err) {
+//         const rr = { email: e, status: "invalid", score: 0, syntax_valid: false, domain_valid: false, mailbox_exists: false, catch_all: false, disposable: false, role_based: false, greylisted: false, error: err.message };
+//         results.push(rr);
+//         summary.invalid++;
+//       }
+//     }))
+//   );
+
+//   // Apply includeOnlyValid filter if requested (note: "include only valid" means exclude invalid)
+//   const savedResults = includeOnlyValid ? results.filter(r => r.status === "valid" || r.status === "risky") : results;
+
+//   // Persist batch
+//   const batch = await prisma.verificationBatch.create({
+//     data: {
+//       name,
+//       source: "manual",
+//       includeOnlyValid,
+//       maxRich,
+//       total: emailList.length,
+//       validCount: summary.valid,
+//       invalidCount: summary.invalid,
+//       riskyCount: summary.risky,
+//       results: {
+//         create: savedResults.map(r => ({
+//           email: r.email,
+//           status: r.status,
+//           score: r.score,
+//           syntax_valid: r.syntax_valid,
+//           domain_valid: r.domain_valid,
+//           mailbox_exists: r.mailbox_exists ?? false,
+//           catch_all: r.catch_all,
+//           disposable: r.disposable,
+//           role_based: r.role_based,
+//           greylisted: r.greylisted,
+//           mx: Array.isArray(r.mx) ? r.mx.join(',') : null,
+//           error: r.error || null
+//         }))
+//       }
+//     },
+//     include: { results: true }
+//   });
+
+//   // Upsert latest state to `Verification` (so your quick lookups/upserts continue to work)
+//   const chunkSize = 200;
+//   for (let i = 0; i < savedResults.length; i += chunkSize) {
+//     const chunk = savedResults.slice(i, i + chunkSize);
+//     await prisma.$transaction(chunk.map(data => prisma.verification.upsert({
+//       where: { email: data.email },
+//       update: {
+//         status: data.status,
+//         score: data.score,
+//         syntax_valid: data.syntax_valid,
+//         domain_valid: data.domain_valid,
+//         mailbox_exists: data.mailbox_exists ?? false,
+//         catch_all: data.catch_all,
+//         disposable: data.disposable,
+//         role_based: data.role_based,
+//         greylisted: data.greylisted,
+//         error: data.error || null
+//       },
+//       create: {
+//         email: data.email,
+//         status: data.status,
+//         score: data.score,
+//         syntax_valid: data.syntax_valid,
+//         domain_valid: data.domain_valid,
+//         mailbox_exists: data.mailbox_exists ?? false,
+//         catch_all: data.catch_all,
+//         disposable: data.disposable,
+//         role_based: data.role_based,
+//         greylisted: data.greylisted,
+//         error: data.error || null
+//       }
+//     })));
+//   }
+
+//   res.json({
+//     batchId: batch.id,
+//     summary,
+//     savedCount: savedResults.length,
+//     results: savedResults.sort((a, b) => b.score - a.score)
+//   });
+// });
+
+
+
+// ... existing imports (prisma, verifier, etc)
+
+router.post('/verify-manual', async (req, res) => {
+  const { text = "", includeOnlyValid = false, maxRich = false, name = "manual_paste" } = req.body || {};
+  if (!text || typeof text !== 'string') return res.status(400).json({ error: "text (pasted emails) required" });
+
+  // extract emails using same regex you used in txt parsing
+  const lines = text.split(/\r?\n/);
+  const emails = new Set();
+  lines.forEach(line => {
+    const match = line.match(/[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}/g);
+    if (match) match.forEach(m => emails.add(m.trim().toLowerCase()));
+  });
+
+  const emailList = Array.from(emails);
+  if (!emailList.length) return res.status(400).json({ error: "No emails found in pasted text." });
+
+  const limit = pLimit(200); // tune as needed
+
+  const results = [];
+  const summary = { total: emailList.length, valid: 0, invalid: 0, risky: 0, disposable: 0, role_based: 0, catch_all: 0, greylisted: 0 };
+
+  await Promise.all(
+    emailList.map(e => limit(async () => {
+      try {
+        // If maxRich true, we keep DNS/MX details -- the verifier already returns mx (advancedVerification.js)
+        const r = await verifier.verify(e, { smtpCheck: false, isBulk: false });
+        // Optionally do extra MX resolution when maxRich requested (the verifier.validateDomain already does MX)
+        results.push(r);
+        if (["valid", "invalid", "risky"].includes(r.status)) summary[r.status]++;
+        if (r.disposable) summary.disposable++;
+        if (r.role_based) summary.role_based++;
+        if (r.catch_all) summary.catch_all++;
+        if (r.greylisted) summary.greylisted++;
+      } catch (err) {
+        const rr = { email: e, status: "invalid", score: 0, syntax_valid: false, domain_valid: false, mailbox_exists: false, catch_all: false, disposable: false, role_based: false, greylisted: false, error: err.message };
+        results.push(rr);
+        summary.invalid++;
+      }
+    }))
+  );
+
+  // Apply includeOnlyValid filter if requested (note: "include only valid" means exclude invalid)
+  const savedResults = includeOnlyValid ? results.filter(r => r.status === "valid" || r.status === "risky") : results;
+
+  // Persist batch
+  const batch = await prisma.verificationBatch.create({
+    data: {
+      name,
+      source: "manual",
+      includeOnlyValid,
+      maxRich,
+      total: emailList.length,
+      validCount: summary.valid,
+      invalidCount: summary.invalid,
+      riskyCount: summary.risky,
+      results: {
+        create: savedResults.map(r => ({
+          email: r.email,
+          status: r.status,
+          score: r.score,
+          syntax_valid: r.syntax_valid,
+          domain_valid: r.domain_valid,
+          mailbox_exists: r.mailbox_exists ?? false,
+          catch_all: r.catch_all,
+          disposable: r.disposable,
+          role_based: r.role_based,
+          greylisted: r.greylisted,
+          mx: Array.isArray(r.mx) ? r.mx.join(',') : null,
+          error: r.error || null
+        }))
+      }
+    },
+    include: { results: true }
+  });
+
+  // Upsert latest state to `Verification` (so your quick lookups/upserts continue to work)
+  const chunkSize = 200;
+  for (let i = 0; i < savedResults.length; i += chunkSize) {
+    const chunk = savedResults.slice(i, i + chunkSize);
+    await prisma.$transaction(chunk.map(data => prisma.verification.upsert({
+      where: { email: data.email },
+      update: {
+        status: data.status,
+        score: data.score,
+        syntax_valid: data.syntax_valid,
+        domain_valid: data.domain_valid,
+        mailbox_exists: data.mailbox_exists ?? false,
+        catch_all: data.catch_all,
+        disposable: data.disposable,
+        role_based: data.role_based,
+        greylisted: data.greylisted,
+        error: data.error || null
+      },
+      create: {
+        email: data.email,
+        status: data.status,
+        score: data.score,
+        syntax_valid: data.syntax_valid,
+        domain_valid: data.domain_valid,
+        mailbox_exists: data.mailbox_exists ?? false,
+        catch_all: data.catch_all,
+        disposable: data.disposable,
+        role_based: data.role_based,
+        greylisted: data.greylisted,
+        error: data.error || null
+      }
+    })));
+  }
+
+  res.json({
+    batchId: batch.id,
+    summary,
+    savedCount: savedResults.length,
+    results: savedResults.sort((a, b) => b.score - a.score)
+  });
+});
+
+router.get('/batches', async (req, res) => {
+  const { source } = req.query;
+  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+  const where = { createdAt: { gte: cutoff } };
+  if (source) where.source = source;
+
+  const batches = await prisma.verificationBatch.findMany({
+    where,
+    orderBy: { createdAt: 'desc' },
+    include: { results: true }
+  });
+
+  // Add computed summary
+  const enriched = batches.map(b => {
+    const summary = {
+      total: b.results.length,
+      valid: b.results.filter(r => r.status === "valid").length,
+      invalid: b.results.filter(r => r.status === "invalid").length,
+      risky: b.results.filter(r => r.status === "risky").length,
+      roleBased: b.results.filter(r => r.role_based).length,
+      catchAll: b.results.filter(r => r.catch_all).length,
+    };
+    return { ...b, summary };
+  });
+
+  res.json({ batches: enriched });
+});
+
+
 
 export default router;
