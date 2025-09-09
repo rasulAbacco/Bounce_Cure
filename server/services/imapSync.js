@@ -1,116 +1,120 @@
-// Use CommonJS for imap and mailparser
-import Imap from 'imap';
-import { simpleParser } from 'mailparser';
+import { ImapFlow } from 'imapflow';
 import fetch from 'node-fetch';
-import { decrypt } from '../utils/encryption.js'; // keep this ES module if rest of your app uses ESM
+import { decrypt } from '../utils/encryption.js';
+import EmailReplyParser from 'email-reply-parser';
 
-async function syncEmailsForAccount(account) {
-    return new Promise((resolve, reject) => {
-        console.log('🔐 Decrypting password...');
-        let imapPass;
+export async function syncEmailsForAccount(account) {
+    console.log('🔐 Decrypting password...');
+    let imapPass;
+    try {
+        console.log('🧪 account.encryptedPass =', account.encryptedPass);
+
+        let encryptedPass = account.encryptedPass;
+
+        // Try parsing JSON — if it fails, assume it's plain text
         try {
-            imapPass = decrypt(account.encryptedPass);
-        } catch (err) {
-            console.error('❌ Failed to decrypt password:', err);
-            return reject(err);
+            if (typeof encryptedPass === 'string') {
+                encryptedPass = JSON.parse(encryptedPass);
+            }
+            imapPass = decrypt(encryptedPass);
+            console.log('✅ Decrypted using JSON format');
+        } catch (jsonErr) {
+            console.warn('⚠️ Could not parse encryptedPass as JSON, assuming plain text');
+            imapPass = encryptedPass;
         }
 
-        console.log('⚙️ Setting up IMAP connection...');
-        const imap = new Imap({
+        console.log('🔑 Decrypted password:', imapPass);
+        console.log('🔑 Password is string?', typeof imapPass === 'string');
+
+        if (typeof imapPass !== 'string') {
+            throw new Error('❌ Decrypted password is not a string');
+        }
+    } catch (err) {
+        console.error('❌ Failed to process password:', err);
+        throw err;
+    }
+
+    console.log('⚙️ Setting up ImapFlow connection...');
+    const client = new ImapFlow({
+        host: account.imapHost,
+        port: account.imapPort,
+        secure: true,
+        auth: {
             user: account.imapUser,
-            password: imapPass,
-            host: account.imapHost,
-            port: account.imapPort,
-            tls: true,
-            tlsOptions: { rejectUnauthorized: false }, // allow self-signed certs (Gmail is OK)
-        });
+            pass: imapPass,
+        },
+        logger: false,
+    });
 
-        function openInbox(cb) {
-            imap.openBox('INBOX', true, cb);
+    try {
+        await client.connect();
+        console.log('✅ Connected to IMAP server');
+
+        const lock = await client.mailboxOpen('INBOX');
+        console.log(`📥 INBOX opened. Total messages: ${lock.exists}`);
+
+        const from = lock.exists > 20 ? lock.exists - 20 + 1 : 1;
+
+        for await (let message of client.fetch(`${from}:*`, { source: true })) {
+            const buffer = message.source.toString();
+            const parsed = await (await import('mailparser')).simpleParser(buffer);
+
+            const fromEmail = parsed.from?.value?.[0]?.address || '';
+            const isReply = parsed.inReplyTo || (parsed.references && parsed.references.length > 0);
+
+            const skipSenders = [
+                'no-reply@',
+                '@google.com',
+                '@hubspot.com',
+                '@mongodb.com',
+                '@notifications',
+            ];
+            if (
+                !isReply ||
+                skipSenders.some(domain => fromEmail.toLowerCase().includes(domain))
+            ) {
+                console.log(`⏭️ Skipping non-reply or system email from ${fromEmail}`);
+                continue;
+            }
+
+            const replyParser = new EmailReplyParser();
+            const onlyReply = replyParser.read(parsed.text || '').getVisibleText();
+            console.log(`🧹 Clean reply: ${onlyReply}`);
+
+            const emailData = {
+                from: parsed.from?.text || '',
+                to: parsed.to?.text || '',
+                subject: parsed.subject || '(No Subject)',
+                body: onlyReply || '',
+                date: parsed.date || new Date(),
+                tags: ['imap'],
+                status: 'unread',
+                source: 'imap',
+                folder: 'INBOX',
+                accountId: account.id // ✅ Added accountId here
+            };
+
+            try {
+                const response = await fetch('http://localhost:5000/api/emails', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(emailData),
+                });
+
+                if (!response.ok) {
+                    console.error(`❌ Failed to save email: ${parsed.subject}`, await response.text());
+                } else {
+                    console.log(`✅ Saved email: ${parsed.subject}`);
+                }
+            } catch (err) {
+                console.error(`❌ Exception saving email: ${parsed.subject}`, err);
+            }
         }
 
-        imap.once('ready', () => {
-            console.log('✅ IMAP connection ready!');
-            openInbox((err, box) => {
-                if (err) {
-                    console.error('❌ Failed to open inbox:', err);
-                    imap.end();
-                    return reject(err);
-                }
-
-                console.log(`📥 INBOX opened. Total messages: ${box.messages.total}`);
-                const from = box.messages.total > 20 ? box.messages.total - 20 : 1;
-                const fetcher = imap.seq.fetch(`${from}:${box.messages.total}`, {
-                    bodies: '',
-                    struct: true,
-                });
-
-                fetcher.on('message', (msg, seqno) => {
-                    console.log(`📩 Message #${seqno} received`);
-                    let buffer = '';
-
-                    msg.on('body', (stream) => {
-                        stream.on('data', (chunk) => {
-                            buffer += chunk.toString('utf8');
-                        });
-                    });
-
-                    msg.once('end', async () => {
-                        try {
-                            const parsed = await simpleParser(buffer);
-                            console.log(`✅ Parsed email: ${parsed.subject}`);
-
-                            const emailData = {
-                                from: parsed.from?.text || '',
-                                to: parsed.to?.text || '',
-                                subject: parsed.subject || '(No Subject)',
-                                body: parsed.text || '',
-                                date: parsed.date || new Date(),
-                                tags: ['imap'],
-                                status: 'unread',
-                                source: 'imap',
-                                folder: 'INBOX',
-                            };
-
-                            await fetch('http://localhost:5000/api/emails', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify(emailData),
-                            });
-
-                            console.log('💾 Email saved to DB');
-                        } catch (err) {
-                            console.error('❌ Error parsing or saving email:', err);
-                        }
-                    });
-                });
-
-                fetcher.once('error', (err) => {
-                    console.error('❌ Fetch error:', err);
-                });
-
-                fetcher.once('end', () => {
-                    console.log('✅ Finished fetching all emails');
-                    imap.end();
-                    resolve();
-                });
-            });
-        });
-
-        imap.once('error', (err) => {
-            console.error('❌ IMAP connection error:', err);
-            reject(err);
-        });
-
-        imap.once('end', () => {
-            console.log('📴 IMAP connection closed');
-        });
-
-        imap.connect();
-    });
+        await client.logout();
+        console.log('📴 IMAP connection closed');
+    } catch (err) {
+        console.error('❌ IMAP sync error:', err);
+        throw err;
+    }
 }
-
-
-export{
-    syncEmailsForAccount,
-};
