@@ -1,27 +1,39 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
-
 const prisma = new PrismaClient();
 const router = express.Router();
 
 // ✅ Helper function to generate order codes
 async function generateOrderCode() {
-  const lastOrder = await prisma.order.findFirst({
-    orderBy: { timestamp: "desc" },
-  });
-  let lastNumber = 1000; // Starting point
-  if (lastOrder?.orderCode) {
-    const match = lastOrder.orderCode.match(/\d+$/);
-    if (match) lastNumber = parseInt(match[0]);
+  try {
+    // Get the current maximum order code number
+    const lastOrder = await prisma.order.findFirst({
+      orderBy: { id: "desc" }, // Use id instead of date for more reliable ordering
+    });
+    
+    let lastNumber = 1000; // Starting point
+    if (lastOrder?.orderCode) {
+      const match = lastOrder.orderCode.match(/\d+$/);
+      if (match) {
+        lastNumber = parseInt(match[0]);
+      }
+    }
+    
+    // Ensure we always get a new number
+    const newNumber = lastNumber + 1;
+    return `ORD-${newNumber}`;
+  } catch (error) {
+    console.error("Error generating order code:", error);
+    // Fallback to timestamp-based code if there's an error
+    return `ORD-${Date.now()}`;
   }
-  return `ORD-${lastNumber + 1}`;
 }
 
 // ✅ Get all orders
 router.get("/", async (req, res) => {
   try {
     const orders = await prisma.order.findMany({
-      orderBy: { timestamp: "desc" },
+      orderBy: { date: "desc" },
     });
     // Convert BigInt to number for frontend safety
     const safeOrders = orders.map((order) => ({
@@ -32,7 +44,6 @@ router.get("/", async (req, res) => {
       amount: order.amount,
       status: order.status,
       date: order.date,
-      timestamp: Number(order.timestamp),
     }));
     res.json(safeOrders);
   } catch (error) {
@@ -48,7 +59,36 @@ router.post("/", async (req, res) => {
     if (!plan || !amount || !status || !date) {
       return res.status(400).json({ error: "Plan, amount, status, and date are required" });
     }
-    const orderCode = await generateOrderCode();
+    
+    // Generate a unique order code
+    let orderCode;
+    let attempts = 0;
+    const maxAttempts = 10;
+    
+    while (attempts < maxAttempts) {
+      try {
+        orderCode = await generateOrderCode();
+        
+        // Check if the generated order code already exists
+        const existingOrder = await prisma.order.findUnique({
+          where: { orderCode }
+        });
+        
+        if (!existingOrder) {
+          break; // Found a unique order code
+        }
+        
+        attempts++;
+      } catch (error) {
+        console.error("Error checking order code uniqueness:", error);
+        attempts++;
+      }
+    }
+    
+    if (attempts >= maxAttempts) {
+      return res.status(500).json({ error: "Failed to generate unique order code" });
+    }
+    
     const newOrder = await prisma.order.create({
       data: {
         orderCode,
@@ -58,18 +98,17 @@ router.post("/", async (req, res) => {
         amount,
         status,
         date,
-        timestamp: BigInt(Date.now()),
       },
     });
+    
     res.status(201).json({
-      id: newOrder.orderCode, // Use orderCode as id for frontend
+      id: newOrder.orderCode,
       name: newOrder.name || "",
       phone: newOrder.phone || "",
       plan: newOrder.plan,
       amount: newOrder.amount,
       status: newOrder.status,
       date: newOrder.date,
-      timestamp: Number(newOrder.timestamp),
     });
   } catch (error) {
     console.error("Error creating order:", error);
@@ -112,7 +151,6 @@ router.put("/:id", async (req, res) => {
       amount: updatedOrder.amount,
       status: updatedOrder.status,
       date: updatedOrder.date,
-      timestamp: Number(updatedOrder.timestamp),
     });
   } catch (error) {
     console.error("Error updating order:", error);
