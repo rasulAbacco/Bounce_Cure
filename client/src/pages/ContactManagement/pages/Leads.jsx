@@ -495,7 +495,7 @@ const Leads = () => {
                     name="campaign"
                     value={newLead.campaign}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg"
+                    className="w-full px-3 py-2 bg-white text-black dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg"
                   >
                     <option value="Welcome Series">Welcome Series</option>
                     <option value="Product Launch">Product Launch</option>
@@ -510,7 +510,7 @@ const Leads = () => {
                     name="source"
                     value={newLead.source}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg"
+                    className="w-full px-3 py-2 bg-white text-black dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg"
                   >
                     <option value="Signup Form">Signup Form</option>
                     <option value="Landing Page">Landing Page</option>
@@ -525,7 +525,7 @@ const Leads = () => {
                     name="status"
                     value={newLead.status}
                     onChange={handleInputChange}
-                    className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg"
+                    className="w-full px-3 py-2 bg-white  text-black dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg"
                   >
                     <option value="Opened">Opened</option>
                     <option value="Clicked">Clicked</option>
