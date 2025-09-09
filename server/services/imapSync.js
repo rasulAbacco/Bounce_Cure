@@ -55,10 +55,10 @@ export async function syncEmailsForAccount(account) {
 
         const from = lock.exists > 20 ? lock.exists - 20 + 1 : 1;
 
+
         for await (let message of client.fetch(`${from}:*`, { source: true })) {
             const buffer = message.source.toString();
             const parsed = await (await import('mailparser')).simpleParser(buffer);
-
             const fromEmail = parsed.from?.value?.[0]?.address || '';
             const isReply = parsed.inReplyTo || (parsed.references && parsed.references.length > 0);
 
@@ -80,6 +80,7 @@ export async function syncEmailsForAccount(account) {
             const replyParser = new EmailReplyParser();
             const onlyReply = replyParser.read(parsed.text || '').getVisibleText();
             console.log(`🧹 Clean reply: ${onlyReply}`);
+
 
             const emailData = {
                 from: parsed.from?.text || '',
