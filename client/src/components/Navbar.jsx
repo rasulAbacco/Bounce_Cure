@@ -89,26 +89,23 @@ const Navbar = () => {
 
           {/* Brand Name + Slogan */}
           <div className="flex flex-col leading-tight">
+            {/* Brand Name */}
             <h1
-              className="text-2xl font-extrabold text-[#c2831f] flex items-center relative"
-              style={{ fontFamily: "'League Spartan', sans-serif" }}
-            >
+              className="text-2xl font-extrabold text-[#c2831f] flex items-center relative tracking-wide"
+              style={{ fontFamily: "'Orbitron', sans-serif" }}            >
               {displayedText}
-              <span className="animate-pulse">|</span>
+              <span className="animate-pulse ml-1">|</span>
 
               {/* 🔥 Blinking Underline */}
               <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-[#c2831f] animate-blink"></span>
             </h1>
 
-            <p className="text-xs font-medium bg-gradient-to-r from-[#c2831f] to-[#ffffff] bg-clip-text text-transparent mt-1 animate-blink">
+            {/* Tagline */}
+            <p className="text-xs font-semibold bg-gradient-to-r from-[#c2831f] to-[#ffffff] bg-clip-text text-transparent mt-1 animate-blink">
               Stronger Lists & Smarter Deliveries
             </p>
-
           </div>
         </div>
-
-
-
 
         {/* Desktop Links */}
         <div className="hidden lg:flex space-x-8 items-center">
