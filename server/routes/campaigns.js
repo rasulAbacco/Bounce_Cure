@@ -28,7 +28,7 @@ router.post('/send', async (req, res) => {
     }
     
     if (!subject) {
-      return res.status(400).json({ error: 'Email subject is required' });
+      return res.status(400).json({ error: 'Email subject is required' }); 
     }
     
     // Create HTML content from canvas data
