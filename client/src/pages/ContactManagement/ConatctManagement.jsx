@@ -13,10 +13,15 @@ import {
   XCircle,
   Sun,
   Moon,
-  List,       // For Lists
-  Inbox,      // For Inbox     
-  Package,   
-  Eraser,     // For Clear action
+  List,       
+  Inbox,      
+  Package,  
+  Eraser,    
+  Ticket,     
+  Package as PackageIcon,   
+  Phone,
+
+
 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
@@ -36,6 +41,7 @@ import Tasks from "./pages/Tasks";
 import Lists from "./pages/Lists";
 import Orders from "./pages/Orders";
 import Inboxs from "./pages/Inbox";
+
 // === UI Components ===
 const Section = ({ title, children, right }) => (
   <section className="bg-black/80 dark:bg-black/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 shadow-xl transition">
@@ -185,6 +191,8 @@ export default function ContactManagement() {
     { icon: Inbox, label: "Inbox" },
     { icon: Package, label: "Orders" },
   ];
+
+
 
   // Handlers
   const addLead = (e) => {

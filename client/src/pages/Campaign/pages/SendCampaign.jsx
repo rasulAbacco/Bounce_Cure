@@ -1,16 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useLocation } from "react-router-dom";
-import {
-  CheckCircle,
-  ChevronDown,
-  ChevronUp,
-  Send,
-  Users,
-  Settings,
-  FileText,
-  Palette,
-  Check,
-} from "lucide-react";
+import { CheckCircle,ChevronDown,ChevronUp,Send,Users,Settings,FileText,Palette,Check,} from "lucide-react";
 
 const steps = [
   {
@@ -718,14 +708,7 @@ export default function CampaignBuilder() {
         return;
       }
 
-      // Prepare email data
-      // const emailData = {
-      //   recipients: recipientsList,
-      //   fromName: formData.fromName,
-      //   fromEmail: formData.fromEmail,
-      //   subject: formData.subject,
-      //   canvasData: canvasPages[0].elements, // Send the canvas elements
-      // };
+
       // Prepare email data
       const emailData = {
         recipients: recipientsList,
@@ -746,18 +729,23 @@ export default function CampaignBuilder() {
         body: JSON.stringify(emailData),
       });
 
-      const data = await response.json();
-      if (response.ok) {
-        setSendStatus({
-          success: true,
-          message: data.message,
-        });
-      } else {
-        setSendStatus({
-          success: false,
-          message: data.error || "Failed to send campaign",
-        });
-      }
+    const data = await response.json();
+    if (response.ok) {
+      setSendStatus({
+        success: true,
+        message: data.message,
+      });
+
+      // ✅ Redirect to Inbox after successful send
+      navigate("/inbox", { state: { fromEmail: formData.fromEmail } });
+
+    } else {
+      setSendStatus({
+        success: false,
+        message: data.error || "Failed to send campaign",
+      });
+    }
+
     } catch (error) {
       console.error("Error sending campaign:", error);
       setSendStatus({
@@ -928,7 +916,6 @@ export default function CampaignBuilder() {
                               <option value="new-customers">
                                 New Customers
                               </option>
-                              <option value="vip-clients">VIP Clients</option>
                               <option value="manual">
                                 Manual (paste emails)
                               </option>
@@ -974,16 +961,16 @@ export default function CampaignBuilder() {
                             {formData.recipients === "manual" &&
                             ((formData.manualEmails || "")
                                 .split(/[\n,]+/)
-                                .filter((e) => e.trim()).length > 600) && (
+                                .filter((e) => e.trim()).length > 6000) && (
                                 <p className="text-yellow-400 mt-2">
-                                ⚠️ You pasted more than 600 emails. Only the first 600 will be used.
+                                ⚠️ You pasted more than 6000 emails. Only the first 6000 will be used.
                                 </p>
                             )}
 
                             {formData.recipients === "file" &&
-                            ((formData.bulkFileEmails || []).length > 600) && (
+                            ((formData.bulkFileEmails || []).length > 6000) && (
                                 <p className="text-yellow-400 mt-2">
-                                ⚠️ Your file contains more than 600 emails. Only the first 600 will be used.
+                                ⚠️ Your file contains more than 6000 emails. Only the first 6000 will be used.
                                 </p>
                             )}
 

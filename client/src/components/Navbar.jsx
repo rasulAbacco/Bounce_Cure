@@ -75,6 +75,7 @@ const Navbar = () => {
     <nav className="fixed w-full z-50 bg-black/90 backdrop-blur-lg border-b border-white/10">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
 
+
         {/* Logo with Typewriter */}
         <div
           className="flex items-center gap-2 cursor-pointer"
@@ -105,6 +106,7 @@ const Navbar = () => {
             </p>
 
           </div>
+
         </div>
 
 
