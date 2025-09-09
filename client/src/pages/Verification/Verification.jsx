@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
@@ -15,7 +15,6 @@ const Verification = () => {
   const [singleEmail, setSingleEmail] = useState("");
   const [singleResult, setSingleResult] = useState(null);
   const [singleHistory, setSingleHistory] = useState([]);
-  const [bulkHistory, setBulkHistory] = useState([]);
   const [viewingBatchId, setViewingBatchId] = useState(null);
   const [filter, setFilter] = useState("all");
   const [downloadDropdownOpen, setDownloadDropdownOpen] = useState(false);
@@ -23,6 +22,91 @@ const Verification = () => {
   const [loadingSingle, setLoadingSingle] = useState(false);
   const [progress, setProgress] = useState(0);
   const navigate = useNavigate();
+
+  // at top: new state
+  const [pasteText, setPasteText] = useState("");
+  const [includeOnlyValid, setIncludeOnlyValid] = useState(false);
+  const [maxRich, setMaxRich] = useState(false);
+  const [manualHistory, setManualHistory] = useState([]);
+  const [viewingManualBatchId, setViewingManualBatchId] = useState(null);
+  const [bulkHistory, setBulkHistory] = useState([]);
+  const [viewingBulkBatchId, setViewingBulkBatchId] = useState(null);
+
+  // new function to call manual verify
+  const verifyManual = async () => {
+    if (!pasteText.trim()) return alert("Paste emails first");
+    setLoadingBulk(true);
+    try {
+      const res = await axios.post(`${VRI_URL}/verification/verify-manual`, {
+        text: pasteText,
+        includeOnlyValid,
+        maxRich,
+        name: "manual_paste_" + new Date().toISOString()
+      });
+
+      const newBatch = {
+        id: res.data.batchId,
+        timestamp: new Date().toLocaleString(),
+        name: "Manual Paste",
+        summary: res.data.summary,
+        results: res.data.results
+      };
+
+      // 👇 update manual state instead of bulk
+      setManualHistory(prev => [newBatch, ...prev]);
+      setViewingManualBatchId(newBatch.id);
+
+      setPasteText("");
+    } catch (err) {
+      console.error(err);
+      alert("Manual verification failed: " + (err.response?.data?.error || err.message));
+    } finally {
+      setLoadingBulk(false);
+    }
+  };
+
+
+  // copy filtered emails
+  const copyFilteredEmails = () => {
+    const emails = filteredResults.map(r => r.email).join('\n');
+    navigator.clipboard.writeText(emails).then(() => {
+      alert("Copied to clipboard");
+    }).catch(() => alert("Copy failed"));
+  };
+
+  // on component mount fetch server-side history
+  useEffect(() => {
+    const loadManualHistory = async () => {
+      try {
+        const res = await axios.get(`${VRI_URL}/verification/batches?source=manual`);
+        setManualHistory(res.data.batches || []);
+        if (res.data.batches.length > 0) {
+          setViewingManualBatchId(res.data.batches[0].id);
+        }
+      } catch (e) {
+        console.warn("Could not load manual history", e);
+      }
+    };
+    loadManualHistory();
+  }, []);
+
+  useEffect(() => {
+    const loadBulkHistory = async () => {
+      try {
+        const res = await axios.get(`${VRI_URL}/verification/batches?source=bulk`);
+        setBulkHistory(res.data.batches || []);
+        if (res.data.batches.length > 0) {
+          setViewingBulkBatchId(res.data.batches[0].id);
+        }
+      } catch (e) {
+        console.warn("Could not load bulk history", e);
+      }
+    };
+    loadBulkHistory();
+  }, []);
+
+
+
   // --- SINGLE VERIFICATION ---
   const verifySingle = async () => {
     if (!singleEmail) return alert("Enter an email");
@@ -224,20 +308,23 @@ const Verification = () => {
       <div className="bg-black text-gray-200 font-sans mt-[20%] sm:mt-[15%] md:mt-[10%] lg:mt-[5%] px-4 sm:px-6 lg:px-16 py-10 max-w-[1400px] mx-auto">
         {/* Tabs */}
         <div className="flex flex-wrap justify-center mt:5 gap-3 mb-8">
-          {["single", "bulk"].map((tab) => (
+          {["single", "bulk", "manual"].map((tab) => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
               className={`${activeTab === tab
-
-                  ? "bg-white text-yellow-700 border-2 border-yellow-600 shadow-md font-bold"
-                  : "bg-transparent text-gray-200 border border-yellow-600 font-semibold"
-
+                ? "bg-white text-yellow-700 border-2 border-yellow-600 shadow-md font-bold"
+                : "bg-transparent text-gray-200 border border-yellow-600 font-semibold"
                 } px-6 py-2 rounded-md transition-all duration-300 w-full sm:w-[300px] text-center`}
             >
-              {tab === "single" ? "Single Verification" : "Bulk Verification"}
+              {tab === "single"
+                ? "Single Verification"
+                : tab === "bulk"
+                  ? "Bulk Verification"
+                  : "Manual Paste"}
             </button>
           ))}
+
         </div>
 
         {/* SINGLE VERIFICATION */}
@@ -259,8 +346,8 @@ const Verification = () => {
                 disabled={loadingSingle}
                 className={`px-4 py-2 rounded-md font-bold ${loadingSingle
 
-                    ? "bg-gray-600 text-gray-300 cursor-not-allowed"
-                    : "bg-white text-yellow-700 hover:bg-gray-100"
+                  ? "bg-gray-600 text-gray-300 cursor-not-allowed"
+                  : "bg-white text-yellow-700 hover:bg-gray-100"
 
                   }`}
               >
@@ -297,7 +384,7 @@ const Verification = () => {
               Bulk 7-Layer Verification
             </h2>
 
-            {/* File upload & progress */}
+            {/* File upload */}
             <div className="mb-6 w-full sm:w-[300px]">
               {loadingBulk && (
                 <div className="w-full h-1 bg-gray-700 mb-2 rounded-full overflow-hidden">
@@ -315,7 +402,6 @@ const Verification = () => {
                 disabled={loadingBulk}
                 className="bg-black text-yellow-600 border border-gray-600 rounded-md px-4 py-2 w-full cursor-pointer disabled:opacity-50"
               />
-              {/* New Campaign Button */}
               <button
                 onClick={() => navigate("/email-campaign")}
                 className="fixed top-10% right-20 bg-black border-2 border-[#c2831f] text-white px-5 py-2 rounded-md font-bold hover:bg-gray-900 transition-colors duration-300 z-50"
@@ -324,43 +410,30 @@ const Verification = () => {
               </button>
             </div>
 
-            {/* Summary Stats */}
-            {viewingBatch && (
-              <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
-                <div className="bg-[#111] p-3 rounded-md text-center">
-                  <div className="text-2xl font-bold text-blue-400">{viewingBatch.summary.total}</div>
-                  <div className="text-xs text-gray-400">Total</div>
-                </div>
-                <div className="bg-[#111] p-3 rounded-md text-center">
-                  <div className="text-2xl font-bold text-green-400">{viewingBatch.summary.valid}</div>
-                  <div className="text-xs text-gray-400">Valid</div>
-                </div>
-                <div className="bg-[#111] p-3 rounded-md text-center">
-                  <div className="text-2xl font-bold text-red-400">{viewingBatch.summary.invalid}</div>
-                  <div className="text-xs text-gray-400">Invalid</div>
-                </div>
-                <div className="bg-[#111] p-3 rounded-md text-center">
-                  <div className="text-2xl font-bold text-yellow-400">{viewingBatch.summary.risky}</div>
-                  <div className="text-xs text-gray-400">Risky</div>
-                </div>
-                <div className="bg-[#111] p-3 rounded-md text-center">
-                  <div className="text-2xl font-bold text-orange-400">{viewingBatch.summary.disposable}</div>
-                  <div className="text-xs text-gray-400">Disposable</div>
-                </div>
-                <div className="bg-[#111] p-3 rounded-md text-center">
-                  <div className="text-2xl font-bold text-purple-400">{viewingBatch.summary.role_based}</div>
-                  <div className="text-xs text-gray-400">Role-Based</div>
-                </div>
-                <div className="bg-[#111] p-3 rounded-md text-center">
-                  <div className="text-2xl font-bold text-cyan-400">{viewingBatch.summary.catch_all}</div>
-                  <div className="text-xs text-gray-400">Catch-All</div>
-                </div>
-              </div>
-            )}
-
-            {/* Filters and download */}
+            {/* Currently viewed batch */}
             {viewingBatch && (
               <>
+                {/* Summary Cards */}
+                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
+                  {[
+                    { key: "total", label: "Total", color: "text-blue-400" },
+                    { key: "valid", label: "Valid", color: "text-green-400" },
+                    { key: "invalid", label: "Invalid", color: "text-red-400" },
+                    { key: "risky", label: "Risky", color: "text-yellow-400" },
+                    { key: "disposable", label: "Disposable", color: "text-orange-400" },
+                    { key: "roleBased", label: "Role-Based", color: "text-purple-400" },
+                    { key: "catchAll", label: "Catch-All", color: "text-cyan-400" },
+                  ].map((stat) => (
+                    <div key={stat.key} className="bg-[#111] p-3 rounded-md text-center">
+                      <div className={`text-2xl font-bold ${stat.color}`}>
+                        {viewingBatch.summary?.[stat.key] ?? 0}
+                      </div>
+                      <div className="text-xs text-gray-400">{stat.label}</div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Filters + Download */}
                 <div className="flex flex-wrap items-center gap-3 mb-6">
                   {["all", "valid", "invalid", "risky", "disposable", "role_based", "catch_all"].map((f) => (
                     <button
@@ -369,10 +442,11 @@ const Verification = () => {
                       className={`px-4 py-2 rounded-md border text-sm ${filter === f ? "bg-gray-700 text-white" : "text-gray-400"
                         } border-yellow-600`}
                     >
-                      {f.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ')}
+                      {f.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
                     </button>
                   ))}
 
+                  {/* Download dropdown */}
                   <div className="relative">
                     <button
                       onClick={() => setDownloadDropdownOpen((p) => !p)}
@@ -386,7 +460,7 @@ const Verification = () => {
                         {["csv", "xlsx", "txt", "json"].map((fmt) => (
                           <button
                             key={fmt}
-                            onClick={() => downloadFile(fmt, filteredResults)}
+                            onClick={() => downloadFile(fmt, filteredResults, `bulk_results_${viewingBatch.id}`)}
                             className="block px-4 py-2 w-full text-left hover:bg-gray-700 text-gray-200"
                           >
                             Download {fmt.toUpperCase()}
@@ -397,7 +471,7 @@ const Verification = () => {
                   </div>
                 </div>
 
-                {/* Results table */}
+                {/* Results Table */}
                 <div className="overflow-x-auto mb-6">
                   {filteredResults.length ? (
                     <table className="w-full min-w-[800px] border-collapse">
@@ -438,7 +512,7 @@ const Verification = () => {
               </>
             )}
 
-            {/* Bulk verification history */}
+            {/* Bulk History */}
             <h3 className="text-lg font-bold border-b border-gray-600 pb-2 mb-4">
               Bulk Verification History
             </h3>
@@ -454,10 +528,13 @@ const Verification = () => {
                       }`}
                   >
                     <div>
-                      <strong>{batch.filename}</strong>
-                      <div className="text-sm text-gray-400">{batch.timestamp}</div>
+                      <strong>{batch.name || "Bulk Upload"}</strong>
+                      <div className="text-sm text-gray-400">
+                        {batch.timestamp || new Date(batch.createdAt).toLocaleString()}
+                      </div>
                       <div className="text-xs text-gray-500">
-                        {batch.summary.total} emails • {batch.summary.valid} valid • {batch.summary.invalid} invalid
+                        {batch.summary?.total ?? batch.results?.length ?? 0} emails •{" "}
+                        {batch.summary?.valid ?? 0} valid • {batch.summary?.invalid ?? 0} invalid
                       </div>
                     </div>
                     <div className="flex gap-2">
@@ -471,8 +548,26 @@ const Verification = () => {
                       >
                         <FaEye />
                       </button>
-                      <button className="text-yellow-500 hover:text-yellow-300" disabled>
-                        <FaEdit />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const csv = [
+                            "Email,Status,Score,DomainValid,Error",
+                            ...batch.results.map(
+                              (r) =>
+                                `${r.email},${r.status},${r.score},${r.domain_valid ? "YES" : "NO"},${r.error || ""}`
+                            ),
+                          ].join("\n");
+                          const blob = new Blob([csv], { type: "text/csv" });
+                          const url = window.URL.createObjectURL(blob);
+                          const link = document.createElement("a");
+                          link.href = url;
+                          link.download = `bulk_results_${batch.id}.csv`;
+                          link.click();
+                        }}
+                        className="text-green-500 hover:text-green-400"
+                      >
+                        <HiOutlineDownload />
                       </button>
                       <button
                         onClick={(e) => {
@@ -488,10 +583,185 @@ const Verification = () => {
                 ))}
               </div>
             )}
-
           </div>
-
         )}
+
+        {/* MANUAL PASTE VERIFICATION */}
+        {activeTab === "manual" && (
+          <div className="mb-4">
+            {/* Manual paste area */}
+            <label className="block text-sm text-gray-400 mb-1">
+              Paste emails (one per line or text)
+            </label>
+            <textarea
+              rows={6}
+              value={pasteText}
+              onChange={(e) => setPasteText(e.target.value)}
+              className="w-full p-3 bg-[#111] border border-gray-600 rounded text-yellow-200"
+              placeholder={`alice@example.com
+bob@test.com
+or paste content from clipboard...`}
+            />
+            <div className="flex gap-3 mt-2 items-center">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={includeOnlyValid}
+                  onChange={() => setIncludeOnlyValid((p) => !p)}
+                />
+                <span className="text-xs">Include only valid (exclude invalid)</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={maxRich}
+                  onChange={() => setMaxRich((p) => !p)}
+                />
+                <span className="text-xs">MaxRich (enrich MX & details)</span>
+              </label>
+              <button
+                onClick={verifyManual}
+                disabled={loadingBulk}
+                className="px-4 py-1 bg-white text-yellow-700 rounded"
+              >
+                Parse & Verify
+              </button>
+              <button
+                onClick={copyFilteredEmails}
+                className="px-3 py-1 border rounded text-sm"
+              >
+                Copy
+              </button>
+            </div>
+
+            {/* Manual History List */}
+            {manualHistory.length > 0 && (
+              <div className="mt-6">
+                <h3 className="text-lg font-bold mb-3 text-white">Manual Verification History</h3>
+                <div className="flex flex-wrap gap-2 mb-4">
+                  {manualHistory.map((batch) => (
+                    <button
+                      key={batch.id}
+                      onClick={() => setViewingManualBatchId(batch.id)}
+                      className={`px-3 py-1 rounded text-sm ${viewingManualBatchId === batch.id
+                        ? "bg-yellow-600 text-black"
+                        : "bg-gray-700 text-yellow-200"
+                        }`}
+                    >
+                      {batch.name || "Manual Paste"} –{" "}
+                      {batch.timestamp || new Date(batch.createdAt).toLocaleString()}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Selected batch results */}
+                {viewingManualBatchId &&
+                  manualHistory
+                    .filter((b) => b.id === viewingManualBatchId)
+                    .map((batch) => (
+                      <div key={batch.id}>
+                        <h3 className="text-lg font-bold mb-2 text-white">
+                          Results – {batch.name}{" "}
+                          <span className="text-sm text-gray-400">
+                            ({batch.timestamp || new Date(batch.createdAt).toLocaleString()})
+                          </span>
+                        </h3>
+
+                        {/* Summary Cards */}
+                        <div className="grid grid-cols-6 gap-4 text-center mb-6 text-white">
+                          <div className="bg-[#111] py-3 rounded">
+                            <div className="text-blue-400 text-xl font-bold">{batch.summary.total}</div>
+                            <div className="text-sm">Total</div>
+                          </div>
+                          <div className="bg-[#111] py-3 rounded">
+                            <div className="text-green-400 text-xl font-bold">{batch.summary.valid}</div>
+                            <div className="text-sm">Valid</div>
+                          </div>
+                          <div className="bg-[#111] py-3 rounded">
+                            <div className="text-red-500 text-xl font-bold">{batch.summary.invalid}</div>
+                            <div className="text-sm">Invalid</div>
+                          </div>
+                          <div className="bg-[#111] py-3 rounded">
+                            <div className="text-yellow-400 text-xl font-bold">{batch.summary.risky}</div>
+                            <div className="text-sm">Risky</div>
+                          </div>
+                          <div className="bg-[#111] py-3 rounded">
+                            <div className="text-purple-400 text-xl font-bold">{batch.summary.roleBased || 0}</div>
+                            <div className="text-sm">Role-Based</div>
+                          </div>
+                          <div className="bg-[#111] py-3 rounded">
+                            <div className="text-gray-400 text-xl font-bold">{batch.summary.catchAll || 0}</div>
+                            <div className="text-sm">Catch-All</div>
+                          </div>
+                        </div>
+
+                        {/* Download Button */}
+                        <button
+                          onClick={() => {
+                            const csv = [
+                              "Email,Status,Score,DomainValid,Error",
+                              ...batch.results.map(
+                                (r) =>
+                                  `${r.email},${r.status},${r.score},${r.domain_valid ? "YES" : "NO"},${r.error || ""}`
+                              ),
+                            ].join("\n");
+
+                            const blob = new Blob([csv], { type: "text/csv" });
+                            const url = window.URL.createObjectURL(blob);
+                            const link = document.createElement("a");
+                            link.href = url;
+                            link.download = `manual_results_${batch.id}.csv`;
+                            link.click();
+                          }}
+                          className="mb-4 px-4 py-2 bg-yellow-600 text-black rounded"
+                        >
+                          ⬇ Download CSV
+                        </button>
+
+                        {/* Results Table */}
+                        <div className="overflow-x-auto">
+                          <table className="w-full text-sm text-left border border-gray-700 text-white">
+                            <thead className="bg-gray-800 text-yellow-300">
+                              <tr>
+                                <th className="px-4 py-2">Email</th>
+                                <th className="px-4 py-2">Status</th>
+                                <th className="px-4 py-2">Score</th>
+                                <th className="px-4 py-2">Domain</th>
+                                <th className="px-4 py-2">Error</th>
+                              </tr>
+                            </thead>
+                            <tbody className="bg-[#111]">
+                              {batch.results.map((r) => (
+                                <tr key={r.email} className="border-t border-gray-700">
+                                  <td className="px-4 py-2">{r.email}</td>
+                                  <td className="px-4 py-2">
+                                    <span
+                                      className={`px-2 py-1 rounded text-xs font-bold ${r.status.toLowerCase() === "valid"
+                                        ? "bg-green-600 text-white"
+                                        : r.status.toLowerCase() === "invalid"
+                                          ? "bg-red-600 text-white"
+                                          : "bg-yellow-400 text-black"
+                                        }`}
+                                    >
+                                      {r.status}
+                                    </span>
+                                  </td>
+                                  <td className="px-4 py-2">{r.score}%</td>
+                                  <td className="px-4 py-2">{r.domain_valid ? "✔" : "✖"}</td>
+                                  <td className="px-4 py-2">{r.error || "-"}</td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    ))}
+              </div>
+            )}
+          </div>
+        )}
+
+
 
       </div>
     </DashboardLayout>

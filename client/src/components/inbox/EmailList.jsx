@@ -19,7 +19,7 @@ const EmailList = ({ setSelectedEmail }) => {
     if (emails.length === 0) return <EmptyState message="No emails found." />;
 
     return (
-        <div className="w-1/2 border-r border-zinc-700 overflow-y-auto">
+        <div className="w-1/2 border-r border-zinc-700 overflow-y-auto w-50">
             {emails.map((email) => (
                 <EmailItem
                     key={email.id}

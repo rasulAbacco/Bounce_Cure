@@ -12,6 +12,7 @@ import {
 import { PipelineChart, ConversionChart } from "../../../components/DealCharts";
 import { FaEdit } from "react-icons/fa";
 import { AiFillDelete } from "react-icons/ai";
+const VITE_VRI_URL = import.meta.env.VITE_API_URL;
 
 function Deals() {
   const [deals, setDeals] = useState([
@@ -76,7 +77,7 @@ function Deals() {
     try {
       if (editingId) {
         // Update existing deal
-        const res = await fetch(`http://localhost:5000/deals/${editingId}`, {
+        const res = await fetch(`${VITE_VRI_URL}/deals/${editingId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newDeal),

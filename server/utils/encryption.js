@@ -17,7 +17,14 @@ export const encrypt = (text) => {
 };
 
 export const decrypt = (hash) => {
-  if (!secretKey) return hash.content; // return plain
+  if (!secretKey || typeof hash === 'string') {
+    return hash; // Assume it's plain text and return as-is
+  }
+
+  if (!hash.iv || !hash.content) {
+    throw new Error("❌ Invalid hash passed to decrypt()");
+  }
+
   const iv = Buffer.from(hash.iv, "hex");
   const key = crypto.scryptSync(secretKey, "salt", 32);
   const decipher = crypto.createDecipheriv(algorithm, key, iv);
@@ -27,3 +34,4 @@ export const decrypt = (hash) => {
   ]);
   return decrypted.toString();
 };
+
