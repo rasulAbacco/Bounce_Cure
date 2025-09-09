@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { CheckCircle,ChevronDown,ChevronUp,Send,Users,Settings,FileText,Palette,Check,} from "lucide-react";
 
 const steps = [
@@ -567,6 +567,8 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
 
 export default function CampaignBuilder() {
   const location = useLocation();
+  const navigate = useNavigate();
+
   const [expanded, setExpanded] = useState("setup"); // default open step
   const [completedSteps, setCompletedSteps] = useState(["setup"]);
   const [formData, setFormData] = useState({
