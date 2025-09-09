@@ -109,15 +109,18 @@ const Lists = () => {
         const json = JSON.parse(text);
         fileData = { type: "json", data: json };
       } catch {
-        const csv = Papa.parse(text, { header: true });
-        if (csv.data && csv.data.length > 0) {
-          fileData = { type: "contacts", contacts: csv.data };
-        } else {
-          fileData = { type: "text", raw: text };
+        try {
+          const csv = Papa.parse(text, { header: true });
+          if (csv.data && csv.data.length > 0) {
+            fileData = { type: "contacts", contacts: csv.data };
+          } else {
+            fileData = { type: "text", raw: text };
+          }
+        } catch (err) {
+          console.error("❌ Error fetching file:", err);
         }
-      } catch (err) {
-        console.error("Error fetching file:", err);
       }
+
 
       setViewData({ ...list, uploadedFile: fileData });
     } catch (err) {

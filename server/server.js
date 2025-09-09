@@ -22,7 +22,6 @@ import dealsRoutes from "./routes/deals.js";
 import contactCRMRoutes from "./routes/contactCRM.js";
 import { router as campaignContactsRoutes } from './routes/contacts.js';
 import { router as campaignsRoutes } from './routes/campaigns.js';
-
 import emailRoutes from './routes/emailRoutes.js';
 import emailAccountRoutes from './routes/emailAccountRoutes.js';
 // import fetchReplies from "./routes/FetchReplies.js";
