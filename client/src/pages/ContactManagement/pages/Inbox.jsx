@@ -2,35 +2,49 @@ import React, { useState, useEffect } from "react";
 import {
   Mail,
   Trash2,
-  Filter,
   Star,
   StarOff,
   CheckSquare,
   Square,
   Search,
 } from "lucide-react";
-import AddEmailModal from './AddEmailForm';
+import AddEmailModal from "./AddEmailForm";
 
-const InboxPage = ({ fromEmail }) => {
+const InboxPage = () => {
   const [mails, setMails] = useState([]);
+  const [accounts, setAccounts] = useState([]);
   const [selectedMail, setSelectedMail] = useState(null);
   const [selectedIds, setSelectedIds] = useState([]);
-  const [filter, setFilter] = useState("All");
-  const [filterOpen, setFilterOpen] = useState(false);
+  const [selectedAccount, setSelectedAccount] = useState("all");
   const [search, setSearch] = useState("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Fetch emails from backend
+  // Fetch accounts
+  useEffect(() => {
+    const fetchAccounts = async () => {
+      try {
+        const res = await fetch("http://localhost:5000/api/email-account");
+        if (!res.ok) throw new Error("Failed to fetch accounts");
+        const data = await res.json();
+        setAccounts(data);
+      } catch (err) {
+        console.error("Failed to load accounts:", err);
+      }
+    };
+    fetchAccounts();
+  }, []);
+
+  // Fetch mails
   useEffect(() => {
     const fetchMails = async () => {
       setLoading(true);
       setError(null);
       try {
-        const endpoint = fromEmail
-          ? `http://localhost:5000/api/inbox/${fromEmail}`
-          : `http://localhost:5000/api/emails`;
-
+        const endpoint =
+          selectedAccount === "all"
+            ? "http://localhost:5000/api/emails"
+            : `http://localhost:5000/api/emails?accountId=${selectedAccount}`;
         const res = await fetch(endpoint);
         if (!res.ok) throw new Error("Failed to fetch inbox");
         const data = await res.json();
@@ -44,7 +58,9 @@ const InboxPage = ({ fromEmail }) => {
     };
 
     fetchMails();
-  }, [fromEmail]);
+    const interval = setInterval(fetchMails, 60 * 1000); // refresh every minute
+    return () => clearInterval(interval);
+  }, [selectedAccount]);
 
   // Toggle select
   const toggleSelect = (id) => {
@@ -69,8 +85,6 @@ const InboxPage = ({ fromEmail }) => {
 
   // Filter + search
   const filteredMails = mails.filter((mail) => {
-    if (filter === "Unread" && !mail.unread) return false;
-    if (filter === "Starred" && !mail.starred) return false;
     if (
       search &&
       !mail.subject.toLowerCase().includes(search.toLowerCase()) &&
@@ -84,58 +98,37 @@ const InboxPage = ({ fromEmail }) => {
   return (
     <div className="min-h-screen bg-zinc-900 text-white flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-700 bg-zinc-800 relative">
+      <div className="flex items-center justify-between px-6 py-4 border-b border-zinc-700 bg-zinc-800">
         <h1 className="text-xl font-semibold flex items-center gap-2">
-          <Mail className="w-5 h-5" /> Inbox {fromEmail && `for ${fromEmail}`}
+          <Mail className="w-5 h-5" /> Inbox
         </h1>
-        <div className="flex items-center gap-3">
-          {selectedIds.length > 0 && (
-            <button
-              onClick={deleteSelected}
-              className="flex items-center gap-1 bg-red-600 hover:bg-red-700 px-3 py-1 rounded-lg text-sm"
-            >
-              <Trash2 className="w-4 h-4" /> Delete
-            </button>
-          )}
-           <div className="relative">
-      <div className="flex items-center gap-3">
-        {/* Add Email Button */}
-        <AddEmailModal />
 
-        {/* Filter Button */}
-        <div className="relative">
-          <button
-            onClick={() => setFilterOpen(!filterOpen)}
-            className="flex items-center gap-1 bg-zinc-700 hover:bg-zinc-600 px-3 py-1 rounded-lg text-sm"
-          >
-            <Filter className="w-4 h-4" /> {filter}
-          </button>
-          {filterOpen && (
-            <div className="absolute right-0 mt-2 bg-zinc-800 border border-zinc-700 rounded-lg shadow-lg w-32 z-10">
-              {["All", "Unread", "Starred"].map((opt) => (
-                <button
-                  key={opt}
-                  onClick={() => {
-                    setFilter(opt);
-                    setFilterOpen(false);
-                  }}
-                  className="block w-full text-left px-3 py-2 hover:bg-zinc-700 text-sm"
-                >
-                  {opt}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    </div>
-        </div>
+        {/* Dropdown for account selection */}
+        <select
+          value={selectedAccount}
+          onChange={(e) => setSelectedAccount(e.target.value)}
+          className="bg-zinc-700 text-white px-2 py-1 rounded-md text-sm"
+        >
+          <option value="all">📥 All Accounts</option>
+          {accounts.map((acc) => {
+            const unread = mails.filter(
+              (m) => m.accountId === acc.id && m.status === "unread"
+            ).length;
+            return (
+              <option key={acc.id} value={acc.id}>
+                {acc.imapUser} {unread > 0 ? `(${unread})` : ""}
+              </option>
+            );
+          })}
+        </select>
+
+        <AddEmailModal />
       </div>
 
       {/* Content */}
-      <div className="flex flex-1 overflow-hidden h-20">
+      <div className="flex flex-1 overflow-hidden">
         {/* Mail List */}
-        <div className="w-1/3 border-r border-zinc-700 flex flex-col">
+        <div className="w-1/3 border-r border-zinc-700 flex flex-col overflow-y-auto">
           {/* Search bar */}
           <div className="p-3 border-b border-zinc-700 bg-zinc-800 flex items-center gap-2">
             <Search className="w-4 h-4 text-zinc-400" />
@@ -158,11 +151,10 @@ const InboxPage = ({ fromEmail }) => {
               {filteredMails.map((mail) => (
                 <div
                   key={mail.id}
-                  className={`flex items-center gap-3 px-4 py-3 border-b border-zinc-800 cursor-pointer ${
-                    selectedMail?.id === mail.id
-                      ? "bg-zinc-800"
-                      : "hover:bg-zinc-800"
-                  }`}
+                  className={`flex items-center gap-3 px-4 py-3 border-b border-zinc-800 cursor-pointer ${selectedMail?.id === mail.id
+                    ? "bg-zinc-800"
+                    : "hover:bg-zinc-800"
+                    }`}
                 >
                   <button onClick={() => toggleSelect(mail.id)}>
                     {selectedIds.includes(mail.id) ? (
@@ -178,18 +170,17 @@ const InboxPage = ({ fromEmail }) => {
                     <div className="flex justify-between text-sm font-medium">
                       <span>{mail.from}</span>
                       <span className="text-xs text-zinc-400">
-                        {mail.time}
+                        {new Date(mail.date).toLocaleTimeString()}
                       </span>
                     </div>
                     <p
-                      className={`text-sm ${
-                        mail.unread ? "font-semibold" : ""
-                      }`}
+                      className={`text-sm ${mail.status === "unread" ? "font-semibold" : ""
+                        }`}
                     >
                       {mail.subject}
                     </p>
                     <p className="text-xs text-zinc-500 truncate">
-                      {mail.preview}
+                      {mail.body?.slice(0, 80)}
                     </p>
                   </div>
                   <button onClick={() => toggleStar(mail.id)}>
@@ -215,12 +206,13 @@ const InboxPage = ({ fromEmail }) => {
                 {selectedMail.subject}
               </h2>
               <p className="text-sm text-zinc-400 mb-4">
-                From: {selectedMail.from} • {selectedMail.time}
+                From: {selectedMail.from} •{" "}
+                {new Date(selectedMail.date).toLocaleString()}
               </p>
               <div
                 className="text-base leading-relaxed"
                 dangerouslySetInnerHTML={{ __html: selectedMail.body }}
-              ></div>
+              />
             </>
           ) : (
             <div className="flex h-full items-center justify-center text-zinc-500">
@@ -228,8 +220,19 @@ const InboxPage = ({ fromEmail }) => {
             </div>
           )}
         </div>
-
       </div>
+
+      {/* Bulk delete button */}
+      {selectedIds.length > 0 && (
+        <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2">
+          <button
+            onClick={deleteSelected}
+            className="flex items-center gap-1 bg-red-600 hover:bg-red-700 px-3 py-1 rounded-lg text-sm"
+          >
+            <Trash2 className="w-4 h-4" /> Delete Selected
+          </button>
+        </div>
+      )}
     </div>
   );
 };
