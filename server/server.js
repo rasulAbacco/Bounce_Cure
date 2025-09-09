@@ -25,13 +25,14 @@ import { router as campaignsRoutes } from './routes/campaigns.js';
 
 import emailRoutes from './routes/emailRoutes.js';
 import emailAccountRoutes from './routes/emailAccountRoutes.js';
-import replyRoutes from "./routes/SendCampaignReply.js";
 // import fetchReplies from "./routes/FetchReplies.js";
 import leadsRouter from "./routes/leads.js";
 import listRoutes from "./routes/listRoutes.js";
 import orderRoutes from "./routes/ordersRoutes.js";
 import crmDashRoutes from "./routes/crmDashRoutes.js";
 import cron from 'node-cron';
+import { fetchAndStoreInboxMails } from "./routes/imapService.js";
+
 
 
 dotenv.config();
@@ -68,6 +69,24 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // ✅ Middlewares
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+app.get("/api/inbox/:fromEmail", async (req, res) => {
+  try {
+    const { fromEmail } = req.params;
+    console.log("Getting inbox for:", fromEmail);
+
+    const mails = await fetchAndStoreInboxMails(
+      fromEmail,
+      process.env.EMAIL_PASS,
+      process.env.EMAIL_HOST
+    );
+
+    res.json(mails);
+  } catch (err) {
+    console.error("Inbox fetch error:", err);
+    res.status(500).json({ error: "Failed to fetch inbox" });
+  }
+});
 
 
 // Mount routes

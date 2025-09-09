@@ -15,6 +15,7 @@ import {
   List,
   Inbox,
   Package,
+
 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
@@ -147,6 +148,35 @@ const Modal = ({ open, onClose, title, children, footer }) => {
   );
 };
 
+// === Seed Data ===
+const seedActivities = [
+  { id: 1, text: "John Doe added a new contact", when: "Just now" },
+  { id: 2, text: 'Jane Smith updated Deal status to "Proposal Sent"', when: "2h ago" },
+  { id: 3, text: "Call scheduled with Client X", when: "Today 4:00 PM" },
+];
+const seedTasks = [
+  { id: 1, title: "Follow-up Email with Jane", due: "Aug 20", status: "Pending" },
+  { id: 2, title: "Product Demo for XYZ", due: "Aug 21", status: "Scheduled" },
+];
+const seedLeads = [
+  { id: 1, name: "John Doe", company: "Acme Inc.", status: "New", last: "Aug 18" },
+  { id: 2, name: "Jane Smith", company: "XYZ Corp", status: "Contacted", last: "Aug 17" },
+  { id: 3, name: "Sam Brown", company: "Freelance", status: "Qualified", last: "Aug 19" },
+];
+const pipelinePercents = [
+  { label: "Stage 1: Prospecting", value: 40 },
+  { label: "Stage 2: Qualified", value: 25 },
+  { label: "Stage 3: Proposal", value: 15 },
+  { label: "Stage 4: Closed Won", value: 10 },
+  { label: "Stage 5: Closed Lost", value: 10 },
+];
+const chartData = [
+  { month: "Apr", leads: 80, deals: 24 },
+  { month: "May", leads: 110, deals: 28 },
+  { month: "Jun", leads: 95, deals: 31 },
+  { month: "Jul", leads: 130, deals: 33 },
+  { month: "Aug", leads: 124, deals: 34 },
+];
 // === Main Component ===
 export default function ContactManagement() {
   // data states
@@ -176,7 +206,6 @@ export default function ContactManagement() {
     due: "",
     status: "Pending",
   });
-
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard" },
     { icon: Users, label: "Leads" },
@@ -337,6 +366,7 @@ export default function ContactManagement() {
                   className={`cursor-pointer flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition ${activeTab === item.label
                     ? "bg-zinc-900 border-zinc-300 dark:border-zinc-800 text-yellow-500"
                     : "hover:bg-zinc-100 dark:hover:bg-zinc-900 border-transparent text-zinc-200 hover:text-white hover:border hover:border-yellow-500 dark:text-zinc-300"
+
                     }`}
                 >
                   <item.icon className="w-4 h-4" />
@@ -443,6 +473,8 @@ export default function ContactManagement() {
                         >
                           {t.status ?? "Pending"}
                         </Badge>
+
+                        <Badge tone={t.status === "Scheduled" ? "info" : t.status === "Completed" ? "success" : "warn"}>{t.status}</Badge>
                       </li>
                     ))}
                   </ul>
