@@ -9,10 +9,15 @@ const API_URL = "http://localhost:5000"; // ✅ centralize API
 
 // --- Create Modal ---
 const CreateListModal = ({ onClose, onListCreated }) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const handleSave = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
-    
+
+    // Create FormData from the form element:
+    const formData = new FormData(e.target);
+
     try {
       const response = await fetch(`${API_URL}/lists`, {
         method: "POST",
@@ -21,21 +26,25 @@ const CreateListModal = ({ onClose, onListCreated }) => {
       if (!response.ok) throw new Error("Failed to create list");
 
       const data = await response.json();
-      onListCreated(); // ✅ re-fetch parent
+      onListCreated(); // re-fetch parent
       onClose();
     } catch (error) {
-      console.error(`❌ Error ${editData ? 'updating' : 'saving'} list:`, error);
-      alert(`Error ${editData ? 'updating' : 'creating'} list: ${error.message}`);
+      console.error("❌ Error creating list:", error);
+      alert(`Error creating list: ${error.message}`);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4"
-      onClick={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 text-gray-800"
-        onClick={(e) => e.stopPropagation()}>
+    <div
+      className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4"
+      onClick={(e) => e.target === e.currentTarget && onClose()}
+    >
+      <div
+        className="bg-white rounded-lg shadow-lg w-full max-w-md p-6 text-gray-800"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="flex justify-between items-center mb-4">
           <h3 className="text-lg font-bold">Create New List</h3>
           <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
@@ -43,15 +52,24 @@ const CreateListModal = ({ onClose, onListCreated }) => {
           </button>
         </div>
         <form onSubmit={handleSave} className="space-y-4" encType="multipart/form-data">
+          {/* inputs */}
           <input type="text" name="name" placeholder="List Name" required className="w-full px-3 py-2 border rounded-lg" />
           <input type="number" name="count" placeholder="Contacts Count" required className="w-full px-3 py-2 border rounded-lg" />
           <input type="email" name="email" placeholder="Email" required className="w-full px-3 py-2 border rounded-lg" />
           <input type="tel" name="phone" placeholder="Phone" required className="w-full px-3 py-2 border rounded-lg" />
-          <input type="file" name="file" accept=".json,.csv,.txt,image/*"
-            className="w-full px-3 py-2 border rounded-lg bg-white text-black" />
+          <input
+            type="file"
+            name="file"
+            accept=".json,.csv,.txt,image/*"
+            className="w-full px-3 py-2 border rounded-lg bg-white text-black"
+          />
           <div className="flex justify-end space-x-2">
-            <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-lg">Cancel</button>
-            <button type="submit" className="px-4 py-2 bg-[#154c7c] text-white rounded-lg">Create</button>
+            <button type="button" onClick={onClose} className="px-4 py-2 bg-gray-200 rounded-lg">
+              Cancel
+            </button>
+            <button type="submit" disabled={isSubmitting} className="px-4 py-2 bg-[#154c7c] text-white rounded-lg">
+              {isSubmitting ? "Saving..." : "Create"}
+            </button>
           </div>
         </form>
       </div>
@@ -105,18 +123,20 @@ const Lists = () => {
       const text = await blob.text();
 
       let fileData;
+
       try {
+        // Try parsing as JSON
         const json = JSON.parse(text);
         fileData = { type: "json", data: json };
       } catch {
+        // If not JSON, try parsing as CSV
         const csv = Papa.parse(text, { header: true });
         if (csv.data && csv.data.length > 0) {
           fileData = { type: "contacts", contacts: csv.data };
         } else {
+          // Fallback: raw text
           fileData = { type: "text", raw: text };
         }
-      } catch (err) {
-        console.error("Error fetching file:", err);
       }
 
       setViewData({ ...list, uploadedFile: fileData });
@@ -125,6 +145,7 @@ const Lists = () => {
       setViewData({ ...list, uploadedFile: { type: "error" } });
     }
   };
+
 
   // --- Filter ---
   const filtered = lists.filter((l) =>
