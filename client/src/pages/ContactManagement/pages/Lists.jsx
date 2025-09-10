@@ -129,6 +129,17 @@ const Lists = () => {
         const json = JSON.parse(text);
         fileData = { type: "json", data: json };
       } catch {
+
+        try {
+          const csv = Papa.parse(text, { header: true });
+          if (csv.data && csv.data.length > 0) {
+            fileData = { type: "contacts", contacts: csv.data };
+          } else {
+            fileData = { type: "text", raw: text };
+          }
+        } catch (err) {
+          console.error("❌ Error fetching file:", err);
+
         // If not JSON, try parsing as CSV
         const csv = Papa.parse(text, { header: true });
         if (csv.data && csv.data.length > 0) {
@@ -136,14 +147,14 @@ const Lists = () => {
         } else {
           // Fallback: raw text
           fileData = { type: "text", raw: text };
+
         }
       }
 
+
       setViewData({ ...list, uploadedFile: fileData });
-    } catch (err) {
-      console.error("❌ Error fetching file:", err);
-      setViewData({ ...list, uploadedFile: { type: "error" } });
-    }
+  
+    
   };
 
 

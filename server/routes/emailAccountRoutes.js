@@ -1,7 +1,7 @@
 import express from 'express';
 import { PrismaClient } from '@prisma/client';
-import { encrypt, decrypt } from '../utils/encryption.js';
-import ImapFlow from 'imapflow';
+import { encrypt } from '../utils/encryption.js';
+import { ImapFlow } from 'imapflow';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -14,19 +14,17 @@ router.post('/', async (req, res) => {
     try {
         const { userId, email, imapHost, imapPort, imapUser, imapPass } = req.body;
 
-        // Validate required fields
         if (!userId || !email || !imapHost || !imapPort || !imapUser || !imapPass) {
             return res.status(400).json({ error: 'Missing required fields' });
         }
 
-        // Convert port to integer
         const port = parseInt(imapPort, 10);
         if (isNaN(port)) {
             return res.status(400).json({ error: 'IMAP Port must be a valid number' });
         }
 
         // Encrypt password
-        const encrypted = encrypt(imapPass); // { iv, content }
+        const encrypted = encrypt(imapPass);
         const encryptedPassString = JSON.stringify(encrypted);
 
         // Save account
@@ -50,30 +48,20 @@ router.post('/', async (req, res) => {
 
 // ----------------------------
 // GET /api/email-account/:userId
-// Get all accounts for a user with decrypted passwords
+// Get all accounts for a user (safe fields only)
 // ----------------------------
 router.get('/:userId', async (req, res) => {
     try {
         const accounts = await prisma.emailAccount.findMany({
             where: { userId: req.params.userId },
-        });
-
-        const decryptedAccounts = accounts.map(account => {
-            let decryptedPass = null;
-            try {
-                const encryptedPass = JSON.parse(account.encryptedPass); // { iv, content }
-                decryptedPass = decrypt(encryptedPass); // returns plain string
-            } catch (err) {
-                console.error('Failed to decrypt password for account ID:', account.id);
+            select: {
+                id: true,
+                email: true,
+                imapUser: true,
             }
-
-            return {
-                ...account,
-                imapPass: decryptedPass, // plain string
-            };
         });
 
-        res.json(decryptedAccounts);
+        res.json(accounts);
     } catch (error) {
         console.error('Error fetching email accounts:', error);
         res.status(500).json({ error: 'Failed to get email accounts' });
@@ -82,7 +70,7 @@ router.get('/:userId', async (req, res) => {
 
 // ----------------------------
 // POST /api/email-account/test-connection
-// Test IMAP login with decrypted password
+// Test IMAP login with plain password
 // ----------------------------
 router.post('/test-connection', async (req, res) => {
     try {
@@ -98,7 +86,7 @@ router.post('/test-connection', async (req, res) => {
             secure: !!secure,
             auth: {
                 user: imapUser,
-                pass: imapPass, // MUST be plain string
+                pass: imapPass,
             },
         });
 
@@ -109,6 +97,23 @@ router.post('/test-connection', async (req, res) => {
     } catch (error) {
         console.error('IMAP connection error:', error);
         res.status(400).json({ success: false, message: 'IMAP login failed', error: error.message });
+    }
+});
+
+// ----------------------------
+// GET /api/email-accounts
+// List all accounts (safe fields only)
+// ----------------------------
+router.get('/', async (req, res) => {
+    try {
+        const accounts = await prisma.emailAccount.findMany({
+            select: { id: true, imapUser: true, email: true },
+        });
+
+        res.json(accounts);
+    } catch (error) {
+        console.error("Error fetching accounts:", error);
+        res.status(500).json({ error: "Failed to fetch accounts" });
     }
 });
 
