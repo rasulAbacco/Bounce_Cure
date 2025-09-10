@@ -22,7 +22,6 @@ import dealsRoutes from "./routes/deals.js";
 import contactCRMRoutes from "./routes/contactCRM.js";
 import { router as campaignContactsRoutes } from './routes/contacts.js';
 import { router as campaignsRoutes } from './routes/campaigns.js';
-
 import emailRoutes from './routes/emailRoutes.js';
 import emailAccountRoutes from './routes/emailAccountRoutes.js';
 // import fetchReplies from "./routes/FetchReplies.js";
@@ -32,13 +31,19 @@ import orderRoutes from "./routes/ordersRoutes.js";
 import crmDashRoutes from "./routes/crmDashRoutes.js";
 import cron from 'node-cron';
 import { fetchAndStoreInboxMails } from "./routes/imapService.js";
+
 import dashboardRoutes from "./routes/dashboardRoutes.js";
+
+import { startEmailScheduler } from "./services/imapScheduler.js";
+
+
 
 
 
 
 dotenv.config();
 console.log("Loaded SG API key:", process.env.SG_EMAIL_VAL_API_KEY?.substring(0, 10));
+startEmailScheduler();
 
 const app = express();
 const PORT = process.env.PORT || 5000;
