@@ -32,6 +32,8 @@ import orderRoutes from "./routes/ordersRoutes.js";
 import crmDashRoutes from "./routes/crmDashRoutes.js";
 import cron from 'node-cron';
 import { fetchAndStoreInboxMails } from "./routes/imapService.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
+
 
 
 
@@ -91,6 +93,9 @@ app.get("/api/inbox/:fromEmail", async (req, res) => {
 
 // Mount routes
 app.use("/api/contacts", contactRoutes);
+
+// ✅ Mount Routes
+app.use("/api", dashboardRoutes);
 
 // Mount routes
 app.use("/api/auth", passwordRoutes);

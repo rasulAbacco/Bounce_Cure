@@ -42,6 +42,7 @@ import CanvasArea from './pages/Campaign/Components/Editor/CanvasArea';
 import { useNavigate } from "react-router-dom";
 import SendCampaign from './pages/Campaign/pages/SendCampaign';
 import AllTemplates from './pages/Campaign/pages/AllTemplats';
+import WatsupCampaign from './pages/WatsupCampaign';
 
 
 function App() {
@@ -108,6 +109,7 @@ function App() {
             <Route path="/send-campaign" element={<SendCampaign />} />
             <Route path="/all-templates" element={<AllTemplates />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/WatsupCampaign" element={<WatsupCampaign />} />
 
           </Routes>
 
