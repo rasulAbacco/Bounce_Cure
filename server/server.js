@@ -31,9 +31,12 @@ import orderRoutes from "./routes/ordersRoutes.js";
 import crmDashRoutes from "./routes/crmDashRoutes.js";
 import cron from 'node-cron';
 import { fetchAndStoreInboxMails } from "./routes/imapService.js";
+
+import dashboardRoutes from "./routes/dashboardRoutes.js";
+
 import { startEmailScheduler } from "./services/imapScheduler.js";
 
-// start background email fetcher
+
 
 
 
