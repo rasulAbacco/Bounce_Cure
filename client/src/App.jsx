@@ -42,6 +42,9 @@ import CanvasArea from './pages/Campaign/Components/Editor/CanvasArea';
 import { useNavigate } from "react-router-dom";
 import SendCampaign from './pages/Campaign/pages/SendCampaign';
 import AllTemplates from './pages/Campaign/pages/AllTemplats';
+import MultimediaCampaign from './pages/Multimedia/MultimediCampaign';
+import WhatsappCampaign from './pages/Multimedia/WhatsappCampaign';
+import SMScampaign from './pages/Multimedia/SMScampaign';
 
 
 function App() {
@@ -108,6 +111,9 @@ function App() {
             <Route path="/send-campaign" element={<SendCampaign />} />
             <Route path="/all-templates" element={<AllTemplates />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/MultimediaCampaign" element={<MultimediaCampaign />} />
+            <Route path="/whatsapp" element={<WhatsappCampaign />} />
+            <Route path="/sms" element={<SMScampaign />} />
 
           </Routes>
 
