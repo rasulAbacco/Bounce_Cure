@@ -130,7 +130,13 @@ const handleViewList = async (list) => {
       fileData = { type: "json", data: json };
     } catch (jsonError) {
       try {
-        // If JSON parsing fails, try CSV
+
+        // Try parsing as JSON
+        const json = JSON.parse(text);
+        fileData = { type: "json", data: json };
+      } catch {
+        // If not JSON, try parsing as CSV
+
         const csv = Papa.parse(text, { header: true });
         if (csv.data && csv.data.length > 0) {
           fileData = { type: "contacts", contacts: csv.data };

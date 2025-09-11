@@ -31,13 +31,9 @@ import orderRoutes from "./routes/ordersRoutes.js";
 import crmDashRoutes from "./routes/crmDashRoutes.js";
 import cron from 'node-cron';
 import { fetchAndStoreInboxMails } from "./routes/imapService.js";
+import dashboardRoutes from "./routes/dashboardRoutes.js";
 import { startEmailScheduler } from "./services/imapScheduler.js";
-
 import multimediaRoutes from './routes/multimedia.js';
-
-// start background email fetcher
-
-
 
 
 dotenv.config();
@@ -97,6 +93,9 @@ app.get("/api/inbox/:fromEmail", async (req, res) => {
 
 // Mount routes
 app.use("/api/contacts", contactRoutes);
+
+// ✅ Mount Routes
+app.use("/api", dashboardRoutes);
 
 // Mount routes
 app.use("/api/auth", passwordRoutes);

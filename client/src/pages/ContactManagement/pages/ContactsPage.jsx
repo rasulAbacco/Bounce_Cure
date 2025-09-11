@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   User,
   Search,
@@ -9,8 +9,8 @@ import {
   BarChart3,
   Plus,
 } from "lucide-react";
-import { CSVLink } from "react-csv"; // Make sure to import CSVLink if used
-import { motion } from "framer-motion"; // Also import motion if used
+import { CSVLink } from "react-csv";
+import { motion } from "framer-motion";
 import {
   ResponsiveContainer,
   XAxis,
@@ -19,17 +19,16 @@ import {
   Bar,
   Tooltip,
   Legend,
-} from "recharts"; // Assuming you're using recharts for the chart
+} from "recharts";
 
 const statusColors = {
-  Active: "#22c55e",    // green
-  Inactive: "#ef4444",  // red
-  Prospect: "#3b82f6",  // blue
-  Customer: "#eab308",  // yellow
+  Active: "#22c55e",
+  Inactive: "#ef4444",
+  Prospect: "#3b82f6",
+  Customer: "#eab308",
 };
 
 function ContactsPage() {
-
   const badgeStyle = {
     Active:
       "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700",
@@ -40,9 +39,7 @@ function ContactsPage() {
     Customer:
       "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 border border-yellow-300 dark:border-yellow-700",
   };
-
-
-
+  
   const [modalOpen, setModalOpen] = useState(false);
   const [newContact, setNewContact] = useState({
     name: "",
@@ -50,30 +47,41 @@ function ContactsPage() {
     phone: "",
     company: "",
     status: "Prospect",
-    priority: "new",  // default priority
+    priority: "new",
     last: "",
   });
-
-
   const [contacts, setContacts] = useState([]);
+  const [allContacts, setAllContacts] = useState([]); // Store all contacts for stats
   const [page, setPage] = useState(1);
-  const [currentPage, setCurrentPage] = useState(1); // REMOVE THIS LINE
-
   const [search, setSearch] = useState('');
   const [editPriority, setEditPriority] = useState({});
-
-
   const [totalPages, setTotalPages] = useState(1);
-
-
+  
   // Chart data aggregation
-  const chartData = Object.entries(
-    contacts.reduce((acc, c) => {
-      acc[c.status] = (acc[c.status] || 0) + 1;
-      return acc;
-    }, {})
-  ).map(([status, count]) => ({ name: status, value: count }));
-
+  const chartData = useMemo(() => {
+    return Object.entries(
+      allContacts.reduce((acc, c) => {
+        acc[c.status] = (acc[c.status] || 0) + 1;
+        return acc;
+      }, {})
+    ).map(([status, count]) => ({ name: status, value: count }));
+  }, [allContacts]);
+  
+  // Calculate stats from all contacts
+  const stats = useMemo(() => {
+    return {
+      total: allContacts.length,
+      active: allContacts.filter((c) => c.status === "Active").length,
+      companies: new Set(allContacts.map((c) => c.company)).size,
+      recent: allContacts.filter((c) => {
+        if (!c.createdAt) return false;
+        const addedDate = new Date(c.createdAt);
+        const now = new Date();
+        const diffDays = (now - addedDate) / (1000 * 60 * 60 * 24);
+        return diffDays <= 7; // last 7 days
+      }).length,
+    };
+  }, [allContacts]);
 
   const headers = [
     { label: "Name", key: "name" },
@@ -87,59 +95,45 @@ function ContactsPage() {
   const handleImport = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.target);
-
     try {
       const res = await fetch("http://localhost:5000/contact/import", {
         method: "POST",
-        body: formData, // let browser set the headers
+        body: formData,
       });
-
       if (!res.ok) {
         const errorData = await res.json();
         throw new Error(errorData.error || 'Import failed');
       }
-
       alert('Import successful!');
       e.target.reset();
       setPage(1);
+      // Refetch all contacts after import
+      fetchAllContacts();
     } catch (err) {
       alert(`Import failed: ${err.message}`);
     }
   };
 
-
-
   const addContact = async (e) => {
     e.preventDefault();
-
-    // Call the backend to create new contact
     const res = await fetch("http://localhost:5000/contact", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newContact),
     });
-
     if (!res.ok) {
       console.error("Failed to add contact:", res.statusText);
       return;
     }
-
     const created = await res.json();
-
-    // Option 1: Refresh page from server
-    // setContacts((prev) => [created, ...prev]);
-
-    // Option 2: Refetch page 1 so regen pagination and stats
     setPage(1);
-
     setModalOpen(false);
+    // Refetch all contacts after adding
+    fetchAllContacts();
   };
 
   const updatePriority = async (id) => {
     const newVal = editPriority[id];
-
-    console.log("Sending update for ID:", id, "with priority:", newVal);
-
     try {
       const res = await fetch(`http://localhost:5000/contact/${id}`, {
         method: "PUT",
@@ -148,24 +142,20 @@ function ContactsPage() {
         },
         body: JSON.stringify({ priority: newVal }),
       });
-
       if (!res.ok) {
         const text = await res.text();
         console.error("Failed to update:", res.status, text);
         return;
       }
-
       const updated = await res.json();
-      console.log("Update successful:", updated);
-
-      // Clear local state and re-fetch
       setEditPriority((prev) => {
         const copy = { ...prev };
         delete copy[id];
         return copy;
       });
-
-      setPage(page); // This triggers useEffect to re-fetch from DB
+      setPage(page);
+      // Refetch all contacts after update
+      fetchAllContacts();
     } catch (err) {
       console.error("Error:", err);
     }
@@ -173,27 +163,37 @@ function ContactsPage() {
 
   const deleteContact = async (id) => {
     if (!window.confirm("Are you sure you want to delete this contact?")) return;
-
     await fetch(`http://localhost:5000/contact/${id}`, {
       method: "DELETE",
     });
-
-    // Refresh list after deletion
     setContacts(contacts.filter((c) => c.id !== id));
+    // Refetch all contacts after deletion
+    fetchAllContacts();
   };
 
-
-
+  // Fetch all contacts for stats
+  const fetchAllContacts = async () => {
+    try {
+      const res = await fetch("http://localhost:5000/contact?all=true");
+      const data = await res.json();
+      setAllContacts(data.data || []);
+    } catch (err) {
+      console.error("Failed to fetch all contacts:", err);
+    }
+  };
 
   useEffect(() => {
+    // Fetch paginated contacts
     fetch(`http://localhost:5000/contact?page=${page}&search=${search}`)
       .then((res) => res.json())
       .then((data) => {
         setContacts(data.data);
         setTotalPages(data.totalPages);
       });
+    
+    // Fetch all contacts for stats
+    fetchAllContacts();
   }, [page, search]);
-
 
   return (
     <div className="space-y-10 px-4 py-8 sm:px-6 lg:px-8">
@@ -207,14 +207,14 @@ function ContactsPage() {
           place.
         </p>
       </div>
-
+      
       {/* Quick Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
-          { label: "Total Contacts", value: "2,150" },
-          { label: "Active Contacts", value: "1,780" },
-          { label: "Companies", value: "320" },
-          { label: "Recently Added", value: "45" },
+          { label: "Total Contacts", value: stats.total },
+          { label: "Active Contacts", value: stats.active },
+          { label: "Companies", value: stats.companies },
+          { label: "Recently Added", value: stats.recent },
         ].map((stat, i) => (
           <div
             key={i}
@@ -227,7 +227,7 @@ function ContactsPage() {
           </div>
         ))}
       </div>
-
+      
       {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
         <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-lg px-3 py-2 w-full sm:w-1/3">
@@ -236,8 +236,9 @@ function ContactsPage() {
             type="text"
             placeholder="Search contacts..."
             className="bg-transparent outline-none w-full text-sm text-zinc-800 dark:text-white"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
           />
-
         </div>
         <div className="flex gap-3">
           <button className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">
@@ -245,7 +246,7 @@ function ContactsPage() {
           </button>
         </div>
       </div>
-
+      
       {/* Header Actions */}
       <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
         <div>
@@ -258,7 +259,7 @@ function ContactsPage() {
         </div>
         <div className="flex items-center gap-3">
           <CSVLink
-            data={contacts}
+            data={allContacts}
             headers={headers}
             filename={`contacts_export_${Date.now()}.csv`}
             className="bg-green-500 text-black px-4 py-2 rounded-lg hover:bg-green-400 transition"
@@ -273,37 +274,7 @@ function ContactsPage() {
           </button>
         </div>
       </div>
-
-      { /*Import Files*/}
-      {/* <form
-        onSubmit={handleImport}
-        encType="multipart/form-data"
-        className="w-full max-w-md mx-auto p-6 bg-white shadow-md rounded-lg flex flex-col gap-4"
-      >
-        <h2 className="text-xl font-semibold text-gray-800">Import Contacts</h2>
-
-        <input
-          type="file"
-          name="file"
-          accept=".csv,.xlsx,.txt"
-          required
-          className="block w-full text-sm text-gray-900 file:mr-4 file:py-2 file:px-4
-              file:rounded-md file:border-0
-              file:text-sm file:font-semibold
-              file:bg-blue-50 file:text-blue-700
-              hover:file:bg-blue-100 cursor-pointer"
-        />
-
-        <button
-          type="submit"
-          className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 transition"
-        >
-          Import
-        </button>
-      </form> */}
-
-
-
+      
       {/* Contacts Table */}
       <div className="overflow-x-auto border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
         <table className="min-w-full text-sm">
@@ -373,7 +344,6 @@ function ContactsPage() {
                     <option value="subscriber">Subscriber</option>
                     <option value="new">New</option>
                   </select>
-
                   <button
                     onClick={() => updatePriority(c.id)}
                     disabled={
@@ -389,7 +359,6 @@ function ContactsPage() {
                     Save
                   </button>
                 </td>
-
                 <td className="px-4 py-3 whitespace-nowrap">
                   <span
                     className={`px-2 py-1 rounded-full text-xs font-medium ${badgeStyle[c.status]}`}
@@ -408,13 +377,12 @@ function ContactsPage() {
                     Delete
                   </button>
                 </td>
-
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-
+      
       <div className="flex justify-between items-center mt-4">
         <p className="text-sm text-zinc-400">
           Page {page} of {totalPages}
@@ -449,9 +417,8 @@ function ContactsPage() {
             Last
           </button>
         </div>
-
       </div>
-
+      
       {/* Bar Chart Insights */}
       <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
         <h2 className="text-xl font-semibold text-yellow-500 mb-4 flex items-center gap-2">
@@ -462,14 +429,13 @@ function ContactsPage() {
             <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
               <XAxis dataKey="name" stroke="#FBBF24" />
               <YAxis stroke="#FBBF24" />
-
               <Legend />
               <Bar dataKey="value" fill="#F59E0B" barSize={30} />
             </BarChart>
           </ResponsiveContainer>
         </div>
       </div>
-
+      
       {/* Add Contact Modal */}
       {modalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
@@ -488,19 +454,47 @@ function ContactsPage() {
               Add New Contact
             </h3>
             <form onSubmit={addContact} className="space-y-4">
-              {["name", "email", "phone", "company", "priority", "status",].map(
+              {["name", "email", "phone", "company", "priority", "status"].map(
                 (field) => (
                   <div key={field} className="flex flex-col">
                     <label className="text-sm text-zinc-700 dark:text-zinc-400 mb-1 capitalize">
                       {field}
                     </label>
-                    <input
-                      value={newContact[field]}
-                      onChange={(e) =>
-                        setNewContact({ ...newContact, [field]: e.target.value })
-                      }
-                      className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg outline-none text-zinc-800 dark:text-zinc-100"
-                    />
+                    {field === "priority" ? (
+                      <select
+                        value={newContact[field]}
+                        onChange={(e) =>
+                          setNewContact({ ...newContact, [field]: e.target.value })
+                        }
+                        className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg outline-none text-zinc-800 dark:text-zinc-100"
+                      >
+                        <option value="vip">VIP</option>
+                        <option value="subscriber">Subscriber</option>
+                        <option value="new">New</option>
+                      </select>
+                    ) : field === "status" ? (
+                      <select
+                        value={newContact[field]}
+                        onChange={(e) =>
+                          setNewContact({ ...newContact, [field]: e.target.value })
+                        }
+                        className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg outline-none text-zinc-800 dark:text-zinc-100"
+                      >
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                        <option value="Prospect">Prospect</option>
+                        <option value="Customer">Customer</option>
+                      </select>
+                    ) : (
+                      <input
+                        type={field === "email" ? "email" : field === "phone" ? "tel" : "text"}
+                        value={newContact[field]}
+                        onChange={(e) =>
+                          setNewContact({ ...newContact, [field]: e.target.value })
+                        }
+                        className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg outline-none text-zinc-800 dark:text-zinc-100"
+                      />
+                    )}
                   </div>
                 )
               )}
@@ -523,7 +517,7 @@ function ContactsPage() {
           </motion.div>
         </div>
       )}
-
+      
       {/* Insights Section */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {["Contact Growth", "Active vs Inactive", "Customer Conversion"].map(
