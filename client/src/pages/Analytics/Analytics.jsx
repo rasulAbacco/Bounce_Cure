@@ -31,11 +31,11 @@ export default function Analytics() {
   const [selectedFilter, setSelectedFilter] = useState("All Campaigns");
   const [showFilter, setShowFilter] = useState(false);
 
-  // 🔹 Campaigns state from backend
+  // Campaigns state
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // Fetch campaigns on mount
+  // Fetch campaigns from backend
   useEffect(() => {
     fetch("http://localhost:5000/api/campaigns")
       .then((res) => res.json())
@@ -53,16 +53,13 @@ export default function Analytics() {
   const totalSent = campaigns.reduce((sum, c) => sum + c.sentCount, 0);
   const totalOpens = campaigns.reduce((sum, c) => sum + c.openCount, 0);
   const totalClicks = campaigns.reduce((sum, c) => sum + c.clickCount, 0);
-  const totalConversions = campaigns.reduce(
-    (sum, c) => sum + c.conversionCount,
-    0
-  );
+  const totalConversions = campaigns.reduce((sum, c) => sum + c.conversionCount, 0);
 
-  const openRate = totalSent ? ((totalOpens / totalSent) * 100).toFixed(1) + "%" : "0%";
-  const clickRate = totalSent ? ((totalClicks / totalSent) * 100).toFixed(1) + "%" : "0%";
-  const conversionRate = totalSent ? ((totalConversions / totalSent) * 100).toFixed(1) + "%" : "0%";
+  const openRate = totalOpens;
+  const clickRate = totalClicks;
+  const conversionRate = totalConversions;
 
-  // 🔹 Prepare chart data (last 7 campaigns)
+  // Chart data
   const trendData = campaigns.slice(0, 7).map((c) => ({
     date: new Date(c.createdAt).toLocaleDateString("en-US", {
       month: "short",
@@ -81,21 +78,37 @@ export default function Analytics() {
   ];
 
   const campaignTable = campaigns.map((c) => ({
+    id: c.id,
     name: c.name,
     sent: c.sentCount,
-    open: c.sentCount ? ((c.openCount / c.sentCount) * 100).toFixed(1) + "%" : "0%",
-    click: c.sentCount ? ((c.clickCount / c.sentCount) * 100).toFixed(1) + "%" : "0%",
-    conversion: c.sentCount ? ((c.conversionCount / c.sentCount) * 100).toFixed(1) + "%" : "0%",
+    open: c.openCount,
+    click: c.clickCount,
+    conversion: c.conversionCount,
   }));
+
+  // Handle delete action
+  const handleDelete = (id) => {
+    if (window.confirm("Are you sure you want to delete this campaign?")) {
+      fetch(`http://localhost:5000/api/campaigns/${id}`, {
+        method: "DELETE",
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to delete");
+          setCampaigns((prev) => prev.filter((c) => c.id !== id));
+        })
+        .catch((err) => {
+          console.error("Error deleting campaign:", err);
+          alert("Failed to delete campaign.");
+        });
+    }
+  };
 
   return (
     <DashboardLayout>
       <div className="min-h-screen text-white p-6 space-y-6 mt-20">
         {/* Header */}
         <div className="flex justify-between items-center relative">
-          <h1 className="text-2xl font-bold text-[#c2831f]">
-            Analytics Dashboard
-          </h1>
+          <h1 className="text-2xl font-bold text-[#c2831f]">Analytics Dashboard</h1>
           <div className="flex items-center gap-2 relative">
             {/* Date Picker */}
             <div className="relative">
@@ -198,11 +211,8 @@ export default function Analytics() {
 
         {/* Conversion Section */}
         <div className="bg-[#0a0a0a] border border-gray-800 p-6 rounded-2xl shadow-lg">
-          {/* Tabs */}
           <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-semibold text-[#c2831f]">
-              Conversions
-            </h2>
+            <h2 className="text-lg font-semibold text-[#c2831f]">Conversions</h2>
             <div className="flex gap-2">
               <button
                 className={`px-3 py-1 rounded-lg text-sm ${
@@ -227,7 +237,6 @@ export default function Analytics() {
             </div>
           </div>
 
-          {/* Charts */}
           <div className="h-64 bg-transparent">
             {activeTab === "funnel" ? (
               <ResponsiveContainer width="100%" height="100%">
@@ -264,7 +273,12 @@ export default function Analytics() {
                   <Tooltip
                     contentStyle={{ backgroundColor: "#111", border: "none" }}
                   />
-                  <Line type="monotone" dataKey="conversion" stroke="#60a5fa" strokeWidth={2} />
+                  <Line
+                    type="monotone"
+                    dataKey="conversion"
+                    stroke="#60a5fa"
+                    strokeWidth={2}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             )}
@@ -276,35 +290,46 @@ export default function Analytics() {
           <h2 className="text-lg font-semibold text-[#c2831f] mb-4">
             Campaign Details
           </h2>
-          {loading ? (
-            <p className="text-gray-400">Loading...</p>
-          ) : (
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="border-b border-gray-700 text-gray-400">
-                  <th className="py-2 px-4">Name</th>
-                  <th className="py-2 px-4">Sent</th>
-                  <th className="py-2 px-4">Open Rate</th>
-                  <th className="py-2 px-4">Click Rate</th>
-                  <th className="py-2 px-4">Conversion Rate</th>
-                </tr>
-              </thead>
-              <tbody>
-                {campaignTable.map((row, idx) => (
-                  <tr
-                    key={idx}
-                    className="border-b border-gray-800 hover:bg-gray-900"
-                  >
-                    <td className="py-2 px-4">{row.name}</td>
-                    <td className="py-2 px-4">{row.sent}</td>
-                    <td className="py-2 px-4">{row.open}</td>
-                    <td className="py-2 px-4">{row.click}</td>
-                    <td className="py-2 px-4">{row.conversion}</td>
+          <div className="max-h-[400px] overflow-y-auto">
+            {loading ? (
+              <p className="text-gray-400">Loading...</p>
+            ) : (
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-700 text-gray-400">
+                    <th className="py-2 px-4">Name</th>
+                    <th className="py-2 px-4">Sent</th>
+                    <th className="py-2 px-4">Open Rate</th>
+                    <th className="py-2 px-4">Click Rate</th>
+                    <th className="py-2 px-4">Conversion Rate</th>
+                    <th className="py-2 px-4">Action</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
+                </thead>
+                <tbody>
+                  {campaignTable.map((row, idx) => (
+                    <tr
+                      key={idx}
+                      className="border-b border-gray-800 hover:bg-gray-900"
+                    >
+                      <td className="py-2 px-4">{row.name}</td>
+                      <td className="py-2 px-4">{row.sent}</td>
+                      <td className="py-2 px-4">{row.open}</td>
+                      <td className="py-2 px-4">{row.click}</td>
+                      <td className="py-2 px-4">{row.conversion}</td>
+                      <td className="py-2 px-4">
+                        <button
+                          onClick={() => handleDelete(row.id)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
       </div>
     </DashboardLayout>

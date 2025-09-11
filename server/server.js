@@ -33,6 +33,8 @@ import cron from 'node-cron';
 import { fetchAndStoreInboxMails } from "./routes/imapService.js";
 import { startEmailScheduler } from "./services/imapScheduler.js";
 
+import multimediaRoutes from './routes/multimedia.js';
+
 // start background email fetcher
 
 
@@ -121,9 +123,12 @@ app.use("/api/push", pushRoutes);
 app.use("/notifications", notificationsRoutes);
 
 //campaign
-// Routes
 app.use('/api/sendContacts', sendContactsRoutes);
 app.use('/api/sendCampaigns', sendCampaignsRoutes);
+// Multimedia campaigns
+app.use('/api/multimedia', multimediaRoutes);
+
+
 
 app.use("/tasks", taskRoutes);
 app.use("/deals", dealsRoutes);
@@ -136,7 +141,7 @@ app.use("/orders", orderRoutes);
 app.use("/stats", crmDashRoutes);
 
 
-//
+
 app.use('/api/campaigncontacts', campaignContactsRoutes);
 app.use('/api/campaigns', campaignsRoutes);
 
