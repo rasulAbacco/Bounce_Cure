@@ -361,5 +361,21 @@ model CampaignEvent {
   email      String?
   createdAt  DateTime @default(now())
 
-  campaign Campaign @relation(fields: [campaignId], references: [id])
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+model MmsCampaign {
+  id         Int            @id @default(autoincrement())
+  name       String
+  message    String
+  mediaUrl   String
+  createdAt  DateTime       @default(now())
+  recipients MmsRecipient[]
+}
+
+model MmsRecipient {
+  id            Int         @id @default(autoincrement())
+  phone         String
+  mmsCampaignId Int
+  mmsCampaign   MmsCampaign @relation(fields: [mmsCampaignId], references: [id])
 }
