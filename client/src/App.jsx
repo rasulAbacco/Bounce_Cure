@@ -44,6 +44,10 @@ import SendCampaign from './pages/Campaign/pages/SendCampaign';
 import AllTemplates from './pages/Campaign/pages/AllTemplats';
 import WatsupCampaign from './pages/WatsupCampaign';
 
+import MultimediaCampaign from './pages/Multimedia/MultimediCampaign';
+import WhatsappCampaign from './pages/Multimedia/WhatsappCampaign';
+import SMScampaign from './pages/Multimedia/SMScampaign';
+
 
 function App() {
   return (
@@ -110,6 +114,10 @@ function App() {
             <Route path="/all-templates" element={<AllTemplates />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/WatsupCampaign" element={<WatsupCampaign />} />
+
+            <Route path="/MultimediaCampaign" element={<MultimediaCampaign />} />
+            <Route path="/whatsapp" element={<WhatsappCampaign />} />
+            <Route path="/sms" element={<SMScampaign />} />
 
           </Routes>
 
