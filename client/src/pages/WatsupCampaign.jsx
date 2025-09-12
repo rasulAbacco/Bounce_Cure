@@ -1,4 +1,4 @@
-import React, { useRef, useEffect, useState } from "react";
+import React, { useRef } from "react";
 import {
   FaInstagram,
   FaWhatsapp,
@@ -10,7 +10,6 @@ import {
 } from "react-icons/fa";
 import { RiTwitterXFill } from "react-icons/ri";
 import PageLayout from "../components/PageLayout";
-
 
 const WatsupCampaign = () => {
   const socialMediaCampaigns = [
@@ -81,13 +80,6 @@ const WatsupCampaign = () => {
   ];
 
   const marqueeRef = useRef(null);
-  const [scrollWidth, setScrollWidth] = useState(0);
-
-  useEffect(() => {
-    if (marqueeRef.current) {
-      setScrollWidth(marqueeRef.current.scrollWidth);
-    }
-  }, []);
 
   return (
     <PageLayout>
@@ -95,7 +87,7 @@ const WatsupCampaign = () => {
         <div className="max-w-7xl mx-auto">
           {/* Header Section */}
           <div className="text-center mb-16">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-[#c2831f] to-yellow-500 bg-clip-text text-transparent animate-bounce">
+            <h1 className="text-4xl md:text-5xl font-bold mb-6 bg-gradient-to-r from-[#c2831f] to-yellow-500 bg-clip-text text-transparent animate-slide-disappear">
               Multi Media Campaigns
             </h1>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
@@ -154,6 +146,16 @@ const WatsupCampaign = () => {
                 @keyframes marquee {
                   0% { transform: translateX(0); }
                   100% { transform: translateX(-50%); }
+                }
+
+                @keyframes slideDisappear {
+                  0% { transform: translateX(100%); opacity: 0; }
+                  20% { transform: translateX(0); opacity: 1; }
+                  80% { transform: translateX(0); opacity: 1; }
+                  100% { transform: translateX(-100%); opacity: 0; }
+                }
+                .animate-slide-disappear {
+                  animation: slideDisappear 5s ease-in-out infinite;
                 }
               `}
             </style>
