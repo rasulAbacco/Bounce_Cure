@@ -644,10 +644,10 @@ export default function WhatsAppCampaignEditor() {
           role="dialog"
           aria-modal="true"
         >
-          <div className="bg-white rounded-lg w-full max-w-4xl h-5/6 flex flex-col mx-4">
+          <div className="bg-gray-800 rounded-lg w-full max-w-4xl h-5/6 flex flex-col mx-4">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200">
-              <h2 className="text-xl font-semibold text-gray-900">Preview campaign</h2>
+              <h2 className="text-xl font-semibold text-gray-100">Preview campaign</h2>
               <button
                 onClick={() => setShowPreviewModal(false)}
                 className="p-1 hover:bg-gray-100 rounded-md transition-colors"
@@ -657,7 +657,7 @@ export default function WhatsAppCampaignEditor() {
             </div>
 
             {/* Device Toggle and Navigation */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-200">
+            <div className="flex items-center justify-between p-4 bg-gray-900 border-b border-gray-200">
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => setPreviewDevice('desktop')}
@@ -698,7 +698,7 @@ export default function WhatsAppCampaignEditor() {
             {/* Preview Content */}
             <div className="flex-1 overflow-auto">
               {previewDevice === 'mobile' ? (
-                <div className="flex justify-center items-start p-8 min-h-full bg-gray-50">
+                <div className="flex justify-center items-start p-8 min-h-full bg-gray-800">
                   <div className="w-80 bg-white rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
                     {/* WhatsApp Header */}
                     <div className="p-4 bg-green-600 text-white">
@@ -711,7 +711,7 @@ export default function WhatsAppCampaignEditor() {
                     </div>
 
                     {/* WhatsApp Content */}
-                    <div className="p-6 min-h-[16rem] bg-gray-100">
+                    <div className="p-6 min-h-[16rem] bg-gray-700">
                       <div 
                         className="p-3 rounded-lg max-w-xs ml-auto text-sm leading-relaxed break-words shadow-sm"
                         style={{ backgroundColor: selectedBgColor }}
@@ -747,7 +747,7 @@ export default function WhatsAppCampaignEditor() {
                   </div>
                 </div>
               ) : (
-                <div className="p-8 min-h-full bg-gray-50">
+                <div className="p-8 min-h-full bg-gray-900">
                   <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                     {/* Desktop WhatsApp Header */}
                     <div className="p-6 bg-green-600 text-white">
@@ -758,9 +758,9 @@ export default function WhatsAppCampaignEditor() {
                     </div>
 
                     {/* Desktop WhatsApp Content */}
-                    <div className="p-8 min-h-[24rem] bg-gray-50">
+                    <div className="p-8 min-h-[24rem] bg-gray-500">
                       <div 
-                        className="p-6 rounded-lg max-w-md ml-auto text-lg leading-relaxed shadow-sm"
+                        className="p-16 w-full rounded-lg   text-lg leading-relaxed shadow-sm"
                         style={{ backgroundColor: selectedBgColor }}
                       >
                         {uploadedImage && (
@@ -800,4 +800,4 @@ export default function WhatsAppCampaignEditor() {
       )}
     </div>
   );
-}
+} 

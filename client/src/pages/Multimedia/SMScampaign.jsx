@@ -179,18 +179,6 @@ useEffect(() => {
   };
  
 
-  // const sendCampaign = () => {
-  //   if (!message.trim()) {
-  //     alert('Please enter a message');
-  //     return;
-  //   }
-  //   if (!campaignName.trim()) {
-  //     alert('Please enter a campaign name');
-  //     return;
-  //   }
-  //   alert('SMS Campaign sent successfully! 📱');
-  // };
-
   const scheduleCampaign = () => {
     if (!message.trim()) {
       alert('Please enter a message');
@@ -470,10 +458,10 @@ return (
         role="dialog"
         aria-modal="true"
       >
-        <div className="bg-white rounded-lg w-full max-w-4xl h-5/6 flex flex-col mx-4">
+        <div className="bg-gray-900 rounded-lg w-full max-w-4xl h-5/6 flex flex-col mx-4">
           {/* Modal Header */}
           <div className="flex items-center justify-between p-6 border-b border-gray-200">
-            <h2 className="text-xl font-semibold text-gray-900">Preview campaign</h2>
+            <h2 className="text-xl font-semibold text-gray-100">Preview campaign</h2>
             <button
               onClick={() => setShowPreviewModal(false)}
               className="p-1 hover:bg-gray-100 rounded-md transition-colors"
@@ -483,7 +471,7 @@ return (
           </div>
 
           {/* Device Toggle and Navigation */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 border-b border-gray-200">
+          <div className="flex items-center justify-between p-4 bg-gray-800 border-b border-gray-200">
             <div className="flex items-center gap-2">
               <button
                 onClick={() => setPreviewDevice('desktop')}
@@ -522,13 +510,13 @@ return (
           </div>
 
           {/* Preview Content */}
-          <div className="flex-1 overflow-auto">
+          <div className="flex-1 overflow-auto ">
             {previewDevice === 'mobile' ? (
-              <div className="flex justify-center items-start p-8 min-h-full bg-gray-50">
+              <div className="flex justify-center items-start p-8 min-h-full bg-gray-800">
                 <div className="w-80 bg-black rounded-2xl shadow-lg border border-gray-200 overflow-hidden">
                   {/* SMS Header */}
-                  <div className="p-4 bg-gray-100 border-b border-gray-200">
-                    <div className="text-xl font-medium text-gray-900 mb-2">
+                  <div className="p-4 bg-gray-800 border-b border-gray-200">
+                    <div className="text-xl font-medium text-gray-300 mb-2">
                       Keith Burt &lt;+1234567890&gt;
                     </div>
                     <div className="text-sm text-blue-600 cursor-pointer">
@@ -537,11 +525,11 @@ return (
                   </div>
 
                   {/* SMS Content */}
-                  <div className="p-6 min-h-[16rem] bg-gray-800 text-gray-100">
+                  <div className="p-6 min-h-[16rem] bg-gray-800 text-white">
                     {message.trim() ? (
                       <div className="text-gray-900 whitespace-pre-wrap">{message}</div>
                     ) : (
-                      <div className="text-gray-400 italic">
+                      <div className="text-gray-300 italic">
                         Your SMS message will appear here...
                       </div>
                     )}
@@ -549,11 +537,11 @@ return (
                 </div>
               </div>
             ) : (
-              <div className="p-8 min-h-full bg-gray-50">
-                <div className="max-w-3xl mx-auto bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="p-8 min-h-full bg-gray-900">
+                <div className="max-w-3xl mx-auto bg-gray-800 rounded-lg shadow-sm border border-gray-200 overflow-hidden">
                   {/* Desktop SMS Header */}
-                  <div className="p-6 bg-gray-50 border-b border-gray-200">
-                    <div className="text-xl font-medium text-gray-900 mb-2">
+                  <div className="p-6 bg-gray-700 border-b border-gray-200">
+                    <div className="text-xl font-medium text-gray-300 mb-2">
                       Keith Burt &lt;+1234567890&gt;
                     </div>
                     <div className="text-blue-600 cursor-pointer">to: Select recipients ▼</div>
