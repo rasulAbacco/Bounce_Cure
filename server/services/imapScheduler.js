@@ -32,7 +32,7 @@ export function startEmailScheduler() {
     // Run immediately once at startup
     runSync();
 
-    // Keep running every 30s
-    setInterval(runSync, 60 * 1000);
+    // Keep running every 600s
+    setInterval(runSync, 600 * 1000);
 }
 
