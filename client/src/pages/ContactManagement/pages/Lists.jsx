@@ -114,15 +114,14 @@ const Lists = () => {
   };
 
   // --- View file ---
-const handleViewList = async (list) => {
-  try {
-    const res = await fetch(`${API_URL}/lists/files/${list.id}`);
-    if (!res.ok) throw new Error("Failed to fetch file");
+  const handleViewList = async (list) => {
+    try {
+      const res = await fetch(`${API_URL}/lists/files/${list.id}`);
+      if (!res.ok) throw new Error("Failed to fetch file");
 
-    const blob = await res.blob();
-    const text = await blob.text();
+      const blob = await res.blob();
+      const text = await blob.text();
 
- 
 
 let fileData;
 
@@ -152,6 +151,30 @@ try {
   }
 };
 
+      let fileData;
+
+      try {
+        // Try parsing as JSON
+        const json = JSON.parse(text);
+        fileData = { type: "json", data: json };
+      } catch {
+        // If not JSON, try parsing as CSV
+        const csv = Papa.parse(text, { header: true });
+        if (csv.data && csv.data.length > 0) {
+          fileData = { type: "contacts", contacts: csv.data };
+        } else {
+          // Fallback: raw text
+          fileData = { type: "text", raw: text };
+        }
+      }
+
+
+      setViewData({ ...list, uploadedFile: fileData });
+    } catch (err) {
+      console.error("❌ Error fetching file:", err);
+      setViewData({ ...list, uploadedFile: { type: "error" } });
+    }
+  };
 
 
   // --- Filter ---
