@@ -51,6 +51,7 @@ import WhatsappCampaign from './pages/Multimedia/WhatsappCampaign';
 import SMScampaign from './pages/Multimedia/SMScampaign';
 import TermsConditions from './pages/Terms&conditions';
 import RefundPolicy from './pages/RefundPolicy';
+import Signin from './pages/Pricing/Signin';
 
 
 function App() {
@@ -121,6 +122,7 @@ function App() {
             <Route path="/smscampaign" element={<SMSCampaign />} />
             <Route path="/terms-and-conditions" element={<TermsConditions />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />
+            <Route path="/signin" element={<Signin />} />
 
             <Route path="/MultimediaCampaign" element={<MultimediaCampaign />} />
             <Route path="/whatsapp" element={<WhatsappCampaign />} />

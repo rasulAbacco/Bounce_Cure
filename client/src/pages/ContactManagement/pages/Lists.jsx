@@ -122,35 +122,6 @@ const Lists = () => {
       const blob = await res.blob();
       const text = await blob.text();
 
-
-let fileData;
-
-try {
-  // Try parsing as JSON
-  const json = JSON.parse(text);
-  fileData = { type: "json", data: json };
-} catch (jsonError) {
-  // If not JSON, try parsing as CSV
-  try {
-    const csv = Papa.parse(text, { header: true });
-    if (csv.data && csv.data.length > 0) {
-      fileData = { type: "contacts", contacts: csv.data };
-    } else {
-      fileData = { type: "text", raw: text };
-    }
-  } catch (csvError) {
-    console.error("❌ Error parsing CSV file:", csvError);
-    fileData = { type: "text", raw: text };
-  }
-}
-
-    setViewData({ ...list, uploadedFile: fileData });
-  } catch (err) {
-    console.error("❌ Error fetching file:", err);
-    setViewData({ ...list, uploadedFile: { type: "error" } });
-  }
-};
-
       let fileData;
 
       try {
@@ -167,7 +138,6 @@ try {
           fileData = { type: "text", raw: text };
         }
       }
-
 
       setViewData({ ...list, uploadedFile: fileData });
     } catch (err) {

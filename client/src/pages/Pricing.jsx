@@ -2,20 +2,20 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Check, Mail, Users, TrendingUp, Star, ArrowRight, Zap, Gift } from 'lucide-react';
 import PageLayout from "../components/PageLayout";
 import { useNavigate } from "react-router-dom";
+import { buildPlanObject } from "../utils/planHelpers";
 
 const CircularSlider = ({ min, max, value, onChange }) => {
   const [isDragging, setIsDragging] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [tempValue, setTempValue] = useState(value.toString());
   const sliderRef = useRef(null);
-  
+
   useEffect(() => {
     setTempValue(value.toString());
   }, [value]);
-  
+
   const getAngleFromCenter = (event) => {
     if (!sliderRef.current) return 0;
-    
     const rect = sliderRef.current.getBoundingClientRect();
     const centerX = rect.left + rect.width / 2;
     const centerY = rect.top + rect.height / 2;
@@ -25,80 +25,81 @@ const CircularSlider = ({ min, max, value, onChange }) => {
     angle = (angle + 90 + 360) % 360;
     return angle;
   };
-  
+
   const angleToValue = (angle) => {
     angle = Math.max(0, Math.min(360, angle));
     const percent = angle / 360;
     let newValue = Math.round(min + percent * (max - min));
     return Math.min(newValue, max);
   };
-  
+
   const valueToAngle = (value) => {
     const percent = (value - min) / (max - min);
     return percent * 360;
   };
-  
+
   const handleMouseDown = (e) => {
     setIsDragging(true);
     updateValue(e);
   };
-  
+
   const handleMouseMove = (e) => {
     if (isDragging) {
       updateValue(e);
     }
   };
-  
+
   const handleMouseUp = () => {
     setIsDragging(false);
   };
-  
+
   const updateValue = (e) => {
     const angle = getAngleFromCenter(e);
     const newValue = angleToValue(angle);
     onChange(newValue);
   };
-  
+
   const handleInputChange = (e) => {
     setTempValue(e.target.value);
   };
-  
+
   const handleBlur = () => {
     setIsEditing(false);
     const newValue = parseInt(tempValue) || min;
     const clampedValue = Math.min(Math.max(newValue, min), max);
     onChange(clampedValue);
   };
-  
+
   const handleKeyPress = (e) => {
-    if (e.key === 'Enter') {
+    if (e.key === "Enter") {
       handleBlur();
     }
   };
-  
+
   useEffect(() => {
     if (isDragging) {
-      window.addEventListener('mousemove', handleMouseMove);
-      window.addEventListener('mouseup', handleMouseUp);
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
       return () => {
-        window.removeEventListener('mousemove', handleMouseMove);
-        window.removeEventListener('mouseup', handleMouseUp);
+        window.removeEventListener("mousemove", handleMouseMove);
+        window.removeEventListener("mouseup", handleMouseUp);
       };
     }
   }, [isDragging]);
-  
+
   const currentAngle = valueToAngle(value);
   const radius = 80;
   const thumbX = radius * Math.cos((currentAngle - 90) * (Math.PI / 180));
   const thumbY = radius * Math.sin((currentAngle - 90) * (Math.PI / 180));
-  
+
   return (
-    <div 
+    <div
       ref={sliderRef}
       className="relative w-48 h-48 mx-auto cursor-pointer"
       onMouseDown={handleMouseDown}
     >
       <svg width="100%" height="100%" viewBox="-100 -100 200 200">
+        {/* Background circle */}
         <circle
           cx="0"
           cy="0"
@@ -108,6 +109,7 @@ const CircularSlider = ({ min, max, value, onChange }) => {
           strokeWidth="10"
           strokeOpacity="0.2"
         />
+        {/* Progress circle */}
         <circle
           cx="0"
           cy="0"
@@ -118,6 +120,7 @@ const CircularSlider = ({ min, max, value, onChange }) => {
           strokeDasharray={`${(currentAngle / 360) * 502.4} 502.4`}
           transform="rotate(-90)"
         />
+        {/* Thumb */}
         <circle
           cx={thumbX}
           cy={thumbY}
@@ -126,6 +129,7 @@ const CircularSlider = ({ min, max, value, onChange }) => {
           stroke="white"
           strokeWidth="2"
         />
+        {/* Min and max labels */}
         <text
           x="0"
           y="-90"
@@ -161,7 +165,7 @@ const CircularSlider = ({ min, max, value, onChange }) => {
             max={max}
           />
         ) : (
-          <div 
+          <div
             className="text-4xl font-bold cursor-pointer text-white"
             onClick={() => setIsEditing(true)}
           >
@@ -182,28 +186,28 @@ const Pricing = () => {
   const [selectedIntegrations, setSelectedIntegrations] = useState([]);
   const navigate = useNavigate();
   
-  // Base pricing for all plans including Enterprise
+  // Base pricing for all plans
   const basePricing = {
-    monthly: { 
+    monthly: {
       free: 0,
-      proPlan: 32.5, 
+      proPlan: 32.5,
       growthPlan: 140.8,
       enterprise: 299.99
     },
-    quarterly: { 
+    quarterly: {
       free: 0,
-      proPlan: 29.25, 
+      proPlan: 29.25,
       growthPlan: 126.72,
-      enterprise: 269.99  // 10% discount for quarterly
+      enterprise: 269.99
     },
-    annually: { 
+    annually: {
       free: 0,
-      proPlan: 26.00, 
+      proPlan: 26.00,
       growthPlan: 112.64,
-      enterprise: 239.99  // 20% discount for annual
+      enterprise: 239.99
     }
   };
-  
+
   const integrations = [
     { id: 'salesforce', name: 'Salesforce', price: 15 },
     { id: 'hubspot', name: 'HubSpot', price: 12 },
@@ -212,32 +216,31 @@ const Pricing = () => {
     { id: 'slack', name: 'Slack', price: 5 },
     { id: 'gmail', name: 'Gmail', price: 7 }
   ];
-  
+
   const calculateSlotPrice = (basePrice, slotCount) => {
     const additionalSlots = Math.max(0, slotCount - 50);
     const slotPrice = billingPeriod === 'monthly' ? 0.5 : billingPeriod === 'quarterly' ? 0.45 : 0.4;
     return basePrice + (additionalSlots * slotPrice);
   };
-  
+
   const integrationCosts = selectedIntegrations.reduce((total, integrationId) => {
     const integration = integrations.find(i => i.id === integrationId);
     const multiplier = billingPeriod === 'monthly' ? 1 : billingPeriod === 'quarterly' ? 3 : 12;
     return total + (integration ? integration.price * multiplier : 0);
   }, 0);
-  
+
   const toggleIntegration = (integrationId) => {
-    setSelectedIntegrations(prev => 
+    setSelectedIntegrations(prev =>
       prev.includes(integrationId) ? prev.filter(id => id !== integrationId) : [...prev, integrationId]
     );
   };
-  
+
   const currentPricing = basePricing[billingPeriod];
   const freePrice = currentPricing.free + integrationCosts;
   const proPrice = calculateSlotPrice(currentPricing.proPlan, slots) + integrationCosts;
   const growthPrice = calculateSlotPrice(currentPricing.growthPlan, slots) + integrationCosts;
-  // Enterprise price includes base price + integration costs
   const enterprisePrice = currentPricing.enterprise + integrationCosts;
-  
+
   const formatPeriod = () => {
     switch (billingPeriod) {
       case 'monthly': return 'month';
@@ -246,30 +249,57 @@ const Pricing = () => {
       default: return 'month';
     }
   };
-  
-  // Function to handle navigation to payment or login based on plan
-  const handlePlanSelection = (planName, planPrice) => {
-    // For Free plan, navigate directly to login (no payment needed)
-    if (planName === "Free Plan") {
-      navigate("/login", {
-        state: {
-          planName,
-          planPrice,
-          billingPeriod: formatPeriod(),
-        },
-      });
-    } else {
-      // For paid plans, navigate to payment page
-      navigate("/payment", {
-        state: {
-          planName,
-          planPrice,
-          billingPeriod: formatPeriod(),
-        },
-      });
-    }
-  };
-  
+
+const handlePlanSelection = (planName, planPrice) => {
+  const slotPrice = billingPeriod === 'monthly' ? 0.5 : billingPeriod === 'quarterly' ? 0.45 : 0.4;
+  const additionalSlots = Math.max(0, slots - 50);
+  const additionalSlotsCost = additionalSlots * slotPrice;
+
+  let basePlanPrice;
+  switch (planName) {
+    case "Free Plan":
+      basePlanPrice = currentPricing.free;
+      break;
+    case "Pro Plan":
+      basePlanPrice = currentPricing.proPlan;
+      break;
+    case "Growth Plan":
+      basePlanPrice = currentPricing.growthPlan;
+      break;
+    case "Enterprise Plan":
+      basePlanPrice = currentPricing.enterprise;
+      break;
+    default:
+      basePlanPrice = 0;
+  }
+
+  const pricingDetails = buildPlanObject({
+    planName,
+    basePrice: basePlanPrice,
+    totalCost: planPrice,
+    slots,
+    selectedIntegrations,
+    additionalSlotsCost,
+    integrationCosts,
+    billingPeriod: formatPeriod(),
+  });
+
+  // 🔹 Free Plan → always login, skip payment
+  if (planName === "Free Plan") {
+    navigate("/login", { state: { plan: pricingDetails } });
+    return;
+  }
+
+  // 🔹 Other Plans → signin → payment
+  const isAuthenticated = !!localStorage.getItem("token");
+  if (!isAuthenticated) {
+    navigate("/signin", { state: { from: "/payment", plan: pricingDetails } });
+  } else {
+    navigate("/payment", { state: pricingDetails });
+  }
+};
+
+
   return (
     <PageLayout>
       <div className="min-h-screen bg-black text-white p-6">
@@ -281,18 +311,22 @@ const Pricing = () => {
           </div>
           
           {/* Billing Toggle */}
-          <div className="flex justify-center mb-8 ">
-            <div className="bg-black/50 backdrop-blur-sm rounded-xl p-1 border border-[#c2831f]/30 ">
+          <div className="flex justify-center mb-8">
+            <div className="bg-black/50 backdrop-blur-sm rounded-xl p-1 border border-[#c2831f]/30">
               {['monthly', 'quarterly', 'annually'].map((period) => (
                 <button
                   key={period}
                   onClick={() => setBillingPeriod(period)}
-                  className={`px-6 py-3 rounded-lg font-medium ${billingPeriod === period 
-                    ? 'bg-[#c2831f] text-white' 
-                    : 'text-gray-300 hover:text-white '}`}
+                  className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+                    billingPeriod === period
+                      ? 'bg-[#c2831f] text-white'
+                      : 'text-gray-300 hover:text-white'
+                  }`}
                 >
                   {period.charAt(0).toUpperCase() + period.slice(1)}
-                  {period === 'annually' && <span className="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">Save 20%</span>}
+                  {period === 'annually' && (
+                    <span className="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">Save 20%</span>
+                  )}
                 </button>
               ))}
             </div>
@@ -311,24 +345,23 @@ const Pricing = () => {
                   <p className="text-gray-400 text-sm">Drag to adjust or click number to edit</p>
                 </div>
               </div>
-              
               <div className="flex flex-col items-center">
-                <CircularSlider 
-                  min={50} 
-                  max={5000} 
-                  value={slots} 
-                  onChange={setSlots} 
+                <CircularSlider
+                  min={50}
+                  max={5000}
+                  value={slots}
+                  onChange={setSlots}
                 />
                 <div className="mt-6 flex items-center justify-center gap-4">
-                  <button 
+                  <button
                     onClick={() => setSlots(prev => Math.max(50, prev - 10))}
-                    className="px-4 py-2 bg-[#c2831f]/20 rounded-lg hover:bg-[#c2831f]/30 cursor-pointer"
+                    className="px-4 py-2 bg-[#c2831f]/20 rounded-lg hover:bg-[#c2831f]/30 transition-colors"
                   >
                     -10
                   </button>
-                  <button 
+                  <button
                     onClick={() => setSlots(prev => Math.min(5000, prev + 10))}
-                    className="px-4 py-2 bg-[#c2831f]/20 rounded-lg hover:bg-[#c2831f]/30 cursor-pointer"
+                    className="px-4 py-2 bg-[#c2831f]/20 rounded-lg hover:bg-[#c2831f]/30 transition-colors"
                   >
                     +10
                   </button>
@@ -348,15 +381,16 @@ const Pricing = () => {
                   <p className="text-gray-400 text-sm">Connect with your favorite tools</p>
                 </div>
               </div>
-              
               <div className="grid grid-cols-3 gap-4">
                 {integrations.map((integration) => (
                   <button
                     key={integration.id}
                     onClick={() => toggleIntegration(integration.id)}
-                    className={`p-4 rounded-xl border flex flex-col items-center ${selectedIntegrations.includes(integration.id)
-                      ? 'border-[#c2831f] bg-[#c2831f]/10'
-                      : 'border-gray-700 hover:border-[#c2831f]/50'}`}
+                    className={`p-4 rounded-xl border flex flex-col items-center transition-colors ${
+                      selectedIntegrations.includes(integration.id)
+                        ? 'border-[#c2831f] bg-[#c2831f]/10'
+                        : 'border-gray-700 hover:border-[#c2831f]/50'
+                    }`}
                   >
                     <div className="text-sm font-medium">{integration.name}</div>
                     <div className="text-xs text-gray-400 mt-1">
@@ -371,7 +405,7 @@ const Pricing = () => {
           {/* Pricing Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
             {/* Free Plan */}
-            <div className="bg-black/30 backdrop-blur-lg rounded-2xl border border-[#c2831f]/30 overflow-hidden">
+            <div className="bg-black/30 backdrop-blur-lg rounded-2xl border border-[#c2831f]/30 overflow-hidden transition-transform hover:scale-[1.02]">
               <div className="p-6">
                 <div className="flex items-center mb-4">
                   <Gift className="w-8 h-8 text-[#c2831f] mr-3" />
@@ -400,7 +434,7 @@ const Pricing = () => {
                 </ul>
                 <button
                   onClick={() => handlePlanSelection("Free Plan", freePrice)}
-                  className="w-full py-3 bg-[#c2831f] text-white rounded-xl font-medium flex items-center justify-center"
+                  className="w-full py-3 bg-[#c2831f] text-white rounded-xl font-medium flex items-center justify-center transition-colors hover:bg-[#d0a042]"
                 >
                   Get Started <ArrowRight className="w-4 h-4 ml-2" />
                 </button>
@@ -408,7 +442,7 @@ const Pricing = () => {
             </div>
             
             {/* Pro Plan */}
-            <div className="bg-black/30 backdrop-blur-lg rounded-2xl border-2 border-[#c2831f] overflow-hidden relative">
+            <div className="bg-black/30 backdrop-blur-lg rounded-2xl border-2 border-[#c2831f] overflow-hidden relative transition-transform hover:scale-[1.02]">
               <div className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-[#c2831f] text-white px-4 py-1 rounded-b-lg text-sm font-medium">
                 Most Popular
               </div>
@@ -441,7 +475,7 @@ const Pricing = () => {
                 </ul>
                 <button
                   onClick={() => handlePlanSelection("Pro Plan", proPrice)}
-                  className="w-full py-3 bg-[#c2831f] text-white rounded-xl font-medium flex items-center justify-center"
+                  className="w-full py-3 bg-[#c2831f] text-white rounded-xl font-medium flex items-center justify-center transition-colors hover:bg-[#d0a042]"
                 >
                   Get Started <ArrowRight className="w-4 h-4 ml-2" />
                 </button>
@@ -449,7 +483,7 @@ const Pricing = () => {
             </div>
             
             {/* Growth Plan */}
-            <div className="bg-black/30 backdrop-blur-lg rounded-2xl border border-[#c2831f]/30 overflow-hidden">
+            <div className="bg-black/30 backdrop-blur-lg rounded-2xl border border-[#c2831f]/30 overflow-hidden transition-transform hover:scale-[1.02]">
               <div className="p-6">
                 <div className="flex items-center mb-4">
                   <TrendingUp className="w-8 h-8 text-[#c2831f] mr-3" />
@@ -484,7 +518,7 @@ const Pricing = () => {
                 </ul>
                 <button
                   onClick={() => handlePlanSelection("Growth Plan", growthPrice)}
-                  className="w-full py-3 bg-[#c2831f] text-white rounded-xl font-medium flex items-center justify-center"
+                  className="w-full py-3 bg-[#c2831f] text-white rounded-xl font-medium flex items-center justify-center transition-colors hover:bg-[#d0a042]"
                 >
                   Get Started <ArrowRight className="w-4 h-4 ml-2" />
                 </button>
@@ -492,7 +526,7 @@ const Pricing = () => {
             </div>
             
             {/* Enterprise Plan */}
-            <div className="bg-black/30 backdrop-blur-lg rounded-2xl border border-[#c2831f]/30 overflow-hidden">
+            <div className="bg-black/30 backdrop-blur-lg rounded-2xl border border-[#c2831f]/30 overflow-hidden transition-transform hover:scale-[1.02]">
               <div className="p-6">
                 <div className="flex items-center mb-4">
                   <Star className="w-8 h-8 text-[#c2831f] mr-3" />
@@ -527,7 +561,7 @@ const Pricing = () => {
                 </ul>
                 <button
                   onClick={() => handlePlanSelection("Enterprise Plan", enterprisePrice)}
-                  className="w-full py-3 bg-[#c2831f] text-white rounded-xl font-medium flex items-center justify-center"
+                  className="w-full py-3 bg-[#c2831f] text-white rounded-xl font-medium flex items-center justify-center transition-colors hover:bg-[#d0a042]"
                 >
                   Get Started <ArrowRight className="w-4 h-4 ml-2" />
                 </button>
@@ -545,7 +579,7 @@ const Pricing = () => {
                   <span>Included</span>
                 </div>
                 {slots > 50 && (
-                  <div className="flex justify-between ">
+                  <div className="flex justify-between">
                     <span>Additional slots ({slots - 50}):</span>
                     <span>${((slots - 50) * (billingPeriod === 'monthly' ? 0.5 : billingPeriod === 'quarterly' ? 0.45 : 0.4)).toFixed(2)}</span>
                   </div>
@@ -556,7 +590,7 @@ const Pricing = () => {
                     <span>${integrationCosts.toFixed(2)}</span>
                   </div>
                 )}
-                <div className="border-t border-[#c2831f]/30 pt-3 font-bold ">
+                <div className="border-t border-[#c2831f]/30 pt-3 font-bold">
                   <div className="flex justify-between">
                     <span>Total additional cost:</span>
                     <span style={{ color: '#c2831f' }}>
@@ -571,10 +605,10 @@ const Pricing = () => {
           {/* CTA */}
           <div className="text-center py-8">
             <div className="flex justify-center gap-4">
-              <button className="px-8 py-3 bg-[#c2831f] text-white rounded-xl font-medium">
+              <button className="px-8 py-3 bg-[#c2831f] text-white rounded-xl font-medium transition-colors hover:bg-[#d0a042]">
                 Start Free Trial
               </button>
-              <button className="px-8 py-3 bg-black border border-[#c2831f] text-white rounded-xl font-medium">
+              <button className="px-8 py-3 bg-black border border-[#c2831f] text-white rounded-xl font-medium transition-colors hover:bg-[#c2831f]/10">
                 Email Quote
               </button>
             </div>
