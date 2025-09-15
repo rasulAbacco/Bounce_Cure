@@ -1,17 +1,20 @@
-import React from 'react';
+// frontend/src/components/Sidebar.jsx
+import React from "react";
 
-const Sidebar = () => {
+export default function Sidebar({ conversations, onSelect, selected }) {
     return (
-        <div className="w-60 bg-zinc-800 p-4 space-y-4">
-            <h2 className="text-xl font-bold mb-4">Folders</h2>
-            <ul className="space-y-2">
-                <li className="hover:text-blue-400 cursor-pointer">📥 Inbox</li>
-                <li className="hover:text-blue-400 cursor-pointer">📤 Sent</li>
-                <li className="hover:text-blue-400 cursor-pointer">⚠️ Bounced</li>
-                <li className="hover:text-blue-400 cursor-pointer">🏷️ Tags</li>
-            </ul>
+        <div className="w-80 border-r bg-black">
+            <div className="p-4 font-bold">Shared Inbox</div>
+            <div className="overflow-auto h-[calc(100vh-64px)]">
+                {conversations.map((c) => (
+                    <div key={c.id}
+                        onClick={() => onSelect(c)}
+                        className={`p-3 border-b cursor-pointer ${selected?.id === c.id ? "bg-gray-100" : "hover:bg-gray-50"}`}>
+                        <div className="text-sm font-medium">{c.subject}</div>
+                        <div className="text-xs text-gray-500 truncate">{c.snippet}</div>
+                    </div>
+                ))}
+            </div>
         </div>
     );
-};
-
-export default Sidebar;
+}

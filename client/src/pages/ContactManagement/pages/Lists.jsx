@@ -122,6 +122,7 @@ const Lists = () => {
       const blob = await res.blob();
       const text = await blob.text();
 
+
       let fileData;
 
       try {
@@ -137,7 +138,55 @@ const Lists = () => {
           // Fallback: raw text
           fileData = { type: "text", raw: text };
         }
+
+
+let fileData;
+
+try {
+  // Try parsing as JSON
+  const json = JSON.parse(text);
+  fileData = { type: "json", data: json };
+} catch (jsonError) {
+  // If not JSON, try parsing as CSV
+  try {
+    const csv = Papa.parse(text, { header: true });
+    if (csv.data && csv.data.length > 0) {
+      fileData = { type: "contacts", contacts: csv.data };
+    } else {
+      fileData = { type: "text", raw: text };
+    }
+  } catch (csvError) {
+    console.error("❌ Error parsing CSV file:", csvError);
+    fileData = { type: "text", raw: text };
+  }
+}
+
+    setViewData({ ...list, uploadedFile: fileData });
+  } catch (err) {
+    console.error("❌ Error fetching file:", err);
+    setViewData({ ...list, uploadedFile: { type: "error" } });
+  }
+};
+
+const handleFileRead = () => {
+  try {
+    let fileData;
+
+    try {
+      // Try parsing as JSON
+      const json = JSON.parse(text);
+      fileData = { type: "json", data: json };
+    } catch {
+      // If not JSON, try parsing as CSV
+      const csv = Papa.parse(text, { header: true });
+      if (csv.data && csv.data.length > 0) {
+        fileData = { type: "contacts", contacts: csv.data };
+      } else {
+        // Fallback: raw text
+        fileData = { type: "text", raw: text };
       }
+    }
+
 
       setViewData({ ...list, uploadedFile: fileData });
     } catch (err) {
@@ -145,6 +194,17 @@ const Lists = () => {
       setViewData({ ...list, uploadedFile: { type: "error" } });
     }
   };
+
+    // Set the state with the parsed file data
+    setViewData({ ...lists, uploadedFile: fileData });
+
+  } catch (err) {
+    console.error("❌ Error fetching file:", err);
+    setViewData({ ...lists, uploadedFile: { type: "error" } });
+  }
+};
+
+
 
 
   // --- Filter ---
