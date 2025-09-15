@@ -1,16 +1,16 @@
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
+
+// Routes
 import authRoutes from './routes/authRoutes.js';
 import verificationRoutes from './routes/verificationRoutes.js';
 import supportRoutes from './routes/supportRoutes.js';
-import supportMiddleware from "./middleware/supportMiddleware.js";
 import pushRoutes from "./routes/pushRoutes.js";
-import bodyParser from 'body-parser';
 import settingsRoutes from './routes/settingsRoutes.js';
 import verifySettingsAuth from './middleware/settingsMiddleware.js';
 import dashboardCRM from './routes/dashboardCRM.js';
-import notificationsRoutes from "./routes/notificationsRoutes.js"; // ✅ if file is inside server/routes
+import notificationsRoutes from "./routes/notificationsRoutes.js";
 import forgotPasswordRoutes from "./routes/forgotPasswordRoute.js";
 import advancedVerificationRoute from "./routes/advancedVerification.js";
 import passwordRoutes from "./routes/passwordRoutes.js";
@@ -29,30 +29,48 @@ import leadsRouter from "./routes/leads.js";
 import listRoutes from "./routes/listRoutes.js";
 import orderRoutes from "./routes/ordersRoutes.js";
 import crmDashRoutes from "./routes/crmDashRoutes.js";
+import emailsRouter from "./routes/emails.js";
+import accountsRouter from "./routes/accounts.js";
+import convRouter from "./routes/conversations.js";
+import savedRepliesRouter from "./routes/savedReplies.js";
+
+// Services
+import { startEmailScheduler } from "./services/imapScheduler.js";
+import { initSocket } from "./services/socketService.js";
+import { startSyncLoop } from "./services/syncService.js";
+import { PrismaClient } from "@prisma/client";
 import cron from 'node-cron';
 import { fetchAndStoreInboxMails } from "./routes/imapService.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 import { startEmailScheduler } from "./services/imapScheduler.js";
 import multimediaRoutes from './routes/multimedia.js';
+// Server and Socket
+import http from "http";
+import { Server as IOServer } from "socket.io";
 
-
+// ENV setup
 dotenv.config();
 console.log("Loaded SG API key:", process.env.SG_EMAIL_VAL_API_KEY?.substring(0, 10));
-startEmailScheduler();
 
+// Init
+startEmailScheduler();
+const prisma = new PrismaClient();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// app.use(cors({
-//   origin: process.env.BASE_URL,
-//   credentials: true,
-// }));
-
+// Allowed origins for CORS
 const allowedOrigins = [
   'http://localhost:5173',
   'https://bouncecure.onrender.com'
 ];
 
+// HTTP server and socket
+const server = http.createServer(app);
+const io = new IOServer(server, {
+  cors: { origin: "http://localhost:5173", credentials: true },
+});
+
+// CORS
 app.use(cors({
   origin: function (origin, callback) {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -64,60 +82,25 @@ app.use(cors({
   credentials: true
 }));
 
-
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: true }));
-
-// ✅ Middlewares
+// ✅ Use only express body parsers
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.get("/api/inbox/:fromEmail", async (req, res) => {
-  try {
-    const { fromEmail } = req.params;
-    console.log("Getting inbox for:", fromEmail);
-
-    const mails = await fetchAndStoreInboxMails(
-      fromEmail,
-      process.env.EMAIL_PASS,
-      process.env.EMAIL_HOST
-    );
-
-    res.json(mails);
-  } catch (err) {
-    console.error("Inbox fetch error:", err);
-    res.status(500).json({ error: "Failed to fetch inbox" });
-  }
-});
-
-
-// Mount routes
+// Routes
 app.use("/api/contacts", contactRoutes);
+
+app.use("/api/auth", authRoutes);         // <- Keep this before passwordRoutes
+app.use("/api/auth", passwordRoutes);     // <- Combine later if needed
+app.use("/dashboard", dashboardCRM);
+app.use("/verification", verificationRoutes);
 
 // ✅ Mount Routes
 app.use("/api", dashboardRoutes);
 
-// Mount routes
-app.use("/api/auth", passwordRoutes);
-
-// ✅ Routes
-app.use('/dashboard', dashboardCRM);
-
-app.use('/api/auth', authRoutes);
-app.use('/verification', verificationRoutes);
-
 app.use("/api/verification", advancedVerificationRoute);
-
 app.use("/auth", forgotPasswordRoutes);
-
-
-// ✅ Support routes with middleware
-app.use('/api/support', supportRoutes);
-
-// ✅ Protected settings route
-app.use('/api/settings', verifySettingsAuth, settingsRoutes);
-
-// Push notifications
+app.use("/api/support", supportRoutes);
+app.use("/api/settings", verifySettingsAuth, settingsRoutes);
 app.use("/api/push", pushRoutes);
 app.use("/notifications", notificationsRoutes);
 
@@ -126,46 +109,37 @@ app.use('/api/sendContacts', sendContactsRoutes);
 app.use('/api/sendCampaigns', sendCampaignsRoutes);
 // Multimedia campaigns
 app.use('/api/multimedia', multimediaRoutes);
-
-
-
 app.use("/tasks", taskRoutes);
 app.use("/deals", dealsRoutes);
 app.use("/api/leads", leadsRouter);
 app.use("/lists", listRoutes);
 app.use("/contact", contactCRMRoutes);
-app.use('/api/emails', emailRoutes);
-app.use('/api/email-account', emailAccountRoutes);
 app.use("/orders", orderRoutes);
 app.use("/stats", crmDashRoutes);
+app.use("/api/emails", emailsRouter);
+app.use("/api/accounts", accountsRouter);
+app.use("/api/conversations", convRouter);
+app.use("/api/saved-replies", savedRepliesRouter);
+app.use("/api/campaigncontacts", campaignContactsRoutes);
+app.use("/api/campaigns", campaignsRoutes);
 
+// Socket service
+initSocket(io);
+
+
+// IMAP sync loop
+startSyncLoop(prisma);
 
 
 app.use('/api/campaigncontacts', campaignContactsRoutes);
 app.use('/api/campaigns', campaignsRoutes);
 
+// Root route
 app.get('/', (req, res) => {
   res.send('Backend is running...');
 });
 
-
-
-
-// delete batches older than 30 days daily at 03:00
-cron.schedule('0 3 * * *', async () => {
-  const cutoff = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-  // Delete child results first or use cascading FK delete if configured in Prisma
-  await prisma.batchResult.deleteMany({ where: { createdAt: { lt: cutoff } } });
-  await prisma.verificationBatch.deleteMany({ where: { createdAt: { lt: cutoff } } });
-
-  // Optional: clean verification table older than 30 days (if you want)
-  // await prisma.verification.deleteMany({ where: { updatedAt: { lt: cutoff } } });
-
-  console.log('Old verification batches pruned older than 30 days.');
-});
-
-
-// ✅ Start server
-app.listen(PORT, () => {
-  console.log(`Server started on port ${PORT}`);
+// Start server
+server.listen(PORT, () => {
+  console.log(`✅ Server started on port ${PORT}`);
 });
