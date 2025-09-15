@@ -1,251 +1,428 @@
-import React, { useState, useEffect } from 'react';
-import { Menu, X } from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { Menu, X, Mail, RefreshCw, CheckCircle } from "lucide-react";
 import {
-  FaEnvelope, FaListAlt, FaPlug, FaInstagram, FaTwitter, FaWhatsapp,
-  FaFacebook, FaLinkedin, FaYoutube, FaSms, FaGoogle
-} from 'react-icons/fa';
-import { Link } from 'react-router-dom';
+  FaEnvelope,
+  FaListAlt,
+  FaPlug,
+  FaInstagram,
+  FaWhatsapp,
+  FaFacebook,
+  FaLinkedin,
+  FaYoutube,
+  FaSms,
+  FaGoogle,
+  FaAt,
+  FaPlus,
+  FaBullhorn,
+  FaBroom,
+  FaCompressAlt
+} from "react-icons/fa";
 import { RiTwitterXFill } from "react-icons/ri";
+import { Link, useNavigate } from "react-router-dom";
+import { AtSign } from "lucide-react";
+import { CheckSquare, ShieldCheck, FileCheck } from "lucide-react";
+import { CopyMinus, Layers } from "lucide-react";
+import { Trash2, Eraser, Scissors } from "lucide-react";
+import { ListPlus, Send, Users } from "lucide-react";
+import { PlusCircle, Database, ListPlus as ListPlusIcon } from "lucide-react";
+import { HeartPulse, Cross, Activity } from "lucide-react";
+
+
+// Bouncing Face Logo Component
+const CubeLogo = () => {
+  const [currentFace, setCurrentFace] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentFace((prev) => (prev + 1) % 13); // Updated to 13 faces
+    }, 2000); // Change face every 2 seconds
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const faces = [
+    // Front Face - Signal Wave
+    <div key="front" className="w-10 h-10 bg-black from-[#c2831f] to-yellow-600 rounded-xl flex flex-col items-center justify-center overflow-hidden border border-[#c2831f]">
+      <div className="flex items-end space-x-0.5">
+        <div className="w-0.5 h-4 bg-white rounded-full animate-wave-1"></div>
+        <div className="w-0.5 h-3 bg-white rounded-full animate-wave-2"></div>
+        <div className="w-0.5 h-5 bg-white rounded-full animate-wave-3"></div>
+        <div className="w-0.5 h-3.5 bg-white rounded-full animate-wave-4"></div>
+        <div className="w-0.5 h-4.5 bg-white rounded-full animate-wave-5"></div>
+      </div>
+      <span className="text-[10px] text-white mt-0.5">Signal</span>
+    </div>,
+
+    // Back Face - Mail Icon
+    <div key="back" className="w-10 h-10 bg-black rounded-xl flex flex-col items-center justify-center border border-[#c2831f]">
+      <Mail className="w-5 h-5 text-white" />
+      <span className="text-[10px] text-white mt-0.5">Mail</span>
+    </div>,
+
+    // Right Face - @ Symbol
+    <div key="right" className="w-10 h-10 bg-black rounded-xl flex flex-col items-center justify-center border border-[#c2831f]">
+      <span className="text-xl font-bold text-white">@</span>
+      <span className="text-[6px] text-white mt-0.5">Username</span>
+    </div>,
+
+    // Top Face - Refresh Icon
+    <div key="top" className="w-10 h-10 bg-black rounded-xl flex flex-col items-center justify-center border border-[#c2831f]">
+      <RefreshCw className="w-5 h-5 text-white" />
+      <span className="text-[10px] text-white mt-0.5">Refresh</span>
+    </div>,
+
+    // Data Refresh Face
+    <div key="data-refresh" className="w-10 h-10 bg-black rounded-xl flex flex-col items-center justify-center border border-[#c2831f]">
+      <Database className="w-5 h-5 text-white" />
+      <span className="text-[5px] text-white mt-0.5">Data Refresh</span>
+    </div>,
+
+    // Data Validation Face
+    <div key="data-validation" className="w-10 h-10 bg-black rounded-xl flex flex-col items-center justify-center border border-[#c2831f]">
+      <ShieldCheck className="w-5 h-5 text-white" />
+      <span className="text-[7px] text-white mt-0.5">Validation</span>
+    </div>,
+
+    // Data Appending Face
+    <div key="data-appending" className="w-10 h-10 bg-black rounded-xl flex flex-col items-center justify-center border border-[#c2831f]">
+      <ListPlusIcon className="w-5 h-5 text-white" />
+      <span className="text-[6px] text-white mt-0.5">Appending</span>
+    </div>,
+
+    // Email Campaign Face
+    <div key="email-campaign" className="w-10 h-10 bg-black rounded-xl flex flex-col items-center justify-center border border-[#c2831f]">
+      <Send className="w-5 h-5 text-white" />
+      <span className="text-[5px] text-white mt-0.5">Campaign</span>
+    </div>,
+
+    // Lead Generating Face
+    <div key="lead-generating" className="w-10 h-10 bg-black rounded-xl flex flex-col items-center justify-center border border-[#c2831f]">
+      <Users className="w-5 h-5 text-white" />
+      <span className="text-[10px] text-white mt-0.5">Leads</span>
+    </div>,
+
+    // Data Cleansing Face
+    <div key="data-cleansing" className="w-10 h-10 bg-black rounded-xl flex flex-col items-center justify-center border border-[#c2831f]">
+      <Eraser className="w-5 h-5 text-white" />
+      <span className="text-[7px] text-white mt-0.5">Cleansing</span>
+    </div>,
+
+    // Dedupe Face
+    <div key="dedupe" className="w-10 h-10 bg-black rounded-xl flex flex-col items-center justify-center border border-[#c2831f]">
+      <CopyMinus className="w-5 h-5 text-white" />
+      <span className="text-[8px] text-white mt-0.5">Dedupe</span>
+    </div>,
+
+    // Bottom Face - Brand Text (Cure)
+    // Bottom Face - Brand Text (Cure)
+    <div key="bottom" className="w-10 h-10 bg-black rounded-xl flex flex-col items-center justify-center border border-[#c2831f]">
+      <div className="flex items-center space-x-1">
+        <HeartPulse className="w-4 h-4 text-red-500 animate-pulse" />
+        <span className="text-[8px] font-bold text-yellow-500">CURE</span>
+      </div>
+    </div>
+    ,
+
+    // Left Face - Check Circle
+    <div key="left" className="w-10 h-10 bg-black rounded-xl flex flex-col items-center justify-center border border-[#c2831f]">
+      <CheckCircle className="w-8 h-8  text-white" />
+      <span className="text-[10px] text-white mt-3">Check</span>
+    </div>,
+  ];
+
+
+  return (
+    <div className="relative w-10 h-10 mt-2 overflow-hidden">
+      {faces.map((face, index) => (
+        <div
+          key={face.key}
+          className={`absolute top-0 left-0 w-full h-full flex items-center justify-center transition-all duration-500 ease-in-out ${index === currentFace
+            ? 'opacity-100 transform scale-100 translate-y-0 z-10'
+            : 'opacity-0 transform scale-95 translate-y-2 z-0'
+            }`}
+        >
+          {face}
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const Navbar = () => {
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [multimediaOpen, setMultimediaOpen] = useState(false);
 
-  // 🔹 Looping Typewriter states
-  const text = "BOUNCE CURE";
-  const [displayedText, setDisplayedText] = useState("");
-  const [index, setIndex] = useState(0);
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    let timeout;
-
-    if (!isDeleting && index < text.length) {
-      // Typing forward
-      timeout = setTimeout(() => {
-        setDisplayedText((prev) => prev + text[index]);
-        setIndex(index + 1);
-      }, 150);
-    } else if (isDeleting && index > 0) {
-      // Deleting backward
-      timeout = setTimeout(() => {
-        setDisplayedText((prev) => prev.slice(0, -1));
-        setIndex(index - 1);
-      }, 100);
-    } else if (index === text.length) {
-      // Pause before deleting
-      timeout = setTimeout(() => setIsDeleting(true), 2000);
-    } else if (index === 0 && isDeleting) {
-      // Restart typing
-      setIsDeleting(false);
-    }
-
-    return () => clearTimeout(timeout);
-  }, [index, isDeleting, text]);
-
   const links = [
-    { name: 'Home', to: '/' },
-    { name: 'About', to: '/about' },
-    { name: 'Features', to: '/features' },
-    { name: 'Services', to: '/services' },
-    { name: 'Multimedia', to: '/multimedia' },
-    { name: 'Pricing', to: '/pricing' },
-    { name: 'Contact', to: '/contact' },
+    { name: "Home", to: "/" },
+    { name: "About", to: "/about" },
+    { name: "Features", to: "/features" },
+    { name: "Services", to: "/services" },
+    { name: "Multimedia", to: "/multimedia" },
+    { name: "Pricing", to: "/pricing" },
+    { name: "Contact", to: "/contact" },
   ];
 
   const services = [
-    { name: 'Email Verification', icon: <FaEnvelope />, to: '/services/email-verification' },
-    { name: 'Bulk Verification', icon: <FaListAlt />, to: '/services/bulk-verification' },
-    { name: 'Integrations', icon: <FaPlug />, to: '/services/integrations' },
+    { name: "Email Verification", icon: <FaEnvelope />, to: "/services/email-verification" },
+    { name: "Bulk Verification", icon: <FaListAlt />, to: "/services/bulk-verification" },
+    { name: "Integrations", icon: <FaPlug />, to: "/services/integrations" },
+    { name: "Data Refresh", icon: <RefreshCw />, to: "/services/data-refresh" },
+    { name: "Data Validation", icon: <CheckCircle />, to: "/services/data-validation" },
+    { name: "Data Appending", icon: <FaPlus />, to: "/services/data-appending" },
+    { name: "Email Campaign", icon: <FaEnvelope />, to: "/services/email-campaign" },
+    { name: "Lead Generating", icon: <FaBullhorn />, to: "/services/lead-generating" },
+    { name: "Data Cleansing", icon: <FaBroom />, to: "/services/data-cleansing" },
+    { name: "Dedupe", icon: <FaCompressAlt />, to: "/services/dedupe" },
   ];
 
   const multimedia = [
-    { name: 'Instagram Campaign', icon: <FaInstagram className="text-pink-500" />, to: '' },
-    { name: 'Twitter Campaign', icon: <RiTwitterXFill className="text-sky-400" />, to: '' },
-    { name: 'WhatsApp Campaign', icon: <FaWhatsapp className="text-green-500" />, to: '' },
-    { name: 'Facebook Campaign', icon: <FaFacebook className="text-blue-500" />, to: '' },
-    { name: 'LinkedIn Campaign', icon: <FaLinkedin className="text-blue-700" />, to: '' },
-    { name: 'YouTube Ads', icon: <FaYoutube className="text-red-600" />, to: '' },
-    { name: 'SMS Campaign', icon: <FaSms className="text-purple-500" />, to: '' },
-    { name: 'Google Ads ', icon: <FaGoogle className="text-yellow-500" />, to: '' },
+    { name: "WhatsApp Campaign", icon: <FaWhatsapp />, to: "/WatsupCampaign" },
+    { name: "SMS Campaign", icon: <FaSms />, to: "/WatsupCampaign" },
+    { name: "Facebook Campaign", icon: <FaFacebook />, to: "/WatsupCampaign" },
+    { name: "Instagram Campaign", icon: <FaInstagram />, to: "/WatsupCampaign" },
+    { name: "Twitter Campaign", icon: <RiTwitterXFill />, to: "/WatsupCampaign" },
+    { name: "LinkedIn Campaign", icon: <FaLinkedin />, to: "/WatsupCampaign" },
+    { name: "YouTube Ads", icon: <FaYoutube />, to: "/WatsupCampaign" },
+    { name: "Google Ads", icon: <FaGoogle />, to: "/WatsupCampaign" },
   ];
+
+  const handleLogoClick = (e) => {
+    e.preventDefault();
+    navigate('/');
+  };
 
   return (
     <nav className="fixed w-full z-50 bg-black/90 backdrop-blur-lg border-b border-white/10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
-
-
-        {/* Logo with Typewriter */}
-        <div
-          className="flex items-center gap-2 cursor-pointer"
-          onClick={() => window.location.reload()}
+      <style jsx global>{`
+        .nav-link { 
+          position: relative; 
+          color: white; 
+          font-weight: 500; 
+          padding-bottom: 4px; 
+          transition: color 0.3s ease; 
+        }
+        .nav-link::after { 
+          content: ''; 
+          position: absolute; 
+          bottom: 0; 
+          left: 0; 
+          width: 0; 
+          height: 2px; 
+          background-color: #c2831f; 
+          transition: width 0.3s ease; 
+        }
+        .nav-link:hover { 
+          color: #c2831f; 
+        }
+        .nav-link:hover::after { 
+          width: 100%; 
+        }
+        .multimedia-item { 
+          display: flex; 
+          align-items: center; 
+          color: white; 
+          transition: color 0.3s ease; 
+        }
+        .multimedia-item:hover { 
+          color: #c2831f; 
+        }
+        .multimedia-item svg { 
+          color: inherit; 
+          transition: color 0.3s ease; 
+        }
+        @keyframes typewriterBounce { 
+          0% { opacity: 0; width: 0; } 
+          5% { opacity: 1; width: 0; } 
+          20% { width: 100%; opacity: 1; transform: scale(1); } 
+          22% { transform: scale(1.1); } 
+          25% { opacity: 0; transform: scale(1); } 
+          100% { opacity: 0; } 
+        }
+        @keyframes mailPop { 
+          0%, 25% { opacity: 0; transform: scale(0.3); } 
+          28% { opacity: 1; transform: scale(1.3); } 
+          30% { transform: scale(1); } 
+          35% { transform: scale(1.1); } 
+          40% { opacity: 0; transform: scale(0.5); } 
+          100% { opacity: 0; } 
+        }
+        @keyframes mailScatter { 
+          0% { opacity: 0; transform: translate(0,0) scale(0.5); } 
+          10% { opacity: 1; transform: scale(1.2); } 
+          100% { opacity: 0; transform: translate(var(--x), var(--y)) scale(0.3); } 
+        }
+        @keyframes typewriterCure { 
+          0%, 40% { opacity: 0; width: 0; } 
+          43% { opacity: 1; width: 0; } 
+          53% { width: 100%; opacity: 1; transform: scale(1.05); } 
+          55% { transform: scale(1); } 
+          58% { opacity: 0; } 
+          100% { opacity: 0; } 
+        }
+        @keyframes fullTextAppear { 
+          0%, 58% { opacity: 0; transform: scale(0.8); } 
+          60% { opacity: 1; transform: scale(1.2); } 
+          65% { transform: scale(0.9); } 
+          70% { transform: scale(1); } 
+          95% { opacity: 1; } 
+          100% { opacity: 0; } 
+        }
+        @keyframes wave-1 { 0%, 100% { height: 1rem; opacity: 0.7; } 50% { height: 0.5rem; opacity: 1; } }
+        @keyframes wave-2 { 0%, 100% { height: 0.75rem; opacity: 0.7; } 50% { height: 1.25rem; opacity: 1; } }
+        @keyframes wave-3 { 0%, 100% { height: 1.25rem; opacity: 0.7; } 50% { height: 0.6rem; opacity: 1; } }
+        @keyframes wave-4 { 0%, 100% { height: 0.6rem; opacity: 0.7; } 50% { height: 1rem; opacity: 1; } }
+        @keyframes wave-5 { 0%, 100% { height: 1rem; opacity: 0.7; } 50% { height: 0.5rem; opacity: 1; } }
+        
+        .animate-typewriter-bounce { 
+          display: inline-block; 
+          overflow: hidden; 
+          white-space: nowrap; 
+          animation: typewriterBounce 16s linear infinite; 
+        }
+        .animate-typewriter-cure { 
+          display: inline-block; 
+          overflow: hidden; 
+          white-space: nowrap; 
+          animation: typewriterCure 16s linear infinite; 
+        }
+        .animate-full-text { 
+          animation: fullTextAppear 16s ease-in-out infinite; 
+        }
+        .mail-container { 
+          position: relative; 
+          display: inline-block; 
+        }
+        .mail-scatter { 
+          position: absolute; 
+          top: 0; 
+          left: 0; 
+          color: #facc15; 
+          opacity: 0; 
+          font-size: 0.7em; 
+          animation: mailScatter 0.6s ease forwards; 
+        }
+        .animate-wave-1 { animation: wave-1 1.5s ease-in-out infinite 0.1s; }
+        .animate-wave-2 { animation: wave-2 1.5s ease-in-out infinite 0.2s; }
+        .animate-wave-3 { animation: wave-3 1.5s ease-in-out infinite 0.3s; }
+        .animate-wave-4 { animation: wave-4 1.5s ease-in-out infinite 0.2s; }
+        .animate-wave-5 { animation: wave-5 1.5s ease-in-out infinite 0.1s; }
+        
+        /* Simple bounce animation */
+        @keyframes bounce {
+          0%, 100% { transform: translateY(0); }
+          50% { transform: translateY(-4px); }
+        }
+        .animate-bounce {
+          animation: bounce 2s ease-in-out infinite;
+        }
+      `}</style>
+      <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-1 py-2 flex items-center justify-between">
+        {/* Logo & Animated Text */}
+        <Link
+          to="/"
+          className="flex flex-col min-w-[300px] cursor-pointer"
+          onClick={handleLogoClick}
         >
-          {/* Logo */}
-          <img
-            src="../Bounce.logo.gif"
-            alt="Bounce Cure Logo"
-            className="w-[60px] h-auto"
-          />
+          <div className="flex items-center">
+            {/* Bouncing Face Logo */}
 
-          {/* Brand Name + Slogan */}
-          <div className="flex flex-col leading-tight">
-            <h1
-              className="text-2xl font-extrabold text-[#c2831f] flex items-center relative"
-              style={{ fontFamily: "'League Spartan', sans-serif" }}
-            >
-              {displayedText}
-              <span className="animate-pulse">|</span>
 
-              {/* 🔥 Blinking Underline */}
-              <span className="absolute -bottom-1 left-0 w-full h-[2px] bg-[#c2831f] animate-blink"></span>
-            </h1>
+            {/* Spinning Circle */}
+            {/* <RefreshCw
+              className="absolute w-19 h-19 text-yellow-800 animate-spin animate-glow"
+              style={{ animationDuration: "4s" }}
+            /> */}
 
-            <p className="text-xs font-medium bg-gradient-to-r from-[#c2831f] to-[#ffffff] bg-clip-text text-transparent mt-1 animate-blink">
-              Stronger Lists & Smarter Deliveries
-            </p>
 
+            {/* Bouncing Cube */}
+            <div className="animate-bounce z-10">
+              <CubeLogo />
+            </div>
+
+            {/* Right Text Section */}
+            <div className="flex flex-col ml-3">
+              <div className="relative w-56 h-8">
+                {/* Step 1: Bounce text */}
+                <h1 className="absolute text-2xl font-bold bg-gradient-to-r from-[#c2831f] to-[#c2831f] bg-clip-text text-transparent animate-typewriter-bounce">
+                  B@UNCE
+                </h1>
+                {/* Step 2: Mail + @ scatter */}
+                <div className="absolute inset-0 flex items-center justify-center space-x-4">
+                  {[...Array(4)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="mail-container"
+                      style={{ animationDelay: `${i * 0.3}s` }}
+                    >
+                      {/* Pop Mail */}
+                      <FaAt
+                        className="text-[#c2831f]"
+                        style={{
+                          animation: `mailPop 16s ease-in-out infinite`,
+                          animationDelay: `${i * 0.3}s`,
+                        }}
+                      />
+                      {/* Scatter (Mail + @ alternating) */}
+                      {[...Array(5)].map((_, j) =>
+                        j % 2 === 0 ? (
+                          <Mail
+                            key={j}
+                            className="mail-scatter text-yellow-400"
+                            style={{
+                              "--x": `${Math.random() * 40 - 20}px`,
+                              "--y": `${Math.random() * -30 - 10}px`,
+                              animationDelay: `${i * 0.3 + 0.3}s`,
+                            }}
+                          />
+                        ) : (
+                          <span
+                            key={j}
+                            className="mail-scatter text-yellow-400 font-bold text-xs"
+                            style={{
+                              "--x": `${Math.random() * 40 - 20}px`,
+                              "--y": `${Math.random() * -30 - 10}px`,
+                              animationDelay: `${i * 0.3 + 0.3}s`,
+                            }}
+                          >
+                            @
+                          </span>
+                        )
+                      )}
+                    </div>
+                  ))}
+                </div>
+                {/* Step 3: Cure text */}
+                <h1 className="absolute right-0 text-2xl font-bold bg-gradient-to-r from-[#c2831f] to-[#c2831f] bg-clip-text text-transparent animate-typewriter-cure">
+                  CURE
+                </h1>
+                {/* Step 4: Full text bounce */}
+                <h1 className="absolute text-2xl font-bold bg-gradient-to-r from-[#c2831f] to-[#c2831f] bg-clip-text text-transparent animate-full-text">
+                  B<span className="text-[#c2831f]">@</span>UNCE CURE
+                </h1>
+              </div>
+              {/* Slogan */}
+              <p className="text-[#f19c12] text-xs mt-1 opacity-100 animate-bounce">
+                Built for Accuracy. Designed for Growth
+              </p>
+            </div>
           </div>
+        </Link>
 
-        </div>
-
-
-
-
-        {/* Desktop Links */}
+        {/* Desktop Menu */}
         <div className="hidden lg:flex space-x-8 items-center">
-          {links.map((link) =>
-            link.name === "Services" ? (
-              <div key={link.name} className="relative group">
-                <button
-                  onClick={() => setServicesOpen(!servicesOpen)}
-                  className="relative inline-flex items-center text-white hover:text-[#c2831f] font-medium transition duration-600 cursor-pointer
-            after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full
-            after:scale-x-0 hover:after:scale-x-100 after:bg-[#c2831f] after:transition-transform after:duration-300 after:origin-left"
-                >
-                  {link.name}
-                  <svg
-                    className={`ml-1 w-4 h-4 transition-transform duration-600 ${servicesOpen ? "rotate-180" : "rotate-0"
-                      }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {servicesOpen && (
-                  <div className="absolute top-full left-0 mt-2 bg-black/70 backdrop-blur-lg rounded-lg shadow-lg py-2 w-64 border border-white/10">
-                    {services.map((item) => (
-                      <Link
-                        key={item.name}
-                        to={item.to}
-                        className="flex items-center whitespace-nowrap px-4 py-2 hover:bg-white/10 rounded-lg text-white transition duration-300"
-                      >
-                        <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
-                          {item.icon}
-                        </span>
-                        <span className="ml-3 relative text-left hover:text-[#c2831f]
-                    after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full
-                    after:scale-x-0 hover:after:scale-x-100 after:bg-[#c2831f] after:transition-transform after:duration-300 after:origin-left">
-                          {item.name}
-                        </span>
-                      </Link>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : link.name === "Multimedia" ? (
-              <div key={link.name} className="relative group">
-                <button
-                  onClick={() => setMultimediaOpen(!multimediaOpen)}
-                  className="relative inline-flex items-center text-white hover:text-[#c2831f] font-medium transition duration-600 cursor-pointer
-            after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full
-            after:scale-x-0 hover:after:scale-x-100 after:bg-[#c2831f] after:transition-transform after:duration-300 after:origin-left"
-                >
-                  {link.name}
-                  <svg
-                    className={`ml-1 w-4 h-4 transition-transform duration-100 ${multimediaOpen ? "rotate-180" : "rotate-0"}`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                  </svg>
-                </button>
-                {multimediaOpen && (
-                  <div className="absolute top-full left-0 mt-2 bg-black/70 backdrop-blur-lg rounded-lg shadow-lg py-2 w-64 border border-white/10">
-                    {multimedia.map((item) => (
-                      <a
-                        key={item.name}
-                        href={item.to}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="flex items-center whitespace-nowrap px-4 py-2 hover:bg-white/10 rounded-lg text-white transition duration-300"
-                      >
-                        <span className="flex-shrink-0 w-5 h-5 flex items-center justify-center">
-                          {item.icon}
-                        </span>
-                        <span className="ml-3 relative text-left hover:text-[#c2831f]
-                    after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full
-                    after:scale-x-0 hover:after:scale-x-100 after:bg-[#c2831f] after:transition-transform after:duration-300 after:origin-left">
-                          {item.name}
-                        </span>
-                      </a>
-                    ))}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <Link
-                key={link.name}
-                to={link.to}
-                className="relative inline-block text-white hover:text-[#c2831f] font-medium transition duration-300
-          after:content-[''] after:absolute after:left-0 after:-bottom-1 after:h-[2px] after:w-full
-          after:scale-x-0 hover:after:scale-x-100 after:bg-[#c2831f] after:transition-transform after:duration-300 after:origin-left"
-              >
-                {link.name}
-              </Link>
-            )
-          )}
-
-          {/* Auth Buttons */}
-          <a
-            href="/signup"
-            className="bg-[#c2831f] text-white text-1xl px-4 py-2 rounded-xl hover:bg-[#a86d1b] transition duration-300"
-          >
-            Sign Up
-          </a>
-          <a
-            href="/login"
-            className="border border-[#c2831f] text-white text-1xl px-4 py-2 rounded-xl hover:bg-[#c2831f] transition duration-300"
-          >
-            Sign In
-          </a>
-        </div>
-
-        {/* Mobile Menu Button */}
-        <div className="lg:hidden">
-          <button onClick={() => setMenuOpen(!menuOpen)} className="text-white">
-            {menuOpen ? <X size={24} /> : <Menu size={24} />}
-          </button>
-        </div>
-      </div>
-
-      {/* Mobile Menu */}
-      {menuOpen && (
-        <div className="lg:hidden bg-black/40 backdrop-blur-lg px-6 pb-6 shadow-lg space-y-4 border-t border-white/10">
-          <div className="space-y-3">
-            {links.map((link) =>
-              link.name === 'Services' ? (
-                <div key={link.name}>
+          {links.map((link) => {
+            if (link.name === "Services") {
+              return (
+                <div key={link.name} className="relative group">
                   <button
                     onClick={() => setServicesOpen(!servicesOpen)}
-                    className="w-full flex justify-between items-center text-white text-lg font-medium hover:text-[#c2831f] transition duration-300"
+                    className="nav-link flex items-center cursor-pointer"
                   >
                     {link.name}
                     <svg
-                      className={`ml-1 w-4 h-4 transition-transform duration-300 ${servicesOpen ? 'rotate-180' : 'rotate-0'}`}
+                      className={`ml-1 w-4 h-4 transition-transform ${servicesOpen ? "rotate-180" : "rotate-0"}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -254,29 +431,31 @@ const Navbar = () => {
                     </svg>
                   </button>
                   {servicesOpen && (
-                    <div className="mt-2 space-y-2 pl-4">
+                    <div className="absolute top-full left-0 mt-2 bg-black/70 backdrop-blur-lg rounded-lg shadow-lg py-2 w-64 border border-white/10 max-h-96 overflow-y-auto">
                       {services.map((item) => (
                         <Link
                           key={item.name}
                           to={item.to}
-                          className="flex items-center space-x-2 text-white text-base hover:text-[#c2831f] transition duration-300"
+                          className="flex items-center px-2 py-2 text-white hover:text-[#c2831f] rounded-lg"
                         >
-                          {item.icon}
-                          <span>{item.name}</span>
+                          <span className="mr-2">{item.icon}</span>
+                          {item.name}
                         </Link>
                       ))}
                     </div>
                   )}
                 </div>
-              ) : link.name === 'Multimedia' ? (
-                <div key={link.name}>
+              );
+            } else if (link.name === "Multimedia") {
+              return (
+                <div key={link.name} className="relative group">
                   <button
                     onClick={() => setMultimediaOpen(!multimediaOpen)}
-                    className="w-full flex justify-between items-center text-white text-lg font-medium hover:text-[#c2831f] transition duration-300"
+                    className="nav-link flex items-center cursor-pointer"
                   >
                     {link.name}
                     <svg
-                      className={`ml-1 w-4 h-4 transition-transform duration-300 ${multimediaOpen ? 'rotate-180' : 'rotate-0'}`}
+                      className={`ml-1 w-4 h-4 transition-transform ${multimediaOpen ? "rotate-180" : "rotate-0"}`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -285,49 +464,106 @@ const Navbar = () => {
                     </svg>
                   </button>
                   {multimediaOpen && (
-                    <div className="mt-2 space-y-2 pl-4">
+                    <div className="absolute top-full left-0 mt-2 bg-black backdrop-blur-lg rounded-lg shadow-lg py-2 w-64 border border-white/10 max-h-96 overflow-y-auto">
                       {multimedia.map((item) => (
                         <a
                           key={item.name}
                           href={item.to}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center space-x-2 text-white text-base hover:text-[#c2831f] transition duration-300"
+                          className="multimedia-item px-4 py-2 rounded-lg"
                         >
-                          {item.icon}
-                          <span>{item.name}</span>
+                          <span className="mr-2">{item.icon}</span>
+                          {item.name}
                         </a>
                       ))}
                     </div>
                   )}
                 </div>
+              );
+            } else {
+              return <Link key={link.name} to={link.to} className="nav-link">{link.name}</Link>;
+            }
+          })}
+          <a href="/signup" className="bg-[#c2831f] text-white px-4 py-2 rounded-xl hover:bg-[#a66a1a] transition-colors">
+            Sign Up
+          </a>
+          <a href="/login" className="border border-[#c2831f] text-white px-4 py-2 rounded-xl hover:bg-[#c2831f] transition-colors">
+            Sign In
+          </a>
+        </div>
+
+        {/* Mobile Menu Toggle */}
+        <div className="lg:hidden">
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="text-white p-2 rounded-lg hover:bg-black/20 transition-colors"
+          >
+            {menuOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Menu */}
+      {menuOpen && (
+        <div className="lg:hidden bg-black/40 backdrop-blur-lg px-6 pb-6 shadow-lg border-t border-white/10">
+          {links.map((link) => (
+            <div key={link.name} className="mt-2">
+              {link.name === "Services" ? (
+                <>
+                  <button
+                    onClick={() => setServicesOpen(!servicesOpen)}
+                    className="w-full flex justify-between text-white py-2"
+                  >
+                    {link.name}
+                    <span>{servicesOpen ? "-" : "+"}</span>
+                  </button>
+                  {servicesOpen && services.map((item) => (
+                    <Link
+                      key={item.name}
+                      to={item.to}
+                      className="block pl-4 mt-1 text-white py-2 hover:text-[#c2831f]"
+                    >
+                      {item.name}
+                    </Link>
+                  ))}
+                </>
+              ) : link.name === "Multimedia" ? (
+                <>
+                  <button
+                    onClick={() => setMultimediaOpen(!multimediaOpen)}
+                    className="w-full flex justify-between text-white py-2"
+                  >
+                    {link.name}
+                    <span>{multimediaOpen ? "-" : "+"}</span>
+                  </button>
+                  {multimediaOpen && multimedia.map((item) => (
+                    <a
+                      key={item.name}
+                      href={item.to}
+                      className="multimedia-item block pl-4 mt-1 py-2"
+                    >
+                      <span className="mr-2">{item.icon}</span>
+                      {item.name}
+                    </a>
+                  ))}
+                </>
               ) : (
                 <Link
-                  key={link.name}
                   to={link.to}
-                  className="block text-white text-lg hover:text-[#c2831f] font-medium transition duration-300"
+                  className="block text-white py-2 hover:text-[#c2831f]"
                 >
                   {link.name}
                 </Link>
-              )
-            )}
-          </div>
-
-          {/* Auth Buttons */}
-          <div className="space-y-3 pt-4">
-            <a
-              href="/signup"
-              className="block bg-[#c2831f] text-white text-center text-lg px-4 py-2 rounded-xl hover:bg-[#a86d1b] transition duration-300"
-            >
-              Sign Up
-            </a>
-            <a
-              href="/login"
-              className="block border border-[#c2831f] text-white text-center text-lg px-4 py-2 rounded-xl hover:bg-[#c2831f] transition duration-300"
-            >
-              Sign In
-            </a>
-          </div>
+              )}
+            </div>
+          ))}
+          <a href="/signup" className="block bg-[#c2831f] text-white text-center px-4 py-2 mt-3 rounded-xl hover:bg-[#a66a1a] transition-colors">
+            Sign Up
+          </a>
+          <a href="/login" className="block border border-[#c2831f] text-white text-center px-4 py-2 mt-2 rounded-xl hover:bg-[#c2831f] transition-colors">
+            Sign In
+          </a>
         </div>
       )}
     </nav>
