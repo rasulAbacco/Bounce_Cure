@@ -8,16 +8,18 @@ datasource db {
 }
 
 model User {
-  id                  Int                      @id @default(autoincrement())
-  firstName           String
-  lastName            String
-  email               String                   @unique
-  password            String
-  createdAt           DateTime                 @default(now())
-  twoFASecret         String?
-  is2FAEnabled        Boolean                  @default(false)
-  profileImage        Bytes?
-  updatedAt           DateTime                 @updatedAt
+  id           Int      @id @default(autoincrement())
+  firstName    String
+  lastName     String
+  email        String   @unique
+  password     String
+  createdAt    DateTime @default(now())
+  twoFASecret  String?
+  is2FAEnabled Boolean  @default(false)
+  profileImage Bytes?
+  updatedAt    DateTime @updatedAt
+
+  // Relations
   apiKeys             ApiKey[]
   contents            Content[]
   verificationTokens  EmailVerificationToken[]
@@ -28,6 +30,7 @@ model User {
   passwordResetTokens PasswordResetToken[]     @relation("UserTokens")
   sessions            Session[]
   Contact             Contact[]
+  emailAccounts       EmailAccount[]
 }
 
 model Content {
@@ -123,7 +126,7 @@ model SupportFile {
   data      Bytes
   createdAt DateTime      @default(now())
   ticketId  Int
-  ticket    SupportTicket @relation(fields: [ticketId], references: [id])
+  ticket    SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
 }
 
 model NotificationSetting {
@@ -163,15 +166,11 @@ model DeletedAccount {
 }
 
 model PasswordResetToken {
-  id    Int    @id @default(autoincrement())
-  token String @unique
-
+  id        Int      @id @default(autoincrement())
+  token     String   @unique
   createdAt DateTime @default(now())
-
-  // FIXED: userId must be Int (to match User.id)
-  userId Int
-  user   User @relation("UserTokens", fields: [userId], references: [id], onDelete: Cascade)
-
+  userId    Int
+  user      User     @relation("UserTokens", fields: [userId], references: [id], onDelete: Cascade)
   expiresAt DateTime
 }
 
@@ -189,8 +188,6 @@ model Contact {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   replies   Reply[]
-
-  @@map("Contact") // 👈 explicitly map to "Contact" in DB
 }
 
 model Task {
@@ -215,27 +212,24 @@ model Deal {
 }
 
 model Email {
-  id      String   @id @default(cuid())
-  from    String
-  to      String
-  subject String
-  body    String
-  date    DateTime
-  tags    String[] @default([])
-  status  String // "sent", "opened", "bounced", "unread"
-  source  String // "imap", "sendgrid"
-  folder  String // "INBOX", "SENT", etc.
-
-  // NEW FIELD
-  accountId String?
+  id        Int           @id @default(autoincrement())
+  from      String
+  to        String
+  subject   String
+  body      String
+  date      DateTime
+  tags      String[]      @default([])
+  status    String
+  source    String
+  folder    String
+  accountId Int?
   account   EmailAccount? @relation(fields: [accountId], references: [id])
-
-  createdAt DateTime @default(now())
+  createdAt DateTime      @default(now())
 }
 
 model EmailAccount {
-  id            String   @id @default(cuid())
-  userId        String
+  id            Int      @id @default(autoincrement())
+  userId        Int
   email         String
   imapHost      String
   imapPort      Int
@@ -243,18 +237,19 @@ model EmailAccount {
   encryptedPass String
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
-  Email         Email[]
+
+  user   User    @relation(fields: [userId], references: [id])
+  emails Email[]
 }
 
 model Reply {
-  id         Int      @id @default(autoincrement())
-  contactId  Int
-  campaignId Int?
-  fromEmail  String // who replied (client email)
-  toEmail    String // your campaign fromEmail
-  subject    String? // optional, store subject
-  message    String
-  createdAt  DateTime @default(now())
+  id        Int      @id @default(autoincrement())
+  contactId Int
+  fromEmail String // who replied (client email)
+  toEmail   String // your campaign fromEmail
+  subject   String?
+  message   String
+  createdAt DateTime @default(now())
 
   contact Contact @relation(fields: [contactId], references: [id])
 }
@@ -273,18 +268,16 @@ model Lead {
 
 model List {
   id           String   @id
-  name         String // List Name
-  count        Int // Contacts Count
-  email        String // Email
-  phone        String // Phone Number
-  createdAt    DateTime @default(now()) // Created Timestamp
-  uploadedFile Bytes? // must be Bytes, not String
-
-  @@map("lists") // optional: maps model to 'lists' table
+  name         String
+  count        Int
+  email        String
+  phone        String
+  createdAt    DateTime @default(now())
+  uploadedFile Bytes?
 }
 
 model Order {
-  id        Int     @id @default(autoincrement()) // ✅ INT PRIMARY KEY
+  id        Int     @id @default(autoincrement())
   orderCode String  @unique
   name      String?
   phone     String?
@@ -292,18 +285,14 @@ model Order {
   amount    String
   status    String
   date      String
-  timestamp BigInt  @default(0)
+  timestamp BigInt  @default(0) @db.BigInt
   deleted   Boolean @default(false)
 }
 
-//
-// ---------- NEW MODELS: verification batch history (30-day retention) ----------
-//
-
 model VerificationBatch {
   id               Int           @id @default(autoincrement())
-  name             String? // optional: filename or "manual_paste"
-  source           String // "bulk" | "manual" | "single"
+  name             String?
+  source           String
   includeOnlyValid Boolean       @default(false)
   maxRich          Boolean       @default(false)
   total            Int
@@ -317,8 +306,7 @@ model VerificationBatch {
 }
 
 model BatchResult {
-  id             Int               @id @default(autoincrement())
-  batch          VerificationBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  id             Int      @id @default(autoincrement())
   batchId        Int
   email          String
   status         String
@@ -330,13 +318,36 @@ model BatchResult {
   disposable     Boolean
   role_based     Boolean
   greylisted     Boolean
-  mx             String? // comma-separated MX entries (or keep as text array if you prefer)
+  mx             String?
   error          String?
-  createdAt      DateTime          @default(now())
+  createdAt      DateTime @default(now())
+
+  batch VerificationBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@index([email])
 }
 
+model Conversation {
+  id        Int       @id @default(autoincrement())
+  subject   String?
+  snippet   String? // 👈 add this
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+}
+
+model Message {
+  id             Int           @id @default(autoincrement())
+  conversationId Int?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+
+  body      String
+  from      String
+  to        String
+  fromName  String?
+  fromEmail String?
+  direction String
+  sentAt    DateTime @default(now())
 model Campaign {
   id              Int      @id @default(autoincrement())
   name            String
