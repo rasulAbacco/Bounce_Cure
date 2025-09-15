@@ -143,6 +143,7 @@ const Lists = () => {
       console.error("❌ Error fetching file:", err);
       setViewData({ ...list, uploadedFile: { type: "error" } });
     }
+  };
 
     // Set the state with the parsed file data
     setViewData({ ...lists, uploadedFile: fileData });
@@ -152,6 +153,7 @@ const Lists = () => {
     setViewData({ ...lists, uploadedFile: { type: "error" } });
   }
 };
+
 
 
 
