@@ -211,21 +211,7 @@ model Deal {
   updatedAt DateTime @updatedAt
 }
 
-model Email {
-  id        Int           @id @default(autoincrement())
-  from      String
-  to        String
-  subject   String
-  body      String
-  date      DateTime
-  tags      String[]      @default([])
-  status    String
-  source    String
-  folder    String
-  accountId Int?
-  account   EmailAccount? @relation(fields: [accountId], references: [id])
-  createdAt DateTime      @default(now())
-}
+// prisma/schema.prisma
 
 model EmailAccount {
   id            Int      @id @default(autoincrement())
@@ -240,6 +226,29 @@ model EmailAccount {
 
   user   User    @relation(fields: [userId], references: [id])
   emails Email[]
+}
+
+model Email {
+  id        Int      @id @default(autoincrement())
+  accountId Int
+  messageId String   @unique
+  threadId  String? // Add this for grouping emails in a conversation
+  inReplyTo String? // Add this to track which email this is replying to
+  from      String
+  to        String
+  subject   String
+  body      String
+  bodyHtml  String? // Add this to store HTML content separately
+  date      DateTime
+  folder    String
+  status    String
+  source    String
+  tags      String[]
+  isReply   Boolean  @default(false) // Add this to identify replies
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  account EmailAccount @relation(fields: [accountId], references: [id])
 }
 
 model Reply {
@@ -340,16 +349,15 @@ model Message {
   id             Int           @id @default(autoincrement())
   conversationId Int?
   conversation   Conversation? @relation(fields: [conversationId], references: [id])
-
-  body      String
-  from      String
-  to        String
-  fromName  String?
-  fromEmail String?
-  direction String
-  sentAt    DateTime @default(now())
-
+  body           String
+  from           String
+  to             String
+  fromName       String?
+  fromEmail      String?
+  direction      String
+  sentAt         DateTime      @default(now())
 }
+
 model Campaign {
   id              Int      @id @default(autoincrement())
   name            String
@@ -403,7 +411,6 @@ model Payment {
   next_payment_date DateTime
   amount            Float
   notified          Boolean  @default(false)
-
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 }
