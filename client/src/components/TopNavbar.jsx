@@ -13,7 +13,7 @@ import { UserContext } from "./UserContext";
 import { useNotificationContext } from "./NotificationContext";
 
 const TopNavbar = ({ toggleSidebar, pageName }) => {
-  const { preferences, allNotifications } = useNotificationContext();
+  const { preferences, allNotifications, markAsRead } = useNotificationContext();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
@@ -21,9 +21,11 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
   const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
 
-
-  // ✅ Filter notifications based on preferences
+  // Filter notifications based on preferences
   const notifications = allNotifications.filter((n) => preferences[n.type]);
+
+  // Count unread notifications
+  const unreadCount = notifications.filter((n) => n.unread).length;
 
   const handleLogout = () => {
     const confirmed = window.confirm("Are you sure you want to log out?");
@@ -32,6 +34,12 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
       setUser({ name: "", email: "", profileImage: "" }); // clear context
       navigate("/");
     }
+  };
+
+  const handleNotificationClick = (id) => {
+    markAsRead(id);
+    // Optional: Navigate to related page when notification is clicked
+    // navigate('/dashboard');
   };
 
   return (
@@ -77,37 +85,53 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
               className="relative text-white hover:bg-white/10 p-2 rounded-lg transition-colors"
             >
               <Bell className="w-5 h-5" />
-              {notifications.filter((n) => n.unread).length > 0 && (
+              {unreadCount > 0 && (
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs font-bold rounded-full px-1.5 py-0.5">
-                  {/* {notifications.filter((n) => n.unread).length} */}
-                  {notifications.length}
+                  {unreadCount}
                 </span>
               )}
             </button>
 
             {showNotifications && (
               <div className="absolute right-0 top-12 w-72 bg-black backdrop-blur-lg border border-white/50 rounded-lg shadow-xl">
-                <div className="p-3 border-b border-white/10">
+                <div className="p-3 border-b border-white/10 flex justify-between items-center">
                   <h3 className="text-white font-semibold">Notifications</h3>
+                  {unreadCount > 0 && (
+                    <button 
+                      onClick={() => {
+                        notifications.forEach(n => markAsRead(n.id));
+                      }}
+                      className="text-xs text-blue-400 hover:text-blue-300"
+                    >
+                      Mark all as read
+                    </button>
+                  )}
                 </div>
                 <div className="max-h-64 overflow-y-auto">
-                  {notifications.map((notification) => (
-                    <div
-                      key={notification.id}
-                      className="p-3 border-b border-white/5 hover:bg-white/5"
-                    >
-                      <div className="flex items-start space-x-3">
-                        <div
-                          className={`w-2 h-2 rounded-full mt-2 ${notification.unread ? "bg-blue-500" : "bg-gray-500"
-                            }`}
-                        ></div>
-                        <div className="flex-1">
-                          <p className="text-sm text-white">{notification.message}</p>
-                          <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
+                  {notifications.length > 0 ? (
+                    notifications.map((notification) => (
+                      <div
+                        key={notification.id}
+                        className={`p-3 border-b border-white/5 hover:bg-white/5 cursor-pointer ${notification.unread ? 'bg-blue-900/20' : ''}`}
+                        onClick={() => handleNotificationClick(notification.id)}
+                      >
+                        <div className="flex items-start space-x-3">
+                          <div
+                            className={`w-2 h-2 rounded-full mt-2 ${notification.unread ? "bg-blue-500" : "bg-gray-500"
+                              }`}
+                          ></div>
+                          <div className="flex-1">
+                            <p className="text-sm text-white">{notification.message}</p>
+                            <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
+                          </div>
                         </div>
                       </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-gray-400 text-sm">
+                      No notifications
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             )}
@@ -160,7 +184,7 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
                     className="w-full flex items-center space-x-2 text-red-600 hover:bg-white/10 p-2 rounded-lg transition-colors"
                   >
                     <LogOut className="w-4 h-4 font-bold" />
-                    <span className="font-bold" >Logout</span>
+                    <span className="font-bold">Logout</span>
                   </button>
                 </div>
               </div>

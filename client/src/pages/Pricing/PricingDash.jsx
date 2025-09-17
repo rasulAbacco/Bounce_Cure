@@ -1,7 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { User, Mail, Headphones, CircleDot, CircleCheckBig } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { buildPlanObject } from "../../utils/planHelpers";
 
 export default function PricingDash() {
   const contactOptions = [1000, 2500, 5000, 10000, 15000, 20000];
@@ -9,9 +10,10 @@ export default function PricingDash() {
   // Separate states for promo and plan cards
   const [promoContacts, setPromoContacts] = useState(500);
   const [cardContacts, setCardContacts] = useState(500);
-
+  const [calculatedPrices, setCalculatedPrices] = useState({});
+  const [promoPrice, setPromoPrice] = useState("33.99");
   const navigate = useNavigate();
-
+  
   const plans = [
     {
       name: "Email Warm Up",
@@ -49,38 +51,65 @@ export default function PricingDash() {
       ],
     },
   ];
-
-  // Separate price calculators
-  const getUpdatedPromoPrice = (basePrice) => {
-    const multiplier = promoContacts / 500;
+  
+  // Calculate price based on contacts
+  const calculatePrice = (basePrice, contacts) => {
+    const multiplier = contacts / 500;
     return (basePrice * multiplier).toFixed(2);
   };
+  
+  // Update calculated prices when cardContacts change
+  useEffect(() => {
+    const prices = {};
+    plans.forEach(plan => {
+      prices[plan.name] = calculatePrice(plan.price, cardContacts);
+    });
+    setCalculatedPrices(prices);
+  }, [cardContacts]);
+  
+  // Update promo price when promoContacts change
+  useEffect(() => {
+    setPromoPrice(calculatePrice(37.5, promoContacts));
+  }, [promoContacts]);
+  
+const handleBuyNow = (plan, contacts, price) => {
+  const basePrice = plan.name === "Pro Plan" ? 37.5 : plan.price;
+  const totalPrice = parseFloat(price);
 
-  const getUpdatedCardPrice = (basePrice) => {
-    const multiplier = cardContacts / 500;
-    return (basePrice * multiplier).toFixed(2);
-  };
+  const selectedPlan = buildPlanObject({
+    planName: plan.name,
+    basePrice: basePrice,
+    totalCost: totalPrice,
+    slots: contacts,
+    selectedIntegrations: [],
+    additionalSlotsCost: totalPrice - basePrice,
+    integrationCosts: 0,
+    billingPeriod: "month",
+  });
 
-  const handleBuyNow = (plan, contacts, priceFn) => {
-    const selectedPlan = {
-      name: plan.name,
-      basePrice: plan.price,
-      price: priceFn(plan.price),
-      contacts: contacts,
-    };
+  const isLoggedIn = !!localStorage.getItem("authToken");
 
-    const isLoggedIn = !!localStorage.getItem("authToken"); // check if logged in
-
-    if (!isLoggedIn) {
-      // go to login first, then payment
-      navigate("/login", {
-        state: { redirectTo: "/payment", plan: selectedPlan },
-      });
-    } else {
-      // go directly to payment
-      navigate("/payment", { state: selectedPlan });
-    }
-  };
+  if (!isLoggedIn) {
+    localStorage.setItem("pendingUpgradePlan", JSON.stringify(selectedPlan));
+    navigate("/payment", {
+      state: {
+        name: selectedPlan.planName,
+        contacts: selectedPlan.slots,
+        basePrice: selectedPlan.basePrice,
+        price: selectedPlan.totalCost,
+      },
+    });
+  } else {
+    navigate("/payment", {
+      state: {
+        name: selectedPlan.planName,
+        contacts: selectedPlan.slots,
+        basePrice: selectedPlan.basePrice,
+        price: selectedPlan.totalCost,
+      },
+    });
+  }
+};
 
   return (
     <DashboardLayout>
@@ -103,13 +132,11 @@ export default function PricingDash() {
                 <li className="flex items-center gap-2"><CircleCheckBig size={16} className="text-[#c2831f]" /> Advanced Reporting Dashboard</li>
               </ul>
             </div>
-
             <div className="bg-gray-200 text-black p-6 rounded-xl mt-8 md:mt-0 md:w-1/3 shadow-lg">
               <h3 className="text-lg font-semibold">Pro Plan</h3>
               <p className="text-sm text-gray-600 mb-2">
                 Send up to <strong>{promoContacts * 12}</strong> emails/month
               </p>
-
               <label className="block text-sm font-medium text-gray-700 mt-2">Contacts</label>
               <select
                 className="w-full mt-1 border border-gray-300 rounded px-3 py-2 text-sm"
@@ -120,16 +147,14 @@ export default function PricingDash() {
                   <option key={count} value={count}>{count}</option>
                 ))}
               </select>
-
-              <div className="mt-4 text-xl font-bold">${getUpdatedPromoPrice(37.5)}</div>
-              <p className="text-xs text-gray-500">Then ${getUpdatedPromoPrice(115)} after 12 months</p>
-
+              <div className="mt-4 text-xl font-bold">${promoPrice}</div>
+              <p className="text-xs text-gray-500">Then ${calculatePrice(115, promoContacts)} after 12 months</p>
               <button
                 onClick={() =>
                   handleBuyNow(
                     { name: "Pro Plan", price: 37.5, users: 5, emails: "10,000", support: "Priority Support" },
                     promoContacts,
-                    getUpdatedPromoPrice
+                    promoPrice
                   )
                 }
                 className="mt-4 w-full bg-[#c2831f] text-black font-semibold py-2 rounded hover:bg-[#dba743] cursor-pointer"
@@ -138,7 +163,7 @@ export default function PricingDash() {
               </button>
             </div>
           </div>
-
+          
           {/* Plan Cards */}
           <div>
             {/* Header with title & select contact */}
@@ -161,7 +186,7 @@ export default function PricingDash() {
                 </select>
               </div>
             </div>
-
+            
             {/* Plans grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {plans.map((plan) => (
@@ -176,18 +201,15 @@ export default function PricingDash() {
                       Best value
                     </div>
                   )}
-
                   <h3 className="text-xl font-semibold mb-1">{plan.name}</h3>
                   <p className="text-gray-400 text-sm mb-4">
-                    Billed monthly • ${getUpdatedCardPrice(plan.price)}
+                    Billed monthly • ${calculatedPrices[plan.name] || plan.price}
                   </p>
-
                   <ul className="text-sm text-gray-300 mb-4 space-y-2 text-left">
                     <li className="flex items-center gap-2"><User size={16} /> Users: {plan.users}</li>
                     <li className="flex items-center gap-2"><Mail size={16} /> Emails: {plan.emails}</li>
                     <li className="flex items-center gap-2"><Headphones size={16} /> Support: {plan.support}</li>
                   </ul>
-
                   <div className="mb-3 text-sm text-left">
                     <p className="text-gray-400 font-semibold mb-1">Features:</p>
                     <ul className="pl-1 space-y-1">
@@ -198,9 +220,8 @@ export default function PricingDash() {
                       ))}
                     </ul>
                   </div>
-
                   <button
-                    onClick={() => handleBuyNow(plan, cardContacts, getUpdatedCardPrice)}
+                    onClick={() => handleBuyNow(plan, cardContacts, calculatedPrices[plan.name] || plan.price)}
                     className="mt-5 w-full bg-[#c2831f] text-black font-semibold py-2 rounded hover:bg-[#dba743] cursor-pointer"
                   >
                     Buy Now
@@ -209,7 +230,7 @@ export default function PricingDash() {
               ))}
             </div>
           </div>
-
+          
           <p className="text-center text-xs text-gray-600 mt-8">
             All plans billed monthly in USD. Contact amount applies across all plans.
           </p>

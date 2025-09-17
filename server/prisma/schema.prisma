@@ -400,3 +400,17 @@ model MmsRecipient {
   mmsCampaignId Int
   mmsCampaign   MmsCampaign @relation(fields: [mmsCampaignId], references: [id])
 }
+
+
+model Payment {
+  id                Int      @id @default(autoincrement())
+  email             String
+  transaction_id    String
+  plan_name         String
+  payment_date      DateTime
+  next_payment_date DateTime
+  amount            Float
+  notified          Boolean  @default(false)
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
