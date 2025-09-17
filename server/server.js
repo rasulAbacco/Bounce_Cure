@@ -31,11 +31,10 @@ import emailsRouter from "./routes/emails.js";
 import accountsRouter from "./routes/accounts.js";
 import convRouter from "./routes/conversations.js";
 import savedRepliesRouter from "./routes/savedReplies.js";
-
 // Services
 import { startEmailScheduler } from "./services/imapScheduler.js";
 import { initSocket } from "./services/socketService.js";
-import { startSyncLoop } from "./services/syncService.js";
+// import  startSyncLoop  from "./services/syncService.js";
 import { PrismaClient } from "@prisma/client";
 import cron from 'node-cron';
 import dashboardRoutes from "./routes/dashboardRoutes.js";
@@ -130,7 +129,7 @@ initSocket(io);
 
 
 // IMAP sync loop
-startSyncLoop(prisma);
+// startSyncLoop(prisma);
 
 
 app.use('/api/campaigncontacts', campaignContactsRoutes);
