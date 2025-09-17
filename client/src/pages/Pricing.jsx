@@ -173,7 +173,7 @@ const CircularSlider = ({ min, max, value, onChange }) => {
           </div>
         )}
       </div>
-      <div className="absolute bottom-2 left-0 right-0 text-center text-xs text-gray-400">
+      <div className=" left-0 right-0 text-center text-xs text-gray-400 ">
         Click number to edit
       </div>
     </div>
@@ -236,10 +236,11 @@ const Pricing = () => {
   };
 
   const currentPricing = basePricing[billingPeriod];
-  const freePrice = currentPricing.free + integrationCosts;
+  // Fixed: Free Plan is always $0 regardless of selections
+  const freePrice = 0;
   const proPrice = calculateSlotPrice(currentPricing.proPlan, slots) + integrationCosts;
   const growthPrice = calculateSlotPrice(currentPricing.growthPlan, slots) + integrationCosts;
-  const enterprisePrice = currentPricing.enterprise + integrationCosts;
+  const enterprisePrice = calculateSlotPrice(currentPricing.enterprise, slots) + integrationCosts;
 
   const formatPeriod = () => {
     switch (billingPeriod) {
@@ -250,55 +251,72 @@ const Pricing = () => {
     }
   };
 
-const handlePlanSelection = (planName, planPrice) => {
-  const slotPrice = billingPeriod === 'monthly' ? 0.5 : billingPeriod === 'quarterly' ? 0.45 : 0.4;
-  const additionalSlots = Math.max(0, slots - 50);
-  const additionalSlotsCost = additionalSlots * slotPrice;
+  const handlePlanSelection = (planName, planPrice) => {
+    // For Free Plan, use fixed values
+    if (planName === "Free Plan") {
+      const pricingDetails = buildPlanObject({
+        planName,
+        basePrice: 0, // Correct base price for free plan
+        totalCost: 0,
+        slots: 50, // Fixed slots for free plan
+        selectedIntegrations: [], // No integrations for free plan
+        additionalSlotsCost: 0,
+        integrationCosts: 0,
+        billingPeriod: formatPeriod(),
+      });
 
-  let basePlanPrice;
-  switch (planName) {
-    case "Free Plan":
-      basePlanPrice = currentPricing.free;
-      break;
-    case "Pro Plan":
-      basePlanPrice = currentPricing.proPlan;
-      break;
-    case "Growth Plan":
-      basePlanPrice = currentPricing.growthPlan;
-      break;
-    case "Enterprise Plan":
-      basePlanPrice = currentPricing.enterprise;
-      break;
-    default:
-      basePlanPrice = 0;
-  }
+      navigate("/login", { state: { plan: pricingDetails } });
+      return;
+    }
 
-  const pricingDetails = buildPlanObject({
-    planName,
-    basePrice: basePlanPrice,
-    totalCost: planPrice,
-    slots,
-    selectedIntegrations,
-    additionalSlotsCost,
-    integrationCosts,
-    billingPeriod: formatPeriod(),
-  });
+    // For paid plans, calculate based on current selections
+    const slotPrice = billingPeriod === 'monthly' ? 0.5 : billingPeriod === 'quarterly' ? 0.45 : 0.4;
+    const additionalSlots = Math.max(0, slots - 50);
+    const additionalSlotsCost = additionalSlots * slotPrice;
 
-  // 🔹 Free Plan → always login, skip payment
-  if (planName === "Free Plan") {
-    navigate("/login", { state: { plan: pricingDetails } });
-    return;
-  }
+    let basePlanPrice; // This should be ONLY the base plan price
+    let planType;
+    switch (planName) {
+      case "Pro Plan":
+        basePlanPrice = currentPricing.proPlan; // Base price without any additions
+        planType = 'proPlan';
+        break;
+      case "Growth Plan":
+        basePlanPrice = currentPricing.growthPlan; // Base price without any additions
+        planType = 'growthPlan';
+        break;
+      case "Enterprise Plan":
+        basePlanPrice = currentPricing.enterprise; // Base price without any additions
+        planType = 'enterprise';
+        break;
+      default:
+        basePlanPrice = 0;
+        planType = 'free';
+    }
 
-  // 🔹 Other Plans → signin → payment
-  const isAuthenticated = !!localStorage.getItem("token");
-  if (!isAuthenticated) {
-    navigate("/signin", { state: { from: "/payment", plan: pricingDetails } });
-  } else {
-    navigate("/payment", { state: pricingDetails });
-  }
-};
+    // Create a clean pricing details object
+    const pricingDetails = {
+      planName,
+      basePrice: basePlanPrice, // FIXED: Pass only the base plan price here
+      planType,
+      totalCost: planPrice, // This includes base + slots + integrations
+      slots,
+      selectedIntegrations,
+      additionalSlotsCost,
+      integrationCosts,
+      billingPeriod: formatPeriod(),
+      // Include the complete base pricing object for reference
+      basePricing: currentPricing
+    };
 
+    // Check authentication for paid plans
+    const isAuthenticated = !!localStorage.getItem("token");
+    if (!isAuthenticated) {
+      navigate("/signin", { state: { from: "/payment", plan: pricingDetails } });
+    } else {
+      navigate("/payment", { state: pricingDetails });
+    }
+  };
 
   return (
     <PageLayout>
@@ -306,7 +324,7 @@ const handlePlanSelection = (planName, planPrice) => {
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-5xl font-bold mb-4" style={{ color: '#c2831f' }}>Pricing Calculator</h1>
+            <h1 className="text-5xl font-bold mb-4" style={{ color: '#c2831f' }}>Pricing </h1>
             <p className="text-xl text-gray-300">Calculate pricing based on your needs</p>
           </div>
           
@@ -345,7 +363,7 @@ const handlePlanSelection = (planName, planPrice) => {
                   <p className="text-gray-400 text-sm">Drag to adjust or click number to edit</p>
                 </div>
               </div>
-              <div className="flex flex-col items-center">
+              <div className=" items-center">
                 <CircularSlider
                   min={50}
                   max={5000}
@@ -417,6 +435,7 @@ const handlePlanSelection = (planName, planPrice) => {
                 <div className="mb-4">
                   <div className="text-3xl font-bold">${freePrice.toFixed(2)}</div>
                   <div className="text-gray-400 text-sm">per {formatPeriod()}</div>
+                  <div className="text-xs text-green-400 mt-1">Base price: $0.00</div>
                 </div>
                 <ul className="space-y-2 mb-6">
                   <li className="flex items-center">
@@ -430,6 +449,10 @@ const handlePlanSelection = (planName, planPrice) => {
                   <li className="flex items-center">
                     <Check className="w-5 h-5 text-[#c2831f] mr-2" />
                     <span>Community support</span>
+                  </li>
+                  <li className="flex items-center">
+                    <Check className="w-5 h-5 text-[#c2831f] mr-2" />
+                    <span>No integrations</span>
                   </li>
                 </ul>
                 <button
@@ -454,6 +477,7 @@ const handlePlanSelection = (planName, planPrice) => {
                 <div className="mb-4">
                   <div className="text-3xl font-bold">${proPrice.toFixed(2)}</div>
                   <div className="text-gray-400 text-sm">per {formatPeriod()}</div>
+                  <div className="text-xs text-gray-400 mt-1">Base price: ${currentPricing.proPlan.toFixed(2)}</div>
                 </div>
                 <ul className="space-y-2 mb-6">
                   <li className="flex items-center">
@@ -497,6 +521,7 @@ const handlePlanSelection = (planName, planPrice) => {
                 <div className="mb-4">
                   <div className="text-3xl font-bold">${growthPrice.toFixed(2)}</div>
                   <div className="text-gray-400 text-sm">per {formatPeriod()}</div>
+                  <div className="text-xs text-gray-400 mt-1">Base price: ${currentPricing.growthPlan.toFixed(2)}</div>
                 </div>
                 <ul className="space-y-2 mb-6">
                   <li className="flex items-center">
@@ -540,11 +565,12 @@ const handlePlanSelection = (planName, planPrice) => {
                 <div className="mb-4">
                   <div className="text-3xl font-bold">${enterprisePrice.toFixed(2)}</div>
                   <div className="text-gray-400 text-sm">per {formatPeriod()}</div>
+                  <div className="text-xs text-gray-400 mt-1">Base price: ${currentPricing.enterprise.toFixed(2)}</div>
                 </div>
                 <ul className="space-y-2 mb-6">
                   <li className="flex items-center">
                     <Check className="w-5 h-5 text-[#c2831f] mr-2" />
-                    <span>Unlimited slots</span>
+                    <span>{slots} slots</span>
                   </li>
                   <li className="flex items-center">
                     <Check className="w-5 h-5 text-[#c2831f] mr-2" />
@@ -597,6 +623,9 @@ const handlePlanSelection = (planName, planPrice) => {
                       ${(integrationCosts + Math.max(0, slots - 50) * (billingPeriod === 'monthly' ? 0.5 : billingPeriod === 'quarterly' ? 0.45 : 0.4)).toFixed(2)} per {formatPeriod()}
                     </span>
                   </div>
+                </div>
+                <div className="text-sm text-gray-400 mt-2">
+                  Note: Additional costs apply only to paid plans. The Free Plan is always $0.00.
                 </div>
               </div>
             </div>
