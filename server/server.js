@@ -22,8 +22,6 @@ import dealsRoutes from "./routes/deals.js";
 import contactCRMRoutes from "./routes/contactCRM.js";
 import { router as campaignContactsRoutes } from './routes/contacts.js';
 import { router as campaignsRoutes } from './routes/campaigns.js';
-import emailRoutes from './routes/emailRoutes.js';
-import emailAccountRoutes from './routes/emailAccountRoutes.js';
 // import fetchReplies from "./routes/FetchReplies.js";
 import leadsRouter from "./routes/leads.js";
 import listRoutes from "./routes/listRoutes.js";
@@ -33,16 +31,14 @@ import emailsRouter from "./routes/emails.js";
 import accountsRouter from "./routes/accounts.js";
 import convRouter from "./routes/conversations.js";
 import savedRepliesRouter from "./routes/savedReplies.js";
-
 // Services
 import { startEmailScheduler } from "./services/imapScheduler.js";
 import { initSocket } from "./services/socketService.js";
-import { startSyncLoop } from "./services/syncService.js";
+// import  startSyncLoop  from "./services/syncService.js";
 import { PrismaClient } from "@prisma/client";
 import cron from 'node-cron';
-import { fetchAndStoreInboxMails } from "./routes/imapService.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
-import { startEmailScheduler } from "./services/imapScheduler.js";
+
 import multimediaRoutes from './routes/multimedia.js';
 // Server and Socket
 import http from "http";
@@ -128,7 +124,7 @@ initSocket(io);
 
 
 // IMAP sync loop
-startSyncLoop(prisma);
+// startSyncLoop(prisma);
 
 
 app.use('/api/campaigncontacts', campaignContactsRoutes);
