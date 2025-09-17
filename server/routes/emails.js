@@ -14,7 +14,7 @@ router.post("/", async (req, res) => {
                 to,
                 subject,
                 body,
-                date: date ? new Date(date) : new Date(),
+                date: date ? new Date(date) : new Date(), // ✅ changed from receivedAt to date
                 accountId,
                 status: "unread",
                 source: "imap",
@@ -28,11 +28,15 @@ router.post("/", async (req, res) => {
     }
 });
 
-// Get recent emails
+// Get emails, optionally filtered by accountId
 router.get("/", async (req, res) => {
+    const accountId = parseInt(req.query.accountId);
+    const filter = accountId ? { accountId } : {};
+
     try {
         const emails = await prisma.email.findMany({
-            orderBy: { date: "desc" },
+            where: filter,
+            orderBy: { date: "desc" }, // ✅ changed from receivedAt to date
             take: 50,
             include: { account: true },
         });

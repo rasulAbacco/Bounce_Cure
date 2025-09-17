@@ -1,5 +1,4 @@
-
-import React, { useState, useEffect  } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Mail,
   Phone,
@@ -25,7 +24,7 @@ import { useInView } from "react-intersection-observer";
 function HomePage() {
   const [activeTab, setActiveTab] = useState("email");
 
-     const [count, setCount] = useState(0);
+  const [count, setCount] = useState(0);
 
   useEffect(() => {
     let start = 0;
@@ -42,8 +41,7 @@ function HomePage() {
     return () => clearInterval(timer);
   }, []);
 
-
-    const stats = [
+  const stats = [
     { number: 99.7, suffix: "%", label: "accuracy rate" },
     { number: 2, suffix: " billion", label: "verifications per month" },
     { number: 200, suffix: "+ billion", label: "emails validated" },
@@ -51,11 +49,8 @@ function HomePage() {
 
   const { ref, inView } = useInView({
     triggerOnce: true, // run only once
-    threshold: 0.2,    // 20% visible before triggering
+    threshold: 0.2, // 20% visible before triggering
   });
-
- 
-
 
   const tabs = [
     {
@@ -264,524 +259,517 @@ function HomePage() {
           <ArrowRight
             className="ml-2 h-5 text-20 group-hover:translate-x-1 transition-transform"
             strokeWidth={2}
-            
           />
         </button>
       </div>
     </div>
   );
 
- const renderPhoneValidation = () => (
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-    {/* Left Side - Phone Data Table */}
-    <div className="rounded-xl shadow-lg overflow-hidden border border-gray-100">
-      <div className="p-6 ">
-        <h4 className="text-xl font-semibold text-white flex items-center">
-          <Phone className="h-6 w-6 mr-2" />
-          Phone Validation Results
-        </h4>
-        <p className="text-blue-100 text-sm mt-1">Real-time processing</p>
+  const renderPhoneValidation = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* Left Side - Phone Data Table */}
+      <div className="rounded-xl shadow-lg overflow-hidden border border-gray-100">
+        <div className="p-6 ">
+          <h4 className="text-xl font-semibold text-white flex items-center">
+            <Phone className="h-6 w-6 mr-2" />
+            Phone Validation Results
+          </h4>
+          <p className="text-blue-100 text-sm mt-1">Real-time processing</p>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Phone
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  First Name
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Result
+                </th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Score
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-200">
+              <tr className="hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-4 text-sm font-medium text-gray-700">
+                  571-286-7111
+                </td>
+                <td className="px-4 py-4 text-sm text-gray-700">Michael</td>
+                <td className="px-4 py-4 text-sm">
+                  <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                    Valid Mobile
+                  </span>
+                </td>
+                <td className="px-4 py-4 text-sm text-gray-700 font-medium">
+                  98
+                </td>
+              </tr>
+              <tr className="hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-4 text-sm font-medium text-gray-700">
+                  517-555-4444
+                </td>
+                <td className="px-4 py-4 text-sm text-gray-700">Sarah</td>
+                <td className="px-4 py-4 text-sm">
+                  <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
+                    Valid Landline
+                  </span>
+                </td>
+                <td className="px-4 py-4 text-sm text-gray-700 font-medium">
+                  85
+                </td>
+              </tr>
+              <tr className="hover:bg-gray-50 transition-colors">
+                <td className="px-4 py-4 text-sm font-medium text-gray-700">
+                  971-808-5555
+                </td>
+                <td className="px-4 py-4 text-sm text-gray-700">David</td>
+                <td className="px-4 py-4 text-sm">
+                  <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
+                    Disconnected
+                  </span>
+                </td>
+                <td className="px-4 py-4 text-sm text-gray-700 font-medium">
+                  0
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Phone
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                First Name
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Result
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Score
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200">
-            <tr className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-4 text-sm font-medium text-gray-700">
-                571-286-7111
-              </td>
-              <td className="px-4 py-4 text-sm text-gray-700">Michael</td>
-              <td className="px-4 py-4 text-sm">
-                <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                  Valid Mobile
-                </span>
-              </td>
-              <td className="px-4 py-4 text-sm text-gray-700 font-medium">98</td>
-            </tr>
-            <tr className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-4 text-sm font-medium text-gray-700">
-                517-555-4444
-              </td>
-              <td className="px-4 py-4 text-sm text-gray-700">Sarah</td>
-              <td className="px-4 py-4 text-sm">
-                <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                  Valid Landline
-                </span>
-              </td>
-              <td className="px-4 py-4 text-sm text-gray-700 font-medium">85</td>
-            </tr>
-            <tr className="hover:bg-gray-50 transition-colors">
-              <td className="px-4 py-4 text-sm font-medium text-gray-700">
-                971-808-5555
-              </td>
-              <td className="px-4 py-4 text-sm text-gray-700">David</td>
-              <td className="px-4 py-4 text-sm">
-                <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-                  Disconnected
-                </span>
-              </td>
-              <td className="px-4 py-4 text-sm text-gray-700 font-medium">0</td>
-            </tr>
-          </tbody>
-        </table>
+      {/* Right Side - Info */}
+      <div className="rounded-xl shadow-lg p-8 border border-gray-100">
+        <div className="flex items-center mb-6">
+          <Phone className="h-12 w-12 text-blue-600 mr-4 p-2 bg-blue-100 rounded-xl" />
+          <div>
+            <h3 className="text-2xl font-bold text-[#c2831f]">
+              {activeTabData.content.title}
+            </h3>
+            <p className="text-blue-600 font-semibold">
+              {activeTabData.content.stats}
+            </p>
+          </div>
+        </div>
+
+        <p className="text-white mb-6 leading-relaxed">
+          {activeTabData.content.description}
+        </p>
+
+        <div className="space-y-3 mb-6">
+          <h4 className="font-semibold text-[#c2831f]">Key Features:</h4>
+          <div className="flex items-center">
+            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+            <span className="text-white">Mobile vs landline detection</span>
+          </div>
+          <div className="flex items-center">
+            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+            <span className="text-white">Carrier information lookup</span>
+          </div>
+          <div className="flex items-center">
+            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+            <span className="text-white">TCPA compliance checking</span>
+          </div>
+          <div className="flex items-center">
+            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+            <span className="text-white">Number portability tracking</span>
+          </div>
+        </div>
+
+        <button className="group inline-flex items-center px-6 py-3 bg-[#c2831f] text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
+          Learn More
+          <svg
+            className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17 8l4 4m0 0l-4 4m4-4H3"
+            />
+          </svg>
+        </button>
       </div>
     </div>
+  );
 
-    {/* Right Side - Info */}
-    <div className="rounded-xl shadow-lg p-8 border border-gray-100">
-      <div className="flex items-center mb-6">
-        <Phone className="h-12 w-12 text-blue-600 mr-4 p-2 bg-blue-100 rounded-xl" />
-        <div>
-          <h3 className="text-2xl font-bold text-[#c2831f]">
-            {activeTabData.content.title}
-          </h3>
-          <p className="text-blue-600 font-semibold">
-            {activeTabData.content.stats}
-          </p>
-        </div>
-      </div>
-
-      <p className="text-white mb-6 leading-relaxed">
-        {activeTabData.content.description}
-      </p>
-
-      <div className="space-y-3 mb-6">
-        <h4 className="font-semibold text-[#c2831f]">Key Features:</h4>
-        <div className="flex items-center">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-          <span className="text-white">Mobile vs landline detection</span>
-        </div>
-        <div className="flex items-center">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-          <span className="text-white">Carrier information lookup</span>
-        </div>
-        <div className="flex items-center">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-          <span className="text-white">TCPA compliance checking</span>
-        </div>
-        <div className="flex items-center">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-          <span className="text-white">Number portability tracking</span>
-        </div>
-      </div>
-
-      <button className="group inline-flex items-center px-6 py-3 bg-[#c2831f] text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
-        Learn More
-        <svg
-          className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M17 8l4 4m0 0l-4 4m4-4H3"
-          />
-        </svg>
-      </button>
-    </div>
-  </div>
-);
-
-
-const renderEmailActivity = () => (
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-    {/* Left Side - Activity Dashboard */}
-    <div className="rounded-xl shadow-lg p-6 border border-gray-100">
-      <div className="flex items-center justify-between mb-6">
-        <h4 className="text-lg font-semibold text-[#c2831f]">
-          Email Activity Dashboard
-        </h4>
-        <span className="text-sm bg-red-100 text-red-700 px-2 py-1 rounded">
-          Processing
-        </span>
-      </div>
-
-      <div className="space-y-6">
-        {/* Activity Items */}
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-          <div className="flex items-center">
-            <div className="w-12 h-12 rounded-lg flex items-center justify-center mr-4">
-              <TrendingUp className="h-6 w-6 text-blue-600" />
-            </div>
-            <div>
-              <div className="font-medium text-black">13,486,797</div>
-              <div className="text-sm text-gray-500">30-day active</div>
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-sm font-medium text-green-600">Active</div>
-            <div className="text-xs text-gray-500">High engagement</div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
-              <Activity className="h-6 w-6 text-green-600" />
-            </div>
-            <div>
-              <div className="font-medium text-black">8,375,443</div>
-              <div className="text-sm text-gray-500">60-day active</div>
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-sm font-medium text-yellow-600">Medium</div>
-            <div className="text-xs text-gray-500">Moderate engagement</div>
-          </div>
-        </div>
-
-        <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-          <div className="flex items-center">
-            <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-4">
-              <Users className="h-6 w-6 text-yellow-600" />
-            </div>
-            <div>
-              <div className="font-medium text-black">2.4M</div>
-              <div className="text-sm text-gray-500">90-day active</div>
-            </div>
-          </div>
-          <div className="text-right">
-            <div className="text-sm font-medium text-red-600">Low</div>
-            <div className="text-xs text-gray-500">Minimal engagement</div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    {/* Right Side - Info */}
-    <div className="rounded-xl shadow-lg p-8 border border-gray-100">
-      <div className="flex items-center mb-6">
-        <Activity className="h-12 w-12 text-red-600 mr-4 p-2 bg-red-100 rounded-xl" />
-        <div>
-          <h3 className="text-2xl font-bold text-[#c2831f]">
-            {activeTabData.content.title}
-          </h3>
-          <p className="text-red-600 font-semibold">
-            {activeTabData.content.stats}
-          </p>
-        </div>
-      </div>
-
-      <p className="text-white mb-6 leading-relaxed">
-        {activeTabData.content.description}
-      </p>
-
-      <div className="space-y-3 mb-6">
-        <h4 className="font-semibold text-[#c2831f]">Key Features:</h4>
-        <div className="flex items-center">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-          <span className="text-white">
-            30/60/90 day engagement tracking
+  const renderEmailActivity = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* Left Side - Activity Dashboard */}
+      <div className="rounded-xl shadow-lg p-6 border border-gray-100">
+        <div className="flex items-center justify-between mb-6">
+          <h4 className="text-lg font-semibold text-[#c2831f]">
+            Email Activity Dashboard
+          </h4>
+          <span className="text-sm bg-red-100 text-red-700 px-2 py-1 rounded">
+            Processing
           </span>
         </div>
-        <div className="flex items-center">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-          <span className="text-white">Web and email trigger analysis</span>
-        </div>
-        <div className="flex items-center">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-          <span className="text-white">Behavioral segmentation</span>
-        </div>
-        <div className="flex items-center">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-          <span className="text-white">
-            Active subscriber identification
-          </span>
+
+        <div className="space-y-6">
+          {/* Activity Items */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center">
+              <div className="w-12 h-12 rounded-lg flex items-center justify-center mr-4">
+                <TrendingUp className="h-6 w-6 text-blue-600" />
+              </div>
+              <div>
+                <div className="font-medium text-black">13,486,797</div>
+                <div className="text-sm text-gray-500">30-day active</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-medium text-green-600">Active</div>
+              <div className="text-xs text-gray-500">High engagement</div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center">
+              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
+                <Activity className="h-6 w-6 text-green-600" />
+              </div>
+              <div>
+                <div className="font-medium text-black">8,375,443</div>
+                <div className="text-sm text-gray-500">60-day active</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-medium text-yellow-600">Medium</div>
+              <div className="text-xs text-gray-500">Moderate engagement</div>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
+            <div className="flex items-center">
+              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-4">
+                <Users className="h-6 w-6 text-yellow-600" />
+              </div>
+              <div>
+                <div className="font-medium text-black">2.4M</div>
+                <div className="text-sm text-gray-500">90-day active</div>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="text-sm font-medium text-red-600">Low</div>
+              <div className="text-xs text-gray-500">Minimal engagement</div>
+            </div>
+          </div>
         </div>
       </div>
 
-      <button className="group inline-flex items-center px-6 py-3 bg-[#c2831f] text-white font-semibold rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
-        Learn More
-        <svg
-          className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M17 8l4 4m0 0l-4 4m4-4H3"
-          />
-        </svg>
-      </button>
+      {/* Right Side - Info */}
+      <div className="rounded-xl shadow-lg p-8 border border-gray-100">
+        <div className="flex items-center mb-6">
+          <Activity className="h-12 w-12 text-red-600 mr-4 p-2 bg-red-100 rounded-xl" />
+          <div>
+            <h3 className="text-2xl font-bold text-[#c2831f]">
+              {activeTabData.content.title}
+            </h3>
+            <p className="text-red-600 font-semibold">
+              {activeTabData.content.stats}
+            </p>
+          </div>
+        </div>
+
+        <p className="text-white mb-6 leading-relaxed">
+          {activeTabData.content.description}
+        </p>
+
+        <div className="space-y-3 mb-6">
+          <h4 className="font-semibold text-[#c2831f]">Key Features:</h4>
+          <div className="flex items-center">
+            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+            <span className="text-white">30/60/90 day engagement tracking</span>
+          </div>
+          <div className="flex items-center">
+            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+            <span className="text-white">Web and email trigger analysis</span>
+          </div>
+          <div className="flex items-center">
+            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+            <span className="text-white">Behavioral segmentation</span>
+          </div>
+          <div className="flex items-center">
+            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+            <span className="text-white">Active subscriber identification</span>
+          </div>
+        </div>
+
+        <button className="group inline-flex items-center px-6 py-3 bg-[#c2831f] text-white font-semibold rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
+          Learn More
+          <svg
+            className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17 8l4 4m0 0l-4 4m4-4H3"
+            />
+          </svg>
+        </button>
+      </div>
     </div>
-  </div>
-);
-
-
+  );
 
   const renderDataEnrichment = () => (
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-    {/* Left Side - Enrichment Data */}
-    <div className="rounded-xl shadow-lg p-6 border border-gray-100">
-      <h4 className="text-lg font-semibold text-[#c2831f] mb-4">
-        Data Enrichment Insights
-      </h4>
-      <div className="space-y-4">
-        <div className="flex items-center p-4 bg-gray-50 rounded-lg">
-          <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
-            <Users className="h-6 w-6 text-purple-600" />
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* Left Side - Enrichment Data */}
+      <div className="rounded-xl shadow-lg p-6 border border-gray-100">
+        <h4 className="text-lg font-semibold text-[#c2831f] mb-4">
+          Data Enrichment Insights
+        </h4>
+        <div className="space-y-4">
+          <div className="flex items-center p-4 bg-gray-50 rounded-lg">
+            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
+              <Users className="h-6 w-6 text-purple-600" />
+            </div>
+            <div>
+              <div className="font-medium text-black">Demographics</div>
+              <div className="text-sm text-gray-400">
+                Age, gender, location analysis
+              </div>
+            </div>
           </div>
-          <div>
-            <div className="font-medium text-black">Demographics</div>
-            <div className="text-sm text-gray-400">
-              Age, gender, location analysis
+
+          <div className="flex items-center p-4 bg-gray-50 rounded-lg">
+            <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mr-4">
+              <TrendingUp className="h-6 w-6 text-indigo-600" />
+            </div>
+            <div>
+              <div className="font-medium text-black">Firmographics</div>
+              <div className="text-sm text-gray-400">
+                Company size, revenue, industry
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center p-4 bg-gray-50 rounded-lg">
+            <div className="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center mr-4">
+              <Activity className="h-6 w-6 text-pink-600" />
+            </div>
+            <div>
+              <div className="font-medium text-black">Technographics</div>
+              <div className="text-sm text-gray-400">
+                Technology usage and tools
+              </div>
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="flex items-center p-4 bg-gray-50 rounded-lg">
-          <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mr-4">
-            <TrendingUp className="h-6 w-6 text-indigo-600" />
-          </div>
+      {/* Right Side - Info */}
+      <div className="rounded-xl shadow-lg p-8 border border-gray-100">
+        <div className="flex items-center mb-6">
+          <Users className="h-12 w-12 text-purple-600 mr-4 p-2 bg-purple-100 rounded-xl" />
           <div>
-            <div className="font-medium text-black">Firmographics</div>
-            <div className="text-sm text-gray-400">
-              Company size, revenue, industry
-            </div>
+            <h3 className="text-2xl font-bold text-[#c2831f]">
+              {activeTabData.content.title}
+            </h3>
+            <p className="text-purple-600 font-semibold">
+              {activeTabData.content.stats}
+            </p>
           </div>
         </div>
 
-        <div className="flex items-center p-4 bg-gray-50 rounded-lg">
-          <div className="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center mr-4">
-            <Activity className="h-6 w-6 text-pink-600" />
+        <p className="text-white mb-6 leading-relaxed">
+          {activeTabData.content.description}
+        </p>
+
+        <div className="space-y-3 mb-6">
+          <h4 className="font-semibold text-[#c2831f]">Key Features:</h4>
+          <div className="flex items-center">
+            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+            <span className="text-white">Demographic segmentation</span>
           </div>
+          <div className="flex items-center">
+            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+            <span className="text-white">Firmographic data integration</span>
+          </div>
+          <div className="flex items-center">
+            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+            <span className="text-white">Technographic insights</span>
+          </div>
+          <div className="flex items-center">
+            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+            <span className="text-white">Custom enrichment rules</span>
+          </div>
+        </div>
+
+        <button className="group inline-flex items-center px-6 py-3 bg-[#c2831f] text-white font-semibold rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
+          Learn More
+          <svg
+            className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17 8l4 4m0 0l-4 4m4-4H3"
+            />
+          </svg>
+        </button>
+      </div>
+    </div>
+  );
+
+  const renderPostalValidation = () => (
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      {/* Left Side - Address Validation */}
+      <div className="rounded-xl shadow-lg p-6 border border-gray-100">
+        <div className="flex items-center mb-6">
+          <MapPin className="h-8 w-8 text-blue-600 mr-3" />
           <div>
-            <div className="font-medium text-black">Technographics</div>
-            <div className="text-sm text-gray-400">
-              Technology usage and tools
+            <h4 className="text-lg font-semibold text-[#c2831f]">
+              Postal Validation
+            </h4>
+            <p className="text-sm text-white">75+ Billion Addresses Verified</p>
+          </div>
+        </div>
+
+        <div className="space-y-4 mb-6">
+          <div className="p-4 border rounded-lg">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-medium text-white">
+                Address Standardization
+              </span>
+              <span className="text-green-600 text-sm font-medium">
+                ✓ Active
+              </span>
             </div>
+            <p className="text-sm text-white">
+              Formats addresses to postal standards
+            </p>
+          </div>
+
+          <div className="p-4 border rounded-lg">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-medium text-white">
+                ZIP+4 Code Validation
+              </span>
+              <span className="text-green-600 text-sm font-medium">
+                ✓ Active
+              </span>
+            </div>
+            <p className="text-sm text-white">
+              Validates and appends ZIP+4 codes
+            </p>
+          </div>
+
+          <div className="p-4 border rounded-lg">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-medium text-white">
+                International Support
+              </span>
+              <span className="text-blue-600 text-sm font-medium">
+                ✓ Global
+              </span>
+            </div>
+            <p className="text-sm text-white">
+              Supports 240+ countries worldwide
+            </p>
+          </div>
+
+          <div className="p-4 border rounded-lg">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-medium text-white">Geocoding Services</span>
+              <span className="text-purple-600 text-sm font-medium">
+                ✓ Enhanced
+              </span>
+            </div>
+            <p className="text-sm text-white">
+              Provides latitude/longitude coordinates
+            </p>
+          </div>
+
+          <div className="p-4 border rounded-lg">
+            <div className="flex justify-between items-center mb-2">
+              <span className="font-medium text-white">
+                Delivery Point Validation
+              </span>
+              <span className="text-green-600 text-sm font-medium">
+                ✓ USPS Certified
+              </span>
+            </div>
+            <p className="text-sm text-white">
+              Confirms actual delivery points
+            </p>
           </div>
         </div>
+      </div>
+
+      {/* Right Side - Info */}
+      <div className="rounded-xl shadow-lg p-8 border border-gray-100">
+        <div className="flex items-center mb-6">
+          <MapPin className="h-12 w-12 text-blue-600 mr-4 p-2 bg-blue-100 rounded-xl" />
+          <div>
+            <h3 className="text-2xl font-bold text-[#c2831f]">
+              {activeTabData.content.title}
+            </h3>
+            <p className="text-blue-600 font-semibold">
+              {activeTabData.content.stats}
+            </p>
+          </div>
+        </div>
+
+        <p className="text-white mb-6 leading-relaxed">
+          {activeTabData.content.description}
+        </p>
+
+        <div className="space-y-3 mb-6">
+          <h4 className="font-semibold text-[#c2831f]">Key Features:</h4>
+          <div className="flex items-center">
+            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+            <span className="text-white">Address standardization</span>
+          </div>
+          <div className="flex items-center">
+            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+            <span className="text-white">ZIP+4 code validation</span>
+          </div>
+          <div className="flex items-center">
+            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+            <span className="text-white">International address support</span>
+          </div>
+          <div className="flex items-center">
+            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
+            <span className="text-white">Delivery point validation</span>
+          </div>
+        </div>
+
+        <button className="group inline-flex items-center px-6 py-3  bg-[#c2831f] text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
+          Learn More
+          <svg
+            className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M17 8l4 4m0 0l-4 4m4-4H3"
+            />
+          </svg>
+        </button>
       </div>
     </div>
-
-    {/* Right Side - Info */}
-    <div className="rounded-xl shadow-lg p-8 border border-gray-100">
-      <div className="flex items-center mb-6">
-        <Users className="h-12 w-12 text-purple-600 mr-4 p-2 bg-purple-100 rounded-xl" />
-        <div>
-          <h3 className="text-2xl font-bold text-[#c2831f]">
-            {activeTabData.content.title}
-          </h3>
-          <p className="text-purple-600 font-semibold">
-            {activeTabData.content.stats}
-          </p>
-        </div>
-      </div>
-
-      <p className="text-white mb-6 leading-relaxed">
-        {activeTabData.content.description}
-      </p>
-
-      <div className="space-y-3 mb-6">
-        <h4 className="font-semibold text-[#c2831f]">Key Features:</h4>
-        <div className="flex items-center">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-          <span className="text-white">Demographic segmentation</span>
-        </div>
-        <div className="flex items-center">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-          <span className="text-white">Firmographic data integration</span>
-        </div>
-        <div className="flex items-center">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-          <span className="text-white">Technographic insights</span>
-        </div>
-        <div className="flex items-center">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-          <span className="text-white">Custom enrichment rules</span>
-        </div>
-      </div>
-
-      <button className="group inline-flex items-center px-6 py-3 bg-[#c2831f] text-white font-semibold rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
-        Learn More
-        <svg
-          className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M17 8l4 4m0 0l-4 4m4-4H3"
-          />
-        </svg>
-      </button>
-    </div>
-  </div>
-);
-
-
-const renderPostalValidation = () => (
-  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-    {/* Left Side - Address Validation */}
-    <div className="rounded-xl shadow-lg p-6 border border-gray-100">
-      <div className="flex items-center mb-6">
-        <MapPin className="h-8 w-8 text-blue-600 mr-3" />
-        <div>
-          <h4 className="text-lg font-semibold text-[#c2831f]">
-            Postal Validation
-          </h4>
-          <p className="text-sm text-white">
-            75+ Billion Addresses Verified
-          </p>
-        </div>
-      </div>
-
-      <div className="space-y-4 mb-6">
-        <div className="p-4 border rounded-lg">
-          <div className="flex justify-between items-center mb-2">
-            <span className="font-medium text-white">
-              Address Standardization
-            </span>
-            <span className="text-green-600 text-sm font-medium">
-              ✓ Active
-            </span>
-          </div>
-          <p className="text-sm text-white">
-            Formats addresses to postal standards
-          </p>
-        </div>
-
-        <div className="p-4 border rounded-lg">
-          <div className="flex justify-between items-center mb-2">
-            <span className="font-medium text-white">
-              ZIP+4 Code Validation
-            </span>
-            <span className="text-green-600 text-sm font-medium">
-              ✓ Active
-            </span>
-          </div>
-          <p className="text-sm text-white">
-            Validates and appends ZIP+4 codes
-          </p>
-        </div>
-
-        <div className="p-4 border rounded-lg">
-          <div className="flex justify-between items-center mb-2">
-            <span className="font-medium text-white">
-              International Support
-            </span>
-            <span className="text-blue-600 text-sm font-medium">
-              ✓ Global
-            </span>
-          </div>
-          <p className="text-sm text-white">
-            Supports 240+ countries worldwide
-          </p>
-        </div>
-
-        <div className="p-4 border rounded-lg">
-          <div className="flex justify-between items-center mb-2">
-            <span className="font-medium text-white">
-              Geocoding Services
-            </span>
-            <span className="text-purple-600 text-sm font-medium">
-              ✓ Enhanced
-            </span>
-          </div>
-          <p className="text-sm text-white">
-            Provides latitude/longitude coordinates
-          </p>
-        </div>
-
-        <div className="p-4 border rounded-lg">
-          <div className="flex justify-between items-center mb-2">
-            <span className="font-medium text-white">
-              Delivery Point Validation
-            </span>
-            <span className="text-green-600 text-sm font-medium">
-              ✓ USPS Certified
-            </span>
-          </div>
-          <p className="text-sm text-white">
-            Confirms actual delivery points
-          </p>
-        </div>
-      </div>
-    </div>
-
-    {/* Right Side - Info */}
-    <div className="rounded-xl shadow-lg p-8 border border-gray-100">
-      <div className="flex items-center mb-6">
-        <MapPin className="h-12 w-12 text-blue-600 mr-4 p-2 bg-blue-100 rounded-xl" />
-        <div>
-          <h3 className="text-2xl font-bold text-[#c2831f]">
-            {activeTabData.content.title}
-          </h3>
-          <p className="text-blue-600 font-semibold">
-            {activeTabData.content.stats}
-          </p>
-        </div>
-      </div>
-
-      <p className="text-white mb-6 leading-relaxed">
-        {activeTabData.content.description}
-      </p>
-
-      <div className="space-y-3 mb-6">
-        <h4 className="font-semibold text-[#c2831f]">Key Features:</h4>
-        <div className="flex items-center">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-          <span className="text-white">Address standardization</span>
-        </div>
-        <div className="flex items-center">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-          <span className="text-white">ZIP+4 code validation</span>
-        </div>
-        <div className="flex items-center">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-          <span className="text-white">International address support</span>
-        </div>
-        <div className="flex items-center">
-          <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-          <span className="text-white">Delivery point validation</span>
-        </div>
-      </div>
-
-      <button className="group inline-flex items-center px-6 py-3  bg-[#c2831f] text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
-        Learn More
-        <svg
-          className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
-          fill="none"
-          stroke="currentColor"
-          viewBox="0 0 24 24"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={2}
-            d="M17 8l4 4m0 0l-4 4m4-4H3"
-          />
-        </svg>
-      </button>
-    </div>
-  </div>
-);
+  );
 
   const renderTabContent = () => {
     switch (activeTab) {
@@ -800,72 +788,74 @@ const renderPostalValidation = () => (
     }
   };
 
+  const videoRef = useRef(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
+  const handlePlay = () => {
+    if (videoRef.current) {
+      videoRef.current.play();
+      setIsPlaying(true);
+    }
+  };
   return (
     <PageLayout>
+      {/* Home Section */}
 
-      <LandingPage/>
-{/* 
-    <section className=" py-16 px-6 lg:px-20 flex flex-col lg:flex-row  items-center justify-between">
+      {/* Video Section */}
 
-        <div className="w-full lg:w-1/2 mb-12 lg:mb-0">
-          <img
-            src={homeImg}
-            alt="Email Verification Illustration"
-            className="w-full max-w-180 mt-6 mx-auto lg:mx-0"
-          />
-        </div>
+      <LandingPage />
 
-       
-        <div className="w-full lg:w-1/2 text-center lg:text-left mt-5">
-        
-          <div className="flex items-center justify-center lg:justify-start mb-3 text-blue-600 font-semibold">
-            <CheckCircle className="w-5 h-5 mr-2" />
-            Verify
-          </div>
-
-          
-          <h2 className="text-3xl lg:text-4xl font-bold text-[#c2831f] mb-4">
-            Real-Time Email Verification
-          </h2>
- 
-          <p className="text-gray-600 text-lg mb-4 max-w-xl text-white">
-            Ensure every email you collect is valid, deliverable, and safe to
-            use—right at the point of entry. Say goodbye to fake or mistyped
-            emails that hurt your deliverability.
-          </p>
-          <p className="text-gray-600 text-lg mb-6 max-w-xl text-white">
-            Integrate easily into your forms, lead generation pages, and CRMs
-            with just a few lines of code.
-          </p>
-
-         
-          <ul className="text-left text-white mb-6 space-y-3 max-w-md mx-auto lg:mx-0">
-            <li className="flex items-start">
-              <CheckCircle className="w-5 h-5 text-green-500 mt-1 mr-2" />
-              Instantly validate emails at form submission
-            </li>
-            <li className="flex items-start">
-              <CheckCircle className="w-5 h-5 text-green-500 mt-1 mr-2" />
-              Catch typos, disposable & spam-trap emails
-            </li>
-            <li className="flex items-start">
-              <CheckCircle className="w-5 h-5 text-green-500 mt-1 mr-2" />
-              Improve email deliverability and sender score
-            </li>
-          </ul>
-
-           
-          <button className="bg-blue-600 hover:bg-blue-700 transition-all text-white font-semibold px-6 py-3 rounded-md shadow-lg">
-            Try it Free
-          </button>
-        </div>
-      </section> */}
-
- 
- {/* EmailOversight */}
+      {/* EmailOversight */}
       <div className="min-h-screen ">
-       
+        {/* Add video here so it appears below this section */}
+        <div class="bg-black min-h-screen flex items-center justify-center">
+          <div class="container mx-auto px-4 py-8 mt-12">
+            <div class="text-center mb-8">
+              <h1 class="text-4xl font-bold text-[#c2831f] mb-4">
+                How to Create Email Campaigns in Bounce Cure (Demo)
+              </h1>
+              <p class="text-lg text-gray-100 max-w-3xl mx-auto leading-relaxed">
+                “Bounce Cure is your all-in-one platform for creating and
+                managing email campaigns. Easily design and customize your
+                campaigns, send them to your audience, and track their
+                performance. Stay connected with your clients and grow your
+                reach effortlessly.”
+              </p>
+            </div>
+            <div className="pt-10 transform transition-all duration-500 hover:-translate-y-3 hover:scale-105 cursor-pointer relative w-full flex justify-center">
+              <video
+                ref={videoRef}
+                controls={isPlaying}
+                className="w-[70%] rounded-xl shadow-2xl border-2 border-yellow-400 hover:border-yellow-500 hover:shadow-[0_20px_50px_rgba(0,0,0,0.8)] transition-all duration-500 hover:shadow-yellow-400/20"
+              >
+                <source src="/video/video.mp4" type="video/mp4" />
+                Your browser does not support the video tag.
+              </video>
+             
+
+              {!isPlaying && (
+                <button
+                  onClick={handlePlay}
+                  className="absolute inset-0 flex flex-col items-center cursor-pointer justify-center bg-black bg-opacity-100 rounded-xl hover:bg-opacity-70 transition-opacity duration-300 p-4"
+                >
+                  <div className="w-20 h-20 bg-[#c2831f] hover:bg-[#f9ba55] rounded-full flex items-center justify-center shadow-lg mb-3">
+                    <svg
+                      xmlns="http://www.w3.org/2000/svg"
+                      className="h-12 w-12 text-white"
+                      fill="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M8 5v14l11-7z" />
+                    </svg>
+                  </div>
+                  <p className="text-white text-lg text-center">Click this button for Demo</p>
+                </button>
+              )}
+
+            </div>
+          </div>
+        </div>
+
         <div className=" shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="text-center">
@@ -904,20 +894,24 @@ const renderPostalValidation = () => (
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
                     className={`flex items-center px-6 py-4 whitespace-nowrap border-b-2 font-medium text-sm transition-all duration-200 
-                      ${activeTab === tab.id
-                        ? "border-[#c2831f] text-[#c2831f] bg-opacity-160 backdrop-blur-md shadow-md cursor-pointer"
-                        : "border-transparent hover:cursor-pointer"
+                      ${
+                        activeTab === tab.id
+                          ? "border-[#c2831f] text-[#c2831f] bg-opacity-160 backdrop-blur-md shadow-md cursor-pointer"
+                          : "border-transparent hover:cursor-pointer"
                       }`}
                     style={{
                       borderRadius: "8px", // optional rounded look
                     }}
                   >
                     <IconComponent
-                      className={`h-5 w-5 mr-2 ${activeTab === tab.id ? "text-[#c2831f]" : "text-gray-400"}`}
+                      className={`h-5 w-5 mr-2 ${
+                        activeTab === tab.id
+                          ? "text-[#c2831f]"
+                          : "text-gray-400"
+                      }`}
                     />
                     {tab.label}
                   </button>
-
                 );
               })}
             </div>
@@ -931,89 +925,47 @@ const renderPostalValidation = () => (
       </div>
 
       {/* ----end---- */}
+      {/* Statistics Section */}
 
-      {/* --- conts numbers ---- */}
-    {/* <div className="py-12"> 
-      <div className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8">
-        {[
-          { number: "99.7%", label: "accuracy rate" },
-          { number: "2 billion", label: "verifications per month" },
-          { number: "200+ billion", label: "emails validated" },
-        ].map(({ number, label }, idx) => (
-          <div
-            key={idx}
-            className="group rounded-2xl p-10 text-center transition-all duration-300 transform hover:-translate-y-2 hover:scale-105"
-            style={{
-              background: "rgba(255, 255, 255, 0.1)",
-              boxShadow: "0 4px 30px rgba(255, 255, 255, 0.1)",
-              backdropFilter: "blur(10px)",
-              WebkitBackdropFilter: "blur(10px)",
-              border: "1px solid rgba(255, 255, 255, 0.3)",
-            }}
-            
-            onMouseLeave={(e) => {
-              e.currentTarget.style.boxShadow =
-                "0 4px 30px rgba(255, 255, 255, 0.1)"; // reset
-            }}
-          >
-            <p className="text-4xl font-bold text-[#c2831f] transition-transform duration-300 group-hover:scale-125">
-              {number}
-            </p>
-            <p className="text-base text-white mt-3 transition-transform duration-300 group-hover:scale-110">
-              {label}
-            </p>
-          </div>
-        ))}
+      <div className="py-12">
+        <div
+          ref={ref}
+          className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8"
+        >
+          {stats.map(({ number, suffix, label }, idx) => (
+            <div
+              key={idx}
+              className="group rounded-2xl p-10 text-center transition-all duration-300 transform hover:-translate-y-2 hover:scale-105"
+              style={{
+                background: "rgba(255, 255, 255, 0.1)",
+                boxShadow: "0 4px 30px rgba(255, 255, 255, 0.1)",
+                backdropFilter: "blur(10px)",
+                WebkitBackdropFilter: "blur(10px)",
+                border: "1px solid rgba(255, 255, 255, 0.3)",
+              }}
+            >
+              <p className="text-4xl font-bold text-[#c2831f] transition-transform duration-300 group-hover:scale-125">
+                {inView ? (
+                  <CountUp
+                    start={0}
+                    end={number}
+                    duration={2.5}
+                    decimals={number % 1 !== 0 ? 1 : 0} // show decimal for 99.7
+                  />
+                ) : (
+                  0
+                )}
+                {suffix}
+              </p>
+              <p className="text-base text-white mt-3 transition-transform duration-300 group-hover:scale-110">
+                {label}
+              </p>
+            </div>
+          ))}
+        </div>
       </div>
-    </div> */}
 
-
- <div className="py-12">
-      <div
-        ref={ref}
-        className="max-w-6xl mx-auto px-4 grid grid-cols-1 md:grid-cols-3 gap-8"
-      >
-        {stats.map(({ number, suffix, label }, idx) => (
-          <div
-            key={idx}
-            className="group rounded-2xl p-10 text-center transition-all duration-300 transform hover:-translate-y-2 hover:scale-105"
-            style={{
-              background: "rgba(255, 255, 255, 0.1)",
-              boxShadow: "0 4px 30px rgba(255, 255, 255, 0.1)",
-              backdropFilter: "blur(10px)",
-              WebkitBackdropFilter: "blur(10px)",
-              border: "1px solid rgba(255, 255, 255, 0.3)",
-            }}
-          >
-            <p className="text-4xl font-bold text-[#c2831f] transition-transform duration-300 group-hover:scale-125">
-              {inView ? (
-                <CountUp
-                  start={0}
-                  end={number}
-                  duration={2.5}
-                  decimals={number % 1 !== 0 ? 1 : 0} // show decimal for 99.7
-                />
-              ) : (
-                0
-              )}
-              {suffix}
-            </p>
-            <p className="text-base text-white mt-3 transition-transform duration-300 group-hover:scale-110">
-              {label}
-            </p>
-          </div>
-        ))}
-      </div>
-    </div>
-
-  
-
-
-
-
-      <div>
-        <Home />
-      </div>
+      <Home />
     </PageLayout>
   );
 }
