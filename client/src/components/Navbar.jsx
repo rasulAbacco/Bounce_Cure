@@ -464,7 +464,7 @@ const Navbar = () => {
                     </svg>
                   </button>
                   {servicesOpen && (
-                    <div className="absolute top-full left-0 mt-2 bg-black/70 backdrop-blur-lg rounded-lg shadow-lg py-2 w-64 border border-white/10 max-h-96 overflow-y-auto">
+                    <div className="absolute top-full left-0 mt-2 bg-black backdrop-blur-lg rounded-lg shadow-lg py-2 w-64 border border-white/10 max-h-96 overflow-y-auto">
                       {services.map((item) => (
                         <Link
                           key={item.name}

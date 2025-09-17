@@ -43,6 +43,8 @@ import multimediaRoutes from './routes/multimedia.js';
 // Server and Socket
 import http from "http";
 import { Server as IOServer } from "socket.io";
+import invoiceRoutes from "./routes/invoiceRoutes.js";
+
 
 // ENV setup
 dotenv.config();
@@ -92,6 +94,9 @@ app.use("/verification", verificationRoutes);
 
 // ✅ Mount Routes
 app.use("/api", dashboardRoutes);
+
+// Use routes
+app.use("/api", invoiceRoutes);
 
 app.use("/api/verification", advancedVerificationRoute);
 app.use("/auth", forgotPasswordRoutes);
