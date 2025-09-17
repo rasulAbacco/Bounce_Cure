@@ -22,8 +22,6 @@ import dealsRoutes from "./routes/deals.js";
 import contactCRMRoutes from "./routes/contactCRM.js";
 import { router as campaignContactsRoutes } from './routes/contacts.js';
 import { router as campaignsRoutes } from './routes/campaigns.js';
-import emailRoutes from './routes/emailRoutes.js';
-import emailAccountRoutes from './routes/emailAccountRoutes.js';
 // import fetchReplies from "./routes/FetchReplies.js";
 import leadsRouter from "./routes/leads.js";
 import listRoutes from "./routes/listRoutes.js";
@@ -40,13 +38,14 @@ import { initSocket } from "./services/socketService.js";
 import { startSyncLoop } from "./services/syncService.js";
 import { PrismaClient } from "@prisma/client";
 import cron from 'node-cron';
-import { fetchAndStoreInboxMails } from "./routes/imapService.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
-import { startEmailScheduler } from "./services/imapScheduler.js";
+
 import multimediaRoutes from './routes/multimedia.js';
 // Server and Socket
 import http from "http";
 import { Server as IOServer } from "socket.io";
+import invoiceRoutes from "./routes/invoiceRoutes.js";
+
 
 // ENV setup
 dotenv.config();
@@ -96,6 +95,9 @@ app.use("/verification", verificationRoutes);
 
 // ✅ Mount Routes
 app.use("/api", dashboardRoutes);
+
+// Use routes
+app.use("/api", invoiceRoutes);
 
 app.use("/api/verification", advancedVerificationRoute);
 app.use("/auth", forgotPasswordRoutes);
