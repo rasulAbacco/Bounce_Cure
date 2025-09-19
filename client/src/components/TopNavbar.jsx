@@ -13,7 +13,7 @@ import { UserContext } from "./UserContext";
 import { useNotificationContext } from "./NotificationContext";
 
 const TopNavbar = ({ toggleSidebar, pageName }) => {
-  const { preferences, allNotifications, markAsRead } = useNotificationContext();
+  const { preferences, allNotifications, markAsRead, deleteNotification } = useNotificationContext();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
@@ -40,6 +40,16 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
     markAsRead(id);
     // Optional: Navigate to related page when notification is clicked
     // navigate('/dashboard');
+  };
+
+  // New function to clear all notifications
+  const handleClearAllNotifications = () => {
+    const confirmed = window.confirm("Are you sure you want to clear all notifications?");
+    if (confirmed) {
+      notifications.forEach(notification => {
+        deleteNotification(notification.id);
+      });
+    }
   };
 
   return (
@@ -96,16 +106,26 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
               <div className="absolute right-0 top-12 w-72 bg-black backdrop-blur-lg border border-white/50 rounded-lg shadow-xl">
                 <div className="p-3 border-b border-white/10 flex justify-between items-center">
                   <h3 className="text-white font-semibold">Notifications</h3>
-                  {unreadCount > 0 && (
-                    <button 
-                      onClick={() => {
-                        notifications.forEach(n => markAsRead(n.id));
-                      }}
-                      className="text-xs text-blue-400 hover:text-blue-300"
-                    >
-                      Mark all as read
-                    </button>
-                  )}
+                  <div className="flex space-x-2">
+                    {unreadCount > 0 && (
+                      <button 
+                        onClick={() => {
+                          notifications.forEach(n => markAsRead(n.id));
+                        }}
+                        className="text-xs text-blue-400 hover:text-blue-300"
+                      >
+                        Mark all as read
+                      </button>
+                    )}
+                    {notifications.length > 0 && (
+                      <button 
+                        onClick={handleClearAllNotifications}
+                        className="text-xs text-red-400 hover:text-red-300"
+                      >
+                        Clear all
+                      </button>
+                    )}
+                  </div>
                 </div>
                 <div className="max-h-64 overflow-y-auto">
                   {notifications.length > 0 ? (
@@ -113,17 +133,24 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
                       <div
                         key={notification.id}
                         className={`p-3 border-b border-white/5 hover:bg-white/5 cursor-pointer ${notification.unread ? 'bg-blue-900/20' : ''}`}
-                        onClick={() => handleNotificationClick(notification.id)}
                       >
-                        <div className="flex items-start space-x-3">
-                          <div
-                            className={`w-2 h-2 rounded-full mt-2 ${notification.unread ? "bg-blue-500" : "bg-gray-500"
-                              }`}
-                          ></div>
-                          <div className="flex-1">
-                            <p className="text-sm text-white">{notification.message}</p>
-                            <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-3" onClick={() => handleNotificationClick(notification.id)}>
+                            <div className={`w-2 h-2 rounded-full mt-2 ${notification.unread ? "bg-blue-500" : "bg-gray-500"}`}></div>
+                            <div className="flex-1">
+                              <p className="text-sm text-white">{notification.message}</p>
+                              <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
+                            </div>
                           </div>
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              deleteNotification(notification.id);
+                            }}
+                            className="text-red-500 text-xs hover:text-red-400 ml-2"
+                          >
+                            ✕
+                          </button>
                         </div>
                       </div>
                     ))
