@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
+import { useNotificationContext } from "../../components/NotificationContext";
 
 // Normalize plan data
 const normalizePlan = (data) => {
@@ -107,9 +108,11 @@ const PaymentGatewayIcon = ({ gateway }) => {
   }
 };
 
+// Payment Page Component
 export default function PaymentPage() {
   const { state } = useLocation();
   const navigate = useNavigate();
+  const { addNotification } = useNotificationContext();
 
   const [plan, setPlan] = useState(normalizePlan(state));
   const [redirecting, setRedirecting] = useState(false);
@@ -414,55 +417,62 @@ export default function PaymentPage() {
     };
   };
 
-  // Validate payment details with backend
+  // Validate payment with backend
   const validatePaymentWithBackend = async () => {
     try {
       const response = await fetch("http://localhost:5000/api/validate-payment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          expiryDate: expiry,
-          cvv: cvv
+          cardNumber: cardNumber.replace(/\s/g, ""),
+          expiry,
+          cvv,
+          amount: finalTotal
         }),
       });
       
       const result = await response.json();
-      
-      if (!result.success) {
-        if (result.errors && result.errors.length > 0) {
-          result.errors.forEach(error => toast.error(error, { duration: 5000 }));
-        } else {
-          toast.error(result.message || "Payment validation failed", { duration: 5000 });
-        }
+      if (result.success) {
+        return true;
+      } else {
+        toast.error(result.message || "Payment validation failed", { duration: 5000 });
         return false;
       }
-      
-      return true;
     } catch (error) {
-      toast.error("Error validating payment: " + error.message, { duration: 5000 });
+      console.error("Payment validation error:", error);
+      toast.error("Payment validation failed. Please try again.", { duration: 5000 });
       return false;
     }
   };
 
-  // Send invoice
+  // Send invoice email
   const sendInvoiceEmail = async (invoiceData) => {
     try {
-      const res = await fetch("http://localhost:5000/api/send-invoice", {
+      const response = await fetch("http://localhost:5000/api/send-invoice", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(invoiceData),
       });
-      const result = await res.json();
-      if (result.success) toast.success("Invoice sent to your email!", { duration: 5000 });
-      else throw new Error(result.message || "Failed to send invoice");
+      
+      const result = await response.json();
+      if (result.success) {
+        console.log("Invoice email sent successfully");
+        toast.success("Invoice sent to your email!", { duration: 5000 });
+        return true;
+      } else {
+        throw new Error(result.message || "Failed to send invoice");
+      }
     } catch (err) {
+      console.error("Error sending invoice:", err);
       toast.error("Failed to send invoice: " + err.message, { duration: 5000 });
+      return false;
     }
   };
 
   // Save payment data for reminders
   const savePaymentData = async (invoiceData) => {
     try {
+      console.log("Saving payment data...");
       const paymentData = {
         email: invoiceData.email,
         transactionId: invoiceData.transactionId,
@@ -517,35 +527,40 @@ export default function PaymentPage() {
     }
 
     // Validate payment details with backend
-    const validatePaymentWithBackend = async (paymentId, orderId, signature) => {
-  const response = await fetch("http://localhost:5000/api/validate-payment", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      paymentId,
-      orderId,
-      signature
-    }),
-  });
-
-  const data = await response.json();
-  if (!response.ok) throw new Error(data.error || "Validation failed");
-  return data;
-};
-
+    console.log("Starting payment process...");
+    const isValid = await validatePaymentWithBackend();
+    if (!isValid) {
+      console.log("Payment validation failed");
+      return;
+    }
 
     setProcessing(true);
     const toastId = toast.loading("Processing payment...");
+    console.log("Payment processing started...");
 
-    setTimeout(() => {
+    setTimeout(async () => {
       setProcessing(false);
+      console.log("Payment processing completed");
       toast.success("Payment Successful!", { id: toastId, duration: 5000 });
 
-      const invoiceData = generateInvoiceData();
-      sendInvoiceEmail(invoiceData);
-      savePaymentData(invoiceData); // Save payment data for reminders
+      // Add payment success notification
+      console.log("Adding payment notification...");
+      addNotification({
+        type: 'payment',
+        message: `Payment of $${finalTotal} for ${plan.planName} was successful!`,
+      });
 
-      // Navigate to invoice page with data
+      const invoiceData = generateInvoiceData();
+      console.log("Invoice data generated:", invoiceData);
+      
+      // Send invoice email
+      await sendInvoiceEmail(invoiceData);
+      
+      // Save payment data
+      await savePaymentData(invoiceData);
+
+      // Navigate to dashboard with invoice data
+      console.log("Navigating to dashboard...");
       navigate("/dashboard", { state: { invoiceData } });
     }, 3000);
   };
@@ -553,11 +568,11 @@ export default function PaymentPage() {
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white py-10 px-4 md:px-8 font-sans">
       <Toaster position="top-right" duration={5000} />
-      {/* <div className="mb-6">
+      <div className="mb-6">
         <Link to="/pricingdash" className="text-sm text-[#d4af37] hover:underline inline-block">
           ← Back to Pricing
         </Link>
-      </div> */}
+      </div>
 
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
         {/* Payment Form */}
@@ -806,7 +821,7 @@ export default function PaymentPage() {
   );
 }
 
-// Invoice Page Component (unchanged)
+// Invoice Page Component
 export function InvoicePage() {
   const { state } = useLocation();
   const navigate = useNavigate();
