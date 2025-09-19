@@ -1,6 +1,7 @@
 // frontend/src/components/ConversationPane.jsx
 import React, { useEffect, useState, useCallback } from "react";
 import { api } from "../../api";
+import EmojiPicker from 'emoji-picker-react';
 
 export default function ConversationPane({
   conversation,
@@ -17,6 +18,33 @@ export default function ConversationPane({
   const [replyContent, setReplyContent] = useState("");
   const [isReplyOpen, setIsReplyOpen] = useState(false);
   const [isSending, setIsSending] = useState(false);
+  
+  // Forward state
+  const [isForwardOpen, setIsForwardOpen] = useState(false);
+  const [forwardContent, setForwardContent] = useState("");
+  const [forwardTo, setForwardTo] = useState("");
+  const [forwardingMessage, setForwardingMessage] = useState(null);
+  
+  // Emoji picker state
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [activeTextArea, setActiveTextArea] = useState(null);
+
+  // Get the sender email from the conversation's account
+  const getSenderEmail = useCallback(() => {
+    // First try to get email from the conversation's account
+    if (conv?.account?.email) {
+      return conv.account.email;
+    }
+    
+    // Fallback to localStorage
+    const emailFromStorage = localStorage.getItem('userEmail');
+    if (emailFromStorage) {
+      return emailFromStorage;
+    }
+    
+    // Last resort: try currentUser
+    return currentUser?.email || currentUser?.userEmail;
+  }, [conv, currentUser]);
 
   // Fetch conversation data
   const fetchConversation = useCallback(async () => {
@@ -102,80 +130,218 @@ export default function ConversationPane({
     setNote("");
   };
 
-  // This is where you add the sendMessage function
-// frontend/src/components/ConversationPane.jsx
-
-const sendMessage = async (body, inReplyTo = null, toEmail = null) => {
+  const sendMessage = async (body, inReplyTo = null, toEmail = null) => {
     if (!body.trim()) return;
+    
+    // Get the sender email from the conversation's account
+    const senderEmail = getSenderEmail();
+    
+    if (!senderEmail) {
+      console.error("No sender email available");
+      alert("Cannot send message: No sender email available. Please select an account.");
+      return;
+    }
     
     setIsSending(true);
     try {
-      // Determine the recipient - use toEmail if provided, otherwise use the original sender
-      const recipient = toEmail || replyingTo?.fromName || conv?.messages?.[0]?.fromName;
+      const userName = currentUser?.userName || currentUser?.name || senderEmail.split('@')[0];
       
-      // Get the user's email - try different possible locations
-      const userEmail = currentUser?.email || currentUser?.userName || currentUser?.userEmail;
-      
-      console.log("Sending reply to:", recipient);
-      console.log("Sending reply from:", userEmail); // Log the sender
-      console.log("Current user object:", currentUser); // Log the entire user object
+      console.log("Sending message to:", toEmail);
+      console.log("Sending message from:", senderEmail);
+      console.log("Using account:", conv?.account);
       
       // First, send via socket for real-time updates
       socket.emit("send_message", {
         conversationId: conversation.id,
         body,
-        fromName: currentUser?.userName || currentUser?.name || "User",
-        fromEmail: userEmail, // Use the user's email
-        toEmail: recipient, // Send to the original sender
+        fromName: userName,
+        fromEmail: senderEmail,
+        toEmail: toEmail,
         inReplyTo
       });
 
-      // Then, make API call to persist the reply
+      // Then, make API call to persist the message
       const response = await api.post(`/conversations/${conversation.id}/reply`, {
         body,
-        fromName: currentUser?.userName || currentUser?.name || "User",
-        fromEmail: userEmail, // Use the user's email
-        toEmail: recipient, // Send to the original sender
+        fromName: userName,
+        fromEmail: senderEmail,
+        toEmail: toEmail,
         inReplyTo
       });
+
+      // Check if message was sent successfully
+      if (response.data.status === 'failed') {
+        throw new Error('Message failed to send. Check your email configuration.');
+      }
 
       // Add the new message to the state
       setMessages(prev => [...prev, response.data]);
       
-      // Reset reply state
+      // Reset states
       setIsReplyOpen(false);
+      setIsForwardOpen(false);
       setReplyingTo(null);
       setReplyContent("");
+      setForwardContent("");
+      setForwardTo("");
+      setForwardingMessage(null);
     } catch (err) {
-      console.error("Failed to send reply:", err);
+      console.error("Failed to send message:", err);
+      
+      // Display a more detailed error message
+      let errorMessage = "Failed to send message.";
+      
+      if (err.response) {
+        console.error("Error response data:", err.response.data);
+        errorMessage += ` Server error: ${err.response.data.error || err.response.status}`;
+        
+        if (err.response.data.details) {
+          errorMessage += ` - ${err.response.data.details}`;
+        }
+      } else if (err.request) {
+        errorMessage += " No response from server.";
+      } else {
+        errorMessage += ` ${err.message}`;
+      }
+      
+      alert(errorMessage);
     } finally {
       setIsSending(false);
     }
-};
+  };
 
   const handleReplyClick = (message) => {
+    // Get the sender email from the conversation's account
+    const senderEmail = getSenderEmail();
+    
+    if (!senderEmail) {
+      console.error("No sender email available");
+      alert("Cannot reply: No sender email available. Please select an account.");
+      return;
+    }
+    
     setReplyingTo(message);
     setIsReplyOpen(true);
+    setIsForwardOpen(false);
     setReplyContent("");
+    setShowEmojiPicker(false);
   };
 
-  const handleSendReply = () => {
-    if (replyContent.trim()) {
-      // Get the email address of the person we're replying to
-      const toEmail = replyingTo?.fromName;
-      sendMessage(replyContent, replyingTo?.messageId, toEmail);
-    }
-  };
+const handleSendReply = () => {
+  if (replyContent.trim()) {
+    const originalMessage = messages.find(m => m.isOriginal) || messages[0];
+    const toEmail = originalMessage.fromName || originalMessage.from || originalMessage.email; 
+    sendMessage(replyContent, replyingTo?.messageId, toEmail);
+  }
+};
+
 
   const handleCancelReply = () => {
     setIsReplyOpen(false);
     setReplyingTo(null);
     setReplyContent("");
+    setShowEmojiPicker(false);
+  };
+
+  // Forward functionality
+  const handleForwardClick = (message) => {
+    // Get the sender email from the conversation's account
+    const senderEmail = getSenderEmail();
+    
+    if (!senderEmail) {
+      console.error("No sender email available");
+      alert("Cannot forward: No sender email available. Please select an account.");
+      return;
+    }
+    
+    setForwardingMessage(message);
+    setIsForwardOpen(true);
+    setIsReplyOpen(false);
+    setForwardContent(`\n\n---------- Forwarded message ---------\nFrom: ${message.from}\nDate: ${new Date(message.createdAt).toLocaleString()}\nSubject: ${conv?.subject}\n\n${message.body}\n---------- End of forwarded message ---------\n`);
+    setForwardTo("");
+    setShowEmojiPicker(false);
+  };
+
+  const handleSendForward = async () => {
+    if (!forwardContent.trim() || !forwardTo.trim()) return;
+    
+    setIsSending(true);
+    try {
+      const senderEmail = getSenderEmail();
+      const userName = currentUser?.userName || currentUser?.name || senderEmail.split('@')[0];
+      
+      // Send via socket
+      socket.emit("send_message", {
+        conversationId: conversation.id,
+        body: forwardContent,
+        fromName: userName,
+        fromEmail: senderEmail,
+        toEmail: forwardTo,
+        inReplyTo: null
+      });
+
+      // Make API call
+      const response = await api.post(`/conversations/${conversation.id}/reply`, {
+        body: forwardContent,
+        fromName: userName,
+        fromEmail: senderEmail,
+        toEmail: forwardTo,
+        inReplyTo: null
+      });
+
+      // Check if message was sent successfully
+      if (response.data.status === 'failed') {
+        throw new Error('Message failed to send. Check your email configuration.');
+      }
+
+      // Add to messages
+      setMessages(prev => [...prev, response.data]);
+      
+      // Reset state
+      setIsForwardOpen(false);
+      setForwardContent("");
+      setForwardTo("");
+      setForwardingMessage(null);
+    } catch (err) {
+      console.error("Failed to forward message:", err);
+      alert("Failed to forward message. Please check your email configuration.");
+    } finally {
+      setIsSending(false);
+    }
+  };
+
+  const handleCancelForward = () => {
+    setIsForwardOpen(false);
+    setForwardContent("");
+    setForwardTo("");
+    setForwardingMessage(null);
+    setShowEmojiPicker(false);
+  };
+
+  // Emoji picker functionality
+  const handleEmojiSelect = (emoji) => {
+    if (activeTextArea === 'reply') {
+      setReplyContent(prev => prev + emoji.emoji);
+    } else if (activeTextArea === 'forward') {
+      setForwardContent(prev => prev + emoji.emoji);
+    }
+    setShowEmojiPicker(false);
   };
 
   // Function to render HTML content safely
   const renderHTMLContent = (html) => {
-    return { __html: html };
+    // Process HTML to ensure images display properly
+    const processedHtml = html
+      .replace(/<img[^>]+src="([^"]+)"/g, (match, src) => {
+        // Handle inline images or external URLs
+        if (src.startsWith('cid:')) {
+          // For content-id images, you might need to fetch them separately
+          return match; // Keep as is for now
+        }
+        return match; // Keep external images as is
+      });
+      
+    return { __html: processedHtml };
   };
 
   if (!conversation) {
@@ -187,15 +353,19 @@ const sendMessage = async (body, inReplyTo = null, toEmail = null) => {
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-black text-white min-h-0">
+    <div className="flex-1 flex flex-col bg-black text-white relative" style={{height: '96vh'}}>
       {/* Header */}
       <div className="p-4 border-b border-gray-700 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-black">
         <div>
           <div className="font-bold text-lg">{conv?.subject}</div>
-        </div>
-        <div className="mt-2 sm:mt-0 text-xs text-gray-500">
-          Viewers:{" "}
-          {viewers.length ? viewers.map((v) => v.userName).join(", ") : "None"}
+          <div className="text-sm text-gray-400">
+            From: {messages[0]?.fromName} • To: {messages[0]?.to}
+          </div>
+          {conv?.account && (
+            <div className="text-xs text-blue-400 mt-1">
+              Using account: {conv.account.email}
+            </div>
+          )}
         </div>
       </div>
 
@@ -204,12 +374,28 @@ const sendMessage = async (body, inReplyTo = null, toEmail = null) => {
         {messages.map((m) => (
           <div
             key={m.id}
-            className={`bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-6xl mx-auto ${m.isReply ? 'ml-8 border-l-4 border-l-blue-500' : ''}`}
+            className={`bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-6x2 mx-auto ${m.isReply ? 'ml-8 border-l-4 border-l-blue-500' : ''}`}
           >
-            <div className="mb-4">
-              <div className="text-sm text-gray-400">From: {m.fromName}</div>
-              <div className="text-sm text-gray-400">
-                Date: {new Date(m.createdAt).toLocaleString()}
+            <div className="mb-4 flex justify-between items-start">
+              <div>
+                <div className="font-semibold">{m.fromName}</div>
+                <div className="text-sm text-gray-400">
+                  to {m.to} • {new Date(m.createdAt).toLocaleString()}
+                </div>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={() => handleReplyClick(m)}
+                  className="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded"
+                >
+                  Reply
+                </button>
+                <button
+                  onClick={() => handleForwardClick(m)}
+                  className="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded"
+                >
+                  Forward
+                </button>
               </div>
             </div>
             
@@ -218,16 +404,6 @@ const sendMessage = async (body, inReplyTo = null, toEmail = null) => {
               className="text-gray-100 whitespace-pre-wrap"
               dangerouslySetInnerHTML={renderHTMLContent(m.body)}
             />
-            
-            {/* Reply button */}
-            <div className="mt-4 flex justify-end">
-              <button
-                onClick={() => handleReplyClick(m)}
-                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded"
-              >
-                Reply
-              </button>
-            </div>
           </div>
         ))}
       </div>
@@ -239,6 +415,9 @@ const sendMessage = async (body, inReplyTo = null, toEmail = null) => {
             Replying to: {replyingTo?.fromName}
           </div>
           <div className="flex flex-col gap-2">
+            <div className="text-sm text-gray-400">
+              From: {getSenderEmail() || "No account selected"}
+            </div>
             <textarea
               value={replyContent}
               onChange={(e) => setReplyContent(e.target.value)}
@@ -251,6 +430,15 @@ const sendMessage = async (body, inReplyTo = null, toEmail = null) => {
               }}
             />
             <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => {
+                  setActiveTextArea('reply');
+                  setShowEmojiPicker(!showEmojiPicker);
+                }}
+                className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded"
+              >
+                😊
+              </button>
               <button
                 onClick={handleCancelReply}
                 className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded"
@@ -278,47 +466,70 @@ const sendMessage = async (body, inReplyTo = null, toEmail = null) => {
         </div>
       )}
 
-      {/* Typing Indicator */}
-      <div className="p-2 text-xs text-gray-400">
-        {typingUsers.length
-          ? `${typingUsers.map((u) => u.userName).join(", ")} typing...`
-          : ""}
-      </div>
-
-      {/* Message Input */}
-      {!isReplyOpen && (
-        <div className="p-4 border-t border-gray-700 bg-black">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              placeholder="Type a message"
-              className="flex-1 p-2 border border-gray-600 rounded bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-              onKeyDown={(e) => {
-                if (e.key === "Enter") {
-                  // For new messages, reply to the original sender
-                  const originalSender = conv?.messages?.[0]?.fromName;
-                  sendMessage(e.target.value, null, originalSender);
-                  e.target.value = "";
-                }
-              }}
-            />
-            <button
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded"
-              onClick={() => {
-                const input = document.querySelector(
-                  'input[placeholder="Type a message"]'
-                );
-                if (input.value.trim()) {
-                  // For new messages, reply to the original sender
-                  const originalSender = conv?.messages?.[0]?.fromName;
-                  sendMessage(input.value, null, originalSender);
-                  input.value = "";
-                }
-              }}
-            >
-              Send
-            </button>
+      {/* Forward Box */}
+      {isForwardOpen && (
+        <div className="p-4 border-t border-gray-700 bg-gray-800">
+          <div className="mb-2 text-sm text-gray-300">
+            Forwarding message from: {forwardingMessage?.fromName}
           </div>
+          <div className="flex flex-col gap-2">
+            <div className="text-sm text-gray-400">
+              From: {getSenderEmail() || "No account selected"}
+            </div>
+            <input
+              type="email"
+              value={forwardTo}
+              onChange={(e) => setForwardTo(e.target.value)}
+              placeholder="Recipient email"
+              className="p-3 border border-gray-600 rounded bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <textarea
+              value={forwardContent}
+              onChange={(e) => setForwardContent(e.target.value)}
+              placeholder="Add a message..."
+              className="flex-1 p-3 border border-gray-600 rounded bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
+            />
+            <div className="flex gap-2 justify-end">
+              <button
+                onClick={() => {
+                  setActiveTextArea('forward');
+                  setShowEmojiPicker(!showEmojiPicker);
+                }}
+                className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded"
+              >
+                😊
+              </button>
+              <button
+                onClick={handleCancelForward}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded"
+                disabled={isSending}
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleSendForward}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded flex items-center"
+                disabled={isSending || !forwardContent.trim() || !forwardTo.trim()}
+              >
+                {isSending ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Sending...
+                  </>
+                ) : "Send Forward"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Emoji Picker */}
+      {showEmojiPicker && (
+        <div className="absolute bottom-20 right-4 z-10">
+          <EmojiPicker onEmojiClick={handleEmojiSelect} />
         </div>
       )}
     </div>
