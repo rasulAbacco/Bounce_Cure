@@ -1,61 +1,58 @@
 // client/src/components/inbox/AccountManager.jsx
 import React, { useState, useEffect } from "react";
-import { api } from "../../api"; // Adjust the path as needed
+import { api } from "../../api";
 
 export default function AccountManager({ onAccountSelected, onAccountAdded, currentSelectedAccount }) {
   const [accounts, setAccounts] = useState([]);
   const [selectedAccountId, setSelectedAccountId] = useState(null);
   const [form, setForm] = useState({
-    userId: 1, // replace with dynamic user ID if available
+    userId: 1,
     email: "",
-    imapHost: "",
+    provider: "gmail",
+    imapHost: "imap.gmail.com",
     imapPort: 993,
     imapUser: "",
+    smtpHost: "smtp.gmail.com",
+    smtpPort: 587,
+    smtpUser: "",
     encryptedPass: "",
+    oauthClientId: "",
+    oauthClientSecret: "",
+    refreshToken: "",
+    authType: "password",
   });
+
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [accountToLogout, setAccountToLogout] = useState(null);
   const [loading, setLoading] = useState(false);
   const [showSuccessMessage, setShowSuccessMessage] = useState(false);
+  const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchAccounts();
-  }, []);
-
-  // Update selected account ID when the prop changes
-  useEffect(() => {
+  useEffect(() => { fetchAccounts(); }, []);
+  useEffect(() => { 
     if (currentSelectedAccount) {
       setSelectedAccountId(currentSelectedAccount.id);
+    } else if (accounts.length > 0 && !selectedAccountId) {
+      setSelectedAccountId(accounts[0].id);
+      if (onAccountSelected) onAccountSelected(accounts[0]);
     }
-  }, [currentSelectedAccount]);
-
-  // Hide success message after 3 seconds
+  }, [currentSelectedAccount, accounts, selectedAccountId]);
   useEffect(() => {
     if (showSuccessMessage) {
-      const timer = setTimeout(() => {
-        setShowSuccessMessage(false);
-      }, 3000);
-      return () => clearTimeout(timer);
+      const t = setTimeout(() => setShowSuccessMessage(false), 3000);
+      return () => clearTimeout(t);
     }
   }, [showSuccessMessage]);
 
   const fetchAccounts = async () => {
     setLoading(true);
+    setError(null);
     try {
       const res = await api.get("/accounts");
       setAccounts(res.data);
-      
-      // Auto-select the first account if none is selected
-      if (res.data.length > 0 && !selectedAccountId && !currentSelectedAccount) {
-        const firstAccount = res.data[0];
-        setSelectedAccountId(firstAccount.id);
-        if (onAccountSelected) {
-          onAccountSelected(firstAccount);
-        }
-      }
     } catch (err) {
-      console.error("Error fetching accounts:", err);
-    } finally {
+      setError("Failed to fetch accounts");
+    } finally { 
       setLoading(false);
     }
   };
@@ -63,171 +60,248 @@ export default function AccountManager({ onAccountSelected, onAccountAdded, curr
   const addAccount = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setError(null);
+
     try {
-      const response = await api.post("/accounts", form);
-      const newAccount = response.data;
-      
-      // Reset form
+      const formData = { ...form };
+      if (form.authType === "password") {
+        formData.oauthClientId = "";
+        formData.oauthClientSecret = "";
+        formData.refreshToken = "";
+      } else {
+        formData.encryptedPass = "";
+      }
+      if (!formData.smtpUser) formData.smtpUser = formData.email;
+
+      const res = await api.post("/accounts", formData);
+      const newAcc = res.data;
+
       setForm({
-        ...form,
+        userId: 1,
         email: "",
-        imapHost: "",
-        imapPort: 993,
+        provider: form.provider,
+        imapHost: form.imapHost,
+        imapPort: form.imapPort,
         imapUser: "",
+        smtpHost: form.smtpHost,
+        smtpPort: form.smtpPort,
+        smtpUser: "",
         encryptedPass: "",
+        oauthClientId: "",
+        oauthClientSecret: "",
+        refreshToken: "",
+        authType: form.authType,
       });
-      
-      // Refresh accounts list
+
       await fetchAccounts();
-      
-      // Auto-select the new account
-      setSelectedAccountId(newAccount.id);
-      if (onAccountSelected) {
-        onAccountSelected(newAccount, true); // Pass true to indicate navigation should happen
-      }
-      
-      // Show success message
+      setSelectedAccountId(newAcc.id);
+      if (onAccountSelected) onAccountSelected(newAcc, true);
       setShowSuccessMessage(true);
-      
-      // Notify parent component that account was added
-      if (onAccountAdded) {
-        onAccountAdded();
-      }
+      if (onAccountAdded) onAccountAdded();
     } catch (err) {
-      console.error("Error adding account:", err);
-    } finally {
+      setError(err.response?.data?.error || "Failed to add account");
+    } finally { 
       setLoading(false);
     }
   };
 
-  const confirmLogout = (accountId) => {
-    setAccountToLogout(accountId);
-    setShowLogoutConfirm(true);
+  const confirmLogout = (id) => { 
+    setAccountToLogout(id); 
+    setShowLogoutConfirm(true); 
   };
-
+  
   const logoutAccount = async () => {
     if (!accountToLogout) return;
-    
     setLoading(true);
     try {
       await api.delete(`/accounts/${accountToLogout}`);
-      const updatedAccounts = accounts.filter((acc) => acc.id !== accountToLogout);
+      const updatedAccounts = accounts.filter((a) => a.id !== accountToLogout);
       setAccounts(updatedAccounts);
       
-      // If we're logging out the selected account, select another one or clear selection
+      // Handle selected account after logout
       if (selectedAccountId === accountToLogout) {
         if (updatedAccounts.length > 0) {
           const nextAccount = updatedAccounts[0];
           setSelectedAccountId(nextAccount.id);
-          if (onAccountSelected) {
-            onAccountSelected(nextAccount);
-          }
+          if (onAccountSelected) onAccountSelected(nextAccount);
         } else {
           setSelectedAccountId(null);
-          if (onAccountSelected) {
-            onAccountSelected(null);
-          }
+          if (onAccountSelected) onAccountSelected(null);
         }
       }
       
       setShowLogoutConfirm(false);
       setAccountToLogout(null);
     } catch (err) {
-      console.error("Error logging out:", err);
-    } finally {
+      console.error("Logout error:", err);
+      setError("Failed to logout account");
+    } finally { 
       setLoading(false);
     }
   };
 
-  const handleAccountSelect = (account) => {
-    setSelectedAccountId(account.id);
-    if (onAccountSelected) {
-      onAccountSelected(account, true); // Pass true to indicate navigation should happen
+  const handleAccountSelect = (acc) => {
+    setSelectedAccountId(acc.id);
+    if (onAccountSelected) onAccountSelected(acc, true);
+  };
+
+  const handleEmailChange = (e) => {
+    const email = e.target.value;
+    setForm({ ...form, email, imapUser: email, smtpUser: email });
+  };
+
+  const handleProviderChange = (e) => {
+    const provider = e.target.value;
+    let newForm = { ...form, provider };
+    switch (provider) {
+      case "gmail":
+      case "gsuite":
+        newForm.imapHost = "imap.gmail.com"; newForm.imapPort = 993;
+        newForm.smtpHost = "smtp.gmail.com"; newForm.smtpPort = 587;
+        break;
+      case "outlook":
+        newForm.imapHost = "outlook.office365.com"; newForm.imapPort = 993;
+        newForm.smtpHost = "smtp.office365.com"; newForm.smtpPort = 587;
+        break;
+      case "zoho":
+        newForm.imapHost = "imap.zoho.com"; newForm.imapPort = 993;
+        newForm.smtpHost = "smtp.zoho.com"; newForm.smtpPort = 587;
+        break;
+      case "rediff":
+        newForm.imapHost = "imap.rediffmail.com"; newForm.imapPort = 993;
+        newForm.smtpHost = "smtp.rediffmail.com"; newForm.smtpPort = 465;
+        break;
+      case "amazon":
+        newForm.imapHost = "imap.mail.us-east-1.awsapps.com"; newForm.imapPort = 993;
+        newForm.smtpHost = "smtp.mail.us-east-1.awsapps.com"; newForm.smtpPort = 465;
+        break;
+      case "yahoo":
+        newForm.imapHost = "imap.mail.yahoo.com"; newForm.imapPort = 993;
+        newForm.smtpHost = "smtp.mail.yahoo.com"; newForm.smtpPort = 465;
+        break;
+      default:
+        newForm.imapHost = ""; newForm.imapPort = 993;
+        newForm.smtpHost = ""; newForm.smtpPort = 587;
     }
+    setForm(newForm);
   };
 
   return (
-    <div className="p-6 bg-gray-800 min-h-screen">
-      {/* Success Message */}
-      {showSuccessMessage && (
-        <div className="mb-4 p-3 bg-green-600 text-white rounded-lg flex items-center">
-          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path>
-          </svg>
-          Account added successfully!
-        </div>
-      )}
+    <div className="p-6 bg-gray-800 min-h-screen text-white">
+      {error && <div className="mb-4 p-3 bg-red-600 rounded">{error}</div>}
+      {showSuccessMessage && <div className="mb-4 p-3 bg-green-600 rounded">✅ Account added successfully!</div>}
 
-      <h2 className="text-lg font-bold mb-4 text-white">Email Accounts</h2>
+      <h2 className="text-lg font-bold mb-4">Email Accounts</h2>
 
+      {/* List accounts */}
       <div className="mb-6">
-        {loading && accounts.length === 0 ? (
-          <div className="text-gray-400 mb-4">Loading accounts...</div>
-        ) : accounts.length === 0 ? (
-          <div className="text-gray-400 mb-4">No accounts configured. Add an account to get started.</div>
+        {accounts.length === 0 ? (
+          <div className="text-gray-400">No accounts configured. Add one below.</div>
         ) : (
-          <div className="mb-4">
-            <h3 className="text-white mb-2">Select an account to view emails:</h3>
-            <div className="space-y-2">
-              {accounts.map((acc) => (
-                <div
-                  key={acc.id}
-                  className={`border p-3 rounded cursor-pointer transition-colors ${
-                    selectedAccountId === acc.id 
-                      ? "bg-blue-900 border-blue-500" 
-                      : "bg-black hover:bg-gray-900"
-                  }`}
-                  onClick={() => handleAccountSelect(acc)}
-                >
-                  <div className="flex justify-between items-center">
-                    <div className="flex items-center space-x-3">
-                      <div className={`w-4 h-4 rounded-full border-2 ${
-                        selectedAccountId === acc.id 
-                          ? "border-blue-400 bg-blue-400" 
-                          : "border-gray-400"
-                      }`}></div>
-                      <div>
-                        <div className="font-medium text-white">{acc.email}</div>
-                        <div className="text-sm text-gray-500">
-                          {acc.imapHost}:{acc.imapPort}
-                        </div>
-                      </div>
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        confirmLogout(acc.id);
-                      }}
-                      className="px-3 py-1 bg-red-600 text-white rounded hover:bg-red-700 text-sm"
-                    >
-                      Logout
-                    </button>
-                  </div>
+          accounts.map((acc) => (
+            <div
+              key={acc.id}
+              onClick={() => handleAccountSelect(acc)}
+              className={`border p-3 rounded mb-2 cursor-pointer ${selectedAccountId === acc.id ? "bg-blue-900 border-blue-500" : "bg-black hover:bg-gray-700"}`}
+            >
+              <div className="flex justify-between items-center">
+                <div>
+                  <div>{acc.email}</div>
+                  <div className="text-sm text-gray-400">{acc.provider} · {acc.imapHost}:{acc.imapPort}</div>
                 </div>
-              ))}
+                <button onClick={(e) => { e.stopPropagation(); confirmLogout(acc.id); }}
+                        className="px-3 py-1 bg-red-600 rounded text-sm">Logout</button>
+              </div>
             </div>
-          </div>
+          ))
         )}
       </div>
 
+      {/* Add new account */}
+      <h3 className="mb-2">Add New Account</h3>
+      <form onSubmit={addAccount} className="space-y-3 bg-gray-700 p-4 rounded">
+        {/* Provider */}
+        <div>
+          <label>Provider</label>
+          <select value={form.provider} onChange={handleProviderChange} className="w-full p-2 border rounded text-black">
+            <option value="gmail">Gmail</option>
+            <option value="gsuite">G Suite</option>
+            <option value="outlook">Outlook (Office 365)</option>
+            <option value="zoho">Zoho</option>
+            <option value="rediff">Rediff</option>
+            <option value="amazon">Amazon WorkMail</option>
+            <option value="yahoo">Yahoo</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+
+        {/* Auth type */}
+        <div>
+          <label>Authentication</label>
+          <select value={form.authType} onChange={(e) => setForm({ ...form, authType: e.target.value })}
+                  className="w-full p-2 border rounded text-black">
+            <option value="password">Password</option>
+            <option value="oauth">OAuth2</option>
+          </select>
+        </div>
+
+        {/* Common fields */}
+        <input type="email" placeholder="Email Address" value={form.email} onChange={handleEmailChange}
+               className="w-full p-2 border rounded text-black" required />
+
+        {/* IMAP/SMTP */}
+        <input type="text" placeholder="IMAP Host" value={form.imapHost}
+               onChange={(e) => setForm({ ...form, imapHost: e.target.value })} className="w-full p-2 border rounded text-black" required />
+        <input type="number" placeholder="IMAP Port" value={form.imapPort}
+               onChange={(e) => setForm({ ...form, imapPort: parseInt(e.target.value) })} className="w-full p-2 border rounded text-black" required />
+        <input type="text" placeholder="IMAP Username" value={form.imapUser}
+               onChange={(e) => setForm({ ...form, imapUser: e.target.value })} className="w-full p-2 border rounded text-black" required />
+
+        <input type="text" placeholder="SMTP Host" value={form.smtpHost}
+               onChange={(e) => setForm({ ...form, smtpHost: e.target.value })} className="w-full p-2 border rounded text-black" required />
+        <input type="number" placeholder="SMTP Port" value={form.smtpPort}
+               onChange={(e) => setForm({ ...form, smtpPort: parseInt(e.target.value) })} className="w-full p-2 border rounded text-black" required />
+        <input type="text" placeholder="SMTP Username" value={form.smtpUser}
+               onChange={(e) => setForm({ ...form, smtpUser: e.target.value })} className="w-full p-2 border rounded text-black" required />
+
+        {/* Auth-specific fields */}
+        {form.authType === "password" ? (
+          <input type="password" placeholder="Password" value={form.encryptedPass}
+                 onChange={(e) => setForm({ ...form, encryptedPass: e.target.value })} className="w-full p-2 border rounded text-black" />
+        ) : (
+          <>
+            <input type="text" placeholder="OAuth Client ID" value={form.oauthClientId}
+                   onChange={(e) => setForm({ ...form, oauthClientId: e.target.value })} className="w-full p-2 border rounded text-black" required />
+            <input type="text" placeholder="OAuth Client Secret" value={form.oauthClientSecret}
+                   onChange={(e) => setForm({ ...form, oauthClientSecret: e.target.value })} className="w-full p-2 border rounded text-black" required />
+            {form.provider !== "outlook" && (
+              <input type="text" placeholder="OAuth Refresh Token" value={form.refreshToken}
+                     onChange={(e) => setForm({ ...form, refreshToken: e.target.value })} className="w-full p-2 border rounded text-black" required />
+            )}
+          </>
+        )}
+
+        <button type="submit" className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-full" disabled={loading}>
+          {loading ? "Adding..." : "Add Account"}
+        </button>
+      </form>
+
       {/* Logout Confirmation Modal */}
       {showLogoutConfirm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-gray-700 p-6 rounded-lg shadow-lg">
-            <h3 className="text-white text-lg font-bold mb-4">Confirm Logout</h3>
-            <p className="text-gray-300 mb-6">
-              Are you sure you want to logout this email account? This will remove the account and all its emails.
-            </p>
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-gray-700 p-6 rounded-lg">
+            <h3 className="text-lg font-bold mb-4">Confirm Logout</h3>
+            <p className="mb-6">Are you sure you want to logout this email account?</p>
             <div className="flex justify-end space-x-3">
-              <button
+              <button 
                 onClick={() => setShowLogoutConfirm(false)}
-                className="px-4 py-2 bg-gray-600 text-white rounded hover:bg-gray-500"
+                className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500"
               >
                 Cancel
               </button>
-              <button
+              <button 
                 onClick={logoutAccount}
-                className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-500"
+                className="px-4 py-2 bg-red-600 rounded hover:bg-red-500"
                 disabled={loading}
               >
                 {loading ? "Logging out..." : "Logout"}
@@ -236,61 +310,6 @@ export default function AccountManager({ onAccountSelected, onAccountAdded, curr
           </div>
         </div>
       )}
-
-      <h3 className="text-white mb-2">Add New Account</h3>
-      <form onSubmit={addAccount} className="space-y-3 bg-gray-700 p-4 rounded shadow">
-        <input
-          type="email"
-          placeholder="Email"
-          className="w-full p-2 border rounded text-black"
-          value={form.email}
-          onChange={(e) => setForm({ ...form, email: e.target.value })}
-          required
-        />
-        <input
-          type="text"
-          placeholder="IMAP Host"
-          className="w-full p-2 border rounded text-black"
-          value={form.imapHost}
-          onChange={(e) => setForm({ ...form, imapHost: e.target.value })}
-          required
-        />
-        <input
-          type="number"
-          placeholder="IMAP Port"
-          className="w-full p-2 border rounded text-black"
-          value={form.imapPort}
-          onChange={(e) =>
-            setForm({ ...form, imapPort: parseInt(e.target.value) })
-          }
-          required
-        />
-        <input
-          type="text"
-          placeholder="IMAP Username"
-          className="w-full p-2 border rounded text-black"
-          value={form.imapUser}
-          onChange={(e) => setForm({ ...form, imapUser: e.target.value })}
-          required
-        />
-        <input
-          type="password"
-          placeholder="Password"
-          className="w-full p-2 border rounded text-black"
-          value={form.encryptedPass}
-          onChange={(e) =>
-            setForm({ ...form, encryptedPass: e.target.value })
-          }
-          required
-        />
-        <button 
-          type="submit" 
-          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 w-full"
-          disabled={loading}
-        >
-          {loading ? "Adding Account..." : "Add Account"}
-        </button>
-      </form>
     </div>
   );
 }

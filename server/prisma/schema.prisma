@@ -211,43 +211,61 @@ model Deal {
   updatedAt DateTime @updatedAt
 }
 
-// prisma/schema.prisma
-
 model EmailAccount {
-  id            Int      @id @default(autoincrement())
-  userId        Int
-  email         String
-  imapHost      String
-  imapPort      Int
-  imapUser      String
-  encryptedPass String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  id       Int     @id @default(autoincrement())
+  userId   Int
+  email    String  @unique
+  provider String?
 
-  user   User    @relation(fields: [userId], references: [id])
+  imapHost String
+  imapPort Int
+  imapUser String
+
+  smtpHost      String
+  smtpPort      Int
+  smtpUser      String
+  encryptedPass String?
+
+  oauthClientId     String?
+  oauthClientSecret String?
+  refreshToken      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relation to User
+  user User @relation(fields: [userId], references: [id])
+
+  // Relation to Emails
   emails Email[]
 }
 
 model Email {
-  id        Int      @id @default(autoincrement())
+  id        Int @id @default(autoincrement())
   accountId Int
-  messageId String   @unique
-  threadId  String? // Add this for grouping emails in a conversation
-  inReplyTo String? // Add this to track which email this is replying to
-  from      String
-  to        String
-  subject   String
-  body      String
-  bodyHtml  String? // Add this to store HTML content separately
-  date      DateTime
-  folder    String
-  status    String
-  source    String
-  tags      String[]
-  isReply   Boolean  @default(false) // Add this to identify replies
+
+  messageId String  @unique
+  threadId  String?
+  inReplyTo String?
+
+  from     String
+  to       String
+  subject  String
+  body     String
+  bodyHtml String?
+
+  date   DateTime
+  folder String   @default("INBOX")
+  status String   @default("unread")
+  source String   @default("imap")
+  tags   String[] @default([])
+
+  isReply Boolean @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Relation to EmailAccount
   account EmailAccount @relation(fields: [accountId], references: [id])
 }
 
@@ -400,7 +418,6 @@ model MmsRecipient {
   mmsCampaignId Int
   mmsCampaign   MmsCampaign @relation(fields: [mmsCampaignId], references: [id])
 }
-
 
 model Payment {
   id                Int      @id @default(autoincrement())

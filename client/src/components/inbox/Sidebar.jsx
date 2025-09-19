@@ -1,28 +1,44 @@
 // frontend/src/components/Sidebar.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { api } from "../../api";
 
 export default function Sidebar({ conversations, onSelect, selected, refreshConversations }) {
     const [selectedForDelete, setSelectedForDelete] = useState([]);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [selectAll, setSelectAll] = useState(false);
+
+    // Reset selection when conversations change
+    useEffect(() => {
+        setSelectedForDelete([]);
+        setSelectAll(false);
+    }, [conversations]);
 
     // Toggle selection for a single conversation
     const toggleSelection = (conversation) => {
         setSelectedForDelete(prev => {
             if (prev.find(c => c.id === conversation.id)) {
+                // If deselecting, also update selectAll state if needed
+                if (selectAll) setSelectAll(false);
                 return prev.filter(c => c.id !== conversation.id);
             } else {
-                return [...prev, conversation];
+                // If selecting, check if all are now selected
+                const newSelection = [...prev, conversation];
+                if (newSelection.length === conversations.length) {
+                    setSelectAll(true);
+                }
+                return newSelection;
             }
         });
     };
 
     // Toggle select all
     const toggleSelectAll = () => {
-        if (selectedForDelete.length === conversations.length) {
+        if (selectAll) {
             setSelectedForDelete([]);
+            setSelectAll(false);
         } else {
             setSelectedForDelete([...conversations]);
+            setSelectAll(true);
         }
     };
 
@@ -34,15 +50,18 @@ export default function Sidebar({ conversations, onSelect, selected, refreshConv
             setIsDeleting(true);
             try {
                 // Delete each selected conversation
-                for (const conversation of selectedForDelete) {
-                    await api.delete(`/conversations/${conversation.id}`);
-                }
+                await Promise.all(
+                    selectedForDelete.map(conversation => 
+                        api.delete(`/conversations/${conversation.id}`)
+                    )
+                );
                 
                 // Refresh the conversation list
                 refreshConversations();
                 
                 // Clear selection
                 setSelectedForDelete([]);
+                setSelectAll(false);
                 
                 // If the currently selected conversation was deleted, clear it
                 if (selectedForDelete.find(c => c.id === selected?.id)) {
@@ -57,9 +76,25 @@ export default function Sidebar({ conversations, onSelect, selected, refreshConv
         }
     };
 
+    // Format date for display
+    const formatDate = (dateString) => {
+        const date = new Date(dateString);
+        const today = new Date();
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        
+        if (date.toDateString() === today.toDateString()) {
+            return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        } else if (date.toDateString() === yesterday.toDateString()) {
+            return 'Yesterday';
+        } else {
+            return date.toLocaleDateString([], { month: 'short', day: 'numeric' });
+        }
+    };
+
     return (
-        <div className="w-80 border-r bg-black flex flex-col">
-            <div className="p-4 font-bold flex justify-between items-center">
+        <div className="w-80 border-r border-gray-800 bg-black flex flex-col" style={{height: '96vh'}}>
+            <div className="p-4 font-bold flex justify-between items-center border-b border-gray-800">
                 <span>Shared Inbox</span>
                 {selectedForDelete.length > 0 && (
                     <div className="flex items-center space-x-2">
@@ -91,14 +126,12 @@ export default function Sidebar({ conversations, onSelect, selected, refreshConv
             <div className="px-4 py-2 border-b border-gray-800 flex items-center">
                 <input
                     type="checkbox"
-                    checked={selectedForDelete.length === conversations.length && conversations.length > 0}
+                    checked={selectAll}
                     onChange={toggleSelectAll}
-                    className="mr-2 h-4 w-4 text-blue-600 rounded"
+                    className="mr-2 h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
                 />
                 <span className="text-sm text-gray-400">
-                    {selectedForDelete.length === conversations.length && conversations.length > 0 
-                        ? "Deselect All" 
-                        : "Select All"}
+                    {selectAll ? "Deselect All" : "Select All"}
                 </span>
             </div>
             
@@ -106,7 +139,7 @@ export default function Sidebar({ conversations, onSelect, selected, refreshConv
                 {conversations.map((c) => (
                     <div 
                         key={c.id}
-                        className={`p-3 border-b cursor-pointer flex ${selected?.id === c.id ? "bg-gray-800" : "hover:bg-gray-800"}`}
+                        className={`p-3 border-b border-gray-800 cursor-pointer flex ${selected?.id === c.id ? "bg-gray-900" : "hover:bg-gray-900"}`}
                         onClick={() => onSelect(c)}
                     >
                         <input
@@ -114,14 +147,27 @@ export default function Sidebar({ conversations, onSelect, selected, refreshConv
                             checked={!!selectedForDelete.find(conv => conv.id === c.id)}
                             onClick={(e) => e.stopPropagation()}
                             onChange={() => toggleSelection(c)}
-                            className="mr-3 h-4 w-4 text-blue-600 rounded self-start mt-1"
+                            className="mr-3 h-4 w-4 text-blue-600 rounded focus:ring-blue-500 self-start mt-1"
                         />
                         <div className="flex-1 min-w-0">
-                            <div className="text-sm font-medium truncate">{c.subject}</div>
-                            <div className="text-xs text-gray-500 truncate">{c.snippet || c.lastMessage}</div>
-                            <div className="text-xs text-gray-500 mt-1">
-                                From: {c.from} • {new Date(c.date).toLocaleDateString()}
+                            <div className="flex justify-between items-start">
+                                <div className="text-sm font-medium truncate">{c.subject}</div>
+                                <div className="text-xs text-gray-500 whitespace-nowrap ml-2">
+                                    {c.date && formatDate(c.date)}
+                                </div>
                             </div>
+                            <div className="text-xs text-gray-500 truncate mt-1">
+                                From: {c.fromName || c.from || "Unknown"}
+                            </div>
+                            <div className="text-xs text-gray-400 truncate mt-1">
+                                {c.snippet || c.lastMessage || "No preview"}
+                            </div>
+                            {c.unread && (
+                                <div className="mt-1">
+                                    <span className="inline-block h-2 w-2 rounded-full bg-blue-500"></span>
+                                    <span className="text-xs text-blue-400 ml-1">Unread</span>
+                                </div>
+                            )}
                         </div>
                     </div>
                 ))}
