@@ -1,31 +1,60 @@
-// server/routes/accounts.js
+// routes/emailAccounts.js
 import express from "express";
 import { PrismaClient } from "@prisma/client";
-import { syncEmailsForAccount, runSync } from "../services/imapSync.js"; // Import the sync functions
+import { runSync, sendEmailWithSendGrid, syncEmailsForAccount } from "../services/imapSync.js";
 
 const prisma = new PrismaClient();
 const router = express.Router();
 
-// Add a new email account
-router.post("/", async (req, res) => {
-  const { userId, email, imapHost, imapPort, imapUser, encryptedPass } = req.body;
+// Utility: safe async runner
+const safeRun = (fn) => fn.catch((err) => console.error("❌ Async error:", err.message));
 
-  if (!userId || !email || !imapHost || !imapPort || !imapUser || !encryptedPass) {
-    return res.status(400).json({ error: "All fields are required" });
+/**
+ * Add a new email account
+ */
+router.post("/", async (req, res) => {
+  const {
+    userId,
+    email,
+    provider,
+    imapHost,
+    imapPort,
+    imapUser,
+    smtpHost,
+    smtpPort,
+    smtpUser,
+    encryptedPass,
+    oauthClientId,
+    oauthClientSecret,
+    refreshToken,
+  } = req.body;
+
+  if (!userId || !email || !provider || !imapHost || !imapPort || !imapUser || !smtpHost || !smtpPort || !smtpUser) {
+    return res.status(400).json({ error: "All connection fields are required" });
+  }
+
+  if (!encryptedPass && provider !== "outlook" && (!oauthClientId || !oauthClientSecret || !refreshToken)) {
+    return res.status(400).json({ error: "OAuth2 requires clientId, clientSecret and refreshToken" });
   }
 
   try {
-    // Create the account in the database
     const account = await prisma.emailAccount.create({
       data: {
         email,
+        provider,
         imapHost,
-        imapPort: parseInt(imapPort),
+        imapPort: parseInt(imapPort, 10),
         imapUser,
+        smtpHost,
+        smtpPort: parseInt(smtpPort, 10),
+        smtpUser,
         encryptedPass,
+        oauthClientId,
+        oauthClientSecret,
+        refreshToken,
         user: {
           connectOrCreate: {
-            where: { id: parseInt(userId) },
+            where: { id: parseInt(userId, 10) },
             create: {
               email: `user${userId}@example.com`,
               firstName: "Default",
@@ -37,28 +66,21 @@ router.post("/", async (req, res) => {
       },
     });
 
-    // Trigger email sync after account creation
-    syncEmailsForAccount(prisma, account).catch((err) => {
-      console.error("❌ Email sync failed:", err.message);
-    });
-
+    safeRun(syncEmailsForAccount(prisma, account));
     res.status(201).json(account);
   } catch (err) {
     console.error("❌ Error creating account:", err);
-    if (err.code === "P2003") {
-      return res.status(400).json({ error: "Invalid userId" });
-    }
+    if (err.code === "P2003") return res.status(400).json({ error: "Invalid userId" });
     res.status(500).json({ error: "Failed to create account" });
   }
 });
 
-// Get all email accounts
-router.get("/", async (req, res) => {
+/**
+ * Get all accounts
+ */
+router.get("/", async (_req, res) => {
   try {
-    const accounts = await prisma.emailAccount.findMany({
-      orderBy: { createdAt: "desc" },
-      include: { user: true },
-    });
+    const accounts = await prisma.emailAccount.findMany({ orderBy: { createdAt: "desc" }, include: { user: true } });
     res.json(accounts);
   } catch (err) {
     console.error("❌ Error fetching accounts:", err);
@@ -66,19 +88,15 @@ router.get("/", async (req, res) => {
   }
 });
 
-// Get emails for a specific account
+/**
+ * Get emails for an account
+ */
 router.get("/emails", async (req, res) => {
-  const { accountId } = req.query;
-  
-  if (!accountId) {
-    return res.status(400).json({ error: "Account ID is required" });
-  }
-  
+  const accountId = parseInt(req.query.accountId, 10);
+  if (!accountId) return res.status(400).json({ error: "Account ID is required" });
+
   try {
-    const emails = await prisma.email.findMany({
-      where: { accountId: parseInt(accountId) },
-      orderBy: { date: "desc" },
-    });
+    const emails = await prisma.email.findMany({ where: { accountId }, orderBy: { date: "desc" } });
     res.json(emails);
   } catch (err) {
     console.error("❌ Error fetching emails:", err);
@@ -86,24 +104,16 @@ router.get("/emails", async (req, res) => {
   }
 });
 
-// Trigger sync for a specific account
+/**
+ * Trigger sync for one account
+ */
 router.post("/sync/:id", async (req, res) => {
-  const accountId = parseInt(req.params.id);
-  
+  const accountId = parseInt(req.params.id, 10);
   try {
-    const account = await prisma.emailAccount.findUnique({
-      where: { id: accountId }
-    });
-    
-    if (!account) {
-      return res.status(404).json({ error: "Account not found" });
-    }
-    
-    // Trigger email sync for this account
-    syncEmailsForAccount(prisma, account).catch((err) => {
-      console.error("❌ Email sync failed:", err.message);
-    });
-    
+    const account = await prisma.emailAccount.findUnique({ where: { id: accountId } });
+    if (!account) return res.status(404).json({ error: "Account not found" });
+
+    safeRun(syncEmailsForAccount(prisma, account));
     res.status(200).json({ message: "Sync started" });
   } catch (err) {
     console.error("❌ Error triggering sync:", err);
@@ -111,14 +121,12 @@ router.post("/sync/:id", async (req, res) => {
   }
 });
 
-// Trigger sync for all accounts
-router.post("/sync", async (req, res) => {
+/**
+ * Trigger sync for all accounts
+ */
+router.post("/sync", async (_req, res) => {
   try {
-    // Trigger email sync for all accounts
-    runSync(prisma).catch((err) => {
-      console.error("❌ Email sync failed:", err.message);
-    });
-    
+    safeRun(runSync(prisma));
     res.status(200).json({ message: "Sync started for all accounts" });
   } catch (err) {
     console.error("❌ Error triggering sync:", err);
@@ -126,58 +134,64 @@ router.post("/sync", async (req, res) => {
   }
 });
 
-// Delete (logout) an account
-router.delete("/:id", async (req, res) => {
-  const accountId = parseInt(req.params.id);
+/**
+ * Send email via SendGrid
+ * POST body: { to, subject, text, html }
+ */
+router.post("/send", async (req, res) => {
+  const { to, subject, text, html } = req.body;
+  if (!to || !subject || (!text && !html)) return res.status(400).json({ error: "to, subject, text/html are required" });
 
   try {
-    // First, delete all emails associated with this account
-    await prisma.email.deleteMany({
-      where: { accountId: accountId },
-    });
-    
-    // Then delete the account
-    await prisma.emailAccount.delete({
-      where: { id: accountId },
-    });
-    
-    res.status(200).json({ message: "Account and associated emails deleted successfully" });
+    const sent = await sendEmailWithSendGrid({ to, subject, text, html });
+    res.status(sent ? 200 : 500).json({ message: sent ? "Email sent via SendGrid" : "Failed to send email" });
   } catch (err) {
-    console.error("❌ Error deleting account:", err);
-    res.status(500).json({ error: "Failed to delete account" });
+    console.error("❌ SendGrid error:", err);
+    res.status(500).json({ error: "Failed to send email via SendGrid" });
   }
 });
 
-// Update an account
+/**
+ * Update an account
+ */
 router.put("/:id", async (req, res) => {
-  const accountId = parseInt(req.params.id);
-  const { email, imapHost, imapPort, imapUser, encryptedPass } = req.body;
+  const accountId = parseInt(req.params.id, 10);
+  const { email, provider, imapHost, imapPort, imapUser, smtpHost, smtpPort, smtpUser, encryptedPass, oauthClientId, oauthClientSecret, refreshToken } = req.body;
 
-  if (!email || !imapHost || !imapPort || !imapUser || !encryptedPass) {
-    return res.status(400).json({ error: "All fields are required" });
+  if (!email || !provider || !imapHost || !imapPort || !imapUser || !smtpHost || !smtpPort || !smtpUser) {
+    return res.status(400).json({ error: "All connection fields are required" });
   }
 
   try {
     const updatedAccount = await prisma.emailAccount.update({
       where: { id: accountId },
       data: {
-        email,
-        imapHost,
-        imapPort: parseInt(imapPort),
-        imapUser,
-        encryptedPass,
+        email, provider, imapHost, imapPort: parseInt(imapPort, 10), imapUser,
+        smtpHost, smtpPort: parseInt(smtpPort, 10), smtpUser, encryptedPass,
+        oauthClientId, oauthClientSecret, refreshToken
       },
     });
 
-    // Trigger email sync after account update
-    syncEmailsForAccount(prisma, updatedAccount).catch((err) => {
-      console.error("❌ Email sync failed:", err.message);
-    });
-
+    safeRun(syncEmailsForAccount(prisma, updatedAccount));
     res.status(200).json(updatedAccount);
   } catch (err) {
     console.error("❌ Error updating account:", err);
     res.status(500).json({ error: "Failed to update account" });
+  }
+});
+
+/**
+ * Delete an account
+ */
+router.delete("/:id", async (req, res) => {
+  const accountId = parseInt(req.params.id, 10);
+  try {
+    await prisma.email.deleteMany({ where: { accountId } });
+    await prisma.emailAccount.delete({ where: { id: accountId } });
+    res.status(200).json({ message: "Account and emails deleted" });
+  } catch (err) {
+    console.error("❌ Error deleting account:", err);
+    res.status(500).json({ error: "Failed to delete account" });
   }
 });
 
