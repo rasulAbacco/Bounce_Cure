@@ -1,6 +1,10 @@
+// client/src/pages/Campaign/pages/SendCampaign.jsx
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { CheckCircle,ChevronDown,ChevronUp,Send,Users,Settings,FileText,Palette,Check,} from "lucide-react";
+import { 
+  CheckCircle, ChevronDown, ChevronUp, Send, Users, Settings, 
+  FileText, Palette, Check, Clock, Calendar
+} from "lucide-react";
 
 const steps = [
   {
@@ -28,12 +32,19 @@ const steps = [
     icon: Palette,
   },
   {
+    id: "schedule",
+    title: "Schedule",
+    description: "Schedule your campaign",
+    icon: Clock,
+  },
+  {
     id: "confirm",
     title: "Confirm",
     description: "Review and send",
     icon: Check,
   },
 ];
+
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -548,9 +559,9 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
         <div
           style={{
             position: "relative",
-            width: "100%",       // ✅ full width
-            maxWidth: "900px",   // ✅ template max width
-            minHeight: "600px",  // ✅ keeps height
+            width: "100%",
+            maxWidth: "900px",
+            minHeight: "600px",
             margin: "0 auto",
             backgroundColor: "#ffffff",
           }}
@@ -562,7 +573,6 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
       )}
     </div>
   );
-
 }
 
 export default function CampaignBuilder() {
@@ -570,16 +580,26 @@ export default function CampaignBuilder() {
   const navigate = useNavigate();
 
   const [expanded, setExpanded] = useState("setup"); // default open step
-  const [completedSteps, setCompletedSteps] = useState(["setup"]);
-  const [formData, setFormData] = useState({
-    recipients: "",
-    fromName: "Bounce Cure",
-    fromEmail: "keithburtb2bleads@gmail.com",
-    subject: "",
-    sendTime: "",
-    template: "basic",
-    designContent: "",
-  });
+  const [completedSteps, setCompletedSteps] = useState([]); // Initially no steps completed
+
+const [formData, setFormData] = useState({
+  recipients: "",
+  fromEmail: "", // must be verified in SendGrid
+  fromName: "", // Added fromName field
+  subject: "",
+  sendTime: "",
+  template: "basic",
+  designContent: "",
+  scheduleType: "immediate", 
+  scheduledDate: "",
+  scheduledTime: "",
+  timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+  recurringFrequency: "daily",
+  recurringDays: [],
+  recurringEndDate: "",
+});
+
+
   const [isSending, setIsSending] = useState(false);
   const [sendStatus, setSendStatus] = useState(null);
   const [contacts, setContacts] = useState([]); // Store contacts
@@ -637,6 +657,7 @@ export default function CampaignBuilder() {
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
+  
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -658,112 +679,188 @@ export default function CampaignBuilder() {
     markComplete("template");
   };
 
-  const handleSendCampaign = async () => {
-    setIsSending(true);
-    try {
-      // Fetch the latest contacts to ensure we have the most up-to-date list
-      const contactsResponse = await fetch(
-        "http://localhost:5000/api/campaigncontacts"
+  const handleRecurringDaysChange = (day) => {
+    const days = formData.recurringDays || [];
+    if (days.includes(day)) {
+      setFormData({
+        ...formData,
+        recurringDays: days.filter(d => d !== day)
+      });
+    } else {
+      setFormData({
+        ...formData,
+        recurringDays: [...days, day]
+      });
+    }
+  };
+
+const handleSendCampaign = async () => {
+  setIsSending(true);
+  try {
+    // Fetch latest contacts
+    const contactsResponse = await fetch("http://localhost:5000/api/campaigncontacts");
+    if (!contactsResponse.ok) throw new Error("Failed to fetch contacts");
+    const contactsData = await contactsResponse.json();
+
+    // Build recipients list
+    let recipientsList = [];
+    if (formData.recipients === "all-subscribers") {
+      recipientsList = contactsData;
+    } else if (formData.recipients === "new-customers") {
+      recipientsList = contactsData.filter(c => c.type === "new-customer");
+    } else if (formData.recipients === "vip-clients") {
+      recipientsList = contactsData.filter(c => c.type === "vip-client");
+    } else if (formData.recipients === "manual") {
+      recipientsList = (formData.manualEmails || "")
+        .split(/[\n,]+/)
+        .map(email => ({ email: email.trim() }))
+        .filter(c => c.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)); // Validate emails
+    } else if (formData.recipients === "file") {
+      recipientsList = (formData.bulkFileEmails || [])
+        .map(email => ({ email }))
+        .filter(c => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)); // Validate emails
+    }
+
+    // Check for spam trigger words in subject
+    const spamTriggers = [
+      'free', 'urgent', 'act now', 'limited time', 'click here', 'make money', 
+      'guaranteed', 'no cost', 'risk free', 'winner', 'congratulations'
+    ];
+    const subjectLower = formData.subject.toLowerCase();
+    const hasSpamTriggers = spamTriggers.some(trigger => subjectLower.includes(trigger));
+    
+    if (hasSpamTriggers) {
+      const confirmation = window.confirm(
+        "Your subject line contains words that might trigger spam filters. This could affect delivery rates. Do you want to continue?"
       );
-      if (!contactsResponse.ok) {
-        throw new Error("Failed to fetch contacts");
-      }
-      const contactsData = await contactsResponse.json();
-
-      // Filter contacts based on selected recipients
-      let recipientsList = [];
-
-      if (formData.recipients === "all-subscribers") {
-        recipientsList = contactsData;
-      } else if (formData.recipients === "new-customers") {
-        recipientsList = contactsData.filter(
-          (contact) => contact.type === "new-customer"
-        );
-      } else if (formData.recipients === "vip-clients") {
-        recipientsList = contactsData.filter(
-          (contact) => contact.type === "vip-client"
-        );
-      } else if (formData.recipients === "manual") {
-        recipientsList = formData.manualEmails
-          .split(/[\n,]+/)
-          .map((email) => ({ email: email.trim() }))
-          .filter((c) => c.email);
-      } else if (formData.recipients === "file") {
-        recipientsList = formData.bulkFileEmails.map((email) => ({ email }));
-      }
-
-      // ✅ Limit to 600
-      if (recipientsList.length > 600) {
-        recipientsList = recipientsList.slice(0, 600);
-        setSendStatus({
-          success: false,
-          message: `⚠️ Only the first 600 emails will be sent. You selected more than 600.`,
-        });
-      }
-
-      if (recipientsList.length === 0) {
-        setSendStatus({
-          success: false,
-          message: "No contacts found for the selected audience.",
-        });
+      if (!confirmation) {
         setIsSending(false);
         return;
       }
+    }
 
-      // Prepare email data
-      // const emailData = {
-      //   recipients: recipientsList,
-      //   fromName: formData.fromName,
-      //   fromEmail: formData.fromEmail,
-      //   subject: formData.subject,
-      //   canvasData: canvasPages[0].elements, // Send the canvas elements
-      // };
-      // Prepare email data
-      const emailData = {
-        recipients: recipientsList,
-        fromName: formData.fromName,
-        fromEmail: formData.fromEmail,
-        replyTo: formData.fromEmail,   // ✅ Ensure replies go to this email
-        subject: formData.subject,
-        canvasData: canvasPages[0].elements, // ✅ this is where template content is included
-      };
-
-      
-      // Backend API call to send emails
-      const response = await fetch("http://localhost:5000/api/campaigns/send", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(emailData),
+    // Limit to 1000 recipients for better deliverability
+    if (recipientsList.length > 1000) {
+      recipientsList = recipientsList.slice(0, 1000);
+      setSendStatus({
+        success: false,
+        message: "⚠️ Limited to 1000 emails for better deliverability. Consider sending to smaller, more engaged audiences.",
       });
+    }
+
+    if (recipientsList.length === 0) {
+      setSendStatus({ success: false, message: "No valid email addresses found for the selected audience." });
+      setIsSending(false);
+      return;
+    }
+
+    // Build payload for backend
+    const payload = {
+      campaignName: formData.subject,
+      subject: formData.subject,
+      fromEmail: formData.fromEmail,
+      fromName: formData.fromName,
+      recipients: recipientsList,
+      canvasData: canvasPages[0].elements,
+      scheduleType: formData.scheduleType,
+      scheduledDate: formData.scheduledDate,
+      scheduledTime: formData.scheduledTime,
+      timezone: formData.timezone,
+      recurringFrequency: formData.recurringFrequency,
+      recurringDays: formData.recurringDays,
+      recurringEndDate: formData.recurringEndDate || null,
+    };
+
+    // Determine which API endpoint to use based on schedule type
+    const url = formData.scheduleType === 'immediate' 
+      ? "http://localhost:5000/api/campaigns/send"
+      : "http://localhost:5000/api/automation/send";
+
+    // Send request
+    const response = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+
+    // Ensure JSON response
+    const contentType = response.headers.get("content-type");
+    if (!contentType || !contentType.includes("application/json")) {
+      const errorText = await response.text();
+      throw new Error(`Server returned non-JSON response: ${errorText.substring(0, 100)}...`);
+    }
 
     const data = await response.json();
+
     if (response.ok) {
+      // Enhanced success message with deliverability info
+      let successMessage = data.message;
+      
+      if (data.results) {
+        const successRate = (data.results.success.length / recipientsList.length * 100).toFixed(1);
+        successMessage += ` (${successRate}% delivery rate)`;
+      }
+
       setSendStatus({
         success: true,
-        message: data.message,
+        message: successMessage,
+        results: formData.scheduleType === 'immediate' ? (data.results || null) : null,
+        deliverabilityTips: data.deliverabilityTips || null,
       });
 
-      // ✅ Redirect to Inbox after successful send
-      navigate("/analytics", { state: { fromEmail: formData.fromEmail } });
-
+      // Navigate based on schedule type
+      if (formData.scheduleType === 'immediate') {
+        navigate("/analytics", { state: { fromEmail: formData.fromEmail } });
+      } else {
+        navigate("/automation");
+      }
     } else {
-      setSendStatus({
-        success: false,
-        message: data.error || "Failed to send campaign",
-      });
+      // Check if it's a sender verification error
+      if (data.senderVerificationRequired) {
+        setSendStatus({
+          success: false,
+          message: `${data.error} Please verify this email address in SendGrid and set up domain authentication for better delivery.`,
+          senderVerificationRequired: true,
+          deliverabilityTips: data.deliverabilityTips || [
+            "Verify your sender email in SendGrid",
+            "Set up SPF, DKIM, and DMARC records",
+            "Use a professional domain email",
+            "Avoid spam trigger words",
+            "Send to engaged subscribers only"
+          ]
+        });
+      } else {
+        setSendStatus({
+          success: false,
+          message: data.error || "Failed to send campaign",
+          results: data.results || null,
+          deliverabilityTips: data.deliverabilityTips || null,
+        });
+      }
     }
+  } catch (error) {
+    console.error("Error sending campaign:", error);
+    setSendStatus({
+      success: false,
+      message: `Error: ${error.message || "Network error. Please try again."}`,
+    });
+  } finally {
+    setIsSending(false);
+  }
+};
 
-    } catch (error) {
-      console.error("Error sending campaign:", error);
-      setSendStatus({
-        success: false,
-        message: "Network error. Please try again.",
-      });
-    } finally {
-      setIsSending(false);
-    }
+
+
+  // Get minimum date for scheduling (current date + 5 minutes)
+  const getMinDateTime = () => {
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 5);
+    return now.toISOString().slice(0, 16);
+  };
+
+  const getMinDate = () => {
+    const today = new Date();
+    return today.toISOString().slice(0, 10);
   };
 
   return (
@@ -773,28 +870,46 @@ export default function CampaignBuilder() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-white">Send Campaign</h1>
           <div className="flex items-center space-x-4">
-            <button className="px-4 py-2 text-gray-300 hover:bg-gray-900 rounded-md">
-              Save as Draft
+            <button
+              onClick={() => navigate("/editor")}
+              className="px-4 py-2 text-gray-300 hover:bg-gray-900 rounded-md"
+            >
+              Canva Page
             </button>
+
+            <button
+              onClick={() => navigate("/all-templates")}
+              className="px-4 py-2 text-gray-300 hover:bg-gray-900 rounded-md"
+            >
+              Choose Templates
+            </button>
+            
             <button
               onClick={handleSendCampaign}
               disabled={
                 !completedSteps.includes("recipients") ||
                 !completedSteps.includes("setup") ||
                 !completedSteps.includes("template") ||
+                !completedSteps.includes("schedule") ||
                 isSending
               }
               className={`flex items-center gap-2 px-4 py-2 rounded-md text-white ${
                 !completedSteps.includes("recipients") ||
                 !completedSteps.includes("setup") ||
                 !completedSteps.includes("template") ||
+                !completedSteps.includes("schedule") ||
                 isSending
                   ? "bg-gray-800 cursor-not-allowed"
                   : "bg-[#c2831f] hover:bg-[#d09025]"
               }`}
             >
-              <Send size={16} />
-              {isSending ? "Sending..." : "Send Campaign"}
+              {formData.scheduleType === 'immediate' ? <Send size={16} /> : <Calendar size={16} />}
+              {isSending 
+                ? "Processing..." 
+                : formData.scheduleType === 'immediate' 
+                  ? "Send Now" 
+                  : "Schedule Campaign"
+              }
             </button>
           </div>
         </div>
@@ -966,20 +1081,20 @@ export default function CampaignBuilder() {
                               </div>
                             )}
 
-                         {/* Warnings for 600 limit */}
+                            {/* Warnings for 600 limit */}
                             {formData.recipients === "manual" &&
                             ((formData.manualEmails || "")
                                 .split(/[\n,]+/)
-                                .filter((e) => e.trim()).length > 600) && (
+                                .filter((e) => e.trim()).length > 6000) && (
                                 <p className="text-yellow-400 mt-2">
-                                ⚠️ You pasted more than 600 emails. Only the first 600 will be used.
+                                ⚠️ You pasted more than 6000 emails. Only the first 6000 will be used.
                                 </p>
                             )}
 
                             {formData.recipients === "file" &&
-                            ((formData.bulkFileEmails || []).length > 600) && (
+                            ((formData.bulkFileEmails || []).length > 6000) && (
                                 <p className="text-yellow-400 mt-2">
-                                ⚠️ Your file contains more than 600 emails. Only the first 600 will be used.
+                                ⚠️ Your file contains more than 6000 emails. Only the first 6000 will be used.
                                 </p>
                             )}
 
@@ -1004,17 +1119,6 @@ export default function CampaignBuilder() {
                                     ).length
                                   }{" "}
                                   new customers.
-                                </p>
-                              )}
-                              {formData.recipients === "vip-clients" && (
-                                <p>
-                                  This will send to{" "}
-                                  {
-                                    contacts.filter(
-                                      (c) => c.type === "vip-client"
-                                    ).length
-                                  }{" "}
-                                  VIP clients.
                                 </p>
                               )}
                               {!formData.recipients && (
@@ -1046,11 +1150,14 @@ export default function CampaignBuilder() {
                             </label>
                             <input
                               name="fromName"
+                              type="text"
                               className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
                               value={formData.fromName}
                               onChange={handleChange}
+                              placeholder="Enter sender name"
                             />
                           </div>
+                          
                           <div>
                             <label className="block text-sm font-medium text-gray-300 mb-1">
                               From email address
@@ -1061,8 +1168,10 @@ export default function CampaignBuilder() {
                               className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
                               value={formData.fromEmail}
                               onChange={handleChange}
+                              placeholder="Enter a verified sender email"
                             />
                           </div>
+
                           <div>
                             <label className="block text-sm font-medium text-gray-300 mb-1">
                               Email subject
@@ -1072,16 +1181,24 @@ export default function CampaignBuilder() {
                               className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
                               value={formData.subject}
                               onChange={handleChange}
+                              placeholder="Enter subject"
                             />
                           </div>
+                          
                           <button
                             onClick={() => markComplete(id)}
-                            className="mt-2 bg-[#c2831f] text-white px-4 py-2 rounded-md hover:bg-[#d09025]"
+                            disabled={!formData.fromName || !formData.fromEmail || !formData.subject}
+                            className={`mt-2 px-4 py-2 rounded-md ${
+                              !formData.fromName || !formData.fromEmail || !formData.subject
+                                ? "bg-gray-700 cursor-not-allowed"
+                                : "bg-[#c2831f] hover:bg-[#d09025] text-white"
+                            }`}
                           >
                             Save and Continue
                           </button>
                         </div>
                       )}
+
                       {id === "template" && (
                         <div className="space-y-4">
                           <label className="block text-sm font-medium text-gray-300 mb-3">
@@ -1135,13 +1252,230 @@ export default function CampaignBuilder() {
                           </div>
                         </div>
                       )}
-                      {id === "confirm" && (
+                      {id === "schedule" && (
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-3">
+                              When to send
+                            </label>
+                            <div className="space-y-3">
+                              <label className="flex items-center">
+                                <input
+                                  type="radio"
+                                  name="scheduleType"
+                                  value="immediate"
+                                  checked={formData.scheduleType === "immediate"}
+                                  onChange={handleChange}
+                                  className="mr-3 accent-[#c2831f]"
+                                />
+                                <div>
+                                  <div className="font-medium text-white">Send Immediately</div>
+                                  <div className="text-sm text-gray-400">Send as soon as you confirm</div>
+                                </div>
+                              </label>
+
+                              <label className="flex items-center">
+                                <input
+                                  type="radio"
+                                  name="scheduleType"
+                                  value="scheduled"
+                                  checked={formData.scheduleType === "scheduled"}
+                                  onChange={handleChange}
+                                  className="mr-3 accent-[#c2831f]"
+                                />
+                                <div>
+                                  <div className="font-medium text-white">Schedule for Later</div>
+                                  <div className="text-sm text-gray-400">Pick a specific date and time</div>
+                                </div>
+                              </label>
+
+                              <label className="flex items-center">
+                                <input
+                                  type="radio"
+                                  name="scheduleType"
+                                  value="recurring"
+                                  checked={formData.scheduleType === "recurring"}
+                                  onChange={handleChange}
+                                  className="mr-3 accent-[#c2831f]"
+                                />
+                                <div>
+                                  <div className="font-medium text-white">Recurring Campaign</div>
+                                  <div className="text-sm text-gray-400">Send automatically on a schedule</div>
+                                </div>
+                              </label>
+                            </div>
+                          </div>
+
+                          {/* Scheduled Campaign Options */}
+                          {formData.scheduleType === "scheduled" && (
+                            <div className="mt-4 p-4 bg-gray-800 rounded-lg space-y-4">
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                                    Date
+                                  </label>
+                                  <input
+                                    type="date"
+                                    name="scheduledDate"
+                                    min={getMinDate()}
+                                    className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white"
+                                    value={formData.scheduledDate}
+                                    onChange={handleChange}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                                    Time
+                                  </label>
+                                  <input
+                                    type="time"
+                                    name="scheduledTime"
+                                    className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white"
+                                    value={formData.scheduledTime}
+                                    onChange={handleChange}
+                                  />
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-1">
+                                  Timezone
+                                </label>
+                                <select
+                                  name="timezone"
+                                  className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white"
+                                  value={formData.timezone}
+                                  onChange={handleChange}
+                                >
+                                  <option value="America/New_York">Eastern Time</option>
+                                  <option value="America/Chicago">Central Time</option>
+                                  <option value="America/Denver">Mountain Time</option>
+                                  <option value="America/Los_Angeles">Pacific Time</option>
+                                  <option value="Europe/London">London</option>
+                                  <option value="Europe/Paris">Paris</option>
+                                  <option value="Asia/Tokyo">Tokyo</option>
+                                  <option value="Asia/Kolkata">India</option>
+                                </select>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Recurring Campaign Options */}
+                          {formData.scheduleType === "recurring" && (
+                            <div className="mt-4 p-4 bg-gray-800 rounded-lg space-y-4">
+                              <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-1">
+                                  Frequency
+                                </label>
+                                <select
+                                  name="recurringFrequency"
+                                  className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white"
+                                  value={formData.recurringFrequency}
+                                  onChange={handleChange}
+                                >
+                                  <option value="daily">Daily</option>
+                                  <option value="weekly">Weekly</option>
+                                  <option value="monthly">Monthly</option>
+                                </select>
+                              </div>
+
+                              {formData.recurringFrequency === "weekly" && (
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                                    Days of the week
+                                  </label>
+                                  <div className="flex flex-wrap gap-2">
+                                    {["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"].map(day => (
+                                      <label key={day} className="flex items-center">
+                                        <input
+                                          type="checkbox"
+                                          checked={formData.recurringDays.includes(day)}
+                                          onChange={() => handleRecurringDaysChange(day)}
+                                          className="mr-2 accent-[#c2831f]"
+                                        />
+                                        <span className="text-sm text-white">{day}</span>
+                                      </label>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                                    Start Date
+                                  </label>
+                                  <input
+                                    type="date"
+                                    name="scheduledDate"
+                                    min={getMinDate()}
+                                    className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white"
+                                    value={formData.scheduledDate}
+                                    onChange={handleChange}
+                                  />
+                                </div>
+                                <div>
+                                  <label className="block text-sm font-medium text-gray-300 mb-1">
+                                    End Date (optional)
+                                  </label>
+                                  <input
+                                    type="date"
+                                    name="recurringEndDate"
+                                    min={formData.scheduledDate || getMinDate()}
+                                    className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white"
+                                    value={formData.recurringEndDate}
+                                    onChange={handleChange}
+                                  />
+                                </div>
+                              </div>
+
+                              <div>
+                                <label className="block text-sm font-medium text-gray-300 mb-1">
+                                  Time
+                                </label>
+                                <input
+                                  type="time"
+                                  name="scheduledTime"
+                                  className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white"
+                                  value={formData.scheduledTime}
+                                  onChange={handleChange}
+                                />
+                              </div>
+                            </div>
+                          )}
+
+                          <button
+                            onClick={() => markComplete(id)}
+                            disabled={
+                              (formData.scheduleType === "scheduled" && (!formData.scheduledDate || !formData.scheduledTime)) ||
+                              (formData.scheduleType === "recurring" && (!formData.scheduledDate || !formData.scheduledTime || (formData.recurringFrequency === "weekly" && formData.recurringDays.length === 0)))
+                            }
+                            className={`mt-2 px-4 py-2 rounded-md ${
+                              (formData.scheduleType === "scheduled" && (!formData.scheduledDate || !formData.scheduledTime)) ||
+                              (formData.scheduleType === "recurring" && (!formData.scheduledDate || !formData.scheduledTime || (formData.recurringFrequency === "weekly" && formData.recurringDays.length === 0)))
+                                ? "bg-gray-700 cursor-not-allowed"
+                                : "bg-[#c2831f] hover:bg-[#d09025] text-white"
+                            }`}
+                          >
+                            Save and Continue
+                          </button>
+                        </div>
+                      )}
+                     {id === "confirm" && (
                         <div className="space-y-6">
                           <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                             <h3 className="font-medium text-white mb-3">
                               Campaign Summary
                             </h3>
                             <div className="space-y-2 text-sm">
+                              <div className="flex">
+                                <span className="w-32 text-gray-400">
+                                  Campaign:
+                                </span>
+                                <span className="font-medium text-white">
+                                  {formData.subject || "Untitled Campaign"}
+                                </span>
+                              </div>
+
                               <div className="flex">
                                 <span className="w-32 text-gray-400">
                                   Recipients:
@@ -1151,28 +1485,25 @@ export default function CampaignBuilder() {
                                     `All Subscribers (${contacts.length} contacts)`}
                                   {formData.recipients === "new-customers" &&
                                     `New Customers (${
-                                      contacts.filter(
-                                        (c) => c.type === "new-customer"
-                                      ).length
+                                      contacts.filter((c) => c.type === "new-customer").length
                                     } contacts)`}
                                   {formData.recipients === "vip-clients" &&
                                     `VIP Clients (${
-                                      contacts.filter(
-                                        (c) => c.type === "vip-client"
-                                      ).length
+                                      contacts.filter((c) => c.type === "vip-client").length
                                     } contacts)`}
                                   {!formData.recipients && "Not selected"}
                                 </span>
                               </div>
+
                               <div className="flex">
                                 <span className="w-32 text-gray-400">
                                   From:
                                 </span>
                                 <span className="font-medium text-white">
-                                  {formData.fromName} &lt;{formData.fromEmail}
-                                  &gt;
+                                  {formData.fromName} &lt;{formData.fromEmail}&gt;
                                 </span>
                               </div>
+
                               <div className="flex">
                                 <span className="w-32 text-gray-400">
                                   Subject:
@@ -1181,6 +1512,7 @@ export default function CampaignBuilder() {
                                   {formData.subject || "Not set"}
                                 </span>
                               </div>
+
                               <div className="flex">
                                 <span className="w-32 text-gray-400">
                                   Template:
@@ -1189,21 +1521,45 @@ export default function CampaignBuilder() {
                                   {formData.template}
                                 </span>
                               </div>
+
+                              <div className="flex">
+                                <span className="w-32 text-gray-400">
+                                  Schedule:
+                                </span>
+                                <span className="font-medium text-white">
+                                  {formData.scheduleType === "immediate" && "Send Immediately"}
+                                  {formData.scheduleType === "scheduled" &&
+                                    `${formData.scheduledDate} at ${formData.scheduledTime}`}
+                                  {formData.scheduleType === "recurring" &&
+                                    `${formData.recurringFrequency} ${
+                                      formData.recurringFrequency === "weekly"
+                                        ? `(${formData.recurringDays.join(", ")})`
+                                        : ""
+                                    } starting ${formData.scheduledDate}`}
+                                </span>
+                              </div>
                             </div>
                           </div>
-                          {sendStatus && (
-                            <div
-                              className={`p-4 rounded-md ${
-                                sendStatus.success
-                                  ? "bg-[#c2831f]/20 text-[#c2831f]"
-                                  : "bg-red-900/30 text-red-400"
-                              }`}
-                            >
-                              {sendStatus.message}
-                            </div>
-                          )}
+
+                             {sendStatus && (
+                              <div className={`p-4 rounded-md space-y-2 ${sendStatus.success ? "bg-[#c2831f]/20 text-[#c2831f]" : "bg-red-900/30 text-red-400"}`}>
+                                <div className="font-medium">{sendStatus.message}</div>
+                                
+                                {sendStatus.deliverabilityTips && (
+                                  <div className="text-sm mt-3">
+                                    <div className="font-medium mb-2">💡 To improve inbox delivery:</div>
+                                    <ul className="list-disc list-inside space-y-1">
+                                      {sendStatus.deliverabilityTips.map((tip, i) => (
+                                        <li key={i}>{tip}</li>
+                                      ))}
+                                    </ul>
+                                  </div>
+                                )}
+                              </div>
+                            )}
                         </div>
                       )}
+
                     </div>
                   )}
                 </div>
@@ -1235,19 +1591,26 @@ export default function CampaignBuilder() {
                 !completedSteps.includes("recipients") ||
                 !completedSteps.includes("setup") ||
                 !completedSteps.includes("template") ||
+                !completedSteps.includes("schedule") ||
                 isSending
               }
               className={`w-full flex items-center justify-center gap-2 py-3 rounded-md text-white ${
                 !completedSteps.includes("recipients") ||
                 !completedSteps.includes("setup") ||
                 !completedSteps.includes("template") ||
+                !completedSteps.includes("schedule") ||
                 isSending
                   ? "bg-gray-800 cursor-not-allowed"
                   : "bg-[#c2831f] hover:bg-[#d09025]"
               }`}
             >
-              <Send size={16} />
-              {isSending ? "Sending..." : "Send Campaign"}
+              {formData.scheduleType === 'immediate' ? <Send size={16} /> : <Calendar size={16} />}
+              {isSending 
+                ? "Processing..." 
+                : formData.scheduleType === 'immediate' 
+                  ? "Send Now" 
+                  : "Schedule Campaign"
+              }
             </button>
           </div>
         </div>

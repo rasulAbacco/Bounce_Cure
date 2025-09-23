@@ -1,330 +1,290 @@
+//campaigns.js
 import express from "express";
-import nodemailer from "nodemailer";
+import sgMail from "@sendgrid/mail";
 import { prisma } from "../prisma/prismaClient.js";
 
 const router = express.Router();
 
-// Create email transporter with TLS options
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: process.env.EMAIL_PORT,
-  secure: false, // true for 465, false for other ports
-  auth: {
-    user: process.env.EMAIL_USER,
-    pass: process.env.EMAIL_PASS,
-  },
-  tls: { rejectUnauthorized: false },
-});
+const validateEmailConfig = () => {
+  if (!process.env.SENDGRID_CMP_API_KEY) {
+    throw new Error("Missing SENDGRID_CMP_API_KEY in environment variables");
+  }
+  sgMail.setApiKey(process.env.SENDGRID_CMP_API_KEY);
+};
 
-// Send campaign + save to DB
+const generateHtmlFromCanvas = (canvasData, subject, fromName, fromEmail) => {
+  if (!canvasData || canvasData.length === 0) {
+    return `
+      <!DOCTYPE html>
+      <html>
+      <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>${subject}</title>
+      </head>
+      <body style="margin:0;padding:0;font-family:Arial,sans-serif;background-color:#ffffff;">
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+              <tr>
+                  <td align="center" style="padding:20px;">
+                      <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;">
+                          <tr>
+                              <td style="padding:20px;background-color:#ffffff;">
+                                  <h1 style="margin:0 0 20px 0;font-size:24px;color:#333333;">${subject}</h1>
+                                  <p style="margin:0 0 16px 0;font-size:16px;line-height:1.6;color:#333333;">
+                                      This email was sent from your campaign builder.
+                                  </p>
+                                  <hr style="border:none;height:1px;background-color:#eeeeee;margin:30px 0;">
+                                  <p style="margin:0;font-size:12px;color:#999999;text-align:center;">
+                                      Sent by ${fromName}<br>
+                                      <a href="mailto:${fromEmail}" style="color:#007bff;">${fromEmail}</a>
+                                  </p>
+                              </td>
+                          </tr>
+                      </table>
+                  </td>
+              </tr>
+          </table>
+      </body>
+      </html>
+    `;
+  }
+
+  let htmlContent = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>${subject}</title>
+    </head>
+    <body style="margin:0;padding:0;font-family:Arial,sans-serif;background-color:#f4f4f4;">
+        <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+                <td align="center" style="padding:20px;">
+                    <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background-color:#ffffff;">
+                        <tr>
+                            <td style="padding:30px;">
+  `;
+
+  canvasData.forEach((element) => {
+    switch (element.type) {
+      case "heading":
+        htmlContent += `<h1 style="margin:0 0 20px 0;font-size:${element.fontSize || 28}px;color:${element.color || '#333'};font-weight:bold;text-align:${element.textAlign || 'left'};">${element.content || 'Heading'}</h1>`;
+        break;
+        
+      case "subheading":
+        htmlContent += `<h2 style="margin:0 0 16px 0;font-size:${element.fontSize || 22}px;color:${element.color || '#333'};font-weight:600;text-align:${element.textAlign || 'left'};">${element.content || 'Subheading'}</h2>`;
+        break;
+        
+      case "paragraph":
+        const paragraphs = (element.content || 'Paragraph text').split('\n').filter(p => p.trim());
+        paragraphs.forEach(paragraph => {
+          htmlContent += `<p style="margin:0 0 16px 0;font-size:${element.fontSize || 16}px;color:${element.color || '#333'};line-height:1.6;text-align:${element.textAlign || 'left'};">${paragraph.trim()}</p>`;
+        });
+        break;
+
+      case "image":
+        htmlContent += `<div style="margin:20px 0;text-align:${element.textAlign || 'center'};"><img src="${element.src}" alt="${element.alt || 'Image'}" style="max-width:100%;height:auto;display:block;margin:0 auto;" /></div>`;
+        break;
+        
+      case "button":
+        htmlContent += `
+          <table cellpadding="0" cellspacing="0" border="0" style="margin:25px auto;">
+              <tr>
+                  <td style="background-color:${element.backgroundColor || '#007bff'};padding:12px 24px;border-radius:6px;">
+                      <a href="${element.link || '#'}" style="color:${element.color || '#ffffff'};text-decoration:none;font-weight:bold;font-size:${element.fontSize || 16}px;">${element.content || 'Click Me'}</a>
+                  </td>
+              </tr>
+          </table>`;
+        break;
+        
+      case "line":
+        htmlContent += `<hr style="border:none;height:${element.strokeWidth || 1}px;background-color:${element.strokeColor || '#dee2e6'};margin:25px 0;" />`;
+        break;
+    }
+  });
+
+  htmlContent += `
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style="padding:20px;background-color:#f8f9fa;border-top:1px solid #dee2e6;text-align:center;">
+                            <p style="margin:0 0 10px 0;font-size:12px;color:#6c757d;">
+                                This email was sent by <strong>${fromName}</strong>
+                            </p>
+                            <p style="margin:0;font-size:11px;color:#999999;">
+                                <a href="mailto:${fromEmail}" style="color:#007bff;">${fromEmail}</a>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+    </body>
+    </html>
+  `;
+
+  return htmlContent;
+};
+
+const generatePlainTextFromCanvas = (canvasData, subject, fromName, fromEmail) => {
+  let plainText = `${subject}\n\n`;
+  
+  if (!canvasData || canvasData.length === 0) {
+    plainText += "This email was sent from your campaign builder.\n\n";
+  } else {
+    canvasData.forEach((element) => {
+      switch (element.type) {
+        case "heading":
+        case "subheading":
+        case "paragraph":
+          plainText += `${element.content || ''}\n\n`;
+          break;
+        case "image":
+          plainText += `[Image: ${element.alt || 'Image'}]\n\n`;
+          break;
+        case "button":
+          plainText += `[${element.content || 'Button'}] - ${element.link || '#'}\n\n`;
+          break;
+        case "line":
+          plainText += "----------------------------------------\n\n";
+          break;
+      }
+    });
+  }
+  
+  plainText += `\n\nSent by ${fromName}\nEmail: ${fromEmail}`;
+  return plainText;
+};
+
 router.post("/send", async (req, res) => {
   try {
-    const { recipients, fromName, fromEmail, subject, canvasData } = req.body;
+    const { recipients, fromEmail, fromName, subject, canvasData } = req.body;
 
-    if (!recipients || recipients.length === 0) {
+    // Validate required fields
+    if (!recipients?.length) {
       return res.status(400).json({ error: "No recipients specified" });
     }
     if (!subject) {
       return res.status(400).json({ error: "Email subject is required" });
     }
- // --- Generate HTML from canvasData this is formart for receiving  mail---
+    if (!fromEmail) {
+      return res.status(400).json({ error: "Sender email is required" });
+    }
+    if (!fromName) {
+      return res.status(400).json({ error: "Sender name is required" });
+    }
 
-// Fixed HTML generation section for campaigns.js
+    validateEmailConfig();
 
-      let htmlContent = `
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-          <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>${subject}</title>
-          <style>
-              body {
-                  margin: 0;
-                  padding: 0;
-                  font-family: Arial, sans-serif;
-                  background-color: #f4f4f4;
-              }
-              .email-container {
-                  max-width: 800px;
-                  margin: 0 auto;
-                  background-color: #ffffff;
-                  padding: 0;
-              }
-              .email-content {
-                  position: relative;
-                  width: 100%;
-                  background-color: #ffffff;
-                  padding: 20px;
-                  box-sizing: border-box;
-              }
-              .email-footer {
-                  margin-top: 30px;
-                  padding: 20px;
-                  background-color: #f8f9fa;
-                  border-top: 1px solid #dee2e6;
-                  color: #6c757d;
-                  font-size: 14px;
-                  text-align: center;
-              }
-              /* Responsive styles */
-              @media only screen and (max-width: 600px) {
-                  .email-container {
-                      max-width: 100% !important;
-                      margin: 0 !important;
-                  }
-                  .email-content {
-                      padding: 15px !important;
-                  }
-              }
-          </style>
-      </head>
-      <body>
-          <div class="email-container">
-              <div class="email-content">
-      `;
+    const htmlContent = generateHtmlFromCanvas(canvasData, subject, fromName, fromEmail);
+    const plainTextContent = generatePlainTextFromCanvas(canvasData, subject, fromName, fromEmail);
 
-      if (canvasData && canvasData.length > 0) {
-          canvasData.forEach((element) => {
-             if (element.type === "heading") {
-                      htmlContent += `
-                      <table width="100%" border="0" cellspacing="0" cellpadding="0" align="center">
-                        <tr>
-                          <td align="${element.textAlign || 'center'}" style="padding: 20px;">
-                            <h1 style="
-                                font-size: ${element.fontSize || 24}px;
-                                color: ${element.color || '#000'};
-                                margin: 0;
-                                font-family: ${element.fontFamily || 'Arial, sans-serif'};
-                                line-height: 1.3;
-                                font-weight: bold;
-                            ">
-                              ${element.content || 'Heading'}
-                            </h1>
-                          </td>
-                        </tr>
-                      </table>`;
-                  } else if (element.type === "subheading") {
-                      htmlContent += `
-                      <table width="100%" border="0" cellspacing="0" cellpadding="0" align="center">
-                        <tr>
-                          <td align="${element.textAlign || 'center'}" style="padding: 15px;">
-                            <h2 style="
-                                font-size: ${element.fontSize || 20}px;
-                                color: ${element.color || '#333'};
-                                margin: 0;
-                                font-family: ${element.fontFamily || 'Arial, sans-serif'};
-                                line-height: 1.3;
-                                font-weight: 600;
-                            ">
-                              ${element.content || 'Subheading'}
-                            </h2>
-                          </td>
-                        </tr>
-                      </table>`;
-                  } else if (element.type === "paragraph") {
-                  // Split content by line breaks and create proper paragraphs
-                  const paragraphs = (element.content || 'Paragraph text').split('\n').filter(p => p.trim());
-                  paragraphs.forEach(paragraph => {
-                      htmlContent += `
-                      <p style="
-                          font-size: ${element.fontSize || 16}px; 
-                          color: ${element.color || '#333'}; 
-                          margin: 0 0 16px 0;
-                          line-height: 1.6;
-                          font-family: ${element.fontFamily || 'Arial, sans-serif'};
-                          font-weight: ${element.fontWeight || 'normal'};
-                          text-align: ${element.textAlign || 'left'};
-                      ">
-                          ${paragraph.trim()}
-                      </p>`;
-                  });
-              } else if (element.type === "blockquote") {
-                  htmlContent += `
-                  <blockquote style="
-                      font-size: ${element.fontSize || 16}px; 
-                      color: ${element.color || '#555'}; 
-                      margin: 20px 0;
-                      padding: 15px 20px;
-                      border-left: 4px solid ${element.borderColor || '#ddd'};
-                      background-color: #f9f9f9;
-                      font-style: italic;
-                      line-height: 1.6;
-                      font-family: ${element.fontFamily || 'Arial, sans-serif'};
-                  ">
-                      ${element.content || 'Blockquote text'}
-                  </blockquote>`;
-              } else if (element.type === "image") {
-                  htmlContent += `
-                  <div style="margin: 20px 0; text-align: ${element.textAlign || 'center'};">
-                      <img src="${element.src}" 
-                          style="
-                              max-width: ${element.width || 400}px; 
-                              height: auto;
-                              border-radius: ${element.borderRadius || 0}px;
-                              border: ${element.borderWidth ? `${element.borderWidth}px solid ${element.borderColor}` : 'none'};
-                              display: block;
-                              margin: 0 auto;
-                          " 
-                          alt="${element.alt || 'Image'}"
-                      />
-                  </div>`;
-              } else if (element.type === "button") {
-                  htmlContent += `
-                  <div style="margin: 25px 0; text-align: ${element.textAlign || 'center'};">
-                      <table border="0" cellpadding="0" cellspacing="0" role="presentation" style="margin: 0 auto;">
-                          <tbody>
-                              <tr>
-                                  <td style="
-                                      background-color: ${element.backgroundColor || '#007bff'};
-                                      border-radius: ${element.borderRadius || 6}px;
-                                      padding: ${element.padding || '12px 24px'};
-                                  ">
-                                      <a href="${element.link || '#'}" 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
-                                        style="
-                                              display: inline-block;
-                                              font-size: ${element.fontSize || 16}px;
-                                              font-family: ${element.fontFamily || 'Arial, sans-serif'};
-                                              color: ${element.color || '#ffffff'};
-                                              font-weight: ${element.fontWeight || 'bold'};
-                                              text-decoration: none;
-                                              line-height: 1.2;
-                                        "
-                                      >
-                                          ${element.content || 'Click Me'}
-                                      </a>
-                                  </td>
-                              </tr>
-                          </tbody>
-                      </table>
-                  </div>`;
-              } else if (element.type === "card") {
-                  htmlContent += `
-                  <div style="
-                      border: 1px solid ${element.borderColor || '#ddd'};
-                      border-radius: ${element.borderRadius || 8}px;
-                      padding: ${element.padding || '20px'};
-                      margin: 20px 0;
-                      background-color: ${element.backgroundColor || '#f9f9f9'};
-                      box-shadow: ${element.boxShadow || '0 2px 4px rgba(0,0,0,0.1)'};
-                  ">
-                      <div style="
-                          font-size: ${element.fontSize || 16}px; 
-                          color: ${element.color || '#333'};
-                          line-height: 1.6;
-                          font-family: ${element.fontFamily || 'Arial, sans-serif'};
-                      ">
-                          ${(element.content || 'Card content goes here').replace(/\n/g, '<br>')}
-                      </div>
-                  </div>`;
-              } else if (element.type === "line") {
-                  htmlContent += `
-                  <hr style="
-                      border: none;
-                      height: ${element.strokeWidth || 1}px;
-                      background-color: ${element.strokeColor || '#ddd'};
-                      margin: 25px 0;
-                      width: 100%;
-                  ">`;
-              }
-              // Add more element types as needed...
-          });
-      } else {
-          // Default content if no canvas data
-          htmlContent += `
-          <div style="text-align: center; padding: 40px 20px; color: #666;">
-              <h2 style="color: #333; margin-bottom: 16px;">No Content Available</h2>
-              <p style="font-size: 16px; line-height: 1.6;">This email was sent without content from the design editor.</p>
-          </div>`;
-      }
-
-      htmlContent += `
-              </div>
-              <div class="email-footer">
-                  <p style="margin: 0 0 10px 0;">
-                      This email was sent by <strong>${fromName}</strong>
-                  </p>
-                  <p style="margin: 0; font-size: 12px; color: #999;">
-                      If you have questions, please reply to this email or contact us at 
-                      <a href="mailto:${fromEmail}" style="color: #007bff; text-decoration: none;">${fromEmail}</a>
-                  </p>
-              </div>
-          </div>
-      </body>
-      </html>
-      `;
-        htmlContent += `
-          </div>
-          <p style="margin-top: 20px; color: #666; font-size: 14px;">
-            This email was sent by ${fromName} (${fromEmail}).
-          </p>
-          </div>
-        `;
-
-
-    // --- Save campaign in DB ---
+    // Save campaign to DB
     const campaign = await prisma.campaign.create({
       data: {
         name: subject,
         subject,
-        fromName,
         fromEmail,
+        fromName,
         sentCount: recipients.length,
         designJson: JSON.stringify(canvasData || []),
       },
     });
 
-    // --- Save "sent" events ---
-    await prisma.campaignEvent.createMany({
-      data: recipients.map((r) => ({
-        campaignId: campaign.id,
-        type: "sent",
-        email: r.email,
-      })),
-    });
+    const results = { success: [], failed: [] };
 
-    // --- Send emails ---
-    const emailPromises = recipients.map((recipient) => {
-      const mailOptions = {
-        from: `"${fromName}" <${process.env.EMAIL_USER}>`, // always use verified sender
-        replyTo: fromEmail,
+    for (const recipient of recipients) {
+      const msg = {
         to: recipient.email,
-        subject,
+        from: {
+          name: fromName,
+          email: fromEmail, // must be a verified domain email in SendGrid
+        },
+        replyTo: {
+          email: fromEmail,
+          name: fromName,
+        },
+        subject: subject,
+        text: plainTextContent,
         html: htmlContent,
+        trackingSettings: {
+          clickTracking: { enable: false },
+          openTracking: { enable: false },
+          subscriptionTracking: { enable: false }
+        },
+        mailSettings: {
+          bypassListManagement: { enable: true }, // don’t get blocked by suppression lists
+          footer: { enable: false },              // no SendGrid footer
+          sandboxMode: { enable: false }
+        },
+        // Add headers to improve inboxing
+        headers: {
+          "List-Unsubscribe": `<mailto:unsubscribe@yourdomain.com>, <https://yourdomain.com/unsubscribe>`,
+        }
       };
-      return transporter.sendMail(mailOptions);
-    });
-    await Promise.all(emailPromises);
+
+      try {
+        await sgMail.send(msg);
+        results.success.push({ email: recipient.email, timestamp: new Date().toISOString() });
+
+        await prisma.campaignEvent.create({
+          data: {
+            campaignId: campaign.id,
+            type: "sent",
+            email: recipient.email,
+          },
+        });
+      } catch (err) {
+        let errorMessage = "Unknown error";
+        if (err.response?.body?.errors) {
+          errorMessage = err.response.body.errors[0]?.message || err.message;
+
+          if (errorMessage.includes("verified Sender Identity")) {
+            return res.status(400).json({
+              error: "Sender email not verified",
+              message: "Please verify your sender email in SendGrid before sending campaigns.",
+              senderVerificationRequired: true
+            });
+          }
+        }
+
+        results.failed.push({
+          email: recipient.email,
+          error: errorMessage,
+          timestamp: new Date().toISOString(),
+        });
+
+        await prisma.campaignEvent.create({
+          data: {
+            campaignId: campaign.id,
+            type: "failed",
+            email: recipient.email,
+          },
+        });
+      }
+
+      // Small delay to avoid rate limiting
+      await new Promise(resolve => setTimeout(resolve, 200));
+    }
+
+
+    const statusMessage = `Sent: ${results.success.length}, Failed: ${results.failed.length}`;
 
     res.status(200).json({
-      message: `✅ Campaign sent successfully to ${recipients.length} recipients!`,
+      message: statusMessage,
       campaignId: campaign.id,
       recipientsCount: recipients.length,
+      results
     });
   } catch (error) {
-    console.error("Error sending campaign:", error);
-    res.status(500).json({ error: "Failed to send campaign" });
-  }
-});
-
-// 🔹 Analytics routes
-
-// DELETE /api/campaigns/:id
-router.delete("/:id", async (req, res) => {
-  const { id } = req.params;
-  try {
-    const deletedCampaign = await prisma.campaign.delete({
-      where: { id: parseInt(id) },
+    res.status(500).json({ 
+      error: "Failed to send campaign",
+      details: error.message 
     });
-    res.status(200).json({ message: "Campaign deleted successfully." });
-  } catch (error) {
-    console.error("Error deleting campaign:", error);
-    res.status(500).json({ error: "Failed to delete campaign" });
   }
 });
-
 
 router.get("/", async (req, res) => {
   try {
@@ -334,22 +294,37 @@ router.get("/", async (req, res) => {
     });
     res.json(campaigns);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Failed to fetch campaigns" });
   }
 });
 
 router.get("/:id", async (req, res) => {
   try {
+    const campaignId = parseInt(req.params.id);
     const campaign = await prisma.campaign.findUnique({
-      where: { id: parseInt(req.params.id) },
+      where: { id: campaignId },
       include: { events: true },
     });
-    if (!campaign) return res.status(404).json({ error: "Campaign not found" });
+    
+    if (!campaign) {
+      return res.status(404).json({ error: "Campaign not found" });
+    }
+    
     res.json(campaign);
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Failed to fetch campaign" });
+  }
+});
+
+router.delete("/:id", async (req, res) => {
+  try {
+    const campaignId = parseInt(req.params.id);
+    await prisma.campaign.delete({
+      where: { id: campaignId },
+    });
+    res.status(200).json({ message: "Campaign deleted successfully." });
+  } catch (error) {
+    res.status(500).json({ error: "Failed to delete campaign" });
   }
 });
 

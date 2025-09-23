@@ -1,64 +1,277 @@
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
-import { Line, Pie } from "react-chartjs-2";
+import { Line, Pie, Bar } from "react-chartjs-2";
 import "chart.js/auto";
-import { Zap, Activity, CheckCircle, Play } from "lucide-react";
+import { 
+  Zap, Activity, CheckCircle, Play, Clock, Calendar, 
+  Mail, Edit, Trash2, Pause, PlayCircle, MoreVertical,
+  Filter, Search, Eye, AlertCircle, TrendingUp, Users,
+  RefreshCw, Send, XCircle, Shield, AlertTriangle, X
+} from "lucide-react";
 
 const Automation = () => {
   const [logs, setLogs] = useState([]);
-
-  // Fetch logs from backend
-  useEffect(() => {
-    fetch("http://localhost:5000/api/automation/logs")
-      .then((res) => res.json())
-      .then((data) => setLogs(data))
-      .catch((err) => console.error("Error fetching logs:", err));
-  }, []);
-
-  // --- Prepare Chart Data ---
-  const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-  const runsPerDay = Array(7).fill(0);
-
-  logs.forEach((log) => {
-    const d = new Date(log.date);
-    if (!isNaN(d)) {
-      const day = d.getDay();
-      runsPerDay[day] += 1;
-    }
+  const [scheduledCampaigns, setScheduledCampaigns] = useState([]);
+  const [campaignStats, setCampaignStats] = useState({
+    sent: 0,
+    pending: 0,
+    processing: 0,
+    failed: 0,
+    scheduled: 0,
+    recurring: 0
   });
+  const [activeTab, setActiveTab] = useState("overview");
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [selectedCampaigns, setSelectedCampaigns] = useState([]);
+  const [showActionMenu, setShowActionMenu] = useState(null);
+  const [senderVerified, setSenderVerified] = useState(false);
+  const [triggerMessage, setTriggerMessage] = useState("");
+  const [showTriggerMessage, setShowTriggerMessage] = useState(false);
 
-  const lineData = {
-    labels: weekdays,
-    datasets: [
-      {
-        label: "Automation Runs",
-        data: runsPerDay,
-        borderColor: "#c2831f",
-        backgroundColor: "rgba(194, 131, 31, 0.3)",
-        fill: true,
-        tension: 0.4,
-        pointBackgroundColor: "#c2831f",
-        pointBorderColor: "#fff",
-      },
-    ],
+  // Fetch automation data from backend
+  const fetchAutomationData = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/automation/logs");
+      if (response.ok) {
+        const data = await response.json();
+        setLogs(data);
+        
+        // Calculate stats from logs
+        const stats = data.reduce((acc, log) => {
+          acc[log.status] = (acc[log.status] || 0) + 1;
+          return acc;
+        }, {});
+        
+        setCampaignStats(prev => ({
+          ...prev,
+          ...stats
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching automation data:", error);
+    }
   };
 
-  const statusCounts = { Success: 0, Failed: 0, Pending: 0 };
-  logs.forEach((log) => {
-    if (statusCounts[log.status] !== undefined) {
-      statusCounts[log.status] += 1;
+  const fetchScheduledCampaigns = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/automation/scheduled");
+      if (response.ok) {
+        const data = await response.json();
+        setScheduledCampaigns(data);
+        
+        // Update scheduled count
+        setCampaignStats(prev => ({
+          ...prev,
+          scheduled: data.filter(c => c.status === 'scheduled').length,
+          recurring: data.filter(c => c.recurringFrequency).length
+        }));
+      }
+    } catch (error) {
+      console.error("Error fetching scheduled campaigns:", error);
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const checkSenderVerification = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/automation/sender/verification");
+      if (response.ok) {
+        const data = await response.json();
+        setSenderVerified(data.verified);
+      }
+    } catch (error) {
+      console.error("Error checking sender verification:", error);
+    }
+  };
+
+  const handleCampaignAction = async (campaignId, action) => {
+    try {
+      const response = await fetch(`http://localhost:5000/api/automation/${campaignId}/${action}`, {
+        method: 'POST',
+      });
+      
+      if (response.ok) {
+        await fetchScheduledCampaigns();
+        setShowActionMenu(null);
+      } else {
+        const error = await response.json();
+        alert(`Failed to ${action} campaign: ${error.error || error.message}`);
+      }
+    } catch (error) {
+      console.error(`Error ${action} campaign:`, error);
+      alert(`Failed to ${action} campaign: ${error.message}`);
+    }
+  };
+
+  const handleBulkAction = async (action) => {
+    if (selectedCampaigns.length === 0) return;
+    
+    try {
+      const promises = selectedCampaigns.map(id => 
+        fetch(`http://localhost:5000/api/automation/${id}/${action}`, {
+          method: 'POST',
+        })
+      );
+      
+      await Promise.all(promises);
+      await fetchScheduledCampaigns();
+      setSelectedCampaigns([]);
+    } catch (error) {
+      console.error(`Error performing bulk ${action}:`, error);
+    }
+  };
+
+  const toggleCampaignSelection = (campaignId) => {
+    setSelectedCampaigns(prev => 
+      prev.includes(campaignId) 
+        ? prev.filter(id => id !== campaignId)
+        : [...prev, campaignId]
+    );
+  };
+
+  const handleTriggerSend = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/automation/trigger-cron", {
+        method: 'POST',
+      });
+      const data = await response.json();
+      
+      // Fetch the latest scheduled campaigns
+      await fetchScheduledCampaigns();
+      
+      // Create message based on scheduled campaigns
+      const scheduledCount = scheduledCampaigns.filter(c => c.status === 'scheduled').length;
+      
+      if (scheduledCount > 0) {
+        const campaignList = scheduledCampaigns
+          .filter(c => c.status === 'scheduled')
+          .map(c => `- ${c.campaignName}: ${new Date(c.scheduledDateTime).toLocaleString()}`)
+          .join('\n');
+        
+        setTriggerMessage(`Found ${scheduledCount} scheduled campaigns:\n${campaignList}`);
+      } else {
+        setTriggerMessage("No scheduled campaigns found.");
+      }
+      
+      setShowTriggerMessage(true);
+      
+      // Hide message after 5 seconds
+      setTimeout(() => setShowTriggerMessage(false), 5000);
+    } catch (error) {
+      console.error("Error triggering cron job:", error);
+      setTriggerMessage("Failed to trigger cron job");
+      setShowTriggerMessage(true);
+      setTimeout(() => setShowTriggerMessage(false), 5000);
+    }
+  };
+
+  // Fetch data from backend
+  useEffect(() => {
+    fetchAutomationData();
+    fetchScheduledCampaigns();
+    checkSenderVerification();
+    
+    // Refresh data every 30 seconds
+    const interval = setInterval(() => {
+      fetchAutomationData();
+      fetchScheduledCampaigns();
+    }, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const filteredCampaigns = scheduledCampaigns.filter(campaign => {
+    const matchesSearch = campaign.campaignName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         campaign.subject.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesFilter = filterStatus === "all" || campaign.status === filterStatus;
+    return matchesSearch && matchesFilter;
   });
 
-  const pieData = {
-    labels: ["Success", "Failed", "Pending"],
-    datasets: [
-      {
-        data: [statusCounts.Success, statusCounts.Failed, statusCounts.Pending],
-        backgroundColor: ["#1fc21f", "#ef4444", "#3b82f6"],
-        borderColor: "#111",
-      },
-    ],
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'scheduled': return 'text-blue-400 bg-blue-400/20';
+      case 'sent': return 'text-green-400 bg-green-400/20';
+      case 'paused': return 'text-yellow-400 bg-yellow-400/20';
+      case 'failed': return 'text-red-400 bg-red-400/20';
+      case 'processing': return 'text-purple-400 bg-purple-400/20';
+      default: return 'text-gray-400 bg-gray-400/20';
+    }
+  };
+
+  const getStatusIcon = (status) => {
+    switch (status) {
+      case 'scheduled': return <Clock size={14} />;
+      case 'sent': return <CheckCircle size={14} />;
+      case 'paused': return <Pause size={14} />;
+      case 'failed': return <XCircle size={14} />;
+      case 'processing': return <RefreshCw size={14} className="animate-spin" />;
+      default: return <AlertCircle size={14} />;
+    }
+  };
+
+  const formatDateTime = (dateTime) => {
+    const date = new Date(dateTime);
+    return date.toLocaleString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  const overviewStats = [
+    {
+      title: "Total Scheduled",
+      value: campaignStats.scheduled || 0,
+      icon: Calendar,
+      color: "text-blue-400",
+      bgColor: "bg-blue-400/20"
+    },
+    {
+      title: "Successfully Sent",
+      value: campaignStats.sent || 0,
+      icon: CheckCircle,
+      color: "text-green-400",
+      bgColor: "bg-green-400/20"
+    },
+    {
+      title: "Currently Processing",
+      value: campaignStats.processing || 0,
+      icon: RefreshCw,
+      color: "text-purple-400",
+      bgColor: "bg-purple-400/20"
+    },
+    {
+      title: "Recurring Campaigns",
+      value: campaignStats.recurring || 0,
+      icon: RefreshCw,
+      color: "text-[#c2831f]",
+      bgColor: "bg-[#c2831f]/20"
+    }
+  ];
+
+  // Chart data for campaign performance
+  const performanceData = {
+    labels: ['Scheduled', 'Sent', 'Failed', 'Processing'],
+    datasets: [{
+      data: [
+        campaignStats.scheduled || 0,
+        campaignStats.sent || 0,
+        campaignStats.failed || 0,
+        campaignStats.processing || 0
+      ],
+      backgroundColor: [
+        '#3B82F6',
+        '#10B981',
+        '#EF4444',
+        '#8B5CF6'
+      ],
+      borderWidth: 0
+    }]
   };
 
   const chartOptions = {
@@ -66,184 +279,448 @@ const Automation = () => {
     maintainAspectRatio: false,
     plugins: {
       legend: {
+        position: 'bottom',
         labels: {
-          color: "#fff",
-          font: { size: 12 },
-        },
-      },
-      tooltip: {
-        backgroundColor: "#1f1f1f",
-        titleColor: "#c2831f",
-        bodyColor: "#fff",
-      },
-    },
-    scales: {
-      x: {
-        ticks: { color: "#fff" },
-        grid: { color: "rgba(255, 255, 255, 0.1)" },
-      },
-      y: {
-        ticks: { color: "#fff" },
-        grid: { color: "rgba(255, 255, 255, 0.1)" },
-      },
-    },
+          color: '#D1D5DB',
+          padding: 20
+        }
+      }
+    }
   };
 
-  const pieOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        labels: {
-          color: "#fff",
-        },
-      },
-      tooltip: {
-        backgroundColor: "#1f1f1f",
-        titleColor: "#c2831f",
-        bodyColor: "#fff",
-      },
-    },
-  };
+  // Add deliverability tips section
+  const renderDeliverabilityTips = () => (
+    <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-6">
+      <div className="flex items-center mb-4">
+        <Shield className="text-yellow-400 mr-2" />
+        <h3 className="text-lg font-semibold text-white">Email Deliverability Tips</h3>
+      </div>
+      
+      {!senderVerified && (
+        <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4 mb-4">
+          <div className="flex items-start">
+            <AlertTriangle className="text-yellow-400 mr-2 mt-1" />
+            <div>
+              <h4 className="font-medium text-yellow-400">Sender Verification Required</h4>
+              <p className="text-yellow-300 text-sm mt-1">
+                Your sender domain is not verified. This is the most common reason emails go to spam.
+              </p>
+              <button className="mt-2 px-3 py-1 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700">
+                Verify Sender Domain
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
+          <h4 className="font-medium text-white mb-2">Authentication</h4>
+          <ul className="text-sm text-gray-300 space-y-1">
+            <li className="flex items-center">
+              <div className={`w-3 h-3 rounded-full mr-2 ${senderVerified ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              SPF Record
+            </li>
+            <li className="flex items-center">
+              <div className={`w-3 h-3 rounded-full mr-2 ${senderVerified ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              DKIM Signature
+            </li>
+            <li className="flex items-center">
+              <div className={`w-3 h-3 rounded-full mr-2 ${senderVerified ? 'bg-green-500' : 'bg-red-500'}`}></div>
+              DMARC Policy
+            </li>
+          </ul>
+        </div>
+        
+        <div>
+          <h4 className="font-medium text-white mb-2">Content Best Practices</h4>
+          <ul className="text-sm text-gray-300 space-y-1">
+            <li>• Avoid spam trigger words</li>
+            <li>• Include plain text version</li>
+            <li>• Balance text and images</li>
+            <li>• Personalize when possible</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  );
 
-  // --- Stats ---
-  const stats = [
-    {
-      title: "Active Automations",
-      value: new Set(logs.map((l) => l.automation)).size,
-      icon: <Zap className="text-[#c2831f]" size={28} />,
-    },
-    {
-      title: "Total Triggers",
-      value: logs.length,
-      icon: <Activity className="text-[#c2831f]" size={28} />,
-    },
-    {
-      title: "Success Rate",
-      value: logs.length
-        ? `${Math.round((statusCounts.Success / logs.length) * 100)}%`
-        : "0%",
-      icon: <CheckCircle className="text-[#c2831f]" size={28} />,
-    },
-  ];
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <div className="flex items-center justify-center h-64">
+          <RefreshCw className="animate-spin text-[#c2831f]" size={32} />
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen text-white w-full px-4 sm:px-6 md:px-10 py-6 space-y-8 mt-20">
-        {/* Header */}
-        <div className="text-center">
-          <h1 className="text-3xl sm:text-4xl font-bold text-[#c2831f] mb-2">
-            Automation Dashboard
-          </h1>
-          <p className="text-gray-400 text-sm sm:text-base max-w-2xl mx-auto">
-            Monitor, control, and optimize all your automated workflows in one
-            place. Get real-time insights into performance and trigger
-            activities.
-          </p>
-        </div>
+      <div className="p-6 bg-black min-h-screen py-20">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="flex justify-between items-center mb-8">
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">Automation</h1>
+              <p className="text-gray-400">Manage scheduled campaigns and automation workflows</p>
+            </div>
+            <div className="flex gap-3">
+              {/* Trigger Send Button with message display */}
+              <div className="relative">
+                <button
+                  onClick={handleTriggerSend}
+                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
+                >
+                  <RefreshCw size={16} />
+                  Trigger Send
+                </button>
+                
+                {/* Message popup */}
+                {showTriggerMessage && (
+                  <div className="absolute right-0 top-full mt-2 w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <h3 className="font-medium text-white">Scheduled Campaigns</h3>
+                      <button 
+                        onClick={() => setShowTriggerMessage(false)}
+                        className="text-gray-400 hover:text-white"
+                      >
+                        <X size={16} />
+                      </button>
+                    </div>
+                    <div className="text-sm text-gray-300 whitespace-pre-line">
+                      {triggerMessage}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <button
+                onClick={() => window.location.href = '/send-campaign'}
+                className="px-4 py-2 bg-[#c2831f] text-white rounded-lg hover:bg-[#d09025] flex items-center gap-2"
+              >
+                <Calendar size={16} />
+                Schedule Campaign
+              </button>
+            </div>
+          </div>
 
-        {/* Stats */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {stats.map((item, idx) => (
-            <div
-              key={idx}
-              className="p-4 rounded-xl border border-gray-800 shadow-lg hover:shadow-[#c2831f]/20 hover:scale-105 transition"
-            >
-              <div className="flex items-center gap-4">
-                <div className="p-3 bg-gray-800 rounded-full">{item.icon}</div>
-                <div>
-                  <p className="text-gray-400 text-sm">{item.title}</p>
-                  <h3 className="text-xl font-bold">{item.value}</h3>
+          {/* Deliverability Tips */}
+          {renderDeliverabilityTips()}
+
+          {/* Tabs */}
+          <div className="flex space-x-1 mb-6 bg-gray-900 p-1 rounded-lg w-fit">
+            {['overview', 'scheduled', 'logs'].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
+                  activeTab === tab
+                    ? 'bg-[#c2831f] text-white'
+                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                }`}
+              >
+                {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              </button>
+            ))}
+          </div>
+
+          {/* Overview Tab */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              {/* Stats Grid */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                {overviewStats.map((stat, index) => {
+                  const Icon = stat.icon;
+                  return (
+                    <div key={index} className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <p className="text-gray-400 text-sm">{stat.title}</p>
+                          <p className="text-3xl font-bold text-white mt-2">{stat.value}</p>
+                        </div>
+                        <div className={`p-3 rounded-lg ${stat.bgColor}`}>
+                          <Icon className={`${stat.color}`} size={24} />
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Charts */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Campaign Status Distribution</h3>
+                  <div className="h-64">
+                    <Pie data={performanceData} options={chartOptions} />
+                  </div>
+                </div>
+                
+                <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+                  <h3 className="text-lg font-semibold text-white mb-4">Recent Activity</h3>
+                  <div className="space-y-4">
+                    {logs.slice(0, 6).map((log, index) => (
+                      <div key={index} className="flex items-center space-x-3 p-3 bg-gray-800 rounded-lg">
+                        <div className={`p-2 rounded-lg ${getStatusColor(log.status)}`}>
+                          {getStatusIcon(log.status)}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-white font-medium truncate">{log.campaignName}</p>
+                          <p className="text-sm text-gray-400">{log.message}</p>
+                        </div>
+                        <span className="text-xs text-gray-500">
+                          {formatDateTime(log.createdAt)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             </div>
-          ))}
-        </div>
+          )}
 
-        {/* Workflow Diagram */}
-        <div className="p-4 sm:p-6 rounded-xl border border-gray-800">
-          <h2 className="text-lg sm:text-xl font-semibold text-[#c2831f] mb-4">
-            Workflow Overview
-          </h2>
-          <div className="flex flex-col sm:flex-row sm:flex-wrap justify-center items-center gap-4 text-center">
-            <div className="flex flex-col items-center">
-              <Play className="text-green-500" size={28} />
-              <p className="mt-1 text-sm">Trigger</p>
-            </div>
-            <div className="hidden sm:block w-12 h-[2px] bg-[#c2831f] self-center" />
-            <div className="flex flex-col items-center">
-              <Activity className="text-yellow-500" size={28} />
-              <p className="mt-1 text-sm">Process</p>
-            </div>
-            <div className="hidden sm:block w-12 h-[2px] bg-[#c2831f] self-center" />
-            <div className="flex flex-col items-center">
-              <CheckCircle className="text-green-400" size={28} />
-              <p className="mt-1 text-sm">Completed</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Charts */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="p-4 rounded-xl border border-gray-800">
-            <h2 className="text-lg font-semibold text-[#c2831f] mb-3">
-              Automation Runs This Week
-            </h2>
-            <div className="w-full h-48 sm:h-56 md:h-64">
-              <Line data={lineData} options={chartOptions} />
-            </div>
-          </div>
-          <div className="p-4 rounded-xl border border-gray-800">
-            <h2 className="text-lg font-semibold text-[#c2831f] mb-3">
-              Automation Status
-            </h2>
-            <div className="w-full h-48 sm:h-56 md:h-64">
-              <Pie data={pieData} options={pieOptions} />
-            </div>
-          </div>
-        </div>
-
-        {/* Logs Table */}
-        <div className="p-4 sm:p-6 rounded-xl border border-gray-800 overflow-x-auto w-full">
-          <h2 className="text-lg font-semibold text-[#c2831f] mb-4">
-            Recent Automation Logs
-          </h2>
-          <table className="min-w-full text-sm text-gray-300">
-            <thead>
-              <tr className="text-gray-400 border-b border-gray-700">
-                <th className="p-2 text-left">Date</th>
-                <th className="p-2 text-left">Automation</th>
-                <th className="p-2 text-left">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {logs.length > 0 ? (
-                logs.map((log, i) => (
-                  <tr key={i} className="border-b border-gray-800">
-                    <td className="p-2">{log.date}</td>
-                    <td className="p-2">{log.automation}</td>
-                    <td
-                      className={`p-2 ${
-                        log.status === "Success"
-                          ? "text-green-400"
-                          : log.status === "Failed"
-                          ? "text-red-400"
-                          : "text-yellow-400"
-                      }`}
+          {/* Scheduled Tab */}
+          {activeTab === 'scheduled' && (
+            <div className="space-y-6">
+              {/* Controls */}
+              <div className="flex flex-col sm:flex-row justify-between gap-4">
+                <div className="flex gap-4">
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
+                    <input
+                      type="text"
+                      placeholder="Search campaigns..."
+                      className="pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c2831f]"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#c2831f]"
+                  >
+                    <option value="all">All Status</option>
+                    <option value="scheduled">Scheduled</option>
+                    <option value="sent">Sent</option>
+                    <option value="paused">Paused</option>
+                    <option value="failed">Failed</option>
+                  </select>
+                </div>
+                
+                {selectedCampaigns.length > 0 && (
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleBulkAction('pause')}
+                      className="px-4 py-2 bg-yellow-600 text-white rounded-lg hover:bg-yellow-700 flex items-center gap-2"
                     >
-                      {log.status}
-                    </td>
-                  </tr>
-                ))
-              ) : (
-                <tr>
-                  <td colSpan="3" className="p-4 text-center text-gray-500">
-                    No automation logs found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+                      <Pause size={16} />
+                      Pause Selected
+                    </button>
+                    <button
+                      onClick={() => handleBulkAction('delete')}
+                      className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 flex items-center gap-2"
+                    >
+                      <Trash2 size={16} />
+                      Delete Selected
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Campaigns Table */}
+              <div className="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-800">
+                      <tr>
+                        <th className="w-12 p-4">
+                          <input
+                            type="checkbox"
+                            checked={selectedCampaigns.length === filteredCampaigns.length && filteredCampaigns.length > 0}
+                            onChange={(e) => {
+                              if (e.target.checked) {
+                                setSelectedCampaigns(filteredCampaigns.map(c => c.id));
+                              } else {
+                                setSelectedCampaigns([]);
+                              }
+                            }}
+                            className="accent-[#c2831f]"
+                          />
+                        </th>
+                        <th className="text-left p-4 text-gray-300 font-medium">Campaign</th>
+                        <th className="text-left p-4 text-gray-300 font-medium">Recipients</th>
+                        <th className="text-left p-4 text-gray-300 font-medium">Schedule</th>
+                        <th className="text-left p-4 text-gray-300 font-medium">Status</th>
+                        <th className="text-left p-4 text-gray-300 font-medium">Type</th>
+                        <th className="w-24 p-4"></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filteredCampaigns.map((campaign) => (
+                        <tr key={campaign.id} className="border-t border-gray-800 hover:bg-gray-800/50">
+                          <td className="p-4">
+                            <input
+                              type="checkbox"
+                              checked={selectedCampaigns.includes(campaign.id)}
+                              onChange={() => toggleCampaignSelection(campaign.id)}
+                              className="accent-[#c2831f]"
+                            />
+                          </td>
+                          <td className="p-4">
+                            <div>
+                              <div className="font-medium text-white">{campaign.campaignName}</div>
+                              <div className="text-sm text-gray-400 truncate">{campaign.subject}</div>
+                              {campaign.error && (
+                                <div className="text-xs text-red-400 mt-1">{campaign.error}</div>
+                              )}
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="flex items-center text-gray-300">
+                              <Users size={16} className="mr-2" />
+                              {campaign.recipientCount || 0}
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <div className="text-white">
+                              {campaign.scheduledDateTime ? formatDateTime(campaign.scheduledDateTime) : 'N/A'}
+                            </div>
+                            {campaign.recurringFrequency && (
+                              <div className="text-xs text-gray-400 mt-1">
+                                Recurring {campaign.recurringFrequency}
+                              </div>
+                            )}
+                          </td>
+                          <td className="p-4">
+                            <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(campaign.status)}`}>
+                              {getStatusIcon(campaign.status)}
+                              {campaign.status.charAt(0).toUpperCase() + campaign.status.slice(1)}
+                            </div>
+                          </td>
+                          <td className="p-4">
+                            <span className="text-sm text-gray-400">
+                              {campaign.recurringFrequency ? 'Recurring' : 'One-time'}
+                            </span>
+                          </td>
+                          <td className="p-4">
+                            <div className="relative">
+                              <button
+                                onClick={() => setShowActionMenu(showActionMenu === campaign.id ? null : campaign.id)}
+                                className="p-2 text-gray-400 hover:text-white hover:bg-gray-700 rounded-lg"
+                              >
+                                <MoreVertical size={16} />
+                              </button>
+                              
+                              {showActionMenu === campaign.id && (
+                                <div className="absolute right-0 top-full mt-1 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
+                                  <div className="py-1">
+                                    <button
+                                      onClick={() => console.log('View campaign')}
+                                      className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 flex items-center gap-2"
+                                    >
+                                      <Eye size={14} />
+                                      View Details
+                                    </button>
+                                    {campaign.status === 'scheduled' && (
+                                      <button
+                                        onClick={() => handleCampaignAction(campaign.id, 'pause')}
+                                        className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 flex items-center gap-2"
+                                      >
+                                        <Pause size={14} />
+                                        Pause
+                                      </button>
+                                    )}
+                                    {campaign.status === 'paused' && (
+                                      <button
+                                        onClick={() => handleCampaignAction(campaign.id, 'resume')}
+                                        className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 flex items-center gap-2"
+                                      >
+                                        <PlayCircle size={14} />
+                                        Resume
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={() => console.log('Edit campaign')}
+                                      className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 flex items-center gap-2"
+                                    >
+                                      <Edit size={14} />
+                                      Edit
+                                    </button>
+                                    <button
+                                      onClick={() => handleCampaignAction(campaign.id, 'delete')}
+                                      className="w-full px-4 py-2 text-left text-red-400 hover:bg-gray-700 flex items-center gap-2"
+                                    >
+                                      <Trash2 size={14} />
+                                      Delete
+                                    </button>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+                
+                {filteredCampaigns.length === 0 && (
+                  <div className="text-center py-12">
+                    <Calendar className="mx-auto text-gray-600 mb-4" size={48} />
+                    <h3 className="text-gray-400 font-medium mb-2">No scheduled campaigns</h3>
+                    <p className="text-gray-500 mb-4">Create your first scheduled campaign to see it here</p>
+                    <button
+                      onClick={() => window.location.href = '/send-campaign'}
+                      className="px-4 py-2 bg-[#c2831f] text-white rounded-lg hover:bg-[#d09025]"
+                    >
+                      Schedule Campaign
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Logs Tab */}
+          {activeTab === 'logs' && (
+            <div className="bg-gray-900 border border-gray-800 rounded-lg">
+              <div className="p-6 border-b border-gray-800">
+                <h3 className="text-lg font-semibold text-white">Activity Logs</h3>
+                <p className="text-gray-400 text-sm mt-1">Real-time updates on campaign activities</p>
+              </div>
+              <div className="divide-y divide-gray-800 max-h-96 overflow-y-auto">
+                {logs.map((log, index) => (
+                  <div key={index} className="p-4 hover:bg-gray-800/50">
+                    <div className="flex items-start space-x-4">
+                      <div className={`flex-shrink-0 p-2 rounded-lg mt-1 ${getStatusColor(log.status)}`}>
+                        {getStatusIcon(log.status)}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="font-medium text-white">{log.campaignName}</p>
+                          <span className="text-xs text-gray-500">{formatDateTime(log.createdAt)}</span>
+                        </div>
+                        <p className="text-sm text-gray-400 mt-1">{log.message}</p>
+                        {log.details && (
+                          <p className="text-xs text-gray-500 mt-2">{log.details}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                
+                {logs.length === 0 && (
+                  <div className="text-center py-12">
+                    <Activity className="mx-auto text-gray-600 mb-4" size={48} />
+                    <h3 className="text-gray-400 font-medium mb-2">No activity logs</h3>
+                    <p className="text-gray-500">Campaign activities will appear here</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </DashboardLayout>

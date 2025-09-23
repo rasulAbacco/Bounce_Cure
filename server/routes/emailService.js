@@ -30,8 +30,8 @@ export const sendEmail = async ({ to, subject, text, html }) => {
 
   try {
     const info = await transporter.sendMail({
-      from: `"Bounce Cure" <${process.env.GMAIL_USER}>`,
-      to :"",
+      from: `<${process.env.GMAIL_USER}>`,
+      to: "",
       subject,
       text: text || "Plain text fallback",
       html: html || "",

@@ -1,4 +1,3 @@
-// routes/emailAccounts.js
 import express from "express";
 import { PrismaClient } from "@prisma/client";
 import { runSync, sendEmailWithSendGrid, syncEmailsForAccount } from "../services/imapSync.js";
@@ -7,7 +6,11 @@ const prisma = new PrismaClient();
 const router = express.Router();
 
 // Utility: safe async runner
-const safeRun = (fn) => fn.catch((err) => console.error("❌ Async error:", err.message));
+const safeRun = (fn) => {
+  Promise.resolve()
+    .then(fn)
+    .catch((err) => console.error("❌ Async error:", err));
+};
 
 /**
  * Add a new email account
@@ -27,13 +30,19 @@ router.post("/", async (req, res) => {
     oauthClientId,
     oauthClientSecret,
     refreshToken,
+    authType,
   } = req.body;
 
   if (!userId || !email || !provider || !imapHost || !imapPort || !imapUser || !smtpHost || !smtpPort || !smtpUser) {
     return res.status(400).json({ error: "All connection fields are required" });
   }
 
-  if (!encryptedPass && provider !== "outlook" && (!oauthClientId || !oauthClientSecret || !refreshToken)) {
+  // Validate based on auth type
+  if (authType === "password" && !encryptedPass) {
+    return res.status(400).json({ error: "App password is required" });
+  }
+
+  if (authType === "oauth" && (!oauthClientId || !oauthClientSecret || !refreshToken)) {
     return res.status(400).json({ error: "OAuth2 requires clientId, clientSecret and refreshToken" });
   }
 
@@ -52,6 +61,7 @@ router.post("/", async (req, res) => {
         oauthClientId,
         oauthClientSecret,
         refreshToken,
+        authType, // Make sure to save the authType
         user: {
           connectOrCreate: {
             where: { id: parseInt(userId, 10) },
@@ -66,7 +76,9 @@ router.post("/", async (req, res) => {
       },
     });
 
-    safeRun(syncEmailsForAccount(prisma, account));
+    console.log(`✅ Account created: ${account.email}, starting sync...`);
+    safeRun(() => syncEmailsForAccount(prisma, account));
+
     res.status(201).json(account);
   } catch (err) {
     console.error("❌ Error creating account:", err);
@@ -80,7 +92,10 @@ router.post("/", async (req, res) => {
  */
 router.get("/", async (_req, res) => {
   try {
-    const accounts = await prisma.emailAccount.findMany({ orderBy: { createdAt: "desc" }, include: { user: true } });
+    const accounts = await prisma.emailAccount.findMany({
+      orderBy: { createdAt: "desc" },
+      include: { user: true },
+    });
     res.json(accounts);
   } catch (err) {
     console.error("❌ Error fetching accounts:", err);
@@ -96,7 +111,10 @@ router.get("/emails", async (req, res) => {
   if (!accountId) return res.status(400).json({ error: "Account ID is required" });
 
   try {
-    const emails = await prisma.email.findMany({ where: { accountId }, orderBy: { date: "desc" } });
+    const emails = await prisma.email.findMany({
+      where: { accountId },
+      orderBy: { date: "desc" },
+    });
     res.json(emails);
   } catch (err) {
     console.error("❌ Error fetching emails:", err);
@@ -113,7 +131,9 @@ router.post("/sync/:id", async (req, res) => {
     const account = await prisma.emailAccount.findUnique({ where: { id: accountId } });
     if (!account) return res.status(404).json({ error: "Account not found" });
 
-    safeRun(syncEmailsForAccount(prisma, account));
+    console.log(`🔄 Manual sync requested for ${account.email}`);
+    safeRun(() => syncEmailsForAccount(prisma, account));
+
     res.status(200).json({ message: "Sync started" });
   } catch (err) {
     console.error("❌ Error triggering sync:", err);
@@ -126,7 +146,8 @@ router.post("/sync/:id", async (req, res) => {
  */
 router.post("/sync", async (_req, res) => {
   try {
-    safeRun(runSync(prisma));
+    console.log("🔄 Manual sync requested for ALL accounts");
+    safeRun(() => runSync(prisma));
     res.status(200).json({ message: "Sync started for all accounts" });
   } catch (err) {
     console.error("❌ Error triggering sync:", err);
@@ -136,11 +157,12 @@ router.post("/sync", async (_req, res) => {
 
 /**
  * Send email via SendGrid
- * POST body: { to, subject, text, html }
  */
 router.post("/send", async (req, res) => {
   const { to, subject, text, html } = req.body;
-  if (!to || !subject || (!text && !html)) return res.status(400).json({ error: "to, subject, text/html are required" });
+  if (!to || !subject || (!text && !html)) {
+    return res.status(400).json({ error: "to, subject, text/html are required" });
+  }
 
   try {
     const sent = await sendEmailWithSendGrid({ to, subject, text, html });
@@ -156,23 +178,58 @@ router.post("/send", async (req, res) => {
  */
 router.put("/:id", async (req, res) => {
   const accountId = parseInt(req.params.id, 10);
-  const { email, provider, imapHost, imapPort, imapUser, smtpHost, smtpPort, smtpUser, encryptedPass, oauthClientId, oauthClientSecret, refreshToken } = req.body;
+  const {
+    email,
+    provider,
+    imapHost,
+    imapPort,
+    imapUser,
+    smtpHost,
+    smtpPort,
+    smtpUser,
+    encryptedPass,
+    oauthClientId,
+    oauthClientSecret,
+    refreshToken,
+    authType,
+  } = req.body;
 
   if (!email || !provider || !imapHost || !imapPort || !imapUser || !smtpHost || !smtpPort || !smtpUser) {
     return res.status(400).json({ error: "All connection fields are required" });
+  }
+
+  // Validate based on auth type
+  if (authType === "password" && !encryptedPass) {
+    return res.status(400).json({ error: "App password is required" });
+  }
+
+  if (authType === "oauth" && (!oauthClientId || !oauthClientSecret || !refreshToken)) {
+    return res.status(400).json({ error: "OAuth2 requires clientId, clientSecret and refreshToken" });
   }
 
   try {
     const updatedAccount = await prisma.emailAccount.update({
       where: { id: accountId },
       data: {
-        email, provider, imapHost, imapPort: parseInt(imapPort, 10), imapUser,
-        smtpHost, smtpPort: parseInt(smtpPort, 10), smtpUser, encryptedPass,
-        oauthClientId, oauthClientSecret, refreshToken
+        email,
+        provider,
+        imapHost,
+        imapPort: parseInt(imapPort, 10),
+        imapUser,
+        smtpHost,
+        smtpPort: parseInt(smtpPort, 10),
+        smtpUser,
+        encryptedPass,
+        oauthClientId,
+        oauthClientSecret,
+        refreshToken,
+        authType,
       },
     });
 
-    safeRun(syncEmailsForAccount(prisma, updatedAccount));
+    console.log(`✅ Account updated: ${updatedAccount.email}, starting sync...`);
+    safeRun(() => syncEmailsForAccount(prisma, updatedAccount));
+
     res.status(200).json(updatedAccount);
   } catch (err) {
     console.error("❌ Error updating account:", err);
