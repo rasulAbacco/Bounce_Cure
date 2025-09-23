@@ -7,6 +7,9 @@ import { fileURLToPath } from "url";
 import cron from "node-cron";
 import dotenv from "dotenv";
 import { PrismaClient } from '@prisma/client';
+import cors from 'cors';
+import jwt from 'jsonwebtoken';
+import bcrypt from 'bcryptjs';
 
 dotenv.config();
 
@@ -26,6 +29,155 @@ fs.readdirSync(tempDir).forEach(file => {
 
 const prisma = new PrismaClient();
 
+// Test database connection
+prisma.$connect()
+  .then(() => console.log('Database connected successfully'))
+  .catch(err => {
+    console.error('Database connection error:', err);
+    process.exit(1);
+  });
+
+// Create payment for user function
+async function createPaymentForUser(userEmail) {
+  const user = await prisma.user.findUnique({ where: { email: userEmail } });
+
+  if (!user) throw new Error("User not found. Cannot create payment.");
+
+  const payment = await prisma.payment.create({
+    data: {
+      userId: user.id,
+      email: user.email,
+      transactionId: "TXN1758577063918487",
+      planName: "Pro Plan",
+      planType: "monthly",
+      provider: "Discover",
+      contacts: 2500,
+      amount: 103.13,
+      currency: "USD",
+      paymentMethod: "Discover ending in 1117",
+      cardLast4: "1117",
+      paymentDate: new Date("2025-09-22T18:30:00.000Z"),
+      nextPaymentDate: new Date("2025-10-22T18:30:00.000Z"),
+      status: "success",
+    },
+  });
+
+  return payment;
+}
+
+// Authentication middleware
+const authenticateToken = (req, res, next) => {
+  console.log("=== BACKEND AUTH DEBUG ===");
+  
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  console.log("Auth header:", authHeader ? "Present" : "Missing");
+  console.log("Token:", token ? "Present" : "Missing");
+  
+  if (!token) {
+    console.log("ERROR: No token provided");
+    return res.status(401).json({ 
+      success: false, 
+      message: 'Authentication token required',
+      debug: {
+        authHeader: authHeader,
+        token: token
+      }
+    });
+  }
+  
+  console.log("JWT Secret:", process.env.JWT_SECRET ? "Present" : "Missing");
+  
+  jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key', (err, user) => {
+    if (err) {
+      console.log("ERROR: Token verification failed:", err.message);
+      return res.status(403).json({ 
+        success: false, 
+        message: 'Invalid or expired token',
+        debug: {
+          error: err.message,
+          token: token.substring(0, 20) + "..."
+        }
+      });
+    }
+    
+    console.log("SUCCESS: Token verified");
+    console.log("User payload:", user);
+    req.user = user;
+    next();
+  });
+};
+
+// Test authentication endpoint
+router.get("/test-auth", authenticateToken, (req, res) => {
+  console.log("Test auth endpoint called");
+  console.log("User from token:", req.user);
+  
+  res.json({ 
+    success: true, 
+    message: "Authentication is working",
+    user: req.user,
+    debug: {
+      headers: req.headers,
+      token: req.headers.authorization ? req.headers.authorization.substring(0, 20) + "..." : "Missing"
+    }
+  });
+});
+
+// Create a test token endpoint (for development only)
+router.get("/test-token", (req, res) => {
+  const testUser = {
+    userId: 1,
+    email: "test@example.com",
+    firstName: "Test",
+    lastName: "User"
+  };
+  
+  const token = jwt.sign(
+    testUser,
+    process.env.JWT_SECRET || 'your-secret-key',
+    { expiresIn: '1h' }
+  );
+  
+  res.json({ 
+    success: true, 
+    token,
+    user: testUser
+  });
+});
+
+// Create payment for user endpoint
+router.post("/create-payment", authenticateToken, async (req, res) => {
+  try {
+    console.log("=== CREATE PAYMENT DEBUG ===");
+    console.log("User from token:", req.user);
+    
+    const userEmail = req.user.email;
+    console.log("Creating payment for user:", userEmail);
+    
+    const payment = await createPaymentForUser(userEmail);
+    
+    console.log("Payment created successfully:", payment);
+    
+    res.json({ 
+      success: true, 
+      message: "Payment created successfully",
+      payment
+    });
+  } catch (error) {
+    console.error("Error creating payment:", error);
+    res.status(500).json({ 
+      success: false, 
+      message: error.message || "Failed to create payment",
+      debug: {
+        error: error.message,
+        stack: error.stack
+      }
+    });
+  }
+});
+
 // Create invoice PDF
 async function createInvoice(data) {
   return new Promise((resolve, reject) => {
@@ -39,7 +191,7 @@ async function createInvoice(data) {
       const headingColor = "#c2831f";
       const textColor = "white";
       const accent = "#c2831f";
-      const backgroundColor = "#000000"; // add this
+      const backgroundColor = "#000000";
 
       const pageWidth = doc.page.width, pageHeight = doc.page.height, margin = 50;
 
@@ -49,9 +201,9 @@ async function createInvoice(data) {
       // Add watermark behind content
       doc.save();
       doc.font("Helvetica-Bold")
-         .fontSize(60)              // smaller so the full text fits
-         .fillColor("#c2831f")
-         .opacity(0.08)             // faint
+         .fontSize(60)
+         .fillColor("#F4991A")
+         .opacity(0.2)
          .rotate(-45, { origin: [pageWidth / 2, pageHeight / 2] })
          .text("BounceCure", 0, pageHeight / 2, {
            align: "center",
@@ -131,19 +283,36 @@ async function createInvoice(data) {
       if (data.issuedBy.website) { doc.text(`Website: ${data.issuedBy.website}`, rightColX, rightY); rightY += 14; }
       if (data.issuedBy.taxId) { doc.text(`Tax ID: ${data.issuedBy.taxId}`, rightColX, rightY); rightY += 14; }
 
-      // TABLE SECTION
+      // --- TABLE SECTION (replace original)
       const tableY = Math.max(leftY, rightY) + 30;
+
+      // Draw a thin separator line (keeps full width header line)
       doc.moveTo(margin, tableY - 10).lineTo(pageWidth - margin, tableY - 10)
         .strokeColor(headingColor).lineWidth(1).stroke();
 
-      doc.fillColor(headingColor).fontSize(14).font("Helvetica-Bold").text("Invoice Details", margin, tableY + 5);
+      doc.fillColor(headingColor).fontSize(14).font("Helvetica-Bold").text("Invoice Details", margin + 10, tableY + 5);
+
+      // Use an inner X so table isn't flush to the container edge
+      const innerPad = 10;                // adjust to taste (10-16 px is common)
+      const tableX = margin + innerPad;   // left start of the table
+      const tableWidth = 320 - innerPad*2; // shrink to allow right padding
+      const col1Width = 120;              // label column
+      const col2Width = tableWidth - col1Width;
+
       let currentY = tableY + 30;
-      const tableWidth = 320, col1Width = 120, col2Width = tableWidth - col1Width;
 
       const drawRow = (label, value, y) => {
-        doc.rect(margin, y, tableWidth, 22).strokeColor("#666").lineWidth(0.5).stroke();
-        doc.fillColor(headingColor).fontSize(10).font("Helvetica-Bold").text(label, margin + 8, y + 6, { width: col1Width - 16 });
-        doc.fillColor(textColor).font("Helvetica").text(value || "-", margin + col1Width + 8, y + 6, { width: col2Width - 16 });
+        // draw the row box inset by innerPad
+        doc.rect(tableX, y, tableWidth, 22).strokeColor("#666").lineWidth(0.5).stroke();
+
+        // label (left aligned in label column)
+        doc.fillColor(headingColor).fontSize(10).font("Helvetica-Bold")
+          .text(label, tableX + 8, y + 6, { width: col1Width - 16, align: "left" });
+
+        // value (right column, left aligned inside that column)
+        doc.fillColor(textColor).fontSize(10).font("Helvetica")
+          .text(value || "-", tableX + col1Width + 8, y + 6, { width: col2Width - 16, align: "left" });
+
         return y + 22;
       };
 
@@ -153,7 +322,7 @@ async function createInvoice(data) {
 
       // PAYMENT TABLE
       currentY += 15;
-      doc.fillColor(headingColor).fontSize(14).font("Helvetica-Bold").text("Payment Information", margin, currentY);
+      doc.fillColor(headingColor).fontSize(14).font("Helvetica-Bold").text("Payment Information", tableX, currentY);
       currentY += 25;
       currentY = drawRow("Payment Method", data.paymentMethod, currentY);
       currentY = drawRow("Payment Date", data.paymentDate, currentY);
@@ -164,11 +333,15 @@ async function createInvoice(data) {
       doc.rect(summaryX, summaryY - 5, summaryWidth, 170).strokeColor(accent).lineWidth(2).stroke();
       doc.fillColor(headingColor).fontSize(14).font("Helvetica-Bold").text("Payment Summary", summaryX + 10, summaryY + 5);
 
+      // --- SUMMARY BOX CODE ---
       let sumY = summaryY + 30;
+      const valueColWidth = 60;
+      const labelColWidth = summaryWidth - 20 - valueColWidth; // padding from both sides
+
       const addSumRow = (label, value, bold = false) => {
         doc.fillColor(textColor).fontSize(10).font(bold ? "Helvetica-Bold" : "Helvetica")
-          .text(label, summaryX + 10, sumY)
-          .text(`${value}`, summaryX + summaryWidth - 60, sumY, { width: 50, align: "right" });
+          .text(label, summaryX + 10, sumY, { width: labelColWidth, align: "left" })
+          .text(`${value}`, summaryX + 10 + labelColWidth, sumY, { width: valueColWidth, align: "right" });
         sumY += 16;
       };
 
@@ -183,7 +356,7 @@ async function createInvoice(data) {
 
       doc.rect(summaryX + 5, sumY, summaryWidth - 10, 26).fill(accent);
       doc.fillColor("white").fontSize(12).font("Helvetica-Bold")
-        .text("TOTAL:", summaryX + 15, sumY + 6)
+        .text("TOTAL:", summaryX + 15, sumY + 6, { width: summaryWidth - valueColWidth - 40, align: "left" })
         .text(`${data.finalTotal}`, summaryX + summaryWidth - 60, sumY + 6, { width: 50, align: "right" });
 
       // Footer line position (safe above bottom margin)
@@ -197,7 +370,7 @@ async function createInvoice(data) {
 
       // Footer text
       doc.fontSize(12)
-         .fillColor("#EAA64D") // golden theme
+         .fillColor("#EAA64D")
          .text("Abacco Technology", margin, footerY + 10, {
            align: "center",
            width: doc.page.width - margin * 2
@@ -212,27 +385,123 @@ async function createInvoice(data) {
   });
 }
 
+// Login route
+router.post("/login", async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ success: false, message: "Email and password are required" });
+  }
+
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(email)) {
+    return res.status(400).json({ success: false, message: "Invalid email format" });
+  }
+
+  try {
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      console.log("User not found:", email);
+      return res.status(400).json({ success: false, message: "Invalid email or password" });
+    }
+
+    console.log("Password from request:", password);
+    console.log("Password from DB:", user.password);
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    console.log("Passwords match?", isMatch);
+
+    if (!isMatch) {
+      console.log("Incorrect password for:", email);
+      return res.status(400).json({ success: false, message: "Invalid email or password" });
+    }
+
+    const token = jwt.sign(
+      { userId: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
+      process.env.JWT_SECRET || 'your-secret-key',
+      { expiresIn: '24h' }
+    );
+
+    console.log("Login successful:", email);
+    return res.json({ success: true, token, user: { id: user.id, email: user.email } });
+
+  } catch (err) {
+    console.error("Login error:", err);
+    return res.status(500).json({ success: false, message: "Server error", debug: err.message });
+  }
+});
+
 // Send invoice endpoint
-router.post("/send-invoice", async (req, res) => {
+router.post("/send-invoice", authenticateToken, async (req, res) => {
+  console.log("=== SEND INVOICE DEBUG ===");
+  console.log("User from token:", req.user);
+  
   const data = req.body;
+  console.log("Received invoice data:", data);
   const required = ["email", "transactionId", "processedDate", "planName", "planPrice", "contacts", "issuedTo", "issuedBy"];
   const missing = required.filter(f => !data[f]);
   
-  if (missing.length) return res.status(400).json({ success: false, message: `Missing fields: ${missing.join(", ")}` });
+  if (missing.length) {
+    console.error("Missing fields:", missing);
+    return res.status(400).json({ 
+      success: false, 
+      message: `Missing fields: ${missing.join(", ")}`,
+      debug: {
+        missingFields: missing,
+        receivedData: data
+      }
+    });
+  }
 
   try {
+    console.log("Creating PDF...");
     const { filePath, fileName } = await createInvoice(data);
+    console.log("PDF created successfully:", filePath);
     
+    // Check email configuration
     if (!process.env.EMAIL_USER || !process.env.EMAIL_PASS) {
-      return res.json({ success: false, message: "Email not configured", downloadPath: `/api/download-invoice/${fileName}` });
+      console.error("Email configuration missing");
+      return res.status(500).json({ 
+        success: false, 
+        message: "Email not configured", 
+        downloadPath: `/api/download-invoice/${fileName}`,
+        debug: {
+          emailUser: process.env.EMAIL_USER ? "Present" : "Missing",
+          emailPass: process.env.EMAIL_PASS ? "Present" : "Missing"
+        }
+      });
     }
 
+    // Create email transporter
     const transporter = nodemailer.createTransport({
-      service: "gmail",
-      auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-      tls: { rejectUnauthorized: false }
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+      tls: {
+        rejectUnauthorized: false
+      }
     });
 
+    // Verify email configuration
+    try {
+      console.log("Verifying email configuration...");
+      await transporter.verify();
+      console.log("Email server connection verified");
+    } catch (emailErr) {
+      console.error("Email verification failed:", emailErr);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Email server configuration error", 
+        downloadPath: `/api/download-invoice/${fileName}`,
+        debug: {
+          emailError: emailErr.message
+        }
+      });
+    }
+
+    // Prepare email options
     const mailOptions = {
       from: `"BounceCure" <${process.env.EMAIL_USER}>`,
       to: data.email,
@@ -279,172 +548,146 @@ router.post("/send-invoice", async (req, res) => {
       ]
     };
 
-    await transporter.sendMail(mailOptions);
-    fs.unlinkSync(filePath);
-    res.json({ success: true, message: "Invoice sent to " + data.email });
+    // Send email
+    console.log("Sending email...");
+    const info = await transporter.sendMail(mailOptions);
+    console.log("Email sent successfully:", info.messageId);
+    
+    // Clean up PDF file
+    try {
+      fs.unlinkSync(filePath);
+      console.log("Temporary PDF file deleted");
+    } catch (deleteErr) {
+      console.error("Error deleting PDF file:", deleteErr);
+    }
+    
+    return res.json({ success: true, message: "Invoice sent to " + data.email });
   } catch (err) {
     console.error("Invoice error:", err);
-    res.status(500).json({ success: false, message: err.message || "Failed to send invoice" });
+    return res.status(500).json({ 
+      success: false, 
+      message: err.message || "Failed to send invoice",
+      debug: {
+        error: err.message,
+        stack: err.stack
+      }
+    });
   }
 });
 
 // Save payment data endpoint
-router.post("/save-payment", async (req, res) => {
-  const { email, transactionId, planName, paymentDate, nextPaymentDate, amount } = req.body;
+router.post("/save-payment", authenticateToken, async (req, res) => {
+  // console.log("=== SAVE PAYMENT DEBUG ===");
+  console.log("User from token:", req.user);
+  console.log('Payment data received:', req.body);
+  
+  const { 
+    email, 
+    transactionId, 
+    planName, 
+    paymentDate, 
+    nextPaymentDate, 
+    amount, 
+    planType, 
+    provider, 
+    contacts, 
+    currency, 
+    paymentMethod, 
+    cardLast4, 
+    status 
+  } = req.body;
   
   try {
-    const payment = await prisma.payment.create({
-      data: {
-        email,
-        transaction_id: transactionId,
-        plan_name: planName,
-        payment_date: new Date(paymentDate),
-        next_payment_date: new Date(nextPaymentDate),
-        amount: parseFloat(amount)
-      }
-    });
-    
-    res.json({ success: true, message: "Payment data saved", id: payment.id });
-  } catch (err) {
-    console.error('Error saving payment:', err);
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// Download invoice endpoint
-router.get("/download-invoice/:filename", (req, res) => {
-  const filePath = path.join(tempDir, req.params.filename);
-  if (!fs.existsSync(filePath)) return res.status(404).json({ success: false, message: "Invoice not found" });
-  
-  res.download(filePath, req.params.filename, (err) => {
-    if (err) return res.status(500).json({ success: false, message: "Download error" });
-    try { fs.unlinkSync(filePath); } catch {}
-  });
-});
-
-// Validate payment endpoint
-router.post("/validate-payment", async (req, res) => {
-  const { cardNumber, expiry, cvv, amount } = req.body;
-
-  if (!cardNumber || !expiry || !cvv || !amount) {
-    return res.status(400).json({ error: "Missing required fields" });
-  }
-
-  try {
-    // Simple validation for demo purposes
-    // In a real application, you would integrate with a payment gateway
-    const isValid = cardNumber.length >= 13 && 
-                   /^\d{2}\/\d{2}$/.test(expiry) && 
-                   cvv.length >= 3;
-    
-    if (isValid) {
-      res.json({ success: true, message: "Payment validated successfully" });
-    } else {
-      res.status(400).json({ success: false, message: "Invalid payment details" });
-    }
-  } catch (err) {
-    console.error('Error validating payment:', err);
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-// Function to send payment reminder
-async function sendPaymentReminder(payment) {
-  const transporter = nodemailer.createTransport({
-    service: "gmail",
-    auth: { user: process.env.EMAIL_USER, pass: process.env.EMAIL_PASS },
-    tls: { rejectUnauthorized: false }
-  });
-  
-  const mailOptions = {
-    from: `"BounceCure" <${process.env.EMAIL_USER}>`,
-    to: payment.email,
-    subject: `Payment Reminder for ${payment.plan_name}`,
-    html: `
-      <div style="font-family: Arial; max-width: 600px; margin: 0 auto; padding: 30px; background: #f9f9f9;">
-        <div style="background: white; padding: 40px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-          <div style="text-align: center; margin-bottom: 30px;">
-            <img src="cid:logo" alt="BounceCure Logo" style="width: 50px;">
-            <h1 style="color: #154c7c; margin: 20px 0 10px 0;">BounceCure</h1>
-          </div>
-          <h2 style="color: #154c7c; border-bottom: 2px solid #154c7c; padding-bottom: 10px;">Payment Reminder</h2>
-          <p style="font-size: 16px; color: #333; line-height: 1.6;">
-            This is a reminder that your next payment for <strong>${payment.plan_name}</strong> is due on <strong>${new Date(payment.next_payment_date).toLocaleDateString()}</strong>.
-          </p>
-          <div style="background: #f5f5f5; padding: 20px; border-radius: 6px; margin: 20px 0;">
-            <table style="width: 100%;">
-              <tr><td style="padding: 8px 0; color: #666; font-weight: bold;">Plan:</td><td style="padding: 8px 0;">${payment.plan_name}</td></tr>
-              <tr><td style="padding: 8px 0; color: #666; font-weight: bold;">Amount:</td><td style="padding: 8px 0; color: #154c7c; font-weight: bold; font-size: 18px;">$${payment.amount}</td></tr>
-              <tr><td style="padding: 8px 0; color: #666; font-weight: bold;">Due Date:</td><td style="padding: 8px 0;">${new Date(payment.next_payment_date).toLocaleDateString()}</td></tr>
-            </table>
-          </div>
-          <div style="text-align: center; margin-top: 40px; padding-top: 20px; border-top: 1px solid #eee;">
-            <p style="font-size: 12px; color: #666;">Tax was applied to this purchase.</p>
-            <p style="font-size: 12px; color: #666;">© 2023-${new Date().getFullYear()} BounceCure® All Rights Reserved</p>
-            <p style="font-size: 12px; color: #666;">405 N. Angier Ave. NE, Atlanta, GA 30312 USA</p>
-            <p style="font-size: 12px; color: #666;">
-              <a href="https://bouncecure.com/contact" style="color: #666; text-decoration: underline;">Contact Us</a>
-               • 
-              <a href="https://bouncecure.com/terms" style="color: #666; text-decoration: underline;">Terms of Use</a>
-               • 
-              <a href="https://bouncecure.com/privacy" style="color: #666; text-decoration: underline;">Privacy Policy</a>
-            </p>
-            <p style="font-size: 12px; color: #666;">
-              <a href="https://bouncecure.com/unsubscribe?email=${payment.email}" style="color: #666; text-decoration: underline;">Turn off Notification</a>
-            </p>
-          </div>
-        </div>
-      </div>
-    `,
-    attachments: [
-      { filename: 'bounce.jpg', path: path.join(__dirname, '../../client/public/bounce.jpg'), cid: 'logo' }
-    ]
-  };
-
-  await transporter.sendMail(mailOptions);
-  console.log(`Payment reminder sent to ${payment.email}`);
-}
-
-// Schedule cron job to check for upcoming payments
-cron.schedule('0 8 * * *', async () => {
-  console.log('Running payment reminder check...');
-  
-  try {
-    // Get current date and 5 days from now
-    const now = new Date();
-    const fiveDaysLater = new Date();
-    fiveDaysLater.setDate(now.getDate() + 5);
-    
-    // Find payments due in 5 days that haven't been notified
-    const upcomingPayments = await prisma.payment.findMany({
-      where: {
-        next_payment_date: {
-          gte: now,
-          lte: fiveDaysLater
-        },
-        notified: false
-      }
-    });
-    
-    for (const payment of upcomingPayments) {
-      // Send reminder email
-      await sendPaymentReminder(payment);
-      
-      // Update payment record to mark as notified
-      await prisma.payment.update({
-        where: {
-          id: payment.id
-        },
-        data: {
-          notified: true
+    // Validate required fields
+    if (!email || !transactionId || !planName || !amount) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Missing required fields: email, transactionId, planName, amount",
+        debug: {
+          missingFields: { email, transactionId, planName, amount },
+          receivedData: req.body
         }
       });
     }
     
-    console.log(`Sent ${upcomingPayments.length} payment reminders`);
+    // Use userId from token (fallback to id if present)
+    const finalUserId = req.user.userId || req.user.id;
+    
+    if (!finalUserId) {
+      return res.status(400).json({
+        success: false,
+        message: "User ID missing from token. Cannot save payment.",
+        debug: {
+          tokenPayload: req.user
+        }
+      });
+    }
+    
+    console.log("Using user ID from token:", finalUserId);
+    
+    // Create payment with all required fields
+    const payment = await prisma.payment.create({
+      data: {
+        userId: finalUserId,
+        email,
+        transactionId,
+        planName,
+        planType: planType || "monthly",
+        provider: provider || "Stripe",
+        contacts: contacts ? parseInt(contacts) : 0,
+        amount: parseFloat(amount),
+        currency: currency || "USD",
+        paymentMethod: paymentMethod || "Card",
+        cardLast4: cardLast4 || null,
+        paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
+        nextPaymentDate: nextPaymentDate ? new Date(nextPaymentDate) : null,
+        status: status || "success"
+      }
+    });
+    
+    console.log("=== FINAL PAYMENT DATA ===", {
+      userId: finalUserId,
+      email,
+      transactionId,
+      planName,
+      planType,
+      provider,
+      contacts,
+      amount,
+      currency,
+      paymentMethod,
+      cardLast4,
+      paymentDate,
+      nextPaymentDate,
+      status
+    });
+    
+    console.log('Payment saved successfully:', payment);
+    return res.json({ success: true, message: "Payment data saved", payment });
   } catch (err) {
-    console.error('Error in payment reminder job:', err);
+    console.error('Error saving payment:', err);
+    return res.status(500).json({ 
+      success: false, 
+      message: err.message,
+      debug: {
+        error: err.message,
+        stack: err.stack
+      }
+    });
   }
+});
+
+// Global error handler to catch any unhandled errors
+router.use((err, req, res, next) => {
+  console.error("Global error handler:", err);
+  res.status(500).json({
+    success: false,
+    message: "Internal server error",
+    debug: {
+      error: err.message,
+      stack: err.stack
+    }
+  });
 });
 
 export default router;
