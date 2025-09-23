@@ -39,6 +39,7 @@ import { initSocket } from "./services/socketService.js";
 // import  startSyncLoop  from "./services/syncService.js";
 import { PrismaClient } from "@prisma/client";
 import cron from 'node-cron';
+
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 
 import multimediaRoutes from './routes/multimedia.js';
@@ -50,7 +51,6 @@ import invoiceRoutes from "./routes/invoiceRoutes.js";
 
 // ENV setup
 dotenv.config();
-console.log("Loaded SG API key:", process.env.SG_EMAIL_VAL_API_KEY?.substring(0, 10));
 
 // Init
 startEmailScheduler();
@@ -94,7 +94,6 @@ app.use("/api/auth", passwordRoutes);     // <- Combine later if needed
 app.use("/dashboard", dashboardCRM);
 app.use("/verification", verificationRoutes);
 
-// ✅ Mount Routes
 app.use("/api", dashboardRoutes);
 
 // Use routes
@@ -111,6 +110,7 @@ app.use("/notifications", notificationsRoutes);
 app.use('/api/sendContacts', sendContactsRoutes);
 app.use('/api/sendCampaigns', sendCampaignsRoutes);
 // Multimedia campaigns
+
 app.use('/api/multimedia', multimediaRoutes);
 app.use("/tasks", taskRoutes);
 app.use("/deals", dealsRoutes);
