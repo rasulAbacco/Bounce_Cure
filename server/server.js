@@ -47,7 +47,8 @@ import multimediaRoutes from './routes/multimedia.js';
 import http from "http";
 import { Server as IOServer } from "socket.io";
 import invoiceRoutes from "./routes/invoiceRoutes.js";
-
+import campaignsAutoRouter from './routes/campaignsAuto.js'; // adjust path as needed
+// import { router as verifiedEmailsRouter } from './routes/verifiedEmails.js'; // Add this import
 
 // ENV setup
 dotenv.config();
@@ -107,6 +108,7 @@ app.use("/api/push", pushRoutes);
 app.use("/notifications", notificationsRoutes);
 
 //campaign
+app.use("/api/automation", campaignsAutoRouter);
 app.use('/api/sendContacts', sendContactsRoutes);
 app.use('/api/sendCampaigns', sendCampaignsRoutes);
 // Multimedia campaigns
@@ -136,6 +138,8 @@ initSocket(io);
 
 app.use('/api/campaigncontacts', campaignContactsRoutes);
 app.use('/api/campaigns', campaignsRoutes);
+// app.use('/api/verified-emails', verifiedEmailsRouter);
+
 
 // Root route
 app.get('/', (req, res) => {

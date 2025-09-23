@@ -1,14 +1,13 @@
 import express from "express";
 import { PrismaClient } from "@prisma/client";
-import { Queue } from "bullmq";
 
 const prisma = new PrismaClient();
 const router = express.Router();
-const emailQueue = new Queue("emailQueue"); // queue for sending emails
 
 // Add a new email
 router.post("/", async (req, res) => {
   const { from, to, subject, body, date, accountId, folder = "INBOX" } = req.body;
+
   try {
     const email = await prisma.email.create({
       data: {
@@ -24,8 +23,8 @@ router.post("/", async (req, res) => {
       },
     });
 
-    // add email to sending queue (optional)
-    await emailQueue.add("sendEmail", { emailId: email.id, accountId });
+    // 🚫 Removed Redis queueing
+    // Email is saved directly to DB
 
     res.status(201).json(email);
   } catch (err) {
@@ -37,15 +36,15 @@ router.post("/", async (req, res) => {
 // Get emails
 router.get("/", async (req, res) => {
   const accountId = parseInt(req.query.accountId);
-  const filter = accountId ? { accountId } : {};
 
   try {
     const emails = await prisma.email.findMany({
-      where: filter,
+      where: accountId ? { accountId } : {},
       orderBy: { date: "desc" },
       take: 50,
-      include: { account: true }, // now works
+      include: { account: true },
     });
+
     res.json(emails);
   } catch (err) {
     console.error("Error fetching emails:", err);
@@ -58,9 +57,11 @@ router.get("/:id", async (req, res) => {
   try {
     const email = await prisma.email.findUnique({
       where: { id: parseInt(req.params.id) },
-      include: { account: true }, // now works
+      include: { account: true },
     });
+
     if (!email) return res.status(404).json({ error: "Email not found" });
+
     res.json(email);
   } catch (err) {
     console.error("Error fetching email:", err);
