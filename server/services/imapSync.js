@@ -1,9 +1,9 @@
+// server/services/imapSync.js
 import { ImapFlow } from "imapflow";
 import { simpleParser } from "mailparser";
 import { google } from "googleapis";
 import { ConfidentialClientApplication } from "@azure/msal-node";
 import fetch from "node-fetch";
-import Imap from "imap";
 import sgMail from "@sendgrid/mail";
 import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
@@ -338,11 +338,38 @@ async function syncOutlookAPI(prisma, account) {
   }
 }
 
-// IMAP sync (fallback)
+// IMAP sync (for password auth and fallback)
 async function syncImap(prisma, account) {
-  const authConfig = account.oauthClientId && account.oauthClientSecret && account.refreshToken
-    ? { user: account.imapUser, accessToken: await getOAuth2AccessToken(account) }
-    : { user: account.imapUser, pass: account.encryptedPass };
+  let authConfig;
+  
+  // FIXED: Check authType first
+  if (account.authType === "password") {
+    // Use app password for authentication
+    authConfig = { 
+      user: account.imapUser, 
+      pass: account.encryptedPass 
+    };
+    console.log(`🔐 Using password auth for ${account.email}`);
+  } 
+  // Only use OAuth if explicitly configured
+  else if (account.authType === "oauth" && account.oauthClientId && account.oauthClientSecret && account.refreshToken) {
+    try {
+      const accessToken = await getOAuth2AccessToken(account);
+      authConfig = { user: account.imapUser, accessToken };
+      console.log(`🔑 Using OAuth2 for ${account.email}`);
+    } catch (error) {
+      console.error(`❌ OAuth2 failed for ${account.email}, falling back to IMAP:`, error.message);
+      // Fall back to password if available
+      if (account.encryptedPass) {
+        authConfig = { user: account.imapUser, pass: account.encryptedPass };
+        console.log(`🔄 Falling back to password auth for ${account.email}`);
+      } else {
+        throw new Error("No valid authentication method available");
+      }
+    }
+  } else {
+    throw new Error("No valid authentication method available");
+  }
 
   const client = new ImapFlow({
     host: account.imapHost,
@@ -355,46 +382,57 @@ async function syncImap(prisma, account) {
 
   client.on("error", (err) => console.error(`❌ IMAP socket error [${account.imapUser}]:`, err.message));
 
-  await client.connect();
-  const lock = await client.getMailboxLock("INBOX");
   try {
-    for await (let message of client.fetch("1:*", { envelope: true, source: true })) {
-      try {
-        const parsed = await simpleParser(message.source);
-        const subject = message.envelope.subject || "(no subject)";
-        const from = message.envelope.from?.map((f) => f.address).join(", ") || "unknown";
+    await client.connect();
+    console.log(`✅ Connected to IMAP for ${account.email}`);
+    
+    const lock = await client.getMailboxLock("INBOX");
+    try {
+      let messageCount = 0;
+      for await (let message of client.fetch("1:*", { envelope: true, source: true })) {
+        try {
+          const parsed = await simpleParser(message.source);
+          const subject = message.envelope.subject || "(no subject)";
+          const from = message.envelope.from?.map((f) => f.address).join(", ") || "unknown";
 
-        if (!shouldSkipEmail(subject, from)) {
-          const inReplyTo = parsed.headers.get("in-reply-to") || null;
-          const references = parsed.headers.get("references");
-          const threadId = references ? references.split(" ")[0]?.replace(/[<>]/g, "") : inReplyTo?.replace(/[<>]/g, "") || null;
+          if (!shouldSkipEmail(subject, from)) {
+            const inReplyTo = parsed.headers.get("in-reply-to") || null;
+            const references = parsed.headers.get("references");
+            const threadId = references ? references.split(" ")[0]?.replace(/[<>]/g, "") : inReplyTo?.replace(/[<>]/g, "") || null;
 
-          const emailData = {
-            messageId: message.envelope.messageId || `uid-${message.uid}-${Date.now()}`,
-            from,
-            to: message.envelope.to?.map((t) => t.address).join(", ") || "unknown",
-            subject,
-            body: parsed.text || "",
-            bodyHtml: parsed.html || "",
-            date: message.envelope.date || new Date(),
-            folder: "INBOX",
-            source: "imap",
-            status: "unread",
-            tags: [],
-            threadId,
-            inReplyTo,
-            isReply: !!inReplyTo,
-          };
+            const emailData = {
+              messageId: message.envelope.messageId || `uid-${message.uid}-${Date.now()}`,
+              from,
+              to: message.envelope.to?.map((t) => t.address).join(", ") || "unknown",
+              subject,
+              body: parsed.text || "",
+              bodyHtml: parsed.html || "",
+              date: message.envelope.date || new Date(),
+              folder: "INBOX",
+              source: "imap",
+              status: "unread",
+              tags: [],
+              threadId,
+              inReplyTo,
+              isReply: !!inReplyTo,
+            };
 
-          await saveEmail(prisma, emailData, account.id);
-          console.log(`📥 Saved via IMAP: ${subject}`);
+            await saveEmail(prisma, emailData, account.id);
+            console.log(`📥 Saved via IMAP: ${subject}`);
+            messageCount++;
+          }
+        } catch (emailErr) {
+          console.error(`⚠ Failed to process email: ${emailErr.message}`);
         }
-      } catch (emailErr) {
-        console.error(`⚠ Failed to process email: ${emailErr.message}`);
       }
+      console.log(`📥 Synced ${messageCount} emails for ${account.email}`);
+    } finally {
+      lock.release();
     }
+  } catch (err) {
+    console.error(`❌ IMAP sync failed for ${account.email}:`, err.message);
+    throw err;
   } finally {
-    lock.release();
     await client.logout();
   }
 }
@@ -410,12 +448,23 @@ export async function runSync(prisma) {
   const accounts = await prisma.emailAccount.findMany();
   for (const account of accounts) {
     try {
-      if (account.provider === "gmail") {
-        await syncGmailAPI(prisma, account);
-      } else if (account.provider === "outlook") {
-        await syncOutlookAPI(prisma, account);
-      } else {
+      // FIXED: Check authType before choosing sync method
+      if (account.authType === "password") {
+        console.log(`🔄 Using IMAP for password-authenticated account: ${account.email}`);
         await syncImap(prisma, account);
+      } else if (account.authType === "oauth") {
+        if (account.provider === "gmail") {
+          console.log(`🔄 Using Gmail API for OAuth account: ${account.email}`);
+          await syncGmailAPI(prisma, account);
+        } else if (account.provider === "outlook") {
+          console.log(`🔄 Using Outlook API for OAuth account: ${account.email}`);
+          await syncOutlookAPI(prisma, account);
+        } else {
+          console.log(`🔄 Using IMAP for OAuth account: ${account.email}`);
+          await syncImap(prisma, account);
+        }
+      } else {
+        console.error(`❌ Unknown authType for ${account.email}: ${account.authType}`);
       }
     } catch (err) {
       console.error(`❌ Failed sync for ${account.email}:`, err.message);
@@ -430,15 +479,28 @@ export async function runSync(prisma) {
  */
 export async function syncEmailsForAccount(prisma, account) {
   try {
-    if (account.provider === "gmail") {
-      await syncGmailAPI(prisma, account);
-    } else if (account.provider === "outlook") {
-      await syncOutlookAPI(prisma, account);
-    } else {
+    // FIXED: Check authType before choosing sync method
+    if (account.authType === "password") {
+      console.log(`🔄 Using IMAP for password-authenticated account: ${account.email}`);
       await syncImap(prisma, account);
+    } else if (account.authType === "oauth") {
+      if (account.provider === "gmail") {
+        console.log(`🔄 Using Gmail API for OAuth account: ${account.email}`);
+        await syncGmailAPI(prisma, account);
+      } else if (account.provider === "outlook") {
+        console.log(`🔄 Using Outlook API for OAuth account: ${account.email}`);
+        await syncOutlookAPI(prisma, account);
+      } else {
+        console.log(`🔄 Using IMAP for OAuth account: ${account.email}`);
+        await syncImap(prisma, account);
+      }
+    } else {
+      console.error(`❌ Unknown authType for ${account.email}: ${account.authType}`);
+      throw new Error(`Unknown authType: ${account.authType}`);
     }
     console.log(`✅ Sync completed for ${account.email}`);
   } catch (err) {
     console.error(`❌ Failed sync for ${account.email}:`, err.message);
+    throw err;
   }
 }

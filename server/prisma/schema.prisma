@@ -196,7 +196,7 @@ model EmailAccount {
   userId   Int
   email    String  @unique
   provider String?
-
+  authType String // "password" or "oauth"
   imapHost String
   imapPort Int
   imapUser String
@@ -401,33 +401,6 @@ model Message {
   sentAt         DateTime      @default(now())
 }
 
-model Campaign {
-  id              Int      @id @default(autoincrement())
-  name            String
-  subject         String
-  fromName        String
-  fromEmail       String
-  sentCount       Int      @default(0)
-  openCount       Int      @default(0)
-  clickCount      Int      @default(0)
-  conversionCount Int      @default(0)
-  designJson      String? // store canvas JSON
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  events CampaignEvent[]
-}
-
-model CampaignEvent {
-  id         Int      @id @default(autoincrement())
-  campaignId Int
-  type       String // "sent" | "open" | "click" | "conversion"
-  email      String?
-  createdAt  DateTime @default(now())
-
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-}
-
 model MmsCampaign {
   id         Int            @id @default(autoincrement())
   name       String
@@ -464,4 +437,76 @@ model Payment {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   User            User      @relation(fields: [userId], references: [id])
+}
+
+model ScheduledCampaign {
+  id                 Int         @id @default(autoincrement())
+  campaignName       String
+  subject            String
+  fromName           String
+  fromEmail          String
+  recipients         Json
+  template           String? // 👈 new field to store template choice
+  canvasData         Json? // 👈 new field to store canvas data
+  scheduleType       String
+  scheduledDateTime  DateTime?
+  timezone           String?
+  recurringFrequency String?
+  recurringDays      Json?
+  recurringEndDate   DateTime?
+  status             String      @default("scheduled")
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  SentEmail          SentEmail[]
+}
+
+model SentEmail {
+  id         Int               @id @default(autoincrement())
+  campaignId Int
+  email      String
+  status     String // sent | failed
+  error      String?
+  sentAt     DateTime          @default(now())
+  campaign   ScheduledCampaign @relation(fields: [campaignId], references: [id])
+}
+
+model Campaign {
+  id              Int      @id @default(autoincrement())
+  name            String
+  subject         String
+  fromName        String
+  fromEmail       String
+  sentCount       Int      @default(0)
+  openCount       Int      @default(0)
+  clickCount      Int      @default(0)
+  conversionCount Int      @default(0)
+  designJson      String? // store canvas JSON
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  events CampaignEvent[]
+}
+
+model CampaignEvent {
+  id         Int      @id @default(autoincrement())
+  campaignId Int
+  type       String // "sent" | "open" | "click" | "conversion"
+  email      String?
+  createdAt  DateTime @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+model CampaignVerifiedEmail {
+  id                Int       @id @default(autoincrement())
+  email             String    @unique
+  fromName          String
+  verificationToken String?   @unique
+  isVerified        Boolean   @default(false)
+  verifiedAt        DateTime?
+  expiresAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("campaign_verified_emails")
 }

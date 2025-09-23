@@ -52,9 +52,7 @@ import SMScampaign from './pages/Multimedia/SMScampaign';
 import TermsConditions from './pages/Terms&conditions';
 import RefundPolicy from './pages/RefundPolicy';
 import Signin from './pages/Pricing/Signin';
-import Signupd from './pages/Pricing/signupd';
-
-
+import VerifydEmail from './pages/Campaign/pages/VerifydEmail';
 
 function App() {
   return (
@@ -118,6 +116,7 @@ function App() {
             <Route path="/templetes" element={<Templets />} />
             <Route path="/canva" element={<CanvasArea />} />
             <Route path="/send-campaign" element={<SendCampaign />} />
+            <Route path="/verifydemail" element={<VerifydEmail />} /> // Old route for backward compatibility
             <Route path="/all-templates" element={<AllTemplates />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
             <Route path="/WatsupCampaign" element={<WatsupCampaign />} />

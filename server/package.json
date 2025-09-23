@@ -14,7 +14,7 @@
   "dependencies": {
     "@aws-sdk/client-ses": "^3.888.0",
     "@azure/msal-node": "^3.7.4",
-    "@sendgrid/mail": "^8.1.5",
+    "@sendgrid/mail": "^8.1.6",
     "aws-sdk": "^2.1692.0",
     "bcrypt": "^6.0.0",
     "bcryptjs": "^3.0.2",
@@ -38,7 +38,7 @@
     "imap-simple": "^5.1.0",
     "imapflow": "^1.0.195",
     "imp": "^0.0.1",
-    "ioredis": "^5.7.0",
+    "ioredis": "^5.8.0",
     "is-disposable-email": "^0.0.1",
     "jsonwebtoken": "^9.0.2",
     "leac": "^0.7.0",
