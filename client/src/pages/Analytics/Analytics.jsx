@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Calendar as CalendarIcon,
   Filter,
@@ -31,43 +31,85 @@ export default function Analytics() {
   const [selectedFilter, setSelectedFilter] = useState("All Campaigns");
   const [showFilter, setShowFilter] = useState(false);
 
-  // Example Data
-  const trendData = [
-    { date: "Aug 1", open: 60, click: 20 },
-    { date: "Aug 2", open: 70, click: 30 },
-    { date: "Aug 3", open: 50, click: 25 },
-    { date: "Aug 4", open: 80, click: 40 },
-  ];
+  // Campaigns state
+  const [campaigns, setCampaigns] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch campaigns from backend
+  useEffect(() => {
+    fetch("http://localhost:5000/api/campaigns")
+      .then((res) => res.json())
+      .then((data) => {
+        setCampaigns(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        console.error("Error fetching campaigns:", err);
+        setLoading(false);
+      });
+  }, []);
+
+  // Build derived stats
+  const totalSent = campaigns.reduce((sum, c) => sum + c.sentCount, 0);
+  const totalOpens = campaigns.reduce((sum, c) => sum + c.openCount, 0);
+  const totalClicks = campaigns.reduce((sum, c) => sum + c.clickCount, 0);
+  const totalConversions = campaigns.reduce((sum, c) => sum + c.conversionCount, 0);
+
+  const openRate = totalOpens;
+  const clickRate = totalClicks;
+  const conversionRate = totalConversions;
+
+  // Chart data
+  const trendData = campaigns.slice(0, 7).map((c) => ({
+    date: new Date(c.createdAt).toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+    }),
+    open: c.openCount,
+    click: c.clickCount,
+    conversion: c.conversionCount,
+  }));
 
   const funnelData = [
-    { stage: "Delivered", value: 100 },
-    { stage: "Opened", value: 80 },
-    { stage: "Clicked", value: 40 },
-    { stage: "Purchased", value: 20 },
+    { stage: "Delivered", value: totalSent },
+    { stage: "Opened", value: totalOpens },
+    { stage: "Clicked", value: totalClicks },
+    { stage: "Converted", value: totalConversions },
   ];
 
-  const overTimeData = [
-    { date: "Aug 1", value: 5 },
-    { date: "Aug 2", value: 8 },
-    { date: "Aug 3", value: 6 },
-    { date: "Aug 4", value: 9 },
-  ];
+  const campaignTable = campaigns.map((c) => ({
+    id: c.id,
+    name: c.name,
+    sent: c.sentCount,
+    open: c.openCount,
+    click: c.clickCount,
+    conversion: c.conversionCount,
+  }));
 
-  const campaignTable = [
-    { name: "Campaign A", sent: 1000, open: "60%", click: "20%" },
-    { name: "Campaign B", sent: 1500, open: "70%", click: "30%" },
-    { name: "Campaign C", sent: 800, open: "50%", click: "25%" },
-  ];
+  // Handle delete action
+  const handleDelete = (id) => {
+    if (window.confirm("Are you sure you want to delete this campaign?")) {
+      fetch(`http://localhost:5000/api/campaigns/${id}`, {
+        method: "DELETE",
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed to delete");
+          setCampaigns((prev) => prev.filter((c) => c.id !== id));
+        })
+        .catch((err) => {
+          console.error("Error deleting campaign:", err);
+          alert("Failed to delete campaign.");
+        });
+    }
+  };
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen   text-white p-6 space-y-6 mt-20">
-        
+      <div className="min-h-screen text-white p-6 space-y-6 mt-20">
         {/* Header */}
         <div className="flex justify-between items-center relative">
           <h1 className="text-2xl font-bold text-[#c2831f]">Analytics Dashboard</h1>
           <div className="flex items-center gap-2 relative">
-            
             {/* Date Picker */}
             <div className="relative">
               <button
@@ -124,19 +166,21 @@ export default function Analytics() {
                 </div>
               )}
             </div>
-
           </div>
         </div>
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 ">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           {[
-            { title: "Total Sent", value: "5,000" },
-            { title: "Open Rate", value: "65%" },
-            { title: "Click Rate", value: "25%" },
-            { title: "Conversions", value: "500" },
+            { title: "Total Sent", value: totalSent },
+            { title: "Open Rate", value: openRate },
+            { title: "Click Rate", value: clickRate },
+            { title: "Conversion Rate", value: conversionRate },
           ].map((stat, idx) => (
-            <div key={idx} className="bg-black border border-gray-700 p-4 rounded-xl shadow-lg transition-all duration-200 hover:border-gray-100">
+            <div
+              key={idx}
+              className="bg-black border border-gray-700 p-4 rounded-xl shadow-lg transition-all duration-200 hover:border-gray-100"
+            >
               <h3 className="text-sm text-gray-400">{stat.title}</h3>
               <p className="text-2xl font-bold text-[#c2831f]">{stat.value}</p>
             </div>
@@ -144,17 +188,22 @@ export default function Analytics() {
         </div>
 
         {/* Trend Chart */}
-        <div className=" border border-gray-800 p-6 rounded-2xl shadow-lg">
-          <h2 className="text-lg font-semibold text-[#c2831f] mb-4">Open Rates Over Time</h2>
+        <div className="border border-gray-800 p-6 rounded-2xl shadow-lg">
+          <h2 className="text-lg font-semibold text-[#c2831f] mb-4">
+            Open/Click/Conversion Over Time
+          </h2>
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={trendData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                 <XAxis dataKey="date" stroke="#ccc" />
                 <YAxis stroke="#ccc" />
-                <Tooltip contentStyle={{ backgroundColor: "#111", border: "none" }} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: "#111", border: "none" }}
+                />
                 <Line type="monotone" dataKey="open" stroke="#c2831f" strokeWidth={2} />
                 <Line type="monotone" dataKey="click" stroke="#4ade80" strokeWidth={2} />
+                <Line type="monotone" dataKey="conversion" stroke="#60a5fa" strokeWidth={2} />
               </LineChart>
             </ResponsiveContainer>
           </div>
@@ -162,7 +211,6 @@ export default function Analytics() {
 
         {/* Conversion Section */}
         <div className="bg-[#0a0a0a] border border-gray-800 p-6 rounded-2xl shadow-lg">
-          {/* Tabs */}
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-lg font-semibold text-[#c2831f]">Conversions</h2>
             <div className="flex gap-2">
@@ -189,28 +237,48 @@ export default function Analytics() {
             </div>
           </div>
 
-          {/* Charts */}
           <div className="h-64 bg-transparent">
             {activeTab === "funnel" ? (
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart layout="vertical" data={funnelData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                   <XAxis type="number" stroke="#080808ff" />
-                  <YAxis type="category" dataKey="stage" stroke="#ccc" width={120} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: "#111", border: "none", color: "#fff" }}
+                  <YAxis
+                    type="category"
+                    dataKey="stage"
+                    stroke="#ccc"
+                    width={120}
                   />
-                  <Bar dataKey="value" fill="#c2831f" barSize={20}  radius={[4, 4, 0, 0]} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "#111",
+                      border: "none",
+                      color: "#fff",
+                    }}
+                  />
+                  <Bar
+                    dataKey="value"
+                    fill="#c2831f"
+                    barSize={20}
+                    radius={[4, 4, 0, 0]}
+                  />
                 </BarChart>
               </ResponsiveContainer>
             ) : (
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={overTimeData}>
+                <LineChart data={trendData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#333" />
                   <XAxis dataKey="date" stroke="#ccc" />
                   <YAxis stroke="#ccc" />
-                  <Tooltip contentStyle={{ backgroundColor: "#111", border: "none" }} />
-                  <Line type="monotone" dataKey="value" stroke="#c2831f" strokeWidth={2} />
+                  <Tooltip
+                    contentStyle={{ backgroundColor: "#111", border: "none" }}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="conversion"
+                    stroke="#60a5fa"
+                    strokeWidth={2}
+                  />
                 </LineChart>
               </ResponsiveContainer>
             )}
@@ -219,29 +287,50 @@ export default function Analytics() {
 
         {/* Campaign Table */}
         <div className="bg-[#0a0a0a] border border-gray-800 p-6 rounded-2xl shadow-lg overflow-x-auto">
-          <h2 className="text-lg font-semibold text-[#c2831f] mb-4">Campaign Details</h2>
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="border-b border-gray-700 text-gray-400">
-                <th className="py-2 px-4">Name</th>
-                <th className="py-2 px-4">Sent</th>
-                <th className="py-2 px-4">Open Rate</th>
-                <th className="py-2 px-4">Click Rate</th>
-              </tr>
-            </thead>
-            <tbody>
-              {campaignTable.map((row, idx) => (
-                <tr key={idx} className="border-b border-gray-800 hover:bg-gray-900">
-                  <td className="py-2 px-4">{row.name}</td>
-                  <td className="py-2 px-4">{row.sent}</td>
-                  <td className="py-2 px-4">{row.open}</td>
-                  <td className="py-2 px-4">{row.click}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+          <h2 className="text-lg font-semibold text-[#c2831f] mb-4">
+            Campaign Details
+          </h2>
+          <div className="max-h-[400px] overflow-y-auto">
+            {loading ? (
+              <p className="text-gray-400">Loading...</p>
+            ) : (
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-700 text-gray-400">
+                    <th className="py-2 px-4">Name</th>
+                    <th className="py-2 px-4">Sent</th>
+                    <th className="py-2 px-4">Open Rate</th>
+                    <th className="py-2 px-4">Click Rate</th>
+                    <th className="py-2 px-4">Conversion Rate</th>
+                    <th className="py-2 px-4">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {campaignTable.map((row, idx) => (
+                    <tr
+                      key={idx}
+                      className="border-b border-gray-800 hover:bg-gray-900"
+                    >
+                      <td className="py-2 px-4">{row.name}</td>
+                      <td className="py-2 px-4">{row.sent}</td>
+                      <td className="py-2 px-4">{row.open}</td>
+                      <td className="py-2 px-4">{row.click}</td>
+                      <td className="py-2 px-4">{row.conversion}</td>
+                      <td className="py-2 px-4">
+                        <button
+                          onClick={() => handleDelete(row.id)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
         </div>
-
       </div>
     </DashboardLayout>
   );

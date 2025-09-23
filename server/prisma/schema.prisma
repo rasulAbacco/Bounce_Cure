@@ -31,6 +31,7 @@ model User {
   sessions            Session[]
   Contact             Contact[]
   emailAccounts       EmailAccount[]
+  Payment             Payment[]
 }
 
 model Content {
@@ -190,35 +191,62 @@ model Deal {
   updatedAt DateTime @updatedAt
 }
 
-model Email {
-  id        Int           @id @default(autoincrement())
-  from      String
-  to        String
-  subject   String
-  body      String
-  date      DateTime
-  tags      String[]      @default([])
-  status    String
-  source    String
-  folder    String
-  accountId Int?
-  account   EmailAccount? @relation(fields: [accountId], references: [id])
-  createdAt DateTime      @default(now())
+model EmailAccount {
+  id       Int     @id @default(autoincrement())
+  userId   Int
+  email    String  @unique
+  provider String?
+
+  imapHost String
+  imapPort Int
+  imapUser String
+
+  smtpHost      String
+  smtpPort      Int
+  smtpUser      String
+  encryptedPass String?
+
+  oauthClientId     String?
+  oauthClientSecret String?
+  refreshToken      String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relation to User
+  user User @relation(fields: [userId], references: [id])
+
+  // Relation to Emails
+  emails Email[]
 }
 
-model EmailAccount {
-  id            Int      @id @default(autoincrement())
-  userId        Int
-  email         String
-  imapHost      String
-  imapPort      Int
-  imapUser      String
-  encryptedPass String
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+model Email {
+  id        Int @id @default(autoincrement())
+  accountId Int
 
-  user   User    @relation(fields: [userId], references: [id])
-  emails Email[]
+  messageId String  @unique
+  threadId  String?
+  inReplyTo String?
+
+  from     String
+  to       String
+  subject  String
+  body     String
+  bodyHtml String?
+
+  date   DateTime
+  folder String   @default("INBOX")
+  status String   @default("unread")
+  source String   @default("imap")
+  tags   String[] @default([])
+
+  isReply Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relation to EmailAccount
+  account EmailAccount @relation(fields: [accountId], references: [id])
 }
 
 model Reply {
@@ -351,3 +379,89 @@ model Verification {
   @@index([email])
 }
 
+model Conversation {
+  id        Int       @id @default(autoincrement())
+  subject   String?
+  snippet   String? // 👈 add this
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+}
+
+model Message {
+  id             Int           @id @default(autoincrement())
+  conversationId Int?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+  body           String
+  from           String
+  to             String
+  fromName       String?
+  fromEmail      String?
+  direction      String
+  sentAt         DateTime      @default(now())
+}
+
+model Campaign {
+  id              Int      @id @default(autoincrement())
+  name            String
+  subject         String
+  fromName        String
+  fromEmail       String
+  sentCount       Int      @default(0)
+  openCount       Int      @default(0)
+  clickCount      Int      @default(0)
+  conversionCount Int      @default(0)
+  designJson      String? // store canvas JSON
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  events CampaignEvent[]
+}
+
+model CampaignEvent {
+  id         Int      @id @default(autoincrement())
+  campaignId Int
+  type       String // "sent" | "open" | "click" | "conversion"
+  email      String?
+  createdAt  DateTime @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+model MmsCampaign {
+  id         Int            @id @default(autoincrement())
+  name       String
+  message    String
+  mediaUrl   String
+  createdAt  DateTime       @default(now())
+  recipients MmsRecipient[]
+}
+
+model MmsRecipient {
+  id            Int         @id @default(autoincrement())
+  phone         String
+  mmsCampaignId Int
+  mmsCampaign   MmsCampaign @relation(fields: [mmsCampaignId], references: [id])
+}
+
+model Payment {
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  email           String
+  transactionId   String    @unique
+  planName        String
+  planType        String
+  provider        String
+  contacts        Int
+  amount          Float
+  currency        String
+  paymentMethod   String
+  cardLast4       String?
+  paymentDate     DateTime
+  nextPaymentDate DateTime?
+  status          String
+  notified        Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  User            User      @relation(fields: [userId], references: [id])
+}
