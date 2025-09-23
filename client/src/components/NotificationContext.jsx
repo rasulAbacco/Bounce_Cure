@@ -1,6 +1,4 @@
 import React, { createContext, useState, useContext, useEffect } from "react";
-import NotificationList from "./NotificationList";
-
 
 const NotificationContext = createContext();
 
@@ -36,6 +34,16 @@ const loadNotifications = () => {
     { id: 10, type: "inApp", message: "You got a new friend request", time: "3 hours ago", unread: false },
     { id: 11, type: "inApp", message: "Your document was successfully uploaded", time: "1 day ago", unread: true },
     { id: 12, type: "inApp", message: "5 new comments on your post", time: "2 days ago", unread: true },
+    
+    // Payment Notifications
+    { id: 13, type: "payment", message: "Your payment was successful", time: "Just now", unread: true },
+    { id: 14, type: "payment", message: "Your plan will renew in 7 days", time: "1 day ago", unread: false },
+    
+    // Slot Exhaustion Notification
+    { id: 15, type: "slots_exhausted", message: "Your email slots are exhausted", time: "2 hours ago", unread: true },
+    
+    // Payment Success Notification
+    { id: 16, type: "payment_success", message: "Payment successful! Plan activated with 10,000 email slots (9,950 new slots added).", time: "Just now", unread: true },
   ];
 };
 
@@ -49,16 +57,18 @@ const saveNotifications = (notifications) => {
 };
 
 export const NotificationProvider = ({ children }) => {
-  // ✅ Default preferences
+  // Default preferences - now includes slots_exhausted and payment_success
   const [preferences, setPreferences] = useState({
     email: true,
     sms: false,
     push: false,
     inApp: false,
-    payment: true, // Added payment notification type
+    payment: true,
+    slots_exhausted: true,
+    payment_success: true,
   });
 
-  // ✅ State for notifications (now mutable and persistent)
+  // State for notifications (now mutable and persistent)
   const [allNotifications, setAllNotifications] = useState(loadNotifications());
 
   // Save notifications to localStorage whenever they change
@@ -66,7 +76,7 @@ export const NotificationProvider = ({ children }) => {
     saveNotifications(allNotifications);
   }, [allNotifications]);
 
-  // ✅ Function to mark notification as read
+  // Function to mark notification as read
   const markAsRead = (id) => {
     setAllNotifications(prevNotifications =>
       prevNotifications.map(notification =>
@@ -75,14 +85,14 @@ export const NotificationProvider = ({ children }) => {
     );
   };
 
-  // ✅ Function to mark all notifications as read
+  // Function to mark all notifications as read
   const markAllAsRead = () => {
     setAllNotifications(prevNotifications =>
       prevNotifications.map(notification => ({ ...notification, unread: false }))
     );
   };
 
-  // ✅ Function to add a new notification
+  // Function to add a new notification
   const addNotification = (notification) => {
     const newNotification = {
       id: Date.now(), // Unique ID based on timestamp
@@ -91,20 +101,22 @@ export const NotificationProvider = ({ children }) => {
       ...notification  // Include all passed properties
     };
     
+    console.log('Adding notification:', newNotification);
+    
     setAllNotifications(prevNotifications => [
       newNotification, // Add new notification at the beginning
       ...prevNotifications
     ]);
   };
 
-  // ✅ Function to delete a notification
+  // Function to delete a notification
   const deleteNotification = (id) => {
     setAllNotifications(prevNotifications =>
       prevNotifications.filter(notification => notification.id !== id)
     );
   };
 
-  // ✅ Function to delete all notifications
+  // Function to delete all notifications
   const clearAllNotifications = () => {
     setAllNotifications([]);
   };
@@ -118,8 +130,8 @@ export const NotificationProvider = ({ children }) => {
         markAsRead,
         markAllAsRead,
         addNotification,
-        deleteNotification,   // ✅ new
-        clearAllNotifications // ✅ new
+        deleteNotification,   
+        clearAllNotifications 
       }}
     >
       {children}

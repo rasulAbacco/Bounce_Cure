@@ -1,7 +1,14 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Rnd } from "react-rnd";
-import { Send, Save, Trash2, FileText, Eye, X, Plus, Download, Play, Layers, Eraser, Type, Square, Circle, Minus, Image, Video, Music, Frame, Star, Triangle, Hexagon, ArrowRight, PenTool, Hash, ChevronDown, ChevronUp, Zap, Move, ZoomIn, RotateCcw, Heart, Home, User, Settings, Mail, Check, Facebook, Twitter, Instagram, Linkedin, Youtube, CreditCard, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, Palette } from 'lucide-react';
+import { 
+  Send, Save, Trash2, FileText, Eye, X, Plus, Download, Play, Layers, Eraser, 
+  Type, Square, Circle, Minus, Image, Video, Music, Frame, Star, Triangle, Hexagon, 
+  ArrowRight, PenTool, Hash, ChevronDown, ChevronUp, Zap, Move, ZoomIn, RotateCcw, 
+  Heart, Home, User, Settings, Mail, Check, Facebook, Twitter, Instagram, Linkedin, 
+  Youtube, CreditCard, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, 
+  Palette 
+} from 'lucide-react';
 
 const TextStylePanel = ({ selectedElement, onUpdateElementStyle, onClose, zoomLevel }) => {
   const [fontSize, setFontSize] = useState(selectedElement?.fontSize || 16);
@@ -118,6 +125,100 @@ const TextStylePanel = ({ selectedElement, onUpdateElementStyle, onClose, zoomLe
   );
 };
 
+const EditableTextElement = ({ 
+  element, 
+  isSelected, 
+  zoomLevel, 
+  onFocus, 
+  onBlur, 
+  onDoubleClick,
+  onUpdateElement 
+}) => {
+  const contentEditableRef = useRef(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [isFocused, setIsFocused] = useState(false);
+  
+  function getDefaultContent(type) {
+    switch(type) {
+      case "heading": return "Heading";
+      case "subheading": return "Subheading";
+      case "blockquote": return "Blockquote";
+      default: return "Paragraph text";
+    }
+  }
+
+  useEffect(() => {
+    if (!isEditing && !isFocused && contentEditableRef.current) {
+      contentEditableRef.current.innerHTML = element.content || getDefaultContent(element.type);
+    }
+  }, [element.content, isEditing, isFocused, element.type]);
+
+  const handleFocus = (e) => {
+    setIsEditing(true);
+    setIsFocused(true);
+    onFocus(e);
+  };
+
+  const handleBlur = (e) => {
+    setIsEditing(false);
+    setIsFocused(false);
+    const newContent = e.currentTarget.innerHTML;
+    onUpdateElement(element.id, { content: newContent });
+    onBlur(e);
+  };
+
+  const handleKeyDown = (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      
+      const selection = window.getSelection();
+      if (selection.rangeCount > 0) {
+        const range = selection.getRangeAt(0);
+        const br = document.createElement('br');
+        range.deleteContents();
+        range.insertNode(br);
+        
+        const newRange = document.createRange();
+        newRange.setStartAfter(br);
+        newRange.collapse(true);
+        selection.removeAllRanges();
+        selection.addRange(newRange);
+      }
+    }
+  };
+
+  return (
+    <div
+      ref={contentEditableRef}
+      contentEditable={isSelected}
+      suppressContentEditableWarning
+      className={`w-full h-full p-2 outline-none ${
+        element.type === "heading" ? "font-bold" :
+        element.type === "subheading" ? "font-semibold" :
+        element.type === "blockquote" ? "italic pl-4 border-l-4 border-gray-300" : ""
+      } ${isSelected ? 'ring-2 ring-blue-400' : ''}`}
+      style={{
+        fontSize: `${(element.fontSize || 16) * zoomLevel}px`,
+        fontFamily: element.fontFamily || 'Arial',
+        color: element.color || '#000000',
+        fontWeight: element.fontWeight || 'normal',
+        fontStyle: element.fontStyle || 'normal',
+        textDecoration: element.textDecoration || 'none',
+        textAlign: element.textAlign || 'left',
+        lineHeight: element.lineHeight || '1.4',
+        wordWrap: 'break-word',
+        backgroundColor: element.backgroundColor || 'transparent',
+        minHeight: '1.4em',
+        whiteSpace: 'pre-wrap'
+      }}
+      onFocus={handleFocus}
+      onBlur={handleBlur}
+      onKeyDown={handleKeyDown}
+      onDoubleClick={onDoubleClick}
+    />
+  );
+};
+
 export default function CanvasArea({
   pages, setPages, activePage, setActivePage, onUpdate, selectedElement, setSelectedElement, updateElement, 
   zoomLevel = 1, setZoomLevel, showGrid = true, canvasBackgroundColor = '#FFFFFF', onSendCampaign, 
@@ -133,8 +234,54 @@ export default function CanvasArea({
   const [showSaveTemplateModal, setShowSaveTemplateModal] = useState(false);
   const [internalCanvasBackgroundColor, setInternalCanvasBackgroundColor] = useState(canvasBackgroundColor);
   const [templateLoaded, setTemplateLoaded] = useState(false);
+  const [canvasDimensions, setCanvasDimensions] = useState({ width: 800, height: 600 });
   const canvasRef = useRef(null);
-  const containerRef = useRef(null);
+  const containerRef = useRef(null); // Ref for the scrollable container
+  
+  const pagesRef = useRef(pages);
+  const activePageRef = useRef(activePage);
+  const isEditingTemplateRef = useRef(isEditingTemplate);
+  const editingTemplateIdRef = useRef(editingTemplateId);
+
+  useEffect(() => {
+    pagesRef.current = pages;
+    activePageRef.current = activePage;
+    isEditingTemplateRef.current = isEditingTemplate;
+    editingTemplateIdRef.current = editingTemplateId;
+  }, [pages, activePage, isEditingTemplate, editingTemplateId]);
+
+  const updateCanvasDimensions = useCallback(() => {
+    const currentPages = pagesRef.current;
+    const currentActivePage = activePageRef.current;
+    
+    if (!currentPages[currentActivePage] || !currentPages[currentActivePage].elements) {
+      setCanvasDimensions({ width: 800, height: 600 });
+      return;
+    }
+
+    let maxX = 800;
+    let maxY = 600;
+
+    currentPages[currentActivePage].elements.forEach(element => {
+      const elementRight = (element.x || 0) + (element.width || 0);
+      const elementBottom = (element.y || 0) + (element.height || 0);
+      
+      if (elementRight > maxX) maxX = elementRight;
+      if (elementBottom > maxY) maxY = elementBottom;
+    });
+
+    maxX += 100;
+    maxY += 100;
+
+    setCanvasDimensions({
+      width: Math.max(maxX, 800),
+      height: Math.max(maxY, 600)
+    });
+  }, []);
+
+  useEffect(() => {
+    updateCanvasDimensions();
+  }, [pages[activePage]?.elements, updateCanvasDimensions]);
 
   useEffect(() => {
     if (location.state?.template && !templateLoaded) {
@@ -204,53 +351,99 @@ export default function CanvasArea({
   }, []);
 
   const updateEditedTemplate = useCallback(() => {
-    if (!isEditingTemplate || !editingTemplateId) return;
-    console.log('Updating template:', editingTemplateId);
-    let userTemplates = [];
-    try {
-      const storedTemplates = localStorage.getItem('userCreatedTemplates');
-      if (storedTemplates) userTemplates = JSON.parse(storedTemplates);
-    } catch (error) {
-      console.error('Error loading user templates:', error);
-      return;
-    }
-    const templateIndex = userTemplates.findIndex(t => t.id === editingTemplateId);
-    if (templateIndex === -1) {
-      console.log('Template not found for updating:', editingTemplateId);
-      return;
-    }
-    const elementsCopy = JSON.parse(JSON.stringify(pages[activePage].elements));
-    userTemplates[templateIndex].content = elementsCopy;
-    try {
-      localStorage.setItem('userCreatedTemplates', JSON.stringify(userTemplates));
-      console.log('Template updated successfully:', userTemplates[templateIndex]);
-    } catch (error) {
-      console.error('Error saving template:', error);
-    }
-    let savedTemplates = [];
-    try {
-      const storedSavedTemplates = localStorage.getItem('savedTemplates');
-      if (storedSavedTemplates) savedTemplates = JSON.parse(storedSavedTemplates);
-    } catch (error) {
-      console.error('Error loading saved templates:', error);
-    }
-    if (!savedTemplates.includes(editingTemplateId)) {
-      savedTemplates.push(editingTemplateId);
-      try {
-        localStorage.setItem('savedTemplates', JSON.stringify(savedTemplates));
-        console.log('Template added to savedTemplates:', editingTemplateId);
-      } catch (error) {
-        console.error('Error saving saved templates:', error);
+    const currentIsEditing = isEditingTemplateRef.current;
+    const currentTemplateId = editingTemplateIdRef.current;
+    const currentPages = pagesRef.current;
+    const currentActivePage = activePageRef.current;
+
+    if (!currentIsEditing || !currentTemplateId) return;
+
+    const userTemplates = JSON.parse(localStorage.getItem('userCreatedTemplates') || '[]');
+    const templateIndex = userTemplates.findIndex(t => t.id === currentTemplateId);
+    
+    if (templateIndex === -1) return;
+
+    const templateContent = currentPages[currentActivePage].elements.map(element => {
+      switch (element.type) {
+        case 'heading':
+        case 'paragraph':
+        case 'subheading':
+        case 'blockquote':
+          return {
+            type: element.type === 'heading' ? 'text' : 'paragraph',
+            value: element.content || (element.type === 'heading' ? 'Heading' : 'Text'),
+            style: {
+              fontSize: element.fontSize || 16,
+              color: element.color || '#000000',
+              backgroundColor: element.backgroundColor || 'transparent',
+              fontFamily: element.fontFamily || 'Arial',
+              fontWeight: element.fontWeight || 'normal',
+              textAlign: element.textAlign || 'left',
+              fontStyle: element.fontStyle || 'normal',
+              textDecoration: element.textDecoration || 'none',
+              lineHeight: element.lineHeight || 1.4,
+              marginBottom: element.style?.marginBottom || '20px'
+            }
+          };
+        case 'button':
+          return {
+            type: 'button',
+            value: element.content || 'Button',
+            style: {
+              fontSize: element.fontSize || 16,
+              color: element.color || '#ffffff',
+              backgroundColor: element.backgroundColor || '#3b82f6',
+              fontFamily: element.fontFamily || 'Arial',
+              fontWeight: element.fontWeight || '600',
+              padding: element.style?.padding || '16px 32px',
+              borderRadius: element.borderRadius || 8
+            }
+          };
+        case 'image':
+          return {
+            type: 'image',
+            value: element.src || '',
+            style: {
+              borderRadius: element.borderRadius || 12,
+              marginBottom: element.style?.marginBottom || '20px'
+            }
+          };
+        case 'rectangle':
+        case 'circle':
+        case 'triangle':
+        case 'star':
+        case 'hexagon':
+        case 'arrow':
+          return {
+            type: 'image',
+            value: element.src || 'https://images.unsplash.com/photo-1557683316-973673baf926?w=500&h=300&fit=crop',
+            style: {
+              borderRadius: element.borderRadius || 12,
+              marginBottom: element.style?.marginBottom || '20px'
+            }
+          };
+        default:
+          return {
+            type: 'paragraph',
+            value: 'Unsupported element type',
+            style: {}
+          };
       }
-    }
-    window.dispatchEvent(new Event('templateSaved'));
+    });
+
+    userTemplates[templateIndex].content = templateContent;
+    localStorage.setItem('userCreatedTemplates', JSON.stringify(userTemplates));
+    
     setSaveStatus('saved');
     setTimeout(() => setSaveStatus(''), 2000);
-  }, [isEditingTemplate, editingTemplateId, pages, activePage]);
+  }, []);
 
   useEffect(() => {
     if (isEditingTemplate) {
-      const timer = setTimeout(() => updateEditedTemplate(), 1000);
+      const timer = setTimeout(() => {
+        updateEditedTemplate();
+      }, 1000);
+      
       return () => clearTimeout(timer);
     }
   }, [pages, activePage, isEditingTemplate, updateEditedTemplate]);
@@ -512,62 +705,149 @@ export default function CanvasArea({
     if (link) window.open(link, '_blank');
   };
 
+  // Function to scroll to make an element visible
+  const scrollToElement = useCallback((element) => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Calculate element position in the container
+    const elementTop = element.y * zoomLevel;
+    const elementBottom = (element.y + element.height) * zoomLevel;
+    
+    // Get container dimensions and scroll position
+    const containerRect = container.getBoundingClientRect();
+    const scrollTop = container.scrollTop;
+    const containerHeight = containerRect.height;
+    
+    // Calculate the element's position relative to the container's scroll position
+    const elementRelativeTop = elementTop;
+    const elementRelativeBottom = elementBottom;
+    
+    // Check if element is below the visible area
+    if (elementRelativeBottom > scrollTop + containerHeight) {
+      // Scroll to show the element at the bottom of the container with some padding
+      const newScrollTop = elementRelativeBottom - containerHeight + 50;
+      container.scrollTop = newScrollTop;
+      console.log('Scrolled down to element. New scrollTop:', newScrollTop);
+    }
+  }, [zoomLevel]);
+
   const renderElement = (element) => {
     const isSelected = selectedElement === element.id;
+    const isTextElement = ['heading', 'paragraph', 'subheading', 'blockquote'].includes(element.type);
+    const defaultWidth = isTextElement ? 200 : element.width || "auto";
+    const defaultHeight = isTextElement ? 50 : element.height || "auto";
+    
     return (
       <Rnd key={`${element.id}-${zoomLevel}`}
-        default={{ x: element.x || 50, y: element.y || 50, width: element.width || "auto", height: element.height || "auto" }}
+        default={{ x: element.x || 50, y: element.y || 50, width: element.width || defaultWidth, height: element.height || defaultHeight }}
         position={{ x: element.x * zoomLevel, y: element.y * zoomLevel }}
-        size={{ width: element.width * zoomLevel, height: element.height * zoomLevel }}
+        size={{ width: (element.width || defaultWidth) * zoomLevel, height: (element.height || defaultHeight) * zoomLevel }}
         bounds="parent"
-        onDragStop={(e, d) => handleElementUpdate(element.id, { x: d.x / zoomLevel, y: d.y / zoomLevel })}
-        onResizeStop={(e, dir, ref, delta, pos) => handleElementUpdate(element.id, {
-          width: parseInt(ref.style.width) / zoomLevel,
-          height: parseInt(ref.style.height) / zoomLevel,
-          x: pos.x / zoomLevel,
-          y: pos.y / zoomLevel,
-        })}
+        enableResizing={isTextElement ? {
+          top: true, right: false, bottom: true, left: false,
+          topRight: false, bottomRight: false, bottomLeft: false, topLeft: false
+        } : undefined}
+        minWidth={isTextElement ? (element.width || defaultWidth) * zoomLevel : undefined}
+        maxWidth={isTextElement ? (element.width || defaultWidth) * zoomLevel : undefined}
+        minHeight={isTextElement ? 30 * zoomLevel : undefined}
+        onDragStop={(e, d) => {
+          const newX = d.x / zoomLevel;
+          const newY = d.y / zoomLevel;
+          handleElementUpdate(element.id, { x: newX, y: newY });
+          
+          // Use the element's height from the closure
+          const elementHeight = element.height || defaultHeight;
+          const elementBottom = newY + elementHeight;
+          const currentHeight = canvasDimensions.height;
+          
+          // Expand canvas if element is near or beyond the bottom
+          if (elementBottom > currentHeight - 100) {
+            const newHeight = Math.max(currentHeight + 200, elementBottom + 100);
+            setCanvasDimensions(prev => ({ ...prev, height: newHeight }));
+            console.log('Canvas expanded from', currentHeight, 'to', newHeight);
+          }
+          
+          // Scroll to the element after updating position
+          setTimeout(() => {
+            scrollToElement({ ...element, x: newX, y: newY, height: elementHeight });
+          }, 0);
+        }}
+        onResizeStop={(e, dir, ref, delta, pos) => {
+          if (isTextElement) {
+            const newHeight = parseInt(ref.style.height) / zoomLevel;
+            handleElementUpdate(element.id, {
+              height: newHeight,
+              x: pos.x / zoomLevel,
+              y: pos.y / zoomLevel,
+            });
+            
+            const newY = pos.y / zoomLevel;
+            const elementBottom = newY + newHeight;
+            const currentHeight = canvasDimensions.height;
+            
+            // Expand canvas if element is near or beyond the bottom
+            if (elementBottom > currentHeight - 100) {
+              const expandedHeight = Math.max(currentHeight + 200, elementBottom + 100);
+              setCanvasDimensions(prev => ({ ...prev, height: expandedHeight }));
+              console.log('Canvas expanded from', currentHeight, 'to', expandedHeight);
+            }
+            
+            // Scroll to the element after resizing
+            setTimeout(() => {
+              scrollToElement({ ...element, y: newY, height: newHeight });
+            }, 0);
+          } else {
+            handleElementUpdate(element.id, {
+              width: parseInt(ref.style.width) / zoomLevel,
+              height: parseInt(ref.style.height) / zoomLevel,
+              x: pos.x / zoomLevel,
+              y: pos.y / zoomLevel,
+            });
+            
+            const newHeight = parseInt(ref.style.height) / zoomLevel;
+            const newY = pos.y / zoomLevel;
+            const elementBottom = newY + newHeight;
+            const currentHeight = canvasDimensions.height;
+            
+            // Expand canvas if element is near or beyond the bottom
+            if (elementBottom > currentHeight - 100) {
+              const expandedHeight = Math.max(currentHeight + 200, elementBottom + 100);
+              setCanvasDimensions(prev => ({ ...prev, height: expandedHeight }));
+              console.log('Canvas expanded from', currentHeight, 'to', expandedHeight);
+            }
+            
+            // Scroll to the element after resizing
+            setTimeout(() => {
+              scrollToElement({ ...element, y: newY, height: newHeight });
+            }, 0);
+          }
+        }}
         className={`${isSelected ? 'z-50' : 'z-10'}`}
       >
         <div className={`w-full h-full cursor-pointer border-2 transition-all ${isSelected ? 'border-blue-500 shadow-lg ring-2 ring-blue-500/20' : 'border-transparent hover:border-blue-300/50'}`}
           style={{ transform: `rotate(${element.rotation || 0}deg)`, opacity: element.opacity || 1, ...getAnimationStyle(element) }}
           onClick={(e) => handleElementClick(element.id, e)}
         >
-          {(element.type === "heading" || element.type === "paragraph" || element.type === "subheading" || element.type === "blockquote") && (
-            <div contentEditable={isSelected ? "true" : undefined} suppressContentEditableWarning={isSelected}
-              className={`w-full h-full p-2 outline-none ${element.type === "heading" ? "font-bold" : element.type === "subheading" ? "font-semibold" : element.type === "blockquote" ? "italic pl-4 border-l-4 border-gray-300" : ""} ${isTextEditing && isSelected ? 'ring-2 ring-blue-400' : ''}`}
-              style={{
-                fontSize: `${(element.fontSize || 16) * zoomLevel}px`, fontFamily: element.fontFamily || 'Arial',
-                color: element.color || '#000000', fontWeight: element.fontWeight || 'normal',
-                fontStyle: element.fontStyle || 'normal', textDecoration: element.textDecoration || 'none',
-                textAlign: element.textAlign || 'left', lineHeight: element.lineHeight || '1.4',
-                wordWrap: 'break-word', backgroundColor: element.backgroundColor || 'transparent',
-                minHeight: '1.4em', whiteSpace: 'pre-wrap'
+          {isTextElement && (
+            <EditableTextElement
+              element={element}
+              isSelected={isSelected}
+              zoomLevel={zoomLevel}
+              onFocus={(e) => {
+                setIsTextEditing(true);
+                setShowTextStylePanel(true);
+                e.stopPropagation();
               }}
-              onInput={(e) => handleElementUpdate(element.id, { content: e.currentTarget.innerHTML })}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault();
-                  const selection = window.getSelection();
-                  if (selection.rangeCount > 0) {
-                    const range = selection.getRangeAt(0);
-                    const br = document.createElement('br');
-                    range.deleteContents();
-                    range.insertNode(br);
-                    const newRange = document.createRange();
-                    newRange.setStartAfter(br);
-                    newRange.collapse(true);
-                    selection.removeAllRanges();
-                    selection.addRange(newRange);
-                    const inputEvent = new Event('input', { bubbles: true });
-                    e.currentTarget.dispatchEvent(inputEvent);
-                  }
-                }
+              onBlur={(e) => {
+                setIsTextEditing(false);
+                e.stopPropagation();
               }}
-              onFocus={() => { setIsTextEditing(true); setShowTextStylePanel(true); }}
-              onBlur={(e) => { setTimeout(() => setIsTextEditing(false), 100); }}
-              onDoubleClick={(e) => { e.stopPropagation(); setShowTextStylePanel(true); }}
-              dangerouslySetInnerHTML={{ __html: element.content || (element.type === "heading" ? "Heading" : element.type === "subheading" ? "Subheading" : element.type === "blockquote" ? "Blockquote" : "Paragraph text") }}
+              onDoubleClick={(e) => {
+                e.stopPropagation();
+                setShowTextStylePanel(true);
+              }}
+              onUpdateElement={handleElementUpdate}
             />
           )}
           {element.type === "button" && (
@@ -721,14 +1001,23 @@ export default function CanvasArea({
           )}
           {isSelected && !preview && (
             <>
-              <div className="absolute -top-2 -left-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-nw-resize shadow-lg"></div>
-              <div className="absolute -top-2 -right-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-ne-resize shadow-lg"></div>
-              <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-sw-resize shadow-lg"></div>
-              <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-se-resize shadow-lg"></div>
-              <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-n-resize shadow-lg"></div>
-              <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-s-resize shadow-lg"></div>
-              <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-w-resize shadow-lg"></div>
-              <div className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-e-resize shadow-lg"></div>
+              {isTextElement ? (
+                <>
+                  <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-n-resize shadow-lg"></div>
+                  <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-s-resize shadow-lg"></div>
+                </>
+              ) : (
+                <>
+                  <div className="absolute -top-2 -left-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-nw-resize shadow-lg"></div>
+                  <div className="absolute -top-2 -right-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-ne-resize shadow-lg"></div>
+                  <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-sw-resize shadow-lg"></div>
+                  <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-se-resize shadow-lg"></div>
+                  <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-n-resize shadow-lg"></div>
+                  <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-s-resize shadow-lg"></div>
+                  <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-w-resize shadow-lg"></div>
+                  <div className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-e-resize shadow-lg"></div>
+                </>
+              )}
             </>
           )}
         </div>
@@ -966,10 +1255,10 @@ export default function CanvasArea({
           </button>
         </div>
       </div>
-      <div className="flex-1 overflow-auto bg-black p-8" onClick={handleCanvasClick}>
-        <div className="flex justify-center items-center min-w-full min-h-full">
-          <div ref={canvasRef} className={`canvas-background relative shadow-2xl rounded-lg overflow-auto ${preview ? "" : "ring-1 ring-gray-400/20"}`} style={{
-            width: 800 * zoomLevel, height: 600 * zoomLevel,
+      <div ref={containerRef} className="flex-1 overflow-auto bg-black p-8" onClick={handleCanvasClick}>
+        <div className="flex justify-center items-start min-w-full min-h-full">
+          <div ref={canvasRef} className={`canvas-background relative shadow-2xl rounded-lg overflow-visible ${preview ? "" : "ring-1 ring-gray-400/20"}`} style={{
+            width: canvasDimensions.width * zoomLevel, height: canvasDimensions.height * zoomLevel,
             backgroundColor: internalCanvasBackgroundColor,
             backgroundImage: showGrid && !preview ? `linear-gradient(rgba(0,0,0,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,0.05) 1px, transparent 1px)` : "none",
             backgroundSize: showGrid && !preview ? `${20 * zoomLevel}px ${20 * zoomLevel}px` : "none",

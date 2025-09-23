@@ -22,10 +22,17 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
   const navigate = useNavigate();
 
   // Filter notifications based on preferences
-  const notifications = allNotifications.filter((n) => preferences[n.type]);
+  const notifications = allNotifications.filter((n) => {
+    const shouldShow = preferences[n.type];
+    console.log(`Filtering notification type "${n.type}":`, shouldShow, "Preferences:", preferences);
+    return shouldShow;
+  });
 
   // Count unread notifications
   const unreadCount = notifications.filter((n) => n.unread).length;
+
+  console.log("TopNavbar notifications:", notifications);
+  console.log("Unread count:", unreadCount);
 
   const handleLogout = () => {
     const confirmed = window.confirm("Are you sure you want to log out?");
