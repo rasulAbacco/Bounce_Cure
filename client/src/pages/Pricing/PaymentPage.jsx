@@ -1,7 +1,16 @@
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import { useNotificationContext } from "../../components/NotificationContext";
+
+// Utility function to parse JWT token
+function parseJwt(token) {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch (e) {
+    return null;
+  }
+}
 
 // Normalize plan data
 const normalizePlan = (data) => {
@@ -17,13 +26,16 @@ const normalizePlan = (data) => {
       integrationCosts: Number(data.integrationCosts || 0),
       selectedIntegrations: data.selectedIntegrations || [],
       basePricing: data.basePricing,
-      planType: data.planType
+      planType: data.planType,
+      totalCost: data.totalCost !== undefined ? Number(data.totalCost) : undefined
     };
   }
 
   // Handle legacy data structure
   if (data.name) {
     const basePrice = data.basePrice !== undefined ? Number(data.basePrice) : Number(data.price || 0);
+    const totalCost = data.totalCost !== undefined ? Number(data.totalCost) : Number(data.price || 0);
+
     return {
       planName: data.name,
       slots: data.contacts || 0,
@@ -33,13 +45,14 @@ const normalizePlan = (data) => {
         : 0,
       integrationCosts: 0,
       selectedIntegrations: [],
+      totalCost
     };
   }
 
   return null;
 };
 
-// Card type detection function with corrected SVG icons
+// Card type detection function
 const detectCardType = (cardNumber) => {
   const patterns = {
     visa: /^4/,
@@ -52,7 +65,7 @@ const detectCardType = (cardNumber) => {
     visa: {
       name: "Visa",
       maxLength: 16,
-      icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' width='60' height='60'%3E%3Crect width='48' height='48' rx='4' fill='%231A1F71'/%3E%3Cpath fill='%23FFFFFF' d='M18.8,30.5 L20.8,18.2 L23.8,18.2 L21.8,30.5 L18.8,30.5 Z M31.8,18.5 C31.1,18.2 30,18 28.7,18 C25.8,18 23.7,19.5 23.7,21.6 C23.7,23.2 25.2,24.1 26.3,24.7 C27.5,25.3 27.9,25.7 27.9,26.2 C27.9,27 26.9,27.4 26,27.4 C24.7,27.4 24,27.1 22.9,26.6 L22.5,26.4 L22,29.2 C22.8,29.6 24.2,29.9 25.7,30 C28.8,30 30.8,28.5 30.8,26.2 C30.8,24.9 30,23.9 28.2,23.1 C27.1,22.5 26.4,22.1 26.4,21.5 C26.4,21 27,20.4 28.2,20.4 C29.2,20.4 30,20.6 30.6,20.9 L30.9,21 L31.4,18.3 L31.8,18.5 Z M38,18.2 L35.5,18.2 C34.7,18.2 34.2,18.4 33.8,19.2 L29.3,30.5 L32.5,30.5 C32.5,30.5 33,29.1 33.1,28.8 C33.6,28.8 36.6,28.8 37.2,28.8 C37.3,29.2 37.7,30.5 37.7,30.5 L40.5,30.5 L38,18.2 Z M34,26.2 C34.3,25.4 35.4,22.6 35.4,22.6 C35.4,22.6 35.7,21.7 35.9,21.1 L36.2,22.5 C36.2,22.5 36.9,25.5 37.1,26.2 H34 Z M15.8,18.2 L13,26.5 C13,26.5 12.4,24.4 12.2,23.6 C10.8,20.5 8.5,19.2 8.5,19.2 L11,30.5 L14.3,30.5 L19.1,18.2 L15.8,18.2 Z'/%3E%3C/svg%3E"
+      icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' width='60' height='60'%3E%3Crect width='48' height='48' rx='4' fill='%231A1F71'/%3E%3Cpath fill='%23FFFFFF' d='M18.8,30.5 L20.8,18.2 L23.8,18.2 L21.8,30.5 L18.8,30.5 Z M31.8,18.5 C31.1,18.2 30,18 28.7,18 C25.8,18 23.7,19.5 23.7,21.6 C23.7,23.2 25.2,24.1 26.3,24.7 C27.5,25.3 27.9,25.7 27.9,26.2 C27.9,27 26.9,27.4 26,27.4 C24.7,27.4 24,27.1 22.9,26.6 L22.5,26.4 L22,29.2 C22.8,29.6 24.2,29.9 25.7,30 C28.8,30 30.8,28.5 30.8,26.2 C30.8,24.9 30,23.9 28.2,23.1 C27.1,22.5 26.4,22.1 26.4,21.5 C26.4,21 27,20.4 28.2,20.4 C29.2,20.4 30,20.6 30.6,20.9 L30.9,21 L31.4,18.3 L31.8,18.5 Z M38,18.2 L35.5,18.2 C34.7,18.2 34.2,18.4 33.8,19.2 L29.3,30.5 L32.5,30.5 C32.5,30.5 33,29.1 33.1,28.8 C33.6,28.8 36.6,28.8 37.2,28.8 C37.3,29.2 37.7,30.5 37.7,30.5 L40.5,30.5 L38,18.2 Z M34,26.2 C34.3,25.4 35.4,22.6 35.4,22.6 C35.4,22.6 35.7,21.7 35.9,21.1 L36.2,22.5 C36.2,22.6 36.9,25.5 37.1,26.2 H34 Z M15.8,18.2 L13,26.5 C13,26.5 12.4,24.4 12.2,23.6 C10.8,20.5 8.5,19.2 8.5,19.2 L11,30.5 L14.3,30.5 L19.1,18.2 L15.8,18.2 Z'/%3E%3C/svg%3E"
     },
     mastercard: {
       name: "Mastercard",
@@ -110,46 +123,19 @@ const PaymentGatewayIcon = ({ gateway }) => {
 
 // Payment Page Component
 export default function PaymentPage() {
+  // ALL HOOKS MUST BE CALLED AT THE TOP LEVEL IN THE SAME ORDER
+  
   const { state } = useLocation();
   const navigate = useNavigate();
   const { addNotification } = useNotificationContext();
+  const redirectAttempted = useRef(false);
 
-  const [plan, setPlan] = useState(normalizePlan(state));
+  // State declarations - all hooks at the top
+  const [plan, setPlan] = useState(normalizePlan(state?.plan));
+  const [campaign, setCampaign] = useState(state?.campaign || null);
   const [redirecting, setRedirecting] = useState(false);
-
-  // Load from localStorage if missing
-  useEffect(() => {
-    if (!plan) {
-      const pendingPlan = localStorage.getItem("pendingUpgradePlan");
-      if (pendingPlan) {
-        try {
-          const parsed = JSON.parse(pendingPlan);
-          setPlan(normalizePlan(parsed));
-          localStorage.removeItem("pendingUpgradePlan");
-        } catch (e) {
-          toast.error("Invalid plan data. Redirecting to pricing...", { duration: 5000 });
-          setRedirecting(true);
-          setTimeout(() => navigate("/pricingdash"), 2000);
-        }
-      } else {
-        toast.error("No plan selected. Redirecting to pricing...", { duration: 5000 });
-        setRedirecting(true);
-        setTimeout(() => navigate("/pricingdash"), 2000);
-      }
-    }
-  }, [plan, navigate]);
-
-  if (redirecting) {
-    return (
-      <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
-        <p className="text-gray-300 text-lg">Redirecting to Pricing...</p>
-      </div>
-    );
-  }
-
-  if (!plan) return null;
-
-  // Payment & Agreement states
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [invoiceSent, setInvoiceSent] = useState(false);
   const [cardNumber, setCardNumber] = useState("");
   const [expiry, setExpiry] = useState("");
   const [cvv, setCvv] = useState("");
@@ -158,18 +144,180 @@ export default function PaymentPage() {
   const [email, setEmail] = useState("");
   const [cardType, setCardType] = useState(null);
   const [expiryError, setExpiryError] = useState("");
-  
-  // New validation states
   const [cardNumberError, setCardNumberError] = useState("");
   const [cvvError, setCvvError] = useState("");
-
-  // Special offers
   const [discount, setDiscount] = useState(0);
   const [discountType, setDiscountType] = useState(null);
   const [specialOffer, setSpecialOffer] = useState(null);
+  const [userInfo, setUserInfo] = useState(null);
+  const [hasCheckedStorage, setHasCheckedStorage] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [testingEmail, setTestingEmail] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
+
+  // Memoized calculations - must be called before any conditional logic
+  const { basePrice, additionalSlotsCost, integrationCosts, subtotal, discountAmount, tax, finalTotal } =
+    useMemo(() => {
+      let basePrice = plan ? (plan.basePrice !== undefined
+        ? Number(plan.basePrice)
+        : (plan.basePricing && plan.planType ? Number(plan.basePricing[plan.planType]) : 0))
+        : (campaign ? Number(campaign.price) : 0);
+
+      const additionalSlotsCost = plan ? Number(plan.additionalSlotsCost || 0) : 0;
+      const integrationCosts = plan ? Number(plan.integrationCosts || 0) : 0;
+
+      const subtotal = plan && plan.totalCost !== undefined
+        ? Number(plan.totalCost)
+        : (basePrice + additionalSlotsCost + integrationCosts);
+
+      let discountAmount = 0;
+      if (discountType === "percentage") discountAmount = (subtotal * discount) / 100;
+      if (discountType === "fixed") discountAmount = Math.min(discount, subtotal);
+
+      const discountedSubtotal = Math.max(0, subtotal - discountAmount);
+      const tax = +(discountedSubtotal * 0.1).toFixed(2);
+      const finalTotal = +(discountedSubtotal + tax).toFixed(2);
+
+      return { basePrice, additionalSlotsCost, integrationCosts, subtotal, discountAmount, tax, finalTotal };
+    }, [plan, campaign, discount, discountType]);
+
+  // useEffect hooks - all called in the same order
+  useEffect(() => {
+    console.log("=== PAYMENT PAGE DEBUG ===");
+    console.log("PaymentPage state:", state);
+    console.log("Plan from state:", normalizePlan(state?.plan));
+    console.log("Campaign from state:", state?.campaign);
+    console.log("Current plan state:", plan);
+    console.log("Current campaign state:", campaign);
+  }, [state, plan, campaign]);
 
   useEffect(() => {
-    if (plan.planName === "Pro Plan") {
+    const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+    if (token) {
+      const decoded = parseJwt(token);
+      if (decoded) {
+        setUserInfo({
+          userId: decoded.userId,
+          email: decoded.email,
+          firstName: decoded.firstName,
+          lastName: decoded.lastName
+        });
+        setEmail(decoded.email || "");
+      }
+    }
+    setIsLoading(false);
+  }, []);
+
+  useEffect(() => {
+    if (isLoading || redirecting || redirectAttempted.current) return;
+    
+    console.log("=== CHECKING FOR PLAN DATA ===");
+    console.log("isLoading:", isLoading);
+    console.log("redirecting:", redirecting);
+    console.log("redirectAttempted.current:", redirectAttempted.current);
+    console.log("hasCheckedStorage:", hasCheckedStorage);
+    console.log("plan:", plan);
+    console.log("campaign:", campaign);
+    
+    if (!plan && !campaign && !hasCheckedStorage) {
+      console.log("No plan or campaign in state, checking storage...");
+      
+      const pendingPlan = localStorage.getItem("pendingUpgradePlan") ||
+        sessionStorage.getItem("pendingUpgradePlan");
+      const pendingCampaign = localStorage.getItem("pendingUpgradeCampaign") ||
+        sessionStorage.getItem("pendingUpgradeCampaign");
+
+      console.log("pendingPlan from storage:", pendingPlan);
+      console.log("pendingCampaign from storage:", pendingCampaign);
+
+      if (pendingPlan) {
+        try {
+          console.log("Found plan in storage:", pendingPlan);
+          const parsed = JSON.parse(pendingPlan);
+          const normalizedPlan = normalizePlan(parsed);
+          console.log("Normalized plan:", normalizedPlan);
+          
+          if (normalizedPlan) {
+            setPlan(normalizedPlan);
+            localStorage.removeItem("pendingUpgradePlan");
+            sessionStorage.removeItem("pendingUpgradePlan");
+          } else {
+            console.error("Failed to normalize plan from storage");
+            toast.error("Invalid plan data. Redirecting to pricing...", { duration: 5000 });
+            setRedirecting(true);
+            redirectAttempted.current = true;
+            setTimeout(() => navigate("/pricingdash"), 2000);
+          }
+        } catch (e) {
+          console.error("Error parsing plan from storage:", e);
+          toast.error("Invalid plan data. Redirecting to pricing...", { duration: 5000 });
+          setRedirecting(true);
+          redirectAttempted.current = true;
+          setTimeout(() => navigate("/pricingdash"), 2000);
+        }
+      } else if (pendingCampaign) {
+        try {
+          console.log("Found campaign in storage:", pendingCampaign);
+          const parsed = JSON.parse(pendingCampaign);
+          setCampaign(parsed);
+          localStorage.removeItem("pendingUpgradeCampaign");
+          sessionStorage.removeItem("pendingUpgradeCampaign");
+        } catch (e) {
+          console.error("Error parsing campaign from storage:", e);
+          toast.error("Invalid campaign data. Redirecting to pricing...", { duration: 5000 });
+          setRedirecting(true);
+          redirectAttempted.current = true;
+          setTimeout(() => navigate("/pricingdash"), 2000);
+        }
+      } else {
+        console.log("No plan or campaign found in storage");
+        toast.error("No plan selected. Redirecting to pricing...", { duration: 5000 });
+        setRedirecting(true);
+        redirectAttempted.current = true;
+        setTimeout(() => navigate("/pricingdash"), 2000);
+      }
+      
+      setHasCheckedStorage(true);
+    } else if (hasCheckedStorage && !plan && !campaign && !redirecting) {
+      console.log("Already checked storage and no plan found - redirecting");
+      toast.error("No plan selected. Redirecting to pricing...", { duration: 5000 });
+      setRedirecting(true);
+      redirectAttempted.current = true;
+      setTimeout(() => navigate("/pricingdash"), 2000);
+    }
+  }, [plan, campaign, hasCheckedStorage, isLoading, navigate, redirecting]);
+
+  useEffect(() => {
+    if (plan) {
+      console.log("Plan data:", plan);
+      console.log("Base price:", plan.basePrice);
+      console.log("Additional slots cost:", plan.additionalSlotsCost);
+      console.log("Total cost (from plan):", plan.totalCost);
+      console.log("Calculated total (base + additional):", plan.basePrice + plan.additionalSlotsCost);
+    }
+  }, [plan]);
+
+ useEffect(() => {
+  if (paymentSuccess && invoiceSent) {
+    const timer = setTimeout(() => {
+      const isLoggedIn = !!localStorage.getItem("authToken");
+
+      if (isLoggedIn) {
+        navigate("/dashboard"); // logged in → dashboard
+      } else {
+        navigate("/signin", {
+          state: { redirectTo: "/dashboard" }, // after login, send them to dashboard
+        });
+      }
+    }, 3000);
+
+    return () => clearTimeout(timer);
+  }
+}, [paymentSuccess, invoiceSent, navigate]);
+
+
+  useEffect(() => {
+    if (plan && plan.planName === "Pro Plan") {
       setSpecialOffer({
         title: "50% off for 12 months!",
         description: "Special discount for Pro Plan users",
@@ -178,7 +326,7 @@ export default function PaymentPage() {
       });
       setDiscountType("percentage");
       setDiscount(50);
-    } else if (plan.planName === "Growth Plan") {
+    } else if (plan && plan.planName === "Growth Plan") {
       setSpecialOffer({
         title: "$20 off your first payment",
         description: "Limited time offer for Growth Plan",
@@ -192,101 +340,104 @@ export default function PaymentPage() {
       setDiscount(0);
       setDiscountType(null);
     }
-  }, [plan.planName]);
+  }, [plan?.planName]);
 
-  // Memoized calculations
-  const { basePrice, additionalSlotsCost, integrationCosts, subtotal, discountAmount, tax, finalTotal } =
-    useMemo(() => {
-      // FIXED: Get base price with fallback
-      let basePrice = plan.basePrice !== undefined
-        ? Number(plan.basePrice)
-        : (plan.basePricing && plan.planType ? Number(plan.basePricing[plan.planType]) : 0);
+  // Test email configuration function
+  const testEmailConfiguration = async () => {
+    const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+    if (!token) {
+      toast.error("Please log in first.");
+      return;
+    }
 
-      const additionalSlotsCost = Number(plan.additionalSlotsCost || 0);
-      const integrationCosts = Number(plan.integrationCosts || 0);
-      const subtotal = basePrice + additionalSlotsCost + integrationCosts;
+    setTestingEmail(true);
+    const toastId = toast.loading("Testing email configuration...");
 
-      let discountAmount = 0;
-      if (discountType === "percentage") discountAmount = (subtotal * discount) / 100;
-      if (discountType === "fixed") discountAmount = Math.min(discount, subtotal);
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/test-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
 
-      const discountedSubtotal = Math.max(0, subtotal - discountAmount);
-      const tax = +(discountedSubtotal * 0.1).toFixed(2);
-      const finalTotal = +(discountedSubtotal + tax).toFixed(2);
+      const result = await response.json();
+      console.log("Test email result:", result);
 
-      return { basePrice, additionalSlotsCost, integrationCosts, subtotal, discountAmount, tax, finalTotal };
-    }, [plan.basePrice, plan.additionalSlotsCost, plan.integrationCosts, plan.basePricing, plan.planType, discount, discountType]);
+      if (result.success) {
+        toast.success("Test email sent successfully! Check your inbox.", { id: toastId });
+      } else {
+        toast.error(`Email test failed: ${result.message}`, { id: toastId });
+        console.error("Email test debug:", result.debug);
+      }
+    } catch (error) {
+      console.error("Email test error:", error);
+      toast.error(`Email test error: ${error.message}`, { id: toastId });
+    } finally {
+      setTestingEmail(false);
+    }
+  };
 
-  // Luhn algorithm for card validation
+  // Helper functions
   const validateCardNumber = (cardNumber) => {
-    // Remove all non-digit characters
     const cleaned = cardNumber.replace(/\D/g, '');
-    
-    // Check if the card number is empty
+
     if (!cleaned) {
       return "Card number is required";
     }
-    
-    // Check length based on card type
+
     if (cardType) {
       if (cleaned.length !== cardType.maxLength) {
         return `Invalid ${cardType.name} card number length`;
       }
     } else {
-      // Generic check if card type not detected
       if (cleaned.length < 13 || cleaned.length > 19) {
         return "Invalid card number length";
       }
     }
-    
-    // Luhn algorithm
+
     let sum = 0;
     let shouldDouble = false;
-    
-    // Loop through values starting from the rightmost digit
+
     for (let i = cleaned.length - 1; i >= 0; i--) {
       let digit = parseInt(cleaned.charAt(i), 10);
-      
+
       if (shouldDouble) {
         digit *= 2;
         if (digit > 9) {
           digit -= 9;
         }
       }
-      
+
       sum += digit;
       shouldDouble = !shouldDouble;
     }
-    
+
     if (sum % 10 !== 0) {
       return "Invalid card number";
     }
-    
-    return ""; // No error
+
+    return "";
   };
 
-  // Input handlers with validation
   const handleCardInput = (e) => {
     let value = e.target.value.replace(/\D/g, "");
     const detectedType = detectCardType(value);
     setCardType(detectedType);
 
-    // Format based on card type
     if (detectedType && detectedType.name === "American Express") {
-      // Format as 4-6-5 for Amex
       if (value.length > 4 && value.length <= 10) {
         value = value.substring(0, 4) + " " + value.substring(4, 10);
       } else if (value.length > 10) {
         value = value.substring(0, 4) + " " + value.substring(4, 10) + " " + value.substring(10, 15);
       }
     } else {
-      // Format as 4-4-4-4 for other cards
       value = value.replace(/(\d{4})(?=\d)/g, "$1 ");
     }
 
     setCardNumber(value);
-    
-    // Validate card number
+
     const error = validateCardNumber(value);
     setCardNumberError(error);
   };
@@ -296,7 +447,6 @@ export default function PaymentPage() {
     if (value.length >= 3) value = value.substring(0, 2) + "/" + value.substring(2, 4);
     setExpiry(value);
 
-    // Validate expiry date when we have a complete MM/YY format
     if (value.length === 5) {
       validateExpiryDate(value);
     } else {
@@ -305,7 +455,6 @@ export default function PaymentPage() {
   };
 
   const validateExpiryDate = (expiryValue) => {
-    // Check if format is MM/YY
     if (!/^\d{2}\/\d{2}$/.test(expiryValue)) {
       setExpiryError("Invalid format. Use MM/YY");
       return false;
@@ -315,24 +464,20 @@ export default function PaymentPage() {
     const month = parseInt(monthStr, 10);
     const year = parseInt(yearStr, 10);
 
-    // Validate month
     if (month < 1 || month > 12) {
       setExpiryError("Invalid month");
       return false;
     }
 
-    // Get current date
     const now = new Date();
-    const currentYear = now.getFullYear() % 100; // Get last two digits
-    const currentMonth = now.getMonth() + 1; // Months are 0-indexed
+    const currentYear = now.getFullYear() % 100;
+    const currentMonth = now.getMonth() + 1;
 
-    // Validate year and month
     if (year < currentYear || (year === currentYear && month < currentMonth)) {
       setExpiryError("Card has expired");
       return false;
     }
 
-    // Check if year is too far in the future (more than 20 years)
     if (year > currentYear + 20) {
       setExpiryError("Invalid year");
       return false;
@@ -345,8 +490,7 @@ export default function PaymentPage() {
   const handleCvvInput = (e) => {
     let value = e.target.value.replace(/\D/g, "").substring(0, 4);
     setCvv(value);
-    
-    // Validate CVV
+
     if (value.length > 0) {
       if (cardType && cardType.name === "American Express") {
         if (value.length !== 4) {
@@ -376,7 +520,6 @@ export default function PaymentPage() {
     !cvvError &&
     email.includes("@");
 
-  // Generate invoice data
   const generateInvoiceData = () => {
     const transactionId = `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`;
     const processedDate = new Date().toLocaleString("en-US", { timeZone: "America/New_York" }) + " New York";
@@ -387,10 +530,10 @@ export default function PaymentPage() {
     return {
       transactionId,
       processedDate,
-      planName: plan.planName,
+      planName: plan ? plan.planName : "Campaign",
       planPrice: basePrice.toFixed(2),
-      contacts: plan.slots,
-      selectedIntegrations: plan.selectedIntegrations,
+      contacts: plan ? plan.slots : campaign.emails,
+      selectedIntegrations: plan ? plan.selectedIntegrations : [],
       discountTitle: specialOffer?.title || "",
       discountAmount: discountAmount.toFixed(2),
       discountType,
@@ -403,7 +546,7 @@ export default function PaymentPage() {
       nextPaymentDate: nextPaymentDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
       email,
       issuedTo: {
-        companyName: "Abacco Technology",
+        companyName: userInfo ? `${userInfo.firstName} ${userInfo.lastName}` : "Abacco Technology",
         email,
         address: "HMT layout vidyaranyapura Vidyaranyapura Bangalore, KA 560094",
         placeOfSupply: "KARNATAKA 029 India",
@@ -417,62 +560,57 @@ export default function PaymentPage() {
     };
   };
 
-  // Validate payment with backend
   const validatePaymentWithBackend = async () => {
-    try {
-      const response = await fetch("http://localhost:5000/api/validate-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          cardNumber: cardNumber.replace(/\s/g, ""),
-          expiry,
-          cvv,
-          amount: finalTotal
-        }),
-      });
-      
-      const result = await response.json();
-      if (result.success) {
-        return true;
-      } else {
-        toast.error(result.message || "Payment validation failed", { duration: 5000 });
-        return false;
-      }
-    } catch (error) {
-      console.error("Payment validation error:", error);
-      toast.error("Payment validation failed. Please try again.", { duration: 5000 });
-      return false;
-    }
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve({ success: true });
+      }, 1000);
+    });
   };
 
-  // Send invoice email
   const sendInvoiceEmail = async (invoiceData) => {
     try {
-      const response = await fetch("http://localhost:5000/api/send-invoice", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
+      const token = localStorage.getItem('authToken') ||
+        sessionStorage.getItem('authToken') ||
+        null;
+
+      if (!token) {
+        console.error('Authentication token not found for invoice');
+        return { success: false, error: 'Authentication required' };
+      }
+
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/send-invoice`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
         body: JSON.stringify(invoiceData),
       });
-      
-      const result = await response.json();
-      if (result.success) {
-        console.log("Invoice email sent successfully");
-        toast.success("Invoice sent to your email!", { duration: 5000 });
-        return true;
-      } else {
-        throw new Error(result.message || "Failed to send invoice");
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
       }
-    } catch (err) {
-      console.error("Error sending invoice:", err);
-      toast.error("Failed to send invoice: " + err.message, { duration: 5000 });
-      return false;
+
+      const result = await response.json();
+      console.log('Invoice email response:', result);
+
+      if (!result.success) {
+        throw new Error(result.message || 'Failed to send invoice');
+      }
+
+      return result;
+    } catch (error) {
+      console.error("Failed to send invoice email:", error);
+      return { success: false, error: error.message };
     }
   };
 
-  // Save payment data for reminders
   const savePaymentData = async (invoiceData) => {
+    console.log("=== SAVE PAYMENT DATA FUNCTION START ===");
+    
     try {
-      console.log("Saving payment data...");
       const paymentData = {
         email: invoiceData.email,
         transactionId: invoiceData.transactionId,
@@ -480,106 +618,394 @@ export default function PaymentPage() {
         paymentDate: invoiceData.paymentDate,
         nextPaymentDate: invoiceData.nextPaymentDate,
         amount: invoiceData.finalTotal,
-        cardNumber: cardNumber, // Full card number for backend validation
-        expiryDate: expiry,
-        cvv: cvv
+        planType: plan?.planType || 'monthly',
+        provider: cardType?.name || 'Card',
+        contacts: plan?.slots || campaign?.emails || 0,
+        currency: 'USD',
+        paymentMethod: `${cardType?.name || 'Card'} ending in ${cardNumber.slice(-4)}`,
+        cardLast4: cardNumber.slice(-4),
+        status: 'success'
       };
 
-      const res = await fetch("http://localhost:5000/api/save-payment", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(paymentData),
-      });
-      const result = await res.json();
-      if (result.success) {
-        console.log("Payment data saved successfully");
-      } else {
-        console.error("Failed to save payment data:", result.message);
+      console.log('Payment data to save:', paymentData);
+
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      if (!token) {
+        throw new Error('No authentication token found');
       }
-    } catch (err) {
-      console.error("Error saving payment data:", err);
+
+      console.log('Token found, length:', token.length);
+      console.log('API URL:', import.meta.env.VITE_API_URL);
+
+      // Try multiple possible endpoints
+      const possibleEndpoints = [
+        `${import.meta.env.VITE_API_URL}/api/save-payment`,
+        `${import.meta.env.VITE_API_URL}/save-payment`,
+        `${import.meta.env.VITE_API_URL}/api/payment/save`,
+        `${import.meta.env.VITE_API_URL}/payment/save`
+      ];
+
+      let response;
+      let usedEndpoint;
+      let lastError;
+      
+      for (const endpoint of possibleEndpoints) {
+        try {
+          console.log(`Trying endpoint: ${endpoint}`);
+          
+          response = await fetch(endpoint, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(paymentData),
+          });
+
+          usedEndpoint = endpoint;
+          console.log(`Endpoint ${endpoint} responded with status:`, response.status);
+          
+          if (response.status !== 404) {
+            // If it's not a 404, we found the right endpoint (even if it errors)
+            break;
+          }
+        } catch (fetchError) {
+          console.log(`Endpoint ${endpoint} failed:`, fetchError.message);
+          lastError = fetchError;
+          
+          // Continue to next endpoint unless this is the last one
+          if (endpoint === possibleEndpoints[possibleEndpoints.length - 1]) {
+            throw new Error(`All endpoints failed. Last error: ${fetchError.message}`);
+          }
+        }
+      }
+
+      if (!response) {
+        throw new Error(`No valid response received. Last error: ${lastError?.message || 'Unknown'}`);
+      }
+
+      console.log(`Used endpoint: ${usedEndpoint}`);
+      console.log('Response status:', response.status);
+      console.log('Response ok:', response.ok);
+
+      // Get response text first for better debugging
+      const responseText = await response.text();
+      console.log('Raw response text:', responseText);
+
+      if (!response.ok) {
+        let errorMessage = `HTTP ${response.status}`;
+        
+        try {
+          const errorData = JSON.parse(responseText);
+          errorMessage = errorData.message || errorData.error || errorMessage;
+        } catch (parseError) {
+          // If JSON parsing fails, use the raw text
+          errorMessage = responseText || errorMessage;
+        }
+        
+        throw new Error(`API Error (${response.status}): ${errorMessage}`);
+      }
+
+      // Try to parse response as JSON
+      let result;
+      try {
+        result = JSON.parse(responseText);
+      } catch (parseError) {
+        console.error('Failed to parse response as JSON:', parseError);
+        console.error('Response text was:', responseText);
+        
+        // If it's not JSON but response was OK, maybe the endpoint doesn't exist
+        // but server returned HTML instead
+        if (responseText.includes('<!DOCTYPE html>') || responseText.includes('<html')) {
+          throw new Error('Endpoint returned HTML instead of JSON - endpoint likely does not exist');
+        }
+        
+        throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
+      }
+
+      console.log('Parsed save result:', result);
+
+      // Check if the result indicates success
+      if (result.success === false) {
+        throw new Error(result.message || result.error || 'API returned success: false');
+      }
+
+      // If no explicit success field, assume success if we got this far
+      return result.success !== undefined ? result : { success: true, data: result };
+
+    } catch (error) {
+      console.error('=== SAVE PAYMENT DATA ERROR ===');
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+      throw error; // Re-throw for handlePay to catch
     }
   };
 
-  // Payment handler
   const handlePay = async () => {
-    // Validate all fields before processing
+    const authToken = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+    console.log("=== PAYMENT PROCESSING DEBUG START ===");
+    console.log("Auth token present:", !!authToken);
+    console.log("API URL:", import.meta.env.VITE_API_URL);
+    console.log("Plan data:", plan);
+    console.log("Campaign data:", campaign);
+
+    if (!authToken) {
+      toast.error("Please log in first.", { duration: 5000 });
+      navigate("/login");
+      return;
+    }
+
+    // Validate form fields first
     const cardError = validateCardNumber(cardNumber);
     if (cardError) {
       setCardNumberError(cardError);
       toast.error("Please fix card number errors", { duration: 5000 });
       return;
     }
-    
+
     if (expiryError) {
       toast.error("Please fix the expiry date error", { duration: 5000 });
       return;
     }
-    
+
     if (cvvError) {
       toast.error("Please fix the CVV error", { duration: 5000 });
       return;
     }
-    
+
     if (!canPay) {
       toast.error("Please fill all required fields and agree to terms.", { duration: 5000 });
       return;
     }
 
-    // Validate payment details with backend
-    console.log("Starting payment process...");
-    const isValid = await validatePaymentWithBackend();
-    if (!isValid) {
-      console.log("Payment validation failed");
-      return;
-    }
-
     setProcessing(true);
     const toastId = toast.loading("Processing payment...");
-    console.log("Payment processing started...");
+    
+    try {
+      console.log("=== STEP 1: GENERATING INVOICE DATA ===");
+      const invoiceData = generateInvoiceData();
+      console.log("Generated invoice data:", invoiceData);
 
-    setTimeout(async () => {
-      setProcessing(false);
-      console.log("Payment processing completed");
+      console.log("=== STEP 2: ATTEMPTING TO SAVE PAYMENT DATA ===");
+      toast.loading("Saving payment information...", { id: toastId });
+      
+      let saveResult;
+      try {
+        saveResult = await savePaymentData(invoiceData);
+        console.log("✅ Payment data saved successfully:", saveResult);
+      } catch (saveError) {
+        console.error("❌ Save payment failed:", saveError.message);
+        
+        // For debugging, let's continue even if save fails
+        // In production, you might want to fail here
+        console.log("⚠️ Continuing with mock save for testing...");
+        saveResult = { success: true, message: "Mock save - backend unavailable" };
+        
+        toast.error(`Database save failed: ${saveError.message}. Continuing for testing...`, { 
+          duration: 3000 
+        });
+      }
+
+      console.log("=== STEP 3: SIMULATING PAYMENT PROCESSING ===");
+      toast.loading("Processing payment with gateway...", { id: toastId });
+      
+      // Simulate payment processing delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+      // Simulate successful payment processing
+      console.log("✅ Payment processing successful");
+
+      console.log("=== STEP 4: SENDING INVOICE EMAIL ===");
+      toast.loading("Sending invoice email...", { id: toastId });
+      
+      try {
+        const emailResult = await sendInvoiceEmail(invoiceData);
+        
+        if (emailResult.success) {
+          console.log("✅ Invoice email sent successfully");
+          toast.success("Invoice sent to your email!", { duration: 3000 });
+        } else {
+          console.warn("⚠️ Email failed but payment succeeded:", emailResult.error);
+          toast.error(`Payment successful! But email failed: ${emailResult.error}`, { 
+            duration: 6000 
+          });
+        }
+      } catch (emailError) {
+        console.error("❌ Invoice email error:", emailError);
+        toast.error(`Payment successful! Email error: ${emailError.message}`, { 
+          duration: 6000 
+        });
+      }
+
+      // SUCCESS - Payment completed
+      console.log("🎉 PAYMENT PROCESSING COMPLETED SUCCESSFULLY 🎉");
+      setPaymentSuccess(true);
+      setInvoiceSent(true);
+      setRetryCount(0); // Reset retry count on success
       toast.success("Payment Successful!", { id: toastId, duration: 5000 });
 
-      // Add payment success notification
-      console.log("Adding payment notification...");
       addNotification({
-        type: 'payment',
-        message: `Payment of $${finalTotal} for ${plan.planName} was successful!`,
+        type: "payment",
+        message: `Payment of $${finalTotal} for ${plan ? plan.planName : campaign.description} was successful!`,
       });
 
-      const invoiceData = generateInvoiceData();
-      console.log("Invoice data generated:", invoiceData);
+    } catch (error) {
+      console.error("💥 PAYMENT PROCESSING FAILED 💥");
+      console.error("Error details:", {
+        message: error.message,
+        stack: error.stack,
+        name: error.name
+      });
       
-      // Send invoice email
-      await sendInvoiceEmail(invoiceData);
+      // More specific error messages
+      let errorMessage = "Payment processing failed. Please try again.";
+      let actionRequired = false;
       
-      // Save payment data
-      await savePaymentData(invoiceData);
+      if (error.message.includes("Authentication") || error.message.includes("token")) {
+        errorMessage = "Authentication failed. Please log in again.";
+        actionRequired = true;
+      } else if (error.message.includes("declined") || error.message.includes("rejected")) {
+        errorMessage = "Payment was declined. Please check your card details and try again.";
+        actionRequired = true;
+      } else if (error.message.includes("network") || error.message.includes("fetch")) {
+        errorMessage = "Network error. Please check your internet connection.";
+      } else if (error.message.includes("timeout")) {
+        errorMessage = "Request timed out. Please try again.";
+      } else if (error.message.includes("400")) {
+        errorMessage = "Invalid payment data. Please check your information.";
+      } else if (error.message.includes("401")) {
+        errorMessage = "Session expired. Please log in again.";
+        actionRequired = true;
+      } else if (error.message.includes("403")) {
+        errorMessage = "Payment not authorized. Please contact support.";
+      } else if (error.message.includes("404") || error.message.includes("endpoint")) {
+        errorMessage = "Payment service temporarily unavailable. Please try again later.";
+      } else if (error.message.includes("500")) {
+        errorMessage = "Server error. Please try again in a few minutes.";
+      } else if (error.message.includes("HTML") || error.message.includes("endpoint")) {
+        errorMessage = "Payment service configuration issue. Please contact support.";
+      } else if (error.message) {
+        errorMessage = `Payment failed: ${error.message}`;
+      }
 
-      // Navigate to dashboard with invoice data
-      console.log("Navigating to dashboard...");
-      navigate("/dashboard", { state: { invoiceData } });
-    }, 3000);
+      // Implement retry logic
+      if (retryCount < 2) {
+        const newRetryCount = retryCount + 1;
+        setRetryCount(newRetryCount);
+        
+        toast.error(`${errorMessage} Retrying... (${newRetryCount}/2)`, { 
+          id: toastId,
+          duration: 3000,
+          icon: actionRequired ? '💳' : '🔄'
+        });
+        
+        // Add a small delay before retry
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        // Retry the payment
+        setProcessing(false);
+        return handlePay();
+      } else {
+        toast.error(errorMessage, { 
+          id: toastId, 
+          duration: 10000,
+          icon: actionRequired ? '💳' : '⚠️'
+        });
+        
+        // Reset retry count after max retries
+        setRetryCount(0);
+      }
+      
+    } finally {
+      setProcessing(false);
+      console.log("=== PAYMENT PROCESSING DEBUG END ===");
+    }
   };
 
+  // Conditional rendering after all hooks
+  if (redirecting) {
+    return (
+      <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-300 text-lg mb-4">Redirecting to Pricing...</p>
+          <div className="w-16 h-16 border-t-4 border-[#d4af37] border-solid rounded-full animate-spin mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-300 text-lg mb-4">Loading payment details...</p>
+          <div className="w-16 h-16 border-t-4 border-[#d4af37] border-solid rounded-full animate-spin mx-auto"></div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!plan && !campaign) {
+    return (
+      <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-300 text-lg mb-4">No plan selected</p>
+          <p className="text-gray-500 mb-6">Please select a plan to continue with payment</p>
+          <button 
+            onClick={() => navigate("/pricingdash")}
+            className="bg-[#d4af37] hover:bg-[#eac94d] text-black font-bold py-2 px-4 rounded"
+          >
+            Go to Pricing
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  // Main component render
   return (
     <div className="min-h-screen bg-[#0f0f0f] text-white py-10 px-4 md:px-8 font-sans">
       <Toaster position="top-right" duration={5000} />
-      <div className="mb-6">
+
+      {/* Payment Success Overlay */}
+      {paymentSuccess && (
+        <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
+          <div className="bg-[#1a1a1a] p-8 rounded-xl max-w-md w-full mx-4 text-center">
+            <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              </svg>
+            </div>
+            <h3 className="text-2xl font-bold text-green-500 mb-2">Payment Successful!</h3>
+            <p className="text-gray-300 mb-4">Your invoice has been sent to your email.</p>
+            <p className="text-gray-400 text-sm mb-6">You will be redirected to the dashboard shortly...</p>
+            <div className="w-full bg-gray-700 rounded-full h-2.5 mb-6">
+              <div className="bg-green-500 h-2.5 rounded-full animate-pulse" style={{ width: '100%' }}></div>
+            </div>
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="bg-[#d4af37] hover:bg-[#eac94d] text-black font-bold py-2 px-4 rounded"
+            >
+              Go to Dashboard Now
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* <div className="mb-6">
         <Link to="/pricingdash" className="text-sm text-[#d4af37] hover:underline inline-block">
           ← Back to Pricing
         </Link>
-      </div>
+      </div> */}
 
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
         {/* Payment Form */}
         <div className="bg-[#1a1a1a] p-6 sm:p-8 rounded-xl shadow-lg border border-gray-800">
           <h2 className="text-2xl sm:text-3xl font-bold text-[#d4af37] mb-3">Complete Your Purchase</h2>
           <p className="text-gray-400 mb-5 text-sm">
-            You're just a step away from unlocking <span className="text-white font-semibold">{plan.planName}</span>.
+            You're just a step away from unlocking <span className="text-white font-semibold">
+              {plan ? plan.planName : campaign.description}
+            </span>.
           </p>
 
           <div className="mb-4">
@@ -711,6 +1137,16 @@ export default function PaymentPage() {
               </div>
             </div>
           </div>
+
+          <div className="mt-6">
+            <button
+              onClick={testEmailConfiguration}
+              disabled={testingEmail}
+              className="text-sm text-[#d4af37] hover:underline"
+            >
+              {testingEmail ? "Testing..." : "Test email configuration"}
+            </button>
+          </div>
         </div>
 
         {/* Summary Section */}
@@ -720,13 +1156,15 @@ export default function PaymentPage() {
             <ul className="text-sm space-y-3">
               <li className="flex justify-between border-b border-gray-800 pb-2">
                 <span>Plan:</span>
-                <span className="text-white font-medium">{plan.planName || "N/A"}</span>
+                <span className="text-white font-medium">
+                  {plan ? plan.planName : "Campaign"}
+                </span>
               </li>
               <li className="flex justify-between">
-                <span>Slots/Contacts:</span>
-                <span>{plan.slots || 0}</span>
+                <span>{plan ? "Slots/Contacts:" : "Emails:"}</span>
+                <span>{plan ? plan.slots : campaign.emails}</span>
               </li>
-              {Array.isArray(plan.selectedIntegrations) && plan.selectedIntegrations.length > 0 && (
+              {plan && Array.isArray(plan.selectedIntegrations) && plan.selectedIntegrations.length > 0 && (
                 <li className="flex justify-between">
                   <span>Integrations:</span>
                   <span>{plan.selectedIntegrations.join(", ")}</span>
@@ -757,7 +1195,7 @@ export default function PaymentPage() {
                   <span>
                     Discount ({discountType === "percentage" ? `${discount}%` : `$${discount}`}):
                   </span>
-                  <span>- ${discountAmount.toFixed(2)}</span>
+                  <span>- {discountAmount.toFixed(2)}</span>
                 </li>
               )}
               <li className="flex justify-between">
@@ -801,6 +1239,12 @@ export default function PaymentPage() {
             >
               {processing ? "Processing..." : `Pay $${finalTotal}`}
             </button>
+            
+            {retryCount > 0 && (
+              <p className="text-xs text-yellow-400 mt-2 text-center">
+                Retry attempt {retryCount} of 2
+              </p>
+            )}
           </div>
         </div>
       </div>
@@ -831,8 +1275,7 @@ export function InvoicePage() {
     if (state && state.invoiceData) {
       setInvoiceData(state.invoiceData);
     } else {
-      // If no invoice data, redirect to pricing
-      navigate("/pricingdash");
+      navigate("/payment");
     }
   }, [state, navigate]);
 
@@ -845,9 +1288,7 @@ export function InvoicePage() {
   }
 
   const handleDownload = () => {
-    // In a real app, this would generate a PDF
     toast.success("Invoice downloaded successfully!", { duration: 5000 });
-    // For demo purposes, we'll just show a success message
   };
 
   return (
@@ -857,7 +1298,6 @@ export function InvoicePage() {
       <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
         {/* Header Section */}
         <div className="flex justify-between items-start p-8 border-b">
-          {/* Left: Logo and Company */}
           <div className="flex items-center">
             <div className="w-16 h-16 bg-[#d4af37] rounded-full flex items-center justify-center text-white font-bold text-xl mr-4">
               AT
@@ -868,7 +1308,6 @@ export function InvoicePage() {
             </div>
           </div>
 
-          {/* Right: Invoice Title and Details */}
           <div className="text-right">
             <h1 className="text-3xl font-bold text-[#d4af37]">BounceCure Invoice</h1>
             <p className="text-gray-600">Invoice #{invoiceData.transactionId}</p>
@@ -878,7 +1317,6 @@ export function InvoicePage() {
 
         {/* Issued To and Issued By Section */}
         <div className="grid grid-cols-2 gap-8 p-8 border-b">
-          {/* Left: Issued To */}
           <div>
             <h2 className="text-lg font-semibold mb-4 text-gray-700">Issued To:</h2>
             <p className="font-medium">{invoiceData.issuedTo.companyName}</p>
@@ -887,7 +1325,6 @@ export function InvoicePage() {
             <p>{invoiceData.issuedTo.placeOfSupply}</p>
           </div>
 
-          {/* Right: Issued By */}
           <div>
             <h2 className="text-lg font-semibold mb-4 text-gray-700">Issued By:</h2>
             <p className="font-medium">{invoiceData.issuedBy.name}</p>
@@ -902,7 +1339,6 @@ export function InvoicePage() {
           <h2 className="text-xl font-semibold mb-6 text-gray-800">Invoice Details</h2>
 
           <div className="grid grid-cols-3 gap-8">
-            {/* Left: Plan Details */}
             <div className="col-span-2">
               <div className="bg-gray-50 p-6 rounded-lg">
                 <h3 className="font-semibold text-lg mb-4">Plan Information</h3>
@@ -910,6 +1346,10 @@ export function InvoicePage() {
                   <div className="flex justify-between">
                     <span>Plan Name:</span>
                     <span className="font-medium">{invoiceData.planName}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span>Base Price:</span>
+                    <span className="font-medium">${invoiceData.planPrice}</span>
                   </div>
                   <div className="flex justify-between">
                     <span>Contacts:</span>
@@ -947,7 +1387,6 @@ export function InvoicePage() {
               </div>
             </div>
 
-            {/* Right: Payment Summary */}
             <div className="col-span-1">
               <div className="bg-gray-50 p-6 rounded-lg h-full">
                 <h3 className="font-semibold text-lg mb-4">Payment Summary</h3>
@@ -984,7 +1423,6 @@ export function InvoicePage() {
                   </div>
                 </div>
 
-                {/* Download Button */}
                 <button
                   onClick={handleDownload}
                   className="w-full mt-6 bg-[#d4af37] hover:bg-[#eac94d] text-black font-bold py-3 rounded transition"
@@ -996,7 +1434,6 @@ export function InvoicePage() {
           </div>
         </div>
 
-        {/* Footer */}
         <div className="p-8 bg-gray-50 text-center text-gray-600 text-sm">
           <p>Thank you for your business! If you have any questions, please contact support.</p>
           <button

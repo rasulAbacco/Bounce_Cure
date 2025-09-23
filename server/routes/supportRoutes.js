@@ -2,7 +2,7 @@ import express from "express";
 import multer from "multer";
 import { prisma } from "../prisma/prismaClient.js";
 import { sendEmail } from "../utils/emailService.js";
-import { authMiddleware } from "../middleware/authMiddleware.js";
+import { protect } from "../middleware/authMiddleware.js";
 import supportMiddleware from "../middleware/supportMiddleware.js";
 import jwt from "jsonwebtoken";
 
@@ -14,7 +14,7 @@ const router = express.Router();
  *  POST /api/support/message
  * -------------------------------
  */
-router.post("/message", authMiddleware, supportMiddleware, async (req, res) => {
+router.post("/message", protect, supportMiddleware, async (req, res) => {
   const { name, message } = req.body;
   const { id: userId, email: userEmail } = req.supportUser || {};
 

@@ -31,6 +31,7 @@ model User {
   sessions            Session[]
   Contact             Contact[]
   emailAccounts       EmailAccount[]
+  Payment             Payment[]
 }
 
 model Content {
@@ -77,27 +78,6 @@ model OTPCode {
   userId    Int
   expiresAt DateTime
   user      User     @relation(fields: [userId], references: [id])
-}
-
-model Verification {
-  id             Int      @id @default(autoincrement())
-  email          String   @unique
-  status         String
-  score          Int
-  syntax_valid   Boolean
-  domain_valid   Boolean
-  mailbox_exists Boolean?
-  catch_all      Boolean?
-  disposable     Boolean
-  role_based     Boolean
-  greylisted     Boolean
-  provider       String?
-  mxRecord       String?
-  isFreeDomain   Boolean?
-  error          String?
-  createdAt      DateTime @default(now())
-
-  @@index([email])
 }
 
 model SupportMessage {
@@ -316,12 +296,34 @@ model Order {
   deleted   Boolean @default(false)
 }
 
+model Conversation {
+  id        Int       @id @default(autoincrement())
+  subject   String?
+  snippet   String? // 👈 add this
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  messages  Message[]
+}
+
+model Message {
+  id             Int           @id @default(autoincrement())
+  conversationId Int?
+  conversation   Conversation? @relation(fields: [conversationId], references: [id])
+
+  body      String
+  from      String
+  to        String
+  fromName  String?
+  fromEmail String?
+  direction String
+  sentAt    DateTime @default(now())
+}
+
 model VerificationBatch {
   id               Int           @id @default(autoincrement())
   name             String?
   source           String
   includeOnlyValid Boolean       @default(false)
-  maxRich          Boolean       @default(false)
   total            Int
   validCount       Int
   invalidCount     Int
@@ -345,11 +347,34 @@ model BatchResult {
   disposable     Boolean
   role_based     Boolean
   greylisted     Boolean
+  free_provider  Boolean?
+  provider       String?
   mx             String?
   error          String?
   createdAt      DateTime @default(now())
 
   batch VerificationBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+}
+
+model Verification {
+  id             Int      @id @default(autoincrement())
+  email          String   @unique
+  status         String
+  score          Int?
+  syntax_valid   Boolean?
+  domain_valid   Boolean
+  mailbox_exists Boolean?
+  catch_all      Boolean?
+  disposable     Boolean
+  role_based     Boolean
+  greylisted     Boolean
+  free_provider  Boolean?
+  provider       String?
+  mx             String[]
+  error          String?
+  createdAt      DateTime @default(now())
 
   @@index([email])
 }
@@ -393,16 +418,25 @@ model MmsRecipient {
 }
 
 model Payment {
-  id                Int      @id @default(autoincrement())
-  email             String
-  transaction_id    String
-  plan_name         String
-  payment_date      DateTime
-  next_payment_date DateTime
-  amount            Float
-  notified          Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  email           String
+  transactionId   String    @unique
+  planName        String
+  planType        String
+  provider        String
+  contacts        Int
+  amount          Float
+  currency        String
+  paymentMethod   String
+  cardLast4       String?
+  paymentDate     DateTime
+  nextPaymentDate DateTime?
+  status          String
+  notified        Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  User            User      @relation(fields: [userId], references: [id])
 }
 
 model ScheduledCampaign {
