@@ -1,4 +1,3 @@
-// client/src/components/inbox/AccountManager.jsx
 import React, { useState, useEffect } from "react";
 import { api } from "../../api";
 
@@ -14,7 +13,7 @@ export default function AccountManager({ onAccountSelected, onAccountAdded, curr
     imapUser: "",
     smtpHost: "smtp.gmail.com",
     smtpPort: 587,
-    smtpUser: "",
+    smtpUser: "", 
     encryptedPass: "",
     oauthClientId: "",
     oauthClientSecret: "",
@@ -118,7 +117,6 @@ export default function AccountManager({ onAccountSelected, onAccountAdded, curr
       const updatedAccounts = accounts.filter((a) => a.id !== accountToLogout);
       setAccounts(updatedAccounts);
       
-      // Handle selected account after logout
       if (selectedAccountId === accountToLogout) {
         if (updatedAccounts.length > 0) {
           const nextAccount = updatedAccounts[0];
@@ -240,7 +238,7 @@ export default function AccountManager({ onAccountSelected, onAccountAdded, curr
           <label>Authentication</label>
           <select value={form.authType} onChange={(e) => setForm({ ...form, authType: e.target.value })}
                   className="w-full p-2 border rounded text-black">
-            <option value="password">Password</option>
+            <option value="password">App Password</option>
             <option value="oauth">OAuth2</option>
           </select>
         </div>
@@ -266,8 +264,14 @@ export default function AccountManager({ onAccountSelected, onAccountAdded, curr
 
         {/* Auth-specific fields */}
         {form.authType === "password" ? (
-          <input type="password" placeholder="Password" value={form.encryptedPass}
-                 onChange={(e) => setForm({ ...form, encryptedPass: e.target.value })} className="w-full p-2 border rounded text-black" />
+          <div>
+            <label>App Password</label>
+            <input type="password" placeholder="App Password" value={form.encryptedPass}
+                   onChange={(e) => setForm({ ...form, encryptedPass: e.target.value })} className="w-full p-2 border rounded text-black" required />
+            <p className="text-sm text-gray-400 mt-1">
+              Use an app password from your email provider's security settings.
+            </p>
+          </div>
         ) : (
           <>
             <input type="text" placeholder="OAuth Client ID" value={form.oauthClientId}
