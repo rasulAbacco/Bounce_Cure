@@ -1,12 +1,8 @@
-// services/imapScheduler.js
 import { PrismaClient } from "@prisma/client";
 import { syncEmailsForAccount } from "./imapSync.js";
 
 const prisma = new PrismaClient();
 
-/**
- * Starts a background job that fetches emails from all accounts every 60s
- */
 export function startEmailScheduler() {
     const runSync = async () => {
         try {
@@ -17,11 +13,17 @@ export function startEmailScheduler() {
             }
 
             console.log(`⏳ Running IMAP sync for ${accounts.length} accounts...`);
+
             for (const account of accounts) {
+                if (!account || !account.imapUser || !account.imapHost || !account.encryptedPass) {
+                    console.warn("⚠ Skipping invalid account:", account);
+                    continue;
+                }
+
                 try {
-                    await syncEmailsForAccount(account);
+                    await syncEmailsForAccount(prisma, account);
                 } catch (err) {
-                    console.error(`❌ Failed sync for ${account.imapUser}:`, err.message);
+                    console.error(`❌ Failed sync for ${account.imapUser || account.email}:`, err.message);
                 }
             }
         } catch (err) {
@@ -29,10 +31,7 @@ export function startEmailScheduler() {
         }
     };
 
-    // Run immediately once at startup
-    runSync();
+    runSync(); // Run immediately on startup
 
-    // Keep running every 30s
-    setInterval(runSync, 60 * 1000);
+    setInterval(runSync, 2 * 60 * 1000); // Repeat every 2 minutes
 }
-

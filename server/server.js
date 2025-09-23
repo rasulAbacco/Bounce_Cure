@@ -1,3 +1,4 @@
+//server/server.js
 
 import dotenv from 'dotenv';
 import express from 'express';
@@ -38,13 +39,14 @@ import { initSocket } from "./services/socketService.js";
 // import  startSyncLoop  from "./services/syncService.js";
 import { PrismaClient } from "@prisma/client";
 import cron from 'node-cron';
-// import dashboardRoutes from "./routes/dashboardRoutes.js";
 
-// import multimediaRoutes from './routes/multimedia.js';
+import dashboardRoutes from "./routes/dashboardRoutes.js";
+
+import multimediaRoutes from './routes/multimedia.js';
 // Server and Socket
 import http from "http";
 import { Server as IOServer } from "socket.io";
-// import invoiceRoutes from "./routes/invoiceRoutes.js";
+import invoiceRoutes from "./routes/invoiceRoutes.js";
 
 
 // ENV setup
@@ -92,11 +94,10 @@ app.use("/api/auth", passwordRoutes);     // <- Combine later if needed
 app.use("/dashboard", dashboardCRM);
 app.use("/verification", verificationRoutes);
 
-// ✅ Mount Routes
-// app.use("/api", dashboardRoutes);
+app.use("/api", dashboardRoutes);
 
 // Use routes
-// app.use("/api", invoiceRoutes);
+app.use("/api", invoiceRoutes);
 
 app.use("/api/verification", advancedVerificationRoute);
 app.use("/auth", forgotPasswordRoutes);
@@ -109,7 +110,8 @@ app.use("/notifications", notificationsRoutes);
 app.use('/api/sendContacts', sendContactsRoutes);
 app.use('/api/sendCampaigns', sendCampaignsRoutes);
 // Multimedia campaigns
-// app.use('/api/multimedia', multimediaRoutes);
+
+app.use('/api/multimedia', multimediaRoutes);
 app.use("/tasks", taskRoutes);
 app.use("/deals", dealsRoutes);
 app.use("/api/leads", leadsRouter);

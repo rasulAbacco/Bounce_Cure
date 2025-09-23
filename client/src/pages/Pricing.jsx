@@ -1,74 +1,150 @@
-import React, { useState } from 'react';
-import { Check, Mail, Users, TrendingUp, Star } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Check, Gift, Users, TrendingUp, Star, ArrowRight } from 'lucide-react';
 import PageLayout from "../components/PageLayout";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
+import { Link } from "react-router-dom";
+import toast from 'react-hot-toast';
+import { useNotificationContext } from "../components/NotificationContext";
+import emailTrackingService from '../services/EmailTrackingService';
 
 const Pricing = () => {
   const [billingPeriod, setBillingPeriod] = useState('monthly');
-  const [slots, setSlots] = useState(100);
-  const [selectedIntegrations, setSelectedIntegrations] = useState([]);
-
-  // for dashboard pricing page
+  const [showCreditMessage, setShowCreditMessage] = useState(false);
+  const [slotsOver, setSlotsOver] = useState(false);
+  const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const [paymentDetails, setPaymentDetails] = useState(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { addNotification } = useNotificationContext();
+  const notificationAdded = useRef(false);
+  const weekWarningSent = useRef(false);
 
-  // Base pricing structure
-  const basePricing = {
+  // Fixed pricing structure based on your requirements
+  const pricingPlans = {
     monthly: {
-      emailWarmUp: 18.78,
-      proPlan: 32.5,
-      growthPlan: 140.8
+      free: {
+        price: 0,
+        emails: 50,
+        features: [
+          "Email marketing",
+          "SMS marketing",
+          "Advanced statistics"
+        ]
+      },
+      pro: {
+        price: 100,
+        emails: 10000,
+        features: [
+          "Email marketing",
+          "SMS marketing",
+          "Marketing automation",
+          "Free support 24/7"
+        ]
+      },
+      growth: {
+        price: 200,
+        emails: 20000,
+        features: [
+          "CRM marketing",
+          "SMS marketing",
+          "Marketing automation",
+          "Advanced statistics",
+          "Free support 24/7",
+          "Phone support"
+        ]
+      },
+      enterprise: {
+        price: 500,
+        emails: 50000,
+        features: [
+          "CRM marketing",
+          "Transactional emails",
+          "SMS marketing",
+          "Transactional SMS",
+          "Marketing automation",
+          "Advanced statistics",
+          "Free support 24/7",
+          "Phone support"
+        ]
+      }
     },
     quarterly: {
-      emailWarmUp: 16.90, // 10% discount
-      proPlan: 29.25,
-      growthPlan: 126.72
+      pro: {
+        price: 300,
+        emails: 50000,
+        features: [
+          "Email marketing",
+          "SMS marketing",
+          "Marketing automation",
+          "Free support 24/7"
+        ]
+      },
+      growth: {
+        price: 500,
+        emails: 80000,
+        features: [
+          "CRM marketing",
+          "SMS marketing",
+          "Marketing automation",
+          "Advanced statistics",
+          "Free support 24/7",
+          "Phone support"
+        ]
+      },
+      enterprise: {
+        price: 700,
+        emails: 100000,
+        features: [
+          "CRM marketing",
+          "Transactional emails",
+          "SMS marketing",
+          "Transactional SMS",
+          "Marketing automation",
+          "Advanced statistics",
+          "Free support 24/7",
+          "Phone support"
+        ]
+      }
     },
     annually: {
-      emailWarmUp: 15.02, // 20% discount
-      proPlan: 26.00,
-      growthPlan: 112.64
+      pro: {
+        price: 500,
+        emails: 50000,
+        features: [
+          "Email marketing",
+          "SMS marketing",
+          "Marketing automation",
+          "Free support 24/7"
+        ]
+      },
+      growth: {
+        price: 750,
+        emails: 80000,
+        features: [
+          "CRM marketing",
+          "SMS marketing",
+          "Marketing automation",
+          "Advanced statistics",
+          "Free support 24/7",
+          "Phone support"
+        ]
+      },
+      enterprise: {
+        price: 1000,
+        emails: 100000,
+        features: [
+          "CRM marketing",
+          "Transactional emails",
+          "SMS marketing",
+          "Transactional SMS",
+          "Marketing automation",
+          "Advanced statistics",
+          "Free support 24/7",
+          "Phone support"
+        ]
+      }
     }
   };
-
-  // Integration options
-  const integrations = [
-    { id: 'salesforce', name: 'Salesforce', price: 15 },
-    { id: 'hubspot', name: 'HubSpot', price: 12 },
-    { id: 'pipedrive', name: 'Pipedrive', price: 10 },
-    { id: 'zapier', name: 'Zapier', price: 8 },
-    { id: 'slack', name: 'Slack', price: 5 },
-    { id: 'gmail', name: 'Gmail', price: 7 }
-  ];
-
-  // Calculate slot-based pricing
-  const calculateSlotPrice = (basePrice, slotCount) => {
-    const additionalSlots = Math.max(0, slotCount - 50); // First 50 slots included
-    const slotPrice = billingPeriod === 'monthly' ? 0.5 : billingPeriod === 'quarterly' ? 0.45 : 0.4;
-    return basePrice + (additionalSlots * slotPrice);
-  };
-
-  // Calculate integration costs
-  const integrationCosts = selectedIntegrations.reduce((total, integrationId) => {
-    const integration = integrations.find(i => i.id === integrationId);
-    const multiplier = billingPeriod === 'monthly' ? 1 : billingPeriod === 'quarterly' ? 3 : 12;
-    return total + (integration ? integration.price * multiplier : 0);
-  }, 0);
-
-  const toggleIntegration = (integrationId) => {
-    setSelectedIntegrations(prev =>
-      prev.includes(integrationId)
-        ? prev.filter(id => id !== integrationId)
-        : [...prev, integrationId]
-    );
-  };
-
-  const currentPricing = basePricing[billingPeriod];
-  const emailWarmUpPrice = calculateSlotPrice(currentPricing.emailWarmUp, slots) + integrationCosts;
-  const proPrice = calculateSlotPrice(currentPricing.proPlan, slots) + integrationCosts;
-  const growthPrice = calculateSlotPrice(currentPricing.growthPlan, slots) + integrationCosts;
-
-  // ✅ Flat enterprise plan price
-  const enterprisePrice = 299.99;
 
   const formatPeriod = () => {
     switch (billingPeriod) {
@@ -79,331 +155,518 @@ const Pricing = () => {
     }
   };
 
+  // Get the number of days in the current billing period
+  const getDaysInPeriod = (period) => {
+    switch (period) {
+      case 'monthly': return 30;
+      case 'quarterly': return 90;
+      case 'annually': return 365;
+      default: return 30;
+    }
+  };
+
+  // Check if user is authenticated
+  const isAuthenticated = () => {
+    const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+    if (!token) return false;
+    
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const isExpired = payload.exp * 1000 <= Date.now();
+      return !isExpired;
+    } catch (e) {
+      return false;
+    }
+  };
+
+  // Calculate days remaining in billing period
+  const calculateDaysRemaining = () => {
+    const planStartDate = localStorage.getItem('planStartDate');
+    if (!planStartDate) return 0;
+    
+    const startDate = new Date(planStartDate);
+    const daysInPeriod = getDaysInPeriod(billingPeriod);
+    const endDate = new Date(startDate);
+    endDate.setDate(startDate.getDate() + daysInPeriod);
+    
+    const today = new Date();
+    const timeDiff = endDate - today;
+    const daysDiff = Math.ceil(timeDiff / (1000 * 60 * 60 * 24));
+    
+    return Math.max(0, daysDiff);
+  };
+
+  // Check if user's email slots are exhausted
+  const checkSlotsExhausted = () => {
+    const currentPlan = JSON.parse(localStorage.getItem('currentPlan'));
+    const emailUsage = parseInt(localStorage.getItem('emailUsage')) || 0;
+    
+    if (!currentPlan) return false;
+    
+    return emailUsage >= currentPlan.emails;
+  };
+
+  // Check if we need to send a week warning
+  const checkWeekWarning = () => {
+    const days = calculateDaysRemaining();
+    
+    // If we have exactly 7 days left and haven't sent the warning yet
+    if (days <= 7 && days > 0 && !weekWarningSent.current) {
+      addNotification({
+        type: 'payment',
+        message: `Your ${billingPeriod} plan will renew in ${days} days. Ensure your payment method is up to date.`,
+        unread: true
+      });
+      
+      // Send email notification
+      const userEmail = localStorage.getItem('userEmail');
+      if (userEmail) {
+        sendEmailNotification({
+          to: userEmail,
+          subject: 'Upcoming Payment Reminder',
+          body: `Your ${billingPeriod} plan will renew in ${days} days. Please ensure your payment method is up to date to avoid service interruption.`
+        });
+      }
+      
+      weekWarningSent.current = true;
+    }
+    
+    // Reset the warning if we're in a new billing period
+    if (days > 7) {
+      weekWarningSent.current = false;
+    }
+  };
+
+  // Initialize plan data and listen for notifications
+  useEffect(() => {
+    // If no plan start date is set, create one
+    if (!localStorage.getItem('planStartDate')) {
+      const today = new Date();
+      localStorage.setItem('planStartDate', today.toISOString());
+    }
+    
+    // If no current plan is set, use the free plan
+    if (!localStorage.getItem('currentPlan')) {
+      localStorage.setItem('currentPlan', JSON.stringify(pricingPlans.monthly.free));
+    }
+    
+    // Check initial slot status
+    const isExhausted = checkSlotsExhausted();
+    setSlotsOver(isExhausted);
+    setShowCreditMessage(isExhausted);
+    
+    if (isExhausted && !notificationAdded.current) {
+      addNotification({
+        type: 'slots_exhausted',
+        message: 'Your email slots are exhausted. Please upgrade your plan.',
+        unread: true
+      });
+      notificationAdded.current = true;
+    }
+    
+    // Check week warning
+    checkWeekWarning();
+    
+    // Listen for payment success event
+    const handlePaymentSuccess = (event) => {
+      const { planName, totalSlots, slotsAdded, billingPeriod } = event.detail;
+      console.log('Payment success event received:', event.detail);
+      
+      // Show detailed success message
+      setPaymentSuccess(true);
+      setPaymentDetails({
+        planName,
+        totalSlots,
+        slotsAdded,
+        billingPeriod
+      });
+      
+      // Add notification to the notification system
+      addNotification({
+        type: 'payment_success',
+        message: `Payment successful! Your ${planName} has been activated with ${totalSlots} email slots (${slotsAdded} new slots added).`,
+        unread: true
+      });
+      
+      // Auto-hide after 5 seconds
+      setTimeout(() => {
+        setPaymentSuccess(false);
+      }, 5000);
+    };
+    
+    window.addEventListener('paymentSuccess', handlePaymentSuccess);
+    return () => window.removeEventListener('paymentSuccess', handlePaymentSuccess);
+  }, [addNotification]);
+
+  // Set up interval to check for notifications
+  useEffect(() => {
+    const interval = setInterval(() => {
+      // Check if slots are exhausted
+      const isExhausted = checkSlotsExhausted();
+      if (isExhausted && !notificationAdded.current) {
+        addNotification({
+          type: 'slots_exhausted',
+          message: 'Your email slots are exhausted. Please upgrade your plan.',
+          unread: true
+        });
+        notificationAdded.current = true;
+        setSlotsOver(true);
+        setShowCreditMessage(true);
+        
+        // Auto-hide the message after 5 seconds
+        setTimeout(() => {
+          setShowCreditMessage(false);
+        }, 5000);
+      }
+      
+      // Check week warning
+      checkWeekWarning();
+    }, 60000); // Check every minute
+    
+    return () => clearInterval(interval);
+  }, [billingPeriod, addNotification]);
+
+  // Listen for new notifications from EmailTrackingService
+  useEffect(() => {
+    const handleNewNotification = (event) => {
+      addNotification(event.detail);
+    };
+
+    window.addEventListener('newNotification', handleNewNotification);
+    
+    // Clean up the event listener on unmount
+    return () => {
+      window.removeEventListener('newNotification', handleNewNotification);
+    };
+  }, [addNotification]);
+
+  // Initialize existing notifications from localStorage
+  useEffect(() => {
+    const storedNotifications = JSON.parse(localStorage.getItem('notifications') || '[]');
+    storedNotifications.forEach(notification => {
+      addNotification(notification);
+    });
+  }, [addNotification]);
+
+  const handlePlanSelection = (planName, planType) => {
+    const planData = pricingPlans[billingPeriod][planType];
+
+    const planDetails = {
+      planName,
+      planType,
+      basePrice: planData.price,
+      billingPeriod: formatPeriod(),
+      emails: planData.emails,
+      features: planData.features,
+      slots: planData.emails,
+      selectedIntegrations: [],
+      additionalSlotsCost: 0,
+      integrationCosts: 0,
+      discount: 0,
+      subtotal: planData.price,
+      taxRate: 0.1,
+      tax: planData.price * 0.1,
+      total: planData.price * 1.1,
+    };
+
+    // Store plan temporarily
+    localStorage.setItem("pendingUpgradePlan", JSON.stringify(planDetails));
+    sessionStorage.setItem("pendingUpgradePlan", JSON.stringify(planDetails));
+
+    const isLoggedIn = !!localStorage.getItem("authToken");
+
+    if (!isLoggedIn && planData.price > 0) {
+      // Redirect to Signin with state
+      navigate("/signin", {
+        state: {
+          from: "/pricing",
+          plan: planDetails,
+          redirectTo: "/payment",
+        },
+        replace: true,
+      });
+    } else {
+      // Go directly to payment
+      navigate("/payment", { state: { plan: planDetails }, replace: true });
+    }
+  };
+
+  // Function to send email notifications (simulated)
+  const sendEmailNotification = (emailDetails) => {
+    // In a real implementation, this would call an email service API
+    console.log('Sending email notification:', emailDetails);
+    
+    // For demo purposes, we'll store it in localStorage
+    const emailQueue = JSON.parse(localStorage.getItem('emailQueue') || '[]');
+    emailQueue.push({
+      ...emailDetails,
+      id: Date.now(),
+      timestamp: new Date().toISOString()
+    });
+    localStorage.setItem('emailQueue', JSON.stringify(emailQueue));
+  };
+
   return (
     <PageLayout>
-      <div className="min-h-screen p-6 text-white">
+      <div className="min-h-screen bg-black text-white p-6">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">
-            <h1 className="text-6xl font-bold text-[#c2831f] mb-4 mt-8">Pricing Calculator</h1>
-            <p className="text-xl text-gray-300">Calculate pricing based on your needs</p>
-          </div>
-
-          {/* Billing Period Selector */}
-          <div className="flex justify-center mb-8">
-            <div className="bg-gray-900 rounded-xl p-2 shadow-lg border border-gray-700 ">
-              {[
-                { key: 'monthly', label: 'Monthly' },
-                { key: 'quarterly', label: 'Quarterly' },
-                { key: 'annually', label: 'Annually', badge: 'Save 20%' }
-              ].map(({ key, label, badge }) => (
-                <button
-                  key={key}
-                  onClick={() => setBillingPeriod(key)}
-                  className={` cursor-pointer relative px-6 py-3 rounded-lg font-medium transition-all duration-200 ${billingPeriod === key
-                    ? 'bg-[#c2831f] text-white shadow-md'
-                    : 'text-gray-300 hover:text-white hover:bg-gray-800'
-                    }`}
-                >
-                  {label}
-                  {badge && (
-                    <span className="absolute -top-2 -right-2 bg-orange-500 text-white text-xs px-2 py-1 rounded-full">
-                      {badge}
-                    </span>
-                  )}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* ✅ Slots Input */}
-          <div className="mb-12 max-w-md mx-auto">
-            <h3 className="text-2xl font-bold text-center text-[#c2831f] mb-6">
-              Choose Slots
-            </h3>
-            <input
-              type="number"
-              min="50"
-              value={slots}
-              onChange={(e) => setSlots(parseInt(e.target.value) || 50)}
-              className="w-full p-4 rounded-xl bg-gray-900 border border-gray-700 text-white text-center focus:ring-2 focus:ring-[#c2831f] focus:outline-none"
-            />
-            <p className="text-center text-gray-400 mt-2">
-              First 50 slots included. Extra slots add cost.
+            <h1 className="text-5xl font-bold mb-4" style={{ color: '#c2831f' }}>Pricing Plans</h1>
+            <p className="text-xl text-gray-300">
+              Pay only for what you use – $0.10 per email validation and send.
             </p>
           </div>
 
-          {/* Integrations */}
-          <div className="mb-12">
-            <h3 className="text-2xl font-bold text-center text-[#c2831f] mb-6">Add Integrations</h3>
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 max-w-4xl mx-auto">
-              {integrations.map((integration) => (
+          {/* Billing Toggle */}
+          <div className="flex justify-center mb-12">
+            <div className="bg-black/50 backdrop-blur-sm rounded-xl p-1 border border-[#c2831f]/30">
+              {['monthly', 'quarterly', 'annually'].map((period) => (
                 <button
-                  key={integration.id}
-                  onClick={() => toggleIntegration(integration.id)}
-                  className={`p-4 rounded-xl border-2 transition-all duration-200 ${selectedIntegrations.includes(integration.id)
-                    ? 'border-[#c2831f] bg-gray-800 text-white'
-                    : 'border-gray-700 bg-gray-900 hover:border-[#c2831f]'
+                  key={period}
+                  onClick={() => setBillingPeriod(period)}
+                  className={`px-6 py-3 rounded-lg font-medium transition-colors ${billingPeriod === period
+                    ? 'bg-[#c2831f] text-white'
+                    : 'text-gray-300 hover:text-white'
                     }`}
                 >
-                  <div className="text-sm font-medium">{integration.name}</div>
-                  <div className="text-xs text-gray-400 mt-1">
-                    ${integration.price}/{formatPeriod() === 'month' ? 'mo' : formatPeriod() === 'quarter' ? 'qtr' : 'yr'}
-                  </div>
-                  {selectedIntegrations.includes(integration.id) && (
-                    <Check className="w-4 h-4 mx-auto mt-2 text-[#c2831f]" />
+                  {period.charAt(0).toUpperCase() + period.slice(1)}
+                  {period === 'annually' && (
+                    <span className="ml-2 bg-red-500 text-white text-xs px-2 py-1 rounded-full">Save 20%</span>
                   )}
                 </button>
               ))}
             </div>
           </div>
 
-          {/* Pricing Cards */}
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8 max-w-7xl mx-auto">
-            {/* Email Warm Up */}
-            <div className="bg-gray-900 rounded-2xl shadow-xl border border-gray-700 overflow-hidden">
-              <div className="p-8">
-                <div className="flex items-center mb-4">
-                  <Mail className="w-8 h-8 text-[#c2831f] mr-3" />
-                  <h3 className="text-2xl font-bold text-white">Email Warm Up</h3>
-                </div>
-                <p className="text-gray-400 mb-6">
-                  Automatically warm up your professional email account through strategic interactions
-                </p>
-
-                <div className="mb-6">
-                  <div className="text-4xl font-bold text-white">${emailWarmUpPrice.toFixed(2)}</div>
-                  <div className="text-gray-400">per {formatPeriod()}, billed {billingPeriod}</div>
-                </div>
-
-                <ul className="space-y-3 mb-8">
-                  <li className="flex items-center">
-                    <Check className="w-5 h-5 text-[#c2831f] mr-3" />
-                    <span className="text-gray-300">Up to {slots} slots per {formatPeriod()}</span>
-                  </li>
-                  <li className="flex items-center">
-                    <Check className="w-5 h-5 text-[#c2831f] mr-3" />
-                    <span className="text-gray-300">Smart warm-up algorithm</span>
-                  </li>
-                  <li className="flex items-center">
-                    <Check className="w-5 h-5 text-[#c2831f] mr-3" />
-                    <span className="text-gray-300">24/7 monitoring</span>
-                  </li>
-                </ul>
-
-                <button
-                  onClick={() =>
-                    navigate("/pricingdash", {
-                      state: {
-                        planName: "Email Warm Up",
-                        planPrice: emailWarmUpPrice.toFixed(2),
-                        billingPeriod: formatPeriod(),
-                      },
-                    })
-                  }
-                  className="w-full bg-[#c2831f] text-white py-4 px-6 rounded-xl font-semibold hover:bg-[#a87119] transition-colors duration-200"
-                >
-                  Get Started
-                </button>
-              </div>
-            </div>
-
-            {/* Enterprise Plan */}
-            <div className="bg-gray-900 rounded-2xl shadow-xl border border-gray-700 overflow-hidden">
-              <div className="p-8">
-                <div className="flex items-center mb-4">
-                  <Star className="w-8 h-8 text-[#c2831f] mr-3" />
-                  <h3 className="text-2xl font-bold text-white">Enterprise Plan</h3>
-                  <span className="ml-2 bg-yellow-900 text-xs px-2 py-1 rounded-full font-medium">
-                    Best Value
-                  </span>
-                </div>
-                <p className="text-gray-400 mb-6">
-                  Designed for large teams and organizations with advanced recruitment needs
-                </p>
-
-                <div className="mb-6">
-                  <div className="text-4xl font-bold text-white">${enterprisePrice.toFixed(2)}</div>
-                  <div className="text-gray-400">per {formatPeriod()}, billed {billingPeriod}</div>
-                </div>
-
-                <ul className="space-y-3 mb-8">
-                  {[
-                    "Unlimited slots",
-                    "Unlimited candidates per slot",
-                    "Dedicated support team",
-                    "Custom SLA agreements",
-                    "Full API access",
-                  ].map((feature, i) => (
-                    <li key={i} className="flex items-center">
-                      <Check className="w-5 h-5 text-[#c2831f] mr-3" />
-                      <span className="text-gray-300">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  onClick={() =>
-                    navigate("/pricingdash", {
-                      state: {
-                        planName: "Enterprise Plan",
-                        planPrice: enterprisePrice.toFixed(2),
-                        billingPeriod: formatPeriod(),
-                      },
-                    })
-                  }
-                  className="w-full bg-[#c2831f] text-white py-4 px-6 rounded-xl font-semibold hover:bg-[#a87119] transition-colors duration-200"
-                >
-                  Get Started
-                </button>
-              </div>
-            </div>
-
-            {/* Pro Plan */}
-            <div className="bg-gray-900 rounded-2xl shadow-xl border border-[#c2831f] overflow-hidden relative">
-              <div className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-[#c2831f] text-white px-4 py-1 rounded-b-lg text-sm font-medium">
-                Most Popular
-              </div>
-              <div className="p-8 pt-12">
-                <div className="flex items-center mb-4">
-                  <Users className="w-8 h-8 text-[#c2831f] mr-3" />
-                  <h3 className="text-2xl font-bold text-white">Pro Plan</h3>
-                </div>
-                <p className="text-gray-400 mb-6">
-                  Access all your recruitment activities in one single team and collaborate
-                </p>
-
-                <div className="mb-6">
-                  <div className="text-4xl font-bold text-white">${proPrice.toFixed(2)}</div>
-                  <div className="text-gray-400">per {formatPeriod()}, billed {billingPeriod}</div>
-                </div>
-
-                <ul className="space-y-3 mb-8">
-                  {[
-                    `Up to ${slots} slots per ${formatPeriod()}`,
-                    "25 candidates per slot",
-                    "Advanced analytics",
-                    "Team collaboration",
-                  ].map((feature, i) => (
-                    <li key={i} className="flex items-center">
-                      <Check className="w-5 h-5 text-[#c2831f] mr-3" />
-                      <span className="text-gray-300">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  onClick={() =>
-                    navigate("/pricingdash", {
-                      state: {
-                        planName: "Pro Plan",
-                        planPrice: proPrice.toFixed(2),
-                        billingPeriod: formatPeriod(),
-                      },
-                    })
-                  }
-                  className="w-full bg-[#c2831f] text-white py-4 px-6 rounded-xl font-semibold hover:bg-[#a87119] transition-colors duration-200"
-                >
-                  Get Started
-                </button>
-              </div>
-            </div>
-
-            {/* Growth Plan */}
-            <div className="bg-gray-900 rounded-2xl shadow-xl border border-gray-700 overflow-hidden">
-              <div className="p-8">
-                <div className="flex items-center mb-4">
-                  <TrendingUp className="w-8 h-8 text-[#c2831f] mr-3" />
-                  <h3 className="text-2xl font-bold text-white">Growth Plan</h3>
-                  <span className="ml-2 bg-orange-900 text-xs px-2 py-1 rounded-full font-medium">
-                    Most Advanced
-                  </span>
-                </div>
-                <p className="text-gray-400 mb-6">
-                  Access all your recruitment activities in one single team and collaborate
-                </p>
-
-                <div className="mb-6">
-                  <div className="text-4xl font-bold text-white">${growthPrice.toFixed(2)}</div>
-                  <div className="text-gray-400">per {formatPeriod()}, billed {billingPeriod}</div>
-                </div>
-
-                <ul className="space-y-3 mb-8">
-                  {[
-                    `Up to ${slots} slots per ${formatPeriod()}`,
-                    "200 candidates per slot",
-                    "Priority support",
-                    "Custom integrations",
-                    "Dedicated account manager",
-                  ].map((feature, i) => (
-                    <li key={i} className="flex items-center">
-                      <Check className="w-5 h-5 text-[#c2831f] mr-3" />
-                      <span className="text-gray-300">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <button
-                  onClick={() =>
-                    navigate("/pricingdash", {
-                      state: {
-                        planName: "Growth Plan",
-                        planPrice: growthPrice.toFixed(2),
-                        billingPeriod: formatPeriod(),
-                      },
-                    })
-                  }
-                  className="w-full bg-[#c2831f] text-white py-4 px-6 rounded-xl font-semibold hover:bg-[#a87119] transition-colors duration-200"
-                >
-                  Get Started
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* Summary */}
-          {(selectedIntegrations.length > 0 || slots > 50) && (
-            <div className="mt-12 max-w-2xl mx-auto bg-gray-900 rounded-2xl shadow-lg border border-gray-700 p-8">
-              <h3 className="text-xl font-bold text-[#c2831f] mb-4">Pricing Summary</h3>
-              <div className="space-y-2 text-gray-300">
-                <div className="flex justify-between">
-                  <span>Base slots (50):</span>
-                  <span>Included</span>
-                </div>
-                {slots > 50 && (
-                  <div className="flex justify-between">
-                    <span>Additional slots ({slots - 50}):</span>
-                    <span>${((slots - 50) * (billingPeriod === 'monthly' ? 0.5 : billingPeriod === 'quarterly' ? 0.45 : 0.4)).toFixed(2)}</span>
-                  </div>
-                )}
-                {selectedIntegrations.length > 0 && (
-                  <div className="flex justify-between">
-                    <span>Integrations ({selectedIntegrations.length}):</span>
-                    <span>${integrationCosts.toFixed(2)}</span>
-                  </div>
-                )}
-                <div className="border-t border-gray-700 pt-2 font-semibold text-white">
-                  <div className="flex justify-between">
-                    <span>Total additional cost:</span>
-                    <span>${(integrationCosts + Math.max(0, slots - 50) * (billingPeriod === 'monthly' ? 0.5 : billingPeriod === 'quarterly' ? 0.45 : 0.4)).toFixed(2)} per {formatPeriod()}</span>
+          {/* Payment Success Message */}
+          {paymentSuccess && paymentDetails && (
+            <div className="fixed top-4 right-4 bg-green-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fadeIn">
+              <div className="flex items-center">
+                <span className="mr-2">✓</span>
+                <div>
+                  <div className="font-bold">Payment Successful!</div>
+                  <div className="text-sm">
+                    {paymentDetails.planName} activated with {paymentDetails.totalSlots} slots 
+                    ({paymentDetails.slotsAdded} new slots added)
                   </div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Action Buttons */}
-          <div className="flex justify-center gap-4 mt-12">
-            <button className="px-8 py-3 cursor-pointer bg-gray-900 border border-gray-700 text-white rounded-xl font-medium hover:bg-gray-800 transition-colors duration-200">
-              Start free trial
-            </button>
-            <button className="px-8 py-3 cursor-pointer bg-[#c2831f] text-white rounded-xl font-medium hover:bg-[#a87119] transition-colors duration-200">
-              Email me this quote
-            </button>
+          {/* Slots Over Message - Only shown when slots are actually exhausted */}
+          {showCreditMessage && slotsOver && (
+            <div className="fixed top-4 right-4 bg-red-500 text-white px-6 py-3 rounded-lg shadow-lg z-50 animate-fadeIn">
+              <div className="flex items-center">
+                <span className="mr-2">⚠️</span>
+                <span>Your email slots are exhausted. Please upgrade your plan.</span>
+              </div>
+            </div>
+          )}
 
+          {/* Persistent Slots Over Notification - Only shown when slots are actually exhausted */}
+          {slotsOver && (
+            <div className="bg-yellow-900/30 border border-yellow-500/50 rounded-xl p-4 mb-8 flex items-center">
+              <div className="flex-shrink-0 w-10 h-10 rounded-full bg-yellow-500 flex items-center justify-center mr-4">
+                <span className="text-black">⚠️</span>
+              </div>
+              <div>
+                <h3 className="font-bold text-yellow-400">Slots Exhausted</h3>
+                <p className="text-yellow-200">You've used all your email slots. Upgrade your plan to continue sending emails.</p>
+              </div>
+              <button 
+                onClick={() => setShowCreditMessage(false)}
+                className="ml-auto text-yellow-400 hover:text-yellow-200"
+              >
+                ✕
+              </button>
+            </div>
+          )}
+
+          {/* Pricing Cards - Centered */}
+          <div className="flex justify-center mb-16">
+            <div className={`grid grid-cols-1 md:grid-cols-2 ${billingPeriod === 'monthly' ? 'lg:grid-cols-4' : 'lg:grid-cols-3'
+              } gap-6`}>
+              {/* Free Plan - Only shown for monthly billing */}
+              {billingPeriod === 'monthly' && (
+                <div className="bg-black/30 backdrop-blur-lg rounded-2xl border border-[#c2831f]/30 overflow-hidden transition-transform hover:scale-[1.02]">
+                  <div className="p-6">
+                    <div className="flex items-center mb-4">
+                      <Gift className="w-8 h-8 text-[#c2831f] mr-3" />
+                      <h3 className="text-xl font-bold">Free Plan</h3>
+                      <span className="ml-2 bg-green-900 text-green-400 text-xs px-2 py-1 rounded-full">
+                        Always Free
+                      </span>
+                    </div>
+                    <div className="mb-4">
+                      <div className="text-3xl font-bold">${pricingPlans.monthly.free.price.toFixed(2)}</div>
+                      <div className="text-gray-400 text-sm">per {formatPeriod()}</div>
+                      <div className="text-xs text-yellow-400 mt-2">Limited credits available</div>
+                    </div>
+                    <ul className="space-y-2 mb-6">
+                      <li className="flex items-center">
+                        <Check className="w-5 h-5 text-[#c2831f] mr-2" />
+                        <span>{pricingPlans.monthly.free.emails} emails</span>
+                      </li>
+                      {pricingPlans.monthly.free.features.map((feature, index) => (
+                        <li key={index} className="flex items-center">
+                          <Check className="w-5 h-5 text-[#c2831f] mr-2" />
+                          <span>{feature}</span>
+                        </li>
+                      ))}
+                    </ul>
+                    <button
+                      onClick={() => handlePlanSelection("Free Plan", "free")}
+                      className="w-full py-3 bg-[#c2831f] text-white rounded-xl font-medium flex items-center justify-center transition-colors hover:bg-[#d0a042]"
+                    >
+                      Get Started <ArrowRight className="w-4 h-4 ml-2" />
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Pro Plan */}
+              <div className="bg-black/30 backdrop-blur-lg rounded-2xl border-2 border-[#c2831f] overflow-hidden relative transition-transform hover:scale-[1.02]">
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 bg-[#c2831f] text-white px-4 py-1 rounded-b-lg text-sm font-medium">
+                  Most Popular
+                </div>
+                <div className="p-6 pt-10">
+                  <div className="flex items-center mb-4">
+                    <Users className="w-8 h-8 text-[#c2831f] mr-3" />
+                    <h3 className="text-xl font-bold">Pro Plan</h3>
+                  </div>
+                  <div className="mb-4">
+                    <div className="text-3xl font-bold">${pricingPlans[billingPeriod].pro.price.toFixed(2)}</div>
+                    <div className="text-gray-400 text-sm">per {formatPeriod()}</div>
+                  </div>
+                  <ul className="space-y-2 mb-6">
+                    <li className="flex items-center">
+                      <Check className="w-5 h-5 text-[#c2831f] mr-2" />
+                      <span>{pricingPlans[billingPeriod].pro.emails} emails</span>
+                    </li>
+                    {pricingPlans[billingPeriod].pro.features.map((feature, index) => (
+                      <li key={index} className="flex items-center">
+                        <Check className="w-5 h-5 text-[#c2831f] mr-2" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    onClick={() => handlePlanSelection("Pro Plan", "pro")}
+                    className="w-full py-3 bg-[#c2831f] text-white rounded-xl font-medium flex items-center justify-center transition-colors hover:bg-[#d0a042]"
+                  >
+                    Get Started <ArrowRight className="w-4 h-4 ml-2" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Growth Plan */}
+              <div className="bg-black/30 backdrop-blur-lg rounded-2xl border border-[#c2831f]/30 overflow-hidden transition-transform hover:scale-[1.02]">
+                <div className="p-6">
+                  <div className="flex items-center mb-4">
+                    <TrendingUp className="w-8 h-8 text-[#c2831f] mr-3" />
+                    <div>
+                      <h3 className="text-xl font-bold">Growth Plan</h3>
+                      <span className="text-xs bg-[#c2831f]/20 text-[#c2831f] px-2 py-1 rounded-full">
+                        Advanced
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mb-4">
+                    <div className="text-3xl font-bold">${pricingPlans[billingPeriod].growth.price.toFixed(2)}</div>
+                    <div className="text-gray-400 text-sm">per {formatPeriod()}</div>
+                  </div>
+                  <ul className="space-y-2 mb-6">
+                    <li className="flex items-center">
+                      <Check className="w-5 h-5 text-[#c2831f] mr-2" />
+                      <span>{pricingPlans[billingPeriod].growth.emails} emails</span>
+                    </li>
+                    {pricingPlans[billingPeriod].growth.features.map((feature, index) => (
+                      <li key={index} className="flex items-center">
+                        <Check className="w-5 h-5 text-[#c2831f] mr-2" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    onClick={() => handlePlanSelection("Growth Plan", "growth")}
+                    className="w-full py-3 bg-[#c2831f] text-white rounded-xl font-medium flex items-center justify-center transition-colors hover:bg-[#d0a042]"
+                  >
+                    Get Started <ArrowRight className="w-4 h-4 ml-2" />
+                  </button>
+                </div>
+              </div>
+
+              {/* Enterprise Plan */}
+              <div className="bg-black/30 backdrop-blur-lg rounded-2xl border border-[#c2831f]/30 overflow-hidden transition-transform hover:scale-[1.02]">
+                <div className="p-6">
+                  <div className="flex items-center mb-4">
+                    <Star className="w-8 h-8 text-[#c2831f] mr-3" />
+                    <div>
+                      <h3 className="text-xl font-bold">Enterprise</h3>
+                      <span className="text-xs bg-[#c2831f]/20 text-[#c2831f] px-2 py-1 rounded-full">
+                        Best Value
+                      </span>
+                    </div>
+                  </div>
+                  <div className="mb-4">
+                    <div className="text-3xl font-bold">${pricingPlans[billingPeriod].enterprise.price.toFixed(2)}</div>
+                    <div className="text-gray-400 text-sm">per {formatPeriod()}</div>
+                  </div>
+                  <ul className="space-y-2 mb-6">
+                    <li className="flex items-center">
+                      <Check className="w-5 h-5 text-[#c2831f] mr-2" />
+                      <span>{pricingPlans[billingPeriod].enterprise.emails} emails</span>
+                    </li>
+                    {pricingPlans[billingPeriod].enterprise.features.map((feature, index) => (
+                      <li key={index} className="flex items-center">
+                        <Check className="w-5 h-5 text-[#c2831f] mr-2" />
+                        <span>{feature}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <button
+                    onClick={() => handlePlanSelection("Enterprise Plan", "enterprise")}
+                    className="w-full py-3 bg-[#c2831f] text-white rounded-xl font-medium flex items-center justify-center transition-colors hover:bg-[#d0a042]"
+                  >
+                    Get Started <ArrowRight className="w-4 h-4 ml-2" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* CTA */}
+          <div className="text-center py-8">
+            <div className="flex justify-center gap-4">
+              <Link
+                to="/login"
+                state={{ from: "/pricing", redirectTo: "/pricing" }}
+                className="px-8 py-3 bg-[#c2831f] text-white rounded-xl font-medium transition-colors hover:bg-[#d0a042]"
+              >
+                Start Free Trial
+              </Link>
+              <Link
+                to="/email-quote"
+                className="px-8 py-3 bg-black border border-[#c2831f] text-white rounded-xl font-medium transition-colors hover:bg-[#c2831f]/10"
+              >
+                Email Quote
+              </Link>
+            </div>
           </div>
         </div>
       </div>
+
+      <style jsx>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+      `}</style>
     </PageLayout>
   );
 };

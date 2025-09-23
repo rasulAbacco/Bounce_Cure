@@ -1,30 +1,10 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { 
-  Search, 
-  Star, 
-  Eye, 
-  Heart, 
-  Mail, 
-  Megaphone, 
-  Share2, 
-  Calendar, 
-  Rocket, 
-  Users, 
-  Award, 
-  TrendingUp, 
-  Gift, 
-  FileText,
-  Briefcase,
-  Image as ImageIcon,
-  Monitor,
-  Presentation,
-  PartyPopper,
-  ShoppingBag,
-  Filter,
-  Grid,
-  List,
-  X
+  Search, Star, Eye, Heart, Mail, Megaphone, Share2, Calendar, 
+  Rocket, Users, Award, TrendingUp, Gift, FileText, Briefcase,
+  ImageIcon, Monitor, Presentation, PartyPopper, ShoppingBag, Filter,
+  Grid, List, X
 } from "lucide-react";
 
 const templates = [
@@ -1125,7 +1105,7 @@ const templates = [
   },
 ];
 
-const categories = ["All", "Email", "Landing Page", "Social", "Event", "Poster", "Business"];
+const categories = ["All", "Email", "Landing Page", "Social", "Event", "Poster", "Business", "Saved"];
 
 const AllTemplates = () => {
   const navigate = useNavigate();
@@ -1133,168 +1113,237 @@ const AllTemplates = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [previewTemplate, setPreviewTemplate] = useState(null);
   const [viewMode, setViewMode] = useState("grid");
+  const [savedTemplates, setSavedTemplates] = useState([]);
+  const [userCreatedTemplates, setUserCreatedTemplates] = useState([]);
 
+  // Load saved templates from localStorage on component mount
+  useEffect(() => {
+    const saved = localStorage.getItem('savedTemplates');
+    if (saved) {
+      setSavedTemplates(JSON.parse(saved));
+    }
+
+    const userTemplates = localStorage.getItem('userCreatedTemplates');
+    if (userTemplates) {
+      const parsed = JSON.parse(userTemplates);
+      // Add default preview if not present
+      const withPreview = parsed.map(t => ({
+        ...t,
+        preview: t.preview || "https://images.unsplash.com/photo-1557683316-973673baf926?w=600&h=400&fit=crop"
+      }));
+      setUserCreatedTemplates(withPreview);
+    }
+
+    // Add event listener for template updates
+    const handleTemplateSaved = () => {
+      const updatedUserTemplates = localStorage.getItem('userCreatedTemplates');
+      if (updatedUserTemplates) {
+        const parsed = JSON.parse(updatedUserTemplates);
+        const withPreview = parsed.map(t => ({
+          ...t,
+          preview: t.preview || "https://images.unsplash.com/photo-1557683316-973673baf926?w=600&h=400&fit=crop"
+        }));
+        setUserCreatedTemplates(withPreview);
+      }
+    };
+
+    window.addEventListener('templateSaved', handleTemplateSaved);
+
+    return () => {
+      window.removeEventListener('templateSaved', handleTemplateSaved);
+    };
+  }, []);
+
+  // Save templates to localStorage whenever savedTemplates changes
+  useEffect(() => {
+    localStorage.setItem('savedTemplates', JSON.stringify(savedTemplates));
+  }, [savedTemplates]);
 
   const handleExit = () => {
     navigate("/email-campaign");
   };
 
-  
+  const toggleSaveTemplate = (templateId) => {
+    if (savedTemplates.includes(templateId)) {
+      setSavedTemplates(savedTemplates.filter(id => id !== templateId));
+    } else {
+      setSavedTemplates([...savedTemplates, templateId]);
+    }
+  };
+
   // Convert template content to editor format
   const handleSelect = (template) => {
-    let currentY = 60;
-    const canvasWidth = 800;
-    const leftMargin = 80;
-    const rightMargin = 80;
-    const contentWidth = canvasWidth - leftMargin - rightMargin;
+    // Check if the template content is in raw elements format (has x, y properties)
+    const isRawElements = template.content && template.content.length > 0 && 
+      template.content[0].hasOwnProperty('x') && template.content[0].hasOwnProperty('y');
 
-    const elements = template.content.map((block, index) => {
-      let elementConfig = {};
+    let elements;
+    if (isRawElements) {
+      // Use the raw elements directly
+      elements = template.content;
+    } else {
+      // Convert the structured blocks to raw elements
+      let currentY = 60;
+      const canvasWidth = 800;
+      const leftMargin = 80;
+      const rightMargin = 80;
+      const contentWidth = canvasWidth - leftMargin - rightMargin;
       const baseSpacing = 40;
 
-      switch (block.type) {
-        case "text":
-          const headingHeight = 50;
-          elementConfig = {
-            id: crypto.randomUUID(),
-            type: "heading",
-            content: block.value || "Heading",
-            x: leftMargin,
-            y: currentY,
-            width: contentWidth,
-            height: headingHeight,
-            fontSize: block.style?.fontSize || 32,
-            color: block.style?.color || "#1f2937",
-            backgroundColor: block.style?.backgroundColor || "transparent",
-            fontFamily: block.style?.fontFamily || "Arial",
-            fontWeight: block.style?.fontWeight || "bold",
-            textAlign: block.style?.textAlign || "center",
-            fontStyle: block.style?.fontStyle || "normal",
-            textDecoration: block.style?.textDecoration || "none",
-            opacity: 1,
-            rotation: 0,
-            borderRadius: 0,
-            borderWidth: 0,
-            borderColor: "#000000"
-          };
-          currentY += headingHeight + baseSpacing;
-          break;
+      elements = template.content.map((block, index) => {
+        let elementConfig = {};
 
-        case "paragraph":
-          const fontSize = block.style?.fontSize || 16;
-          const estimatedLines = Math.ceil(block.value.length / 60);
-          const paragraphHeight = Math.max(60, estimatedLines * (fontSize + 4));
-          
-          elementConfig = {
-            id: crypto.randomUUID(),
-            type: "paragraph",
-            content: block.value || "Paragraph text",
-            x: leftMargin,
-            y: currentY,
-            width: contentWidth,
-            height: paragraphHeight,
-            fontSize: fontSize,
-            color: block.style?.color || "#4b5563",
-            backgroundColor: block.style?.backgroundColor || "transparent",
-            fontFamily: block.style?.fontFamily || "Arial",
-            fontWeight: block.style?.fontWeight || "normal",
-            textAlign: block.style?.textAlign || "left",
-            fontStyle: block.style?.fontStyle || "normal",
-            textDecoration: block.style?.textDecoration || "none",
-            opacity: 1,
-            rotation: 0,
-            borderRadius: block.style?.borderRadius || 0,
-            borderWidth: 0,
-            borderColor: "#000000"
-          };
-          currentY += paragraphHeight + baseSpacing;
-          break;
+        switch (block.type) {
+          case "text":
+            const headingHeight = 50;
+            elementConfig = {
+              id: crypto.randomUUID(),
+              type: "heading",
+              content: block.value || "Heading",
+              x: leftMargin,
+              y: currentY,
+              width: contentWidth,
+              height: headingHeight,
+              fontSize: block.style?.fontSize || 32,
+              color: block.style?.color || "#1f2937",
+              backgroundColor: block.style?.backgroundColor || "transparent",
+              fontFamily: block.style?.fontFamily || "Arial",
+              fontWeight: block.style?.fontWeight || "bold",
+              textAlign: block.style?.textAlign || "center",
+              fontStyle: block.style?.fontStyle || "normal",
+              textDecoration: block.style?.textDecoration || "none",
+              opacity: 1,
+              rotation: 0,
+              borderRadius: 0,
+              borderWidth: 0,
+              borderColor: "#000000"
+            };
+            currentY += headingHeight + baseSpacing;
+            break;
 
-        case "button":
-          const buttonWidth = 220;
-          const buttonHeight = 50;
-          elementConfig = {
-            id: crypto.randomUUID(),
-            type: "button",
-            content: block.value || "Click Me",
-            x: leftMargin + (contentWidth - buttonWidth) / 2,
-            y: currentY,
-            width: buttonWidth,
-            height: buttonHeight,
-            fontSize: block.style?.fontSize || 16,
-            color: block.style?.color || "#ffffff",
-            backgroundColor: block.style?.backgroundColor || "#3b82f6",
-            fontFamily: block.style?.fontFamily || "Arial",
-            fontWeight: block.style?.fontWeight || "600",
-            textAlign: "center",
-            fontStyle: "normal",
-            textDecoration: "none",
-            opacity: 1,
-            rotation: 0,
-            borderRadius: block.style?.borderRadius || 8,
-            borderWidth: 0,
-            borderColor: "#000000"
-          };
-          currentY += buttonHeight + baseSpacing + 10;
-          break;
+          case "paragraph":
+            const fontSize = block.style?.fontSize || 16;
+            const estimatedLines = Math.ceil(block.value.length / 60);
+            const paragraphHeight = Math.max(60, estimatedLines * (fontSize + 4));
+            
+            elementConfig = {
+              id: crypto.randomUUID(),
+              type: "paragraph",
+              content: block.value || "Paragraph text",
+              x: leftMargin,
+              y: currentY,
+              width: contentWidth,
+              height: paragraphHeight,
+              fontSize: fontSize,
+              color: block.style?.color || "#4b5563",
+              backgroundColor: block.style?.backgroundColor || "transparent",
+              fontFamily: block.style?.fontFamily || "Arial",
+              fontWeight: block.style?.fontWeight || "normal",
+              textAlign: block.style?.textAlign || "left",
+              fontStyle: block.style?.fontStyle || "normal",
+              textDecoration: block.style?.textDecoration || "none",
+              opacity: 1,
+              rotation: 0,
+              borderRadius: block.style?.borderRadius || 0,
+              borderWidth: 0,
+              borderColor: "#000000"
+            };
+            currentY += paragraphHeight + baseSpacing;
+            break;
 
-        case "image":
-          const imageWidth = Math.min(500, contentWidth);
-          const imageHeight = block.style?.height || 300;
-          elementConfig = {
-            id: crypto.randomUUID(),
-            type: "image",
-            content: "",
-            src: block.value || "https://images.unsplash.com/photo-1557683316-973673baf926?w=500&h=300&fit=crop",
-            x: leftMargin + (contentWidth - imageWidth) / 2,
-            y: currentY,
-            width: imageWidth,
-            height: imageHeight,
-            fontSize: 16,
-            color: "#000000",
-            backgroundColor: "transparent",
-            fontFamily: "Arial",
-            fontWeight: "normal",
-            textAlign: "left",
-            fontStyle: "normal",
-            textDecoration: "none",
-            opacity: 1,
-            rotation: 0,
-            borderRadius: block.style?.borderRadius || 12,
-            borderWidth: 0,
-            borderColor: "#000000"
-          };
-          currentY += imageHeight + baseSpacing;
-          break;
+          case "button":
+            const buttonWidth = 220;
+            const buttonHeight = 50;
+            elementConfig = {
+              id: crypto.randomUUID(),
+              type: "button",
+              content: block.value || "Click Me",
+              x: leftMargin + (contentWidth - buttonWidth) / 2,
+              y: currentY,
+              width: buttonWidth,
+              height: buttonHeight,
+              fontSize: block.style?.fontSize || 16,
+              color: block.style?.color || "#ffffff",
+              backgroundColor: block.style?.backgroundColor || "#3b82f6",
+              fontFamily: block.style?.fontFamily || "Arial",
+              fontWeight: block.style?.fontWeight || "600",
+              textAlign: "center",
+              fontStyle: "normal",
+              textDecoration: "none",
+              opacity: 1,
+              rotation: 0,
+              borderRadius: block.style?.borderRadius || 8,
+              borderWidth: 0,
+              borderColor: "#000000"
+            };
+            currentY += buttonHeight + baseSpacing + 10;
+            break;
 
-        default:
-          elementConfig = {
-            id: crypto.randomUUID(),
-            type: "paragraph",
-            content: block.value || "Content",
-            x: leftMargin,
-            y: currentY,
-            width: contentWidth,
-            height: 60,
-            fontSize: 16,
-            color: "#374151",
-            backgroundColor: "transparent",
-            fontFamily: "Arial",
-            fontWeight: "normal",
-            textAlign: "left",
-            fontStyle: "normal",
-            textDecoration: "none",
-            opacity: 1,
-            rotation: 0,
-            borderRadius: 0,
-            borderWidth: 0,
-            borderColor: "#000000"
-          };
-          currentY += 60 + baseSpacing;
-      }
+          case "image":
+            const imageWidth = Math.min(500, contentWidth);
+            const imageHeight = block.style?.height || 300;
+            elementConfig = {
+              id: crypto.randomUUID(),
+              type: "image",
+              content: "",
+              src: block.value || "https://images.unsplash.com/photo-1557683316-973673baf926?w=500&h=300&fit=crop",
+              x: leftMargin + (contentWidth - imageWidth) / 2,
+              y: currentY,
+              width: imageWidth,
+              height: imageHeight,
+              fontSize: 16,
+              color: "#000000",
+              backgroundColor: "transparent",
+              fontFamily: "Arial",
+              fontWeight: "normal",
+              textAlign: "left",
+              fontStyle: "normal",
+              textDecoration: "none",
+              opacity: 1,
+              rotation: 0,
+              borderRadius: block.style?.borderRadius || 12,
+              borderWidth: 0,
+              borderColor: "#000000"
+            };
+            currentY += imageHeight + baseSpacing;
+            break;
 
-      return elementConfig;
-    });
+          default:
+            elementConfig = {
+              id: crypto.randomUUID(),
+              type: "paragraph",
+              content: block.value || "Content",
+              x: leftMargin,
+              y: currentY,
+              width: contentWidth,
+              height: 60,
+              fontSize: 16,
+              color: "#374151",
+              backgroundColor: "transparent",
+              fontFamily: "Arial",
+              fontWeight: "normal",
+              textAlign: "left",
+              fontStyle: "normal",
+              textDecoration: "none",
+              opacity: 1,
+              rotation: 0,
+              borderRadius: 0,
+              borderWidth: 0,
+              borderColor: "#000000"
+            };
+            currentY += 60 + baseSpacing;
+        }
+
+        return elementConfig;
+      });
+    }
+
+    // Check if this is a user-created template
+    const templateId = template.id?.toString() || '';
+    const isUserTemplate = templateId.startsWith('user-') || template.category === "Saved";
+    
+    // Determine if we're editing an existing template
+    const isEditingExistingTemplate = isUserTemplate && userCreatedTemplates.some(t => t.id === template.id);
 
     navigate("/editor", {
       state: {
@@ -1302,15 +1351,29 @@ const AllTemplates = () => {
           id: template.id,
           name: template.name,
           content: elements,
-          canvasBackgroundColor: "#FFFFFF",
+          canvasBackgroundColor: template.canvasBackgroundColor || "#FFFFFF",
+          category: template.category,
+          description: template.description,
+          preview: template.preview,
+          tags: template.tags,
+          rating: template.rating,
+          likes: template.likes
         },
+        editingTemplateId: isEditingExistingTemplate ? template.id : null,
+        isEditingTemplate: isEditingExistingTemplate,
+        isUserTemplate: isUserTemplate
       },
     });
   };
 
-  const filteredTemplates = templates.filter((template) => {
+  // Combine templates and user-created templates
+  const allTemplates = [...templates, ...userCreatedTemplates];
+
+  const filteredTemplates = allTemplates.filter((template) => {
     const matchesCategory =
-      selectedCategory === "All" || template.category === selectedCategory;
+      selectedCategory === "All" || 
+      template.category === selectedCategory ||
+      (selectedCategory === "Saved" && (savedTemplates.includes(template.id) || template.category === "Saved"));
     const matchesSearch = 
       template.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       template.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -1318,6 +1381,8 @@ const AllTemplates = () => {
     return matchesCategory && matchesSearch;
   });
 
+  // ... (rest of the component remains unchanged)
+  
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
       {/* Hero Section */}
@@ -1400,7 +1465,9 @@ const AllTemplates = () => {
               >
                 {category}
                 <span className="ml-2 text-xs bg-gray-600 px-2 py-1 rounded-full">
-                  {category === "All" ? templates.length : templates.filter(t => t.category === category).length}
+                  {category === "All" ? allTemplates.length : 
+                   category === "Saved" ? savedTemplates.length + userCreatedTemplates.length :
+                   allTemplates.filter(t => t.category === category).length}
                 </span>
               </button>
             ))}
@@ -1409,7 +1476,7 @@ const AllTemplates = () => {
           {/* Results Summary */}
           <div className="flex items-center justify-between mb-8">
             <div className="text-gray-400">
-              Showing {filteredTemplates.length} of {templates.length} templates
+              Showing {filteredTemplates.length} of {selectedCategory === "Saved" ? savedTemplates.length + userCreatedTemplates.length : allTemplates.length} templates
               {searchTerm && (
                 <span className="ml-2">
                   for "<span className="text-blue-400">{searchTerm}</span>"
@@ -1467,7 +1534,9 @@ const AllTemplates = () => {
                     
                     {/* Category Badge */}
                     <div className="absolute top-4 left-4">
-                      <span className="px-3 py-1 bg-blue-600/90 backdrop-blur-sm text-white text-sm font-medium rounded-full">
+                      <span className={`px-3 py-1 text-sm font-medium rounded-full ${
+                        template.category === "Saved" ? "bg-purple-600/90" : "bg-blue-600/90"
+                      } backdrop-blur-sm text-white`}>
                         {template.category}
                       </span>
                     </div>
@@ -1479,8 +1548,14 @@ const AllTemplates = () => {
                       <h3 className="text-xl font-semibold text-white group-hover:text-blue-400 transition-colors duration-200 line-clamp-2">
                         {template.name}
                       </h3>
-                      <button className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 p-2 hover:bg-gray-700 rounded-full">
-                        <Heart size={18} className="text-gray-400 hover:text-red-400" />
+                      <button 
+                        onClick={() => toggleSaveTemplate(template.id)}
+                        className={`p-2 hover:bg-gray-700 rounded-full transition-colors duration-200 ${
+                          savedTemplates.includes(template.id) || template.category === "Saved" ? 'text-red-400' : 'text-gray-400 hover:text-red-400'
+                        }`}
+                        disabled={template.category === "Saved"}
+                      >
+                        <Heart size={18} fill={(savedTemplates.includes(template.id) || template.category === "Saved") ? 'currentColor' : 'none'} />
                       </button>
                     </div>
                     
@@ -1535,7 +1610,9 @@ const AllTemplates = () => {
                           <h3 className="text-xl font-semibold text-white group-hover:text-blue-400 transition-colors duration-200">
                             {template.name}
                           </h3>
-                          <span className="inline-block px-2 py-1 bg-blue-600/20 text-blue-400 text-xs rounded-full mt-1">
+                          <span className={`inline-block px-2 py-1 text-xs rounded-full mt-1 ${
+                            template.category === "Saved" ? "bg-purple-600/20 text-purple-400" : "bg-blue-600/20 text-blue-400"
+                          }`}>
                             {template.category}
                           </span>
                         </div>
@@ -1548,6 +1625,15 @@ const AllTemplates = () => {
                             <Heart size={14} />
                             <span>{template.likes}</span>
                           </div>
+                          <button 
+                            onClick={() => toggleSaveTemplate(template.id)}
+                            className={`p-1 hover:bg-gray-700 rounded-full transition-colors duration-200 ${
+                              savedTemplates.includes(template.id) || template.category === "Saved" ? 'text-red-400' : 'text-gray-400 hover:text-red-400'
+                            }`}
+                            disabled={template.category === "Saved"}
+                          >
+                            <Heart size={16} fill={(savedTemplates.includes(template.id) || template.category === "Saved") ? 'currentColor' : 'none'} />
+                          </button>
                         </div>
                       </div>
                       
@@ -1588,14 +1674,20 @@ const AllTemplates = () => {
           {/* No Results */}
           {filteredTemplates.length === 0 && (
             <div className="text-center py-20">
-              <div className="text-6xl mb-6 opacity-50">🔍</div>
+              <div className="text-6xl mb-6 opacity-50">
+                {selectedCategory === "Saved" ? "💾" : "🔍"}
+              </div>
               <h3 className="text-3xl font-semibold text-gray-400 mb-4">
-                No templates found
+                {selectedCategory === "Saved" 
+                  ? "No saved templates yet" 
+                  : "No templates found"
+                }
               </h3>
               <p className="text-gray-500 mb-8 text-lg">
-                We couldn't find any templates matching your criteria.
-                <br />
-                Try adjusting your search terms or category filter.
+                {selectedCategory === "Saved" 
+                  ? "Save your favorite templates by clicking the heart icon on any template or create your own templates in the editor."
+                  : "We couldn't find any templates matching your criteria. Try adjusting your search terms or category filter."
+                }
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
@@ -1605,14 +1697,16 @@ const AllTemplates = () => {
                   }}
                   className="px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-full font-medium transition-colors duration-200"
                 >
-                  Clear All Filters
+                  {selectedCategory === "Saved" ? "Browse All Templates" : "Clear All Filters"}
                 </button>
-                <button
-                  onClick={() => navigate("/editor")}
-                  className="px-8 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-full font-medium transition-colors duration-200"
-                >
-                  Start from Blank
-                </button>
+                {selectedCategory !== "Saved" && (
+                  <button
+                    onClick={() => navigate("/editor")}
+                    className="px-8 py-3 bg-gray-700 hover:bg-gray-600 text-white rounded-full font-medium transition-colors duration-200"
+                  >
+                    Start from Blank
+                  </button>
+                )}
               </div>
             </div>
           )}
@@ -1628,7 +1722,9 @@ const AllTemplates = () => {
               <div>
                 <h2 className="text-2xl font-bold text-gray-900">{previewTemplate.name}</h2>
                 <div className="flex items-center space-x-4 mt-2">
-                  <span className="px-3 py-1 bg-blue-100 text-blue-800 text-sm rounded-full">
+                  <span className={`px-3 py-1 text-sm rounded-full ${
+                    previewTemplate.category === "Saved" ? "bg-purple-100 text-purple-800" : "bg-blue-100 text-blue-800"
+                  }`}>
                     {previewTemplate.category}
                   </span>
                   <div className="flex items-center space-x-2 text-sm text-gray-600">
@@ -1651,41 +1747,131 @@ const AllTemplates = () => {
             {/* Modal Content */}
             <div className="p-6 overflow-y-auto max-h-[70vh]">
               <div className="space-y-6">
-                {previewTemplate.content.map((block, index) => {
-                  if (block.type === "text") {
-                    return (
-                      <h3 key={index} style={block.style} className="text-gray-900">
-                        {block.value}
-                      </h3>
-                    );
-                  }
-                  if (block.type === "paragraph") {
-                    return (
-                      <p key={index} style={block.style} className="text-gray-700 whitespace-pre-line">
-                        {block.value}
-                      </p>
-                    );
-                  }
-                  if (block.type === "button") {
-                    return (
-                      <button key={index} style={block.style} className="cursor-default">
-                        {block.value}
-                      </button>
-                    );
-                  }
-                  if (block.type === "image") {
-                    return (
-                      <img
-                        key={index}
-                        src={block.value}
-                        alt="Template content"
-                        className="rounded-lg max-w-full shadow-lg"
-                        style={block.style}
-                      />
-                    );
-                  }
-                  return null;
-                })}
+                {previewTemplate.content && previewTemplate.content.length > 0 ? (
+                  // Check if content is in raw elements format
+                  previewTemplate.content[0].hasOwnProperty('x') ? (
+                    // Render raw elements directly
+                    <div className="relative bg-white border border-gray-200 rounded-lg" style={{ width: '800px', height: '600px', margin: '0 auto' }}>
+                      {previewTemplate.content.map((element) => (
+                        <div
+                          key={element.id}
+                          className="absolute"
+                          style={{
+                            left: element.x,
+                            top: element.y,
+                            width: element.width,
+                            height: element.height,
+                            transform: `rotate(${element.rotation || 0}deg)`,
+                            opacity: element.opacity || 1,
+                            zIndex: element.zIndex || 0,
+                          }}
+                        >
+                          {element.type === "heading" && (
+                            <div
+                              style={{
+                                fontSize: `${element.fontSize}px`,
+                                fontFamily: element.fontFamily || 'Arial',
+                                color: element.color || '#000000',
+                                fontWeight: element.fontWeight || 'bold',
+                                textAlign: element.textAlign || 'left',
+                                lineHeight: '1.4',
+                                backgroundColor: element.backgroundColor || 'transparent',
+                              }}
+                            >
+                              {element.content || "Heading"}
+                            </div>
+                          )}
+                          {element.type === "paragraph" && (
+                            <div
+                              style={{
+                                fontSize: `${element.fontSize}px`,
+                                fontFamily: element.fontFamily || 'Arial',
+                                color: element.color || '#000000',
+                                fontWeight: element.fontWeight || 'normal',
+                                textAlign: element.textAlign || 'left',
+                                lineHeight: '1.4',
+                                backgroundColor: element.backgroundColor || 'transparent',
+                              }}
+                            >
+                              {element.content || "Paragraph text"}
+                            </div>
+                          )}
+                          {element.type === "button" && (
+                            <div
+                              style={{
+                                backgroundColor: element.backgroundColor || "#007bff",
+                                color: element.color || "#ffffff",
+                                padding: "10px 20px",
+                                borderRadius: `${element.borderRadius || 6}px`,
+                                fontSize: `${element.fontSize}px`,
+                                fontWeight: element.fontWeight || '600',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                height: '100%',
+                                width: '100%',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              {element.content || "Click Me"}
+                            </div>
+                          )}
+                          {element.type === "image" && (
+                            <img
+                              src={element.src}
+                              alt="Template element"
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                borderRadius: `${element.borderRadius || 0}px`,
+                              }}
+                            />
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    // Render structured content
+                    previewTemplate.content.map((block, index) => {
+                      if (block.type === "text") {
+                        return (
+                          <h3 key={index} style={block.style} className="text-gray-900">
+                            {block.value}
+                          </h3>
+                        );
+                      }
+                      if (block.type === "paragraph") {
+                        return (
+                          <p key={index} style={block.style} className="text-gray-700 whitespace-pre-line">
+                            {block.value}
+                          </p>
+                        );
+                      }
+                      if (block.type === "button") {
+                        return (
+                          <button key={index} style={block.style} className="cursor-default">
+                            {block.value}
+                          </button>
+                        );
+                      }
+                      if (block.type === "image") {
+                        return (
+                          <img
+                            key={index}
+                            src={block.value}
+                            alt="Template content"
+                            className="rounded-lg max-w-full shadow-lg"
+                            style={block.style}
+                          />
+                        );
+                      }
+                      return null;
+                    })
+                  )
+                ) : (
+                  <p className="text-gray-500 text-center py-10">No content available for this template</p>
+                )}
               </div>
             </div>
             
@@ -1715,7 +1901,7 @@ const AllTemplates = () => {
       )}
 
       {/* Custom Styles */}
-      <style jsx>{`
+      <style>{`
         .line-clamp-2 {
           display: -webkit-box;
           -webkit-line-clamp: 2;
@@ -1750,15 +1936,15 @@ const AllTemplates = () => {
         }
         
         /* Hover effects */
-        .group:hover .group-hover\:scale-110 {
+        .group:hover .group-hover\\:scale-110 {
           transform: scale(1.1);
         }
         
-        .group:hover .group-hover\:translate-y-0 {
+        .group:hover .group-hover\\:translate-y-0 {
           transform: translateY(0);
         }
         
-        .group:hover .group-hover\:opacity-100 {
+        .group:hover .group-hover\\:opacity-100 {
           opacity: 1;
         }
         

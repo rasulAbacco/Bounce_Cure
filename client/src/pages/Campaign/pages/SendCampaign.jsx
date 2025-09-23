@@ -710,7 +710,14 @@ export default function CampaignBuilder() {
         return;
       }
 
-
+      // Prepare email data
+      // const emailData = {
+      //   recipients: recipientsList,
+      //   fromName: formData.fromName,
+      //   fromEmail: formData.fromEmail,
+      //   subject: formData.subject,
+      //   canvasData: canvasPages[0].elements, // Send the canvas elements
+      // };
       // Prepare email data
       const emailData = {
         recipients: recipientsList,
@@ -718,10 +725,10 @@ export default function CampaignBuilder() {
         fromEmail: formData.fromEmail,
         replyTo: formData.fromEmail,   // ✅ Ensure replies go to this email
         subject: formData.subject,
-        canvasData: canvasPages[0].elements, // Send the canvas elements
+        canvasData: canvasPages[0].elements, // ✅ this is where template content is included
       };
 
-
+      
       // Backend API call to send emails
       const response = await fetch("http://localhost:5000/api/campaigns/send", {
         method: "POST",
@@ -739,7 +746,7 @@ export default function CampaignBuilder() {
       });
 
       // ✅ Redirect to Inbox after successful send
-      navigate("/inbox", { state: { fromEmail: formData.fromEmail } });
+      navigate("/analytics", { state: { fromEmail: formData.fromEmail } });
 
     } else {
       setSendStatus({
@@ -963,16 +970,16 @@ export default function CampaignBuilder() {
                             {formData.recipients === "manual" &&
                             ((formData.manualEmails || "")
                                 .split(/[\n,]+/)
-                                .filter((e) => e.trim()).length > 6000) && (
+                                .filter((e) => e.trim()).length > 600) && (
                                 <p className="text-yellow-400 mt-2">
-                                ⚠️ You pasted more than 6000 emails. Only the first 6000 will be used.
+                                ⚠️ You pasted more than 600 emails. Only the first 600 will be used.
                                 </p>
                             )}
 
                             {formData.recipients === "file" &&
-                            ((formData.bulkFileEmails || []).length > 6000) && (
+                            ((formData.bulkFileEmails || []).length > 600) && (
                                 <p className="text-yellow-400 mt-2">
-                                ⚠️ Your file contains more than 6000 emails. Only the first 6000 will be used.
+                                ⚠️ Your file contains more than 600 emails. Only the first 600 will be used.
                                 </p>
                             )}
 
