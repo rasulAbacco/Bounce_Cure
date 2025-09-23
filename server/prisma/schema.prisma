@@ -31,6 +31,7 @@ model User {
   sessions            Session[]
   Contact             Contact[]
   emailAccounts       EmailAccount[]
+  Payment             Payment[]
 }
 
 model Content {
@@ -420,14 +421,23 @@ model MmsRecipient {
 }
 
 model Payment {
-  id                Int      @id @default(autoincrement())
-  email             String
-  transaction_id    String
-  plan_name         String
-  payment_date      DateTime
-  next_payment_date DateTime
-  amount            Float
-  notified          Boolean  @default(false)
-  createdAt         DateTime @default(now())
-  updatedAt         DateTime @updatedAt
+  id              Int       @id @default(autoincrement())
+  userId          Int
+  email           String
+  transactionId   String    @unique
+  planName        String
+  planType        String
+  provider        String
+  contacts        Int
+  amount          Float
+  currency        String
+  paymentMethod   String
+  cardLast4       String?
+  paymentDate     DateTime
+  nextPaymentDate DateTime?
+  status          String
+  notified        Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  User            User      @relation(fields: [userId], references: [id])
 }
