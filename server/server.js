@@ -1,3 +1,4 @@
+
 import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
@@ -22,6 +23,7 @@ import dealsRoutes from "./routes/deals.js";
 import contactCRMRoutes from "./routes/contactCRM.js";
 import { router as campaignContactsRoutes } from './routes/contacts.js';
 import { router as campaignsRoutes } from './routes/campaigns.js';
+// import fetchReplies from "./routes/FetchReplies.js";
 import leadsRouter from "./routes/leads.js";
 import listRoutes from "./routes/listRoutes.js";
 import orderRoutes from "./routes/ordersRoutes.js";
@@ -30,20 +32,23 @@ import emailsRouter from "./routes/emails.js";
 import accountsRouter from "./routes/accounts.js";
 import convRouter from "./routes/conversations.js";
 import savedRepliesRouter from "./routes/savedReplies.js";
-
 // Services
 import { startEmailScheduler } from "./services/imapScheduler.js";
 import { initSocket } from "./services/socketService.js";
-import { startSyncLoop } from "./services/syncService.js";
+// import  startSyncLoop  from "./services/syncService.js";
 import { PrismaClient } from "@prisma/client";
+import cron from 'node-cron';
+// import dashboardRoutes from "./routes/dashboardRoutes.js";
 
+// import multimediaRoutes from './routes/multimedia.js';
 // Server and Socket
 import http from "http";
 import { Server as IOServer } from "socket.io";
+// import invoiceRoutes from "./routes/invoiceRoutes.js";
+
 
 // ENV setup
 dotenv.config();
-console.log("Loaded SG API key:", process.env.SG_EMAIL_VAL_API_KEY?.substring(0, 10));
 
 // Init
 startEmailScheduler();
@@ -81,18 +86,30 @@ app.use(express.urlencoded({ extended: true }));
 
 // Routes
 app.use("/api/contacts", contactRoutes);
+
 app.use("/api/auth", authRoutes);         // <- Keep this before passwordRoutes
 app.use("/api/auth", passwordRoutes);     // <- Combine later if needed
 app.use("/dashboard", dashboardCRM);
 app.use("/verification", verificationRoutes);
+
+// ✅ Mount Routes
+// app.use("/api", dashboardRoutes);
+
+// Use routes
+// app.use("/api", invoiceRoutes);
+
 app.use("/api/verification", advancedVerificationRoute);
 app.use("/auth", forgotPasswordRoutes);
 app.use("/api/support", supportRoutes);
 app.use("/api/settings", verifySettingsAuth, settingsRoutes);
 app.use("/api/push", pushRoutes);
 app.use("/notifications", notificationsRoutes);
-app.use("/api/sendContacts", sendContactsRoutes);
-app.use("/api/sendCampaigns", sendCampaignsRoutes);
+
+//campaign
+app.use('/api/sendContacts', sendContactsRoutes);
+app.use('/api/sendCampaigns', sendCampaignsRoutes);
+// Multimedia campaigns
+// app.use('/api/multimedia', multimediaRoutes);
 app.use("/tasks", taskRoutes);
 app.use("/deals", dealsRoutes);
 app.use("/api/leads", leadsRouter);
@@ -110,8 +127,13 @@ app.use("/api/campaigns", campaignsRoutes);
 // Socket service
 initSocket(io);
 
+
 // IMAP sync loop
-startSyncLoop(prisma);
+// startSyncLoop(prisma);
+
+
+app.use('/api/campaigncontacts', campaignContactsRoutes);
+app.use('/api/campaigns', campaignsRoutes);
 
 // Root route
 app.get('/', (req, res) => {
