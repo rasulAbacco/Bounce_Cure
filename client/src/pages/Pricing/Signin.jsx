@@ -1,36 +1,70 @@
+// Signin.jsx
 import React, { useState, useEffect } from "react";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import toast from "react-hot-toast";
 
-const API_URL = import.meta.env.VITE_API_URL; // ✅ Make sure you have this in your .env
+const API_URL = import.meta.env.VITE_API_URL;
 
 export default function Signin() {
   const navigate = useNavigate();
   const location = useLocation();
 
-  // ✅ Get selected plan from location OR localStorage
-  const [selectedPlan, setSelectedPlan] = useState(
-    location.state?.plan || JSON.parse(localStorage.getItem("selectedPlan")) || null
-  );
+  // Get the pending plan from storage or location state
+  const [selectedPlan, setSelectedPlan] = useState(() => {
+    console.log("=== INITIALIZING SIGNIN COMPONENT ===");
+    
+    // First check location state
+    if (location.state?.plan) {
+      console.log("Found plan in location state:", location.state.plan);
+      return location.state.plan;
+    }
+    
+    // Then check sessionStorage
+    const sessionPlan = sessionStorage.getItem("pendingUpgradePlan");
+    if (sessionPlan) {
+      try {
+        const parsed = JSON.parse(sessionPlan);
+        console.log("Found plan in sessionStorage:", parsed);
+        return parsed;
+      } catch (e) {
+        console.error("Error parsing session plan:", e);
+      }
+    }
+    
+    // Finally check localStorage
+    const localPlan = localStorage.getItem("pendingUpgradePlan");
+    if (localPlan) {
+      try {
+        const parsed = JSON.parse(localPlan);
+        console.log("Found plan in localStorage:", parsed);
+        return parsed;
+      } catch (e) {
+        console.error("Error parsing local plan:", e);
+      }
+    }
+    
+    console.log("No plan found");
+    return null;
+  });
 
   const redirectTo = location.state?.redirectTo || null;
+  const requirePlan = location.state?.requirePlan ?? false; // ✅ Safe fallback
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  // ✅ Log location state (for debugging)
+  // ✅ Run this only if requirePlan is true
   useEffect(() => {
-    console.log("Location state:", location.state);
-  }, [location.state]);
-
-  // ✅ Redirect to pricing page if no plan
-  useEffect(() => {
-    if (!selectedPlan) {
+    console.log("=== SIGNIN USE EFFECT ===");
+    console.log("requirePlan:", requirePlan);
+    console.log("selectedPlan:", selectedPlan);
+    
+    if (requirePlan && !selectedPlan) {
       toast.error("No plan selected. Redirecting to pricing...", { duration: 5000 });
       navigate("/pricing", { replace: true });
     }
-  }, [selectedPlan, navigate]);
+  }, [requirePlan, selectedPlan, navigate]);
 
   const handleBack = () => {
     if (selectedPlan) {
@@ -42,44 +76,91 @@ export default function Signin() {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setError("");
     setIsLoading(true);
+    setError("");
+
+    console.log("=== LOGIN PROCESS START ===");
+    console.log("Email:", email);
+    console.log("Selected plan:", selectedPlan);
+    console.log("Redirect to:", redirectTo);
+
+    // Validate inputs before sending
+    if (!email.trim() || !password.trim()) {
+      setError("Email and password are required");
+      toast.error("Email and password are required");
+      setIsLoading(false);
+      return;
+    }
 
     try {
-      const res = await fetch(`${API_URL}/auth/login`, {
+      console.log("Attempting login with:", { email: email.trim() });
+      
+      const response = await fetch(`${API_URL}/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ 
+          email: email.trim(), 
+          password: password.trim() 
+        }),
       });
 
-      const data = await res.json();
+      console.log("Response status:", response.status);
 
-      if (res.ok && data.token) {
-        // ✅ Save token securely
-        localStorage.setItem("authToken", data.token);
-        // ✅ Clear saved plan after login
-        localStorage.removeItem("selectedPlan");
-
-        toast.success("Login successful 🎉", { duration: 5000 });
-
-        // ✅ Redirect user based on selected plan or dashboard
-        if (selectedPlan?.planName === "Free Plan") {
-          navigate("/dashboard");
-        } else if (redirectTo && selectedPlan) {
-          navigate(redirectTo, { state: selectedPlan });
-        } else if (selectedPlan) {
-          navigate("/payment", { state: selectedPlan });
-        } else {
-          navigate("/dashboard");
+      if (!response.ok) {
+        // Try to get more detailed error message
+        let errorMessage = "Login failed";
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error || errorMessage;
+          console.error("Server error response:", errorData);
+        } catch (e) {
+          console.error("Could not parse error response");
         }
-      } else {
-        setError(data.message || "Invalid email or password");
-        toast.error(data.message || "Login failed ❌", { duration: 5000 });
+        
+        throw new Error(errorMessage);
       }
-    } catch (err) {
-      console.error("Login error:", err);
-      toast.error("Server error. Please try again.", { duration: 5000 });
-      setError("Unable to login. Please try again later.");
+
+      const data = await response.json();
+      console.log("Login successful, received data:", data);
+      
+      // Check if token exists in response
+      if (!data.token) {
+        throw new Error("No authentication token received from server");
+      }
+
+      const token = data.token;
+      localStorage.setItem("authToken", token);
+      sessionStorage.setItem("authToken", token);
+
+      toast.success("Login successful!");
+
+      // Determine where to redirect after login
+      if (redirectTo) {
+        if (redirectTo === "/payment") {
+          console.log("Redirecting to payment with plan");
+          navigate("/payment", { state: { plan: selectedPlan }, replace: true });
+        } else {
+          console.log("Redirecting to:", redirectTo);
+          navigate(redirectTo, { replace: true });
+        }
+      } else if (selectedPlan) {
+        console.log("Redirecting to payment with plan");
+        navigate("/payment", { state: { plan: selectedPlan }, replace: true });
+      } else {
+        console.log("Redirecting to dashboard");
+        navigate("/dashboard", { replace: true });
+      }
+
+      // Clean up stored plan data after successful login
+      localStorage.removeItem("pendingUpgradePlan");
+      sessionStorage.removeItem("pendingUpgradePlan");
+      
+      console.log("=== LOGIN PROCESS END ===");
+      
+    } catch (error) {
+      console.error("Login error:", error);
+      setError(error.message || "Login failed. Please try again.");
+      toast.error(error.message || "Login failed. Please try again.");
     } finally {
       setIsLoading(false);
     }
@@ -91,7 +172,7 @@ export default function Signin() {
         onSubmit={handleLogin}
         className="bg-gray-800 p-8 rounded-xl shadow-xl w-full max-w-md relative"
       >
-        {/* ✅ Back button */}
+        {/* Back button */}
         <button
           type="button"
           onClick={handleBack}
@@ -114,16 +195,15 @@ export default function Signin() {
 
         <h2 className="text-2xl font-bold text-[#c2831f] mb-6 mt-2">Sign In</h2>
 
-        {/* ✅ Display selected plan information */}
         {selectedPlan && (
           <div className="mb-6 p-4 bg-gray-700 rounded-lg border-l-4 border-[#c2831f]">
             <p className="text-gray-300 text-sm mb-1">Selected Plan:</p>
             <p className="text-[#c2831f] font-semibold text-lg">
               {selectedPlan.planName || selectedPlan.name || "Selected Plan"}
             </p>
-            {selectedPlan.basePlanPrice && (
+            {selectedPlan.basePrice && (
               <p className="text-gray-300 text-sm mt-1">
-                ${selectedPlan.basePlanPrice.toFixed(2)}
+                ${selectedPlan.basePrice.toFixed(2)}
               </p>
             )}
           </div>
