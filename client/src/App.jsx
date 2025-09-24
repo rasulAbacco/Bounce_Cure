@@ -44,7 +44,7 @@ import SendCampaign from './pages/Campaign/pages/SendCampaign';
 import AllTemplates from './pages/Campaign/pages/AllTemplats';
 import WatsupCampaign from './pages/WatsupCampaign';
 import SMSCampaign from './pages/SMSCampaign';
-
+import Signupd from './pages/Pricing/Signupd';
 
 import MultimediaCampaign from './pages/Multimedia/MultimediCampaign';
 import WhatsappCampaign from './pages/Multimedia/WhatsappCampaign';
