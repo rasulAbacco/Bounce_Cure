@@ -30,8 +30,8 @@ import CreateCampaign from './pages/Campaign/pages/CreateCampaign';
 import EditorPage from './pages/Campaign/pages/EditorPage';
 import PhoneValidation from './pages/PhoneValidation/PhoneValidation';
 import { Toaster } from 'react-hot-toast';
-import { NotificationProvider } from "./components/NotificationContext"; 
-import ContactsPage from'./pages/ContactManagement/pages/ContactsPage';
+import { NotificationProvider } from "./components/NotificationContext";
+import ContactsPage from './pages/ContactManagement/pages/ContactsPage';
 import Leads from './pages/ContactManagement/pages/Leads';
 import Deals from './pages/ContactManagement/pages/Deals';
 import Tasks from './pages/ContactManagement/pages/Tasks';
@@ -53,6 +53,7 @@ import TermsConditions from './pages/Terms&conditions';
 import RefundPolicy from './pages/RefundPolicy';
 import Signin from './pages/Pricing/Signin';
 import VerifydEmail from './pages/Campaign/pages/VerifydEmail';
+import Signupd from './pages/Pricing/Signupd';
 
 function App() {
   return (
@@ -104,7 +105,7 @@ function App() {
             <Route path="/auth" element={<UserAuthentication />} />
             <Route path="/verification" element={<Verification />} />
             <Route path="/support" element={<Support />} />
-            <Route path='/phoneValidation' element={<PhoneValidation/>}/>
+            <Route path='/phoneValidation' element={<PhoneValidation />} />
             <Route path='/pricingdash' element={<PricingDash />} />
             <Route path='/new-campaign' element={<NewCampaignWindow />} />
             <Route path="/create" element={<CreateCampaign />} />
