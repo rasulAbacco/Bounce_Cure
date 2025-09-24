@@ -87,52 +87,82 @@ router.post("/verify-single", async (req, res) => {
 });
 
 // ------ Bulk verify ------
+
 router.post("/verify-bulk", async (req, res) => {
   const { emails } = req.body || {};
   const smtpCheck = (req.body?.smtpCheck ?? req.query?.smtpCheck ?? false) === true;
 
-  console.log(`[/verify-bulk] Emails=${JSON.stringify(emails)}, smtpCheck=${smtpCheck}`);
+  console.log(`[/verify-bulk] Received ${emails?.length || 0} emails, smtpCheck=${smtpCheck}`);
 
   if (!emails || !Array.isArray(emails) || emails.length === 0) {
+    console.log("[/verify-bulk] Invalid emails input");
     return res.status(400).json({ error: "Emails array is required" });
   }
 
   try {
-    const batchId = await verifier.createBatchWithMailsSo(emails);
-    const batchResults = await verifier.waitForBatchCompletion(batchId);
+    // Split emails into chunks of 500 max (mails.so limit)
+    const chunkSize = 500;
+    const emailChunks = [];
+    for (let i = 0; i < emails.length; i += chunkSize) {
+      emailChunks.push(emails.slice(i, i + chunkSize));
+    }
+    console.log(`[/verify-bulk] Split into ${emailChunks.length} chunk(s)`);
 
-    // Process results
-    const results = [];
-    const summary = { total: emails.length, valid: 0, invalid: 0, risky: 0, disposable: 0, role_based: 0, catch_all: 0, greylisted: 0 };
+    const allResults = [];
+    let totalSummary = {
+      total: emails.length,
+      validCount: 0,
+      invalidCount: 0,
+      riskyCount: 0,
+      disposable: 0,
+      role_based: 0,
+      catch_all: 0,
+      greylisted: 0,
+    };
 
-    batchResults.forEach(result => {
-      results.push(result);
-      if (result.status in summary) summary[result.status]++;
-      else summary.risky++;
-      if (result.disposable) summary.disposable++;
-      if (result.role_based) summary.role_based++;
-      if (result.catch_all) summary.catch_all++;
-      if (result.greylisted) summary.greylisted++;
-    });
+    for (let i = 0; i < emailChunks.length; i++) {
+      console.log(`[/verify-bulk] Processing chunk ${i + 1}/${emailChunks.length} with ${emailChunks[i].length} emails`);
+
+      const startTime = Date.now();
+      const batchId = await verifier.createBatchWithMailsSo(emailChunks[i]);
+      console.log(`[/verify-bulk] Created batch ${batchId} for chunk ${i + 1}`);
+
+      const batchResults = await verifier.waitForBatchCompletion(batchId);
+      console.log(`[/verify-bulk] Batch ${batchId} completed in ${(Date.now() - startTime) / 1000}s with ${batchResults.length} results`);
+
+      batchResults.forEach((r) => {
+        allResults.push(r);
+
+        if (r.status === "valid") totalSummary.validCount++;
+        else if (r.status === "invalid") totalSummary.invalidCount++;
+        else totalSummary.riskyCount++;
+
+        if (r.disposable) totalSummary.disposable++;
+        if (r.role_based) totalSummary.role_based++;
+        if (r.catch_all) totalSummary.catch_all++;
+        if (r.greylisted) totalSummary.greylisted++;
+      });
+    }
+
+    console.log(`[/verify-bulk] Total emails processed: ${allResults.length}`);
 
     // Save batch in DB
-    // In the bulk verification route
     const batch = await prisma.verificationBatch.create({
       data: {
         source: "bulk",
         name: "Manual Bulk Upload",
-        total: summary.total,
-        validCount: summary.valid,
-        invalidCount: summary.invalid,
-        riskyCount: summary.risky,
+        includeOnlyValid: false,
+        total: totalSummary.total,
+        validCount: totalSummary.validCount,
+        invalidCount: totalSummary.invalidCount,
+        riskyCount: totalSummary.riskyCount,
         results: {
-          create: results.map(r => {
+          create: allResults.map((r) => {
             let mxValue = r.mx;
 
-            // Normalize mx: if array -> first element or null, else if not string/null -> null
             if (Array.isArray(mxValue)) {
               mxValue = mxValue.length > 0 ? mxValue[0] : null;
-            } else if (typeof mxValue !== 'string' && mxValue !== null) {
+            } else if (typeof mxValue !== "string" && mxValue !== null) {
               mxValue = null;
             }
 
@@ -147,24 +177,30 @@ router.post("/verify-bulk", async (req, res) => {
               disposable: r.disposable ?? false,
               role_based: r.role_based ?? false,
               greylisted: r.greylisted ?? false,
+              free_provider: r.free_provider ?? null,
+              provider: r.provider ?? null,
               mx: mxValue,
-              error: r.error || null
-            }
-          })
-        }
-
+              error: r.error || null,
+            };
+          }),
+        },
       },
-      include: { results: false }
+      include: { results: false },
     });
 
-    return res.json({ batchId: batch.id, summary, results });
+    console.log(`[/verify-bulk] Batch saved with id: ${batch.id}`);
+
+    return res.json({ batchId: batch.id, summary: totalSummary, results: allResults });
   } catch (err) {
     console.error("[/verify-bulk] ERROR", err);
     return res.status(500).json({ error: "Bulk verification failed", details: err.message });
   }
 });
 
+
+
 // ------ Manual paste verify ------
+
 router.post("/verify-manual", async (req, res) => {
   const { text, includeOnlyValid = false, maxRich = false, name = "manual_paste" } = req.body || {};
   if (!text || typeof text !== "string") {
@@ -183,28 +219,51 @@ router.post("/verify-manual", async (req, res) => {
       return res.status(400).json({ error: "No valid (non-fake) emails found." });
     }
 
-    const summary = { total: filtered.length, valid: 0, invalid: 0, risky: 0 };
-    const results = [];
+    const CHUNK_SIZE = 500;
+    const CONCURRENCY_LIMIT = 40;
+    const limit = pLimit(CONCURRENCY_LIMIT);
 
-    for (const email of filtered) {
-      try {
-        const r = await verifier.verify(email, { smtpCheck: true, maxRich });
-        if (includeOnlyValid && r.status !== "valid") continue;
-        results.push(r);
-        summary[r.status] = (summary[r.status] || 0) + 1;
-      } catch (err) {
-        console.error("[manual verify] SMTP error for", email, err.message);
-        results.push({ email, status: "invalid", score: 0, error: err.message });
-        summary.invalid++;
-      }
+    // Chunk emails
+    const chunks = [];
+    for (let i = 0; i < filtered.length; i += CHUNK_SIZE) {
+      chunks.push(filtered.slice(i, i + CHUNK_SIZE));
     }
 
+    let results = [];
+    let summary = { total: filtered.length, valid: 0, invalid: 0, risky: 0 };
+
+    // Function to verify a single email with concurrency limit
+    const verifyEmail = (email) =>
+      limit(async () => {
+        try {
+          const r = await verifier.verify(email, { smtpCheck: true, maxRich });
+          if (includeOnlyValid && r.status !== "valid") return null;
+          return r;
+        } catch (err) {
+          console.error("[manual verify] SMTP error for", email, err.message);
+          return { email, status: "invalid", score: 0, error: err.message };
+        }
+      });
+
+    // Process each chunk sequentially (to avoid overwhelming), emails inside chunk in parallel
+    for (const chunk of chunks) {
+      const chunkResults = await Promise.all(chunk.map(email => verifyEmail(email)));
+      // Filter out nulls (emails excluded due to includeOnlyValid)
+      const filteredResults = chunkResults.filter(r => r !== null);
+
+      // Aggregate results
+      filteredResults.forEach(r => {
+        results.push(r);
+        summary[r.status] = (summary[r.status] || 0) + 1;
+      });
+    }
+
+    // Save batch
     const batch = await prisma.verificationBatch.create({
       data: {
         source: "manual",
         name,
         includeOnlyValid,
-        // maxRich,
         total: summary.total,
         validCount: summary.valid,
         invalidCount: summary.invalid,
@@ -212,14 +271,11 @@ router.post("/verify-manual", async (req, res) => {
         results: {
           create: results.map(r => {
             let mxValue = r.mx;
-
-            // Normalize mx: if array -> first element or null, else if not string/null -> null
             if (Array.isArray(mxValue)) {
               mxValue = mxValue.length > 0 ? mxValue[0] : null;
             } else if (typeof mxValue !== 'string' && mxValue !== null) {
               mxValue = null;
             }
-
             return {
               email: r.email,
               status: r.status || "unknown",
@@ -232,21 +288,30 @@ router.post("/verify-manual", async (req, res) => {
               role_based: r.role_based ?? false,
               greylisted: r.greylisted ?? false,
               mx: mxValue,
-              error: r.error || null
-            }
-          })
-        }
-
+              error: r.error || null,
+            };
+          }),
+        },
       },
-      include: { results: false }
+      include: { results: false },
     });
 
-    return res.json({ batchId: batch.id, summary, results });
+    return res.json({
+      batchId: batch.id,
+      summary: {
+        total: summary.total,
+        validCount: summary.valid,
+        invalidCount: summary.invalid,
+        riskyCount: summary.risky,
+      },
+      results,
+    });
   } catch (err) {
     console.error("[/verify-manual] ERROR", err);
     return res.status(500).json({ error: "Manual verification failed", details: err.message });
   }
 });
+
 
 // Get recent batches
 router.get("/batches", async (req, res) => {

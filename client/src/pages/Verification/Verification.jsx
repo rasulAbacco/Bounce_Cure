@@ -124,11 +124,12 @@ const Verification = () => {
         const emails = content
           .split(/\r?\n/)
           .map(line => line.trim())
-          .filter(line => line && /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/.test(line))
+          .filter(line => line) // Remove empty lines only
           .slice(0, 1000); // Limit to prevent excessive requests
 
         if (emails.length === 0) {
           alert("No valid emails found in the file.");
+          setLoadingBulk(false);
           return;
         }
 
@@ -137,7 +138,20 @@ const Verification = () => {
             headers: { "Content-Type": "application/json" },
           });
 
-          // Handle response...
+          const data = res.data;
+
+          // Normalize summary keys (backend uses valid/invalid/risky)
+          const newBatch = {
+            id: data.batchId,
+            name: `Bulk Upload ${new Date().toLocaleString()}`,
+            timestamp: new Date().toLocaleString(),
+            results: data.results || [],
+            summary: data.summary || { total: emails.length, validCount: 0, invalidCount: 0, riskyCount: 0 }
+          };
+
+          // Save in state
+          setBulkHistory((prev) => [newBatch, ...prev]);
+          setViewingBulkId(newBatch.id);
         } catch (err) {
           console.error("Bulk upload error", err);
           alert("Bulk verification failed: " + (err.response?.data?.error || err.message));
@@ -150,8 +164,10 @@ const Verification = () => {
     } catch (err) {
       console.error("File reading error", err);
       alert("Error reading file");
+      setLoadingBulk(false);
     }
   };
+
 
   // ---------------- Manual verify ----------------
   const verifyManual = async () => {
