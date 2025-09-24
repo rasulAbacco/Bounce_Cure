@@ -154,6 +154,10 @@ export default function PaymentPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [testingEmail, setTestingEmail] = useState(false);
   const [retryCount, setRetryCount] = useState(0);
+  const [selectedGateway, setSelectedGateway] = useState("card"); // Default to card
+  const [razorpayLoaded, setRazorpayLoaded] = useState(false);
+  const [stripeLoaded, setStripeLoaded] = useState(false);
+  const [paypalLoaded, setPaypalLoaded] = useState(false);
 
   // Memoized calculations - must be called before any conditional logic
   const { basePrice, additionalSlotsCost, integrationCosts, subtotal, discountAmount, tax, finalTotal } =
@@ -297,24 +301,23 @@ export default function PaymentPage() {
     }
   }, [plan]);
 
- useEffect(() => {
-  if (paymentSuccess && invoiceSent) {
-    const timer = setTimeout(() => {
-      const isLoggedIn = !!localStorage.getItem("authToken");
+  useEffect(() => {
+    if (paymentSuccess && invoiceSent) {
+      const timer = setTimeout(() => {
+        const isLoggedIn = !!localStorage.getItem("authToken");
 
-      if (isLoggedIn) {
-        navigate("/dashboard"); // logged in → dashboard
-      } else {
-        navigate("/signin", {
-          state: { redirectTo: "/dashboard" }, // after login, send them to dashboard
-        });
-      }
-    }, 3000);
+        if (isLoggedIn) {
+          navigate("/dashboard"); // logged in → dashboard
+        } else {
+          navigate("/signin", {
+            state: { redirectTo: "/dashboard" }, // after login, send them to dashboard
+          });
+        }
+      }, 3000);
 
-    return () => clearTimeout(timer);
-  }
-}, [paymentSuccess, invoiceSent, navigate]);
-
+      return () => clearTimeout(timer);
+    }
+  }, [paymentSuccess, invoiceSent, navigate]);
 
   useEffect(() => {
     if (plan && plan.planName === "Pro Plan") {
@@ -341,6 +344,48 @@ export default function PaymentPage() {
       setDiscountType(null);
     }
   }, [plan?.planName]);
+
+  // Load Razorpay SDK
+  useEffect(() => {
+    const loadRazorpay = () => {
+      const script = document.createElement('script');
+      script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+      script.onload = () => setRazorpayLoaded(true);
+      document.body.appendChild(script);
+    };
+
+    if (!razorpayLoaded) {
+      loadRazorpay();
+    }
+  }, [razorpayLoaded]);
+
+  // Load Stripe SDK
+  useEffect(() => {
+    const loadStripe = () => {
+      const script = document.createElement('script');
+      script.src = 'https://js.stripe.com/v3/';
+      script.onload = () => setStripeLoaded(true);
+      document.body.appendChild(script);
+    };
+
+    if (!stripeLoaded) {
+      loadStripe();
+    }
+  }, [stripeLoaded]);
+
+  // Load PayPal SDK
+  useEffect(() => {
+    const loadPayPal = () => {
+      const script = document.createElement('script');
+      script.src = 'https://www.paypal.com/sdk/js?client-id=sb&currency=USD';
+      script.onload = () => setPaypalLoaded(true);
+      document.body.appendChild(script);
+    };
+
+    if (!paypalLoaded) {
+      loadPayPal();
+    }
+  }, [paypalLoaded]);
 
   // Test email configuration function
   const testEmailConfiguration = async () => {
@@ -512,16 +557,17 @@ export default function PaymentPage() {
 
   const canPay =
     agreed &&
-    cardNumber.replace(/\s/g, "").length >= 13 &&
-    !cardNumberError &&
-    /^\d{2}\/\d{2}$/.test(expiry) &&
-    !expiryError &&
-    cvv.length >= 3 &&
-    !cvvError &&
+    (selectedGateway === "razorpay" || 
+      (cardNumber.replace(/\s/g, "").length >= 13 &&
+      !cardNumberError &&
+      /^\d{2}\/\d{2}$/.test(expiry) &&
+      !expiryError &&
+      cvv.length >= 3 &&
+      !cvvError)) &&
     email.includes("@");
 
-  const generateInvoiceData = () => {
-    const transactionId = `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`;
+  const generateInvoiceData = (gateway, paymentId) => {
+    const transactionId = paymentId || `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`;
     const processedDate = new Date().toLocaleString("en-US", { timeZone: "America/New_York" }) + " New York";
     const paymentDate = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
     const nextPaymentDate = new Date();
@@ -541,7 +587,9 @@ export default function PaymentPage() {
       subtotal: subtotal.toFixed(2),
       tax: tax.toFixed(2),
       finalTotal: finalTotal.toFixed(2),
-      paymentMethod: `${cardType?.name || "Card"} ending in ${cardNumber.slice(-4)} expires ${expiry}`,
+      paymentMethod: gateway 
+        ? `${gateway.charAt(0).toUpperCase() + gateway.slice(1)} (Payment ID: ${paymentId})`
+        : `${cardType?.name || "Card"} ending in ${cardNumber.slice(-4)} expires ${expiry}`,
       paymentDate,
       nextPaymentDate: nextPaymentDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
       email,
@@ -619,10 +667,10 @@ export default function PaymentPage() {
         nextPaymentDate: invoiceData.nextPaymentDate,
         amount: invoiceData.finalTotal,
         planType: plan?.planType || 'monthly',
-        provider: cardType?.name || 'Card',
+        provider: selectedGateway === "card" ? (cardType?.name || 'Card') : selectedGateway,
         contacts: plan?.slots || campaign?.emails || 0,
         currency: 'USD',
-        paymentMethod: `${cardType?.name || 'Card'} ending in ${cardNumber.slice(-4)}`,
+        paymentMethod: invoiceData.paymentMethod,
         cardLast4: cardNumber.slice(-4),
         status: 'success'
       };
@@ -638,12 +686,8 @@ export default function PaymentPage() {
       console.log('API URL:', import.meta.env.VITE_API_URL);
 
       // Try multiple possible endpoints
-      const possibleEndpoints = [
-        `${import.meta.env.VITE_API_URL}/api/save-payment`,
-        `${import.meta.env.VITE_API_URL}/save-payment`,
-        `${import.meta.env.VITE_API_URL}/api/payment/save`,
-        `${import.meta.env.VITE_API_URL}/payment/save`
-      ];
+ const endpoint = `${import.meta.env.VITE_API_URL}/api/save-payment`;
+
 
       let response;
       let usedEndpoint;
@@ -741,21 +785,124 @@ export default function PaymentPage() {
     }
   };
 
-  const handlePay = async () => {
-    const authToken = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
-    console.log("=== PAYMENT PROCESSING DEBUG START ===");
-    console.log("Auth token present:", !!authToken);
-    console.log("API URL:", import.meta.env.VITE_API_URL);
-    console.log("Plan data:", plan);
-    console.log("Campaign data:", campaign);
-
-    if (!authToken) {
-      toast.error("Please log in first.", { duration: 5000 });
-      navigate("/login");
+  // Razorpay payment handler
+  const handleRazorpayPayment = async () => {
+    if (!razorpayLoaded) {
+      toast.error("Razorpay is still loading. Please wait...");
       return;
     }
 
-    // Validate form fields first
+    if (!email.includes("@")) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    if (!agreed) {
+      toast.error("Please agree to the terms and conditions");
+      return;
+    }
+
+    setProcessing(true);
+    const toastId = toast.loading("Processing payment with Razorpay...");
+
+    try {
+      // Create a Razorpay order (in a real app, this would be done on your backend)
+      const options = {
+        key: "rzp_test_1DP5mmOlF5G5ag", // Test key
+        amount: finalTotal * 100, // Amount in paise
+        currency: "USD",
+        name: "BounceCure",
+        description: `Payment for ${plan ? plan.planName : campaign.description}`,
+        image: "", // Add your logo URL
+        prefill: {
+          email: email,
+          contact: "" // Add phone number if available
+        },
+        notes: {
+          plan: plan ? plan.planName : "Campaign",
+          amount: finalTotal
+        },
+        theme: {
+          color: "#d4af37"
+        },
+        modal: {
+          ondismiss: function() {
+            setProcessing(false);
+            toast.error("Payment cancelled", { id: toastId });
+          }
+        },
+        handler: async function(response) {
+          // This function is called when payment is successful
+          try {
+            const paymentId = response.razorpay_payment_id;
+            
+            // Generate invoice data
+            const invoiceData = generateInvoiceData("razorpay", paymentId);
+            
+            // Save payment data
+            await savePaymentData(invoiceData);
+            
+            // Send invoice email
+            const emailResult = await sendInvoiceEmail(invoiceData);
+            
+            if (emailResult.success) {
+              toast.success("Invoice sent to your email!", { duration: 3000 });
+            } else {
+              toast.error(`Payment successful! But email failed: ${emailResult.error}`, { 
+                duration: 6000 
+              });
+            }
+            
+            // Set payment success
+            setPaymentSuccess(true);
+            setInvoiceSent(true);
+            toast.success("Payment Successful!", { id: toastId, duration: 5000 });
+            
+            addNotification({
+              type: "payment",
+              message: `Payment of $${finalTotal} for ${plan ? plan.planName : campaign.description} was successful!`,
+            });
+            
+          } catch (error) {
+            console.error("Razorpay payment processing error:", error);
+            toast.error(`Payment successful but processing failed: ${error.message}`, { 
+              id: toastId,
+              duration: 10000 
+            });
+          } finally {
+            setProcessing(false);
+          }
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+      
+    } catch (error) {
+      console.error("Razorpay payment error:", error);
+      toast.error(`Razorpay payment failed: ${error.message}`, { id: toastId });
+      setProcessing(false);
+    }
+  };
+
+  // Stripe payment handler
+  const handleStripePayment = async () => {
+    if (!stripeLoaded) {
+      toast.error("Stripe is still loading. Please wait...");
+      return;
+    }
+
+    if (!email.includes("@")) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    if (!agreed) {
+      toast.error("Please agree to the terms and conditions");
+      return;
+    }
+
+    // Validate card details
     const cardError = validateCardNumber(cardNumber);
     if (cardError) {
       setCardNumberError(cardError);
@@ -771,6 +918,209 @@ export default function PaymentPage() {
     if (cvvError) {
       toast.error("Please fix the CVV error", { duration: 5000 });
       return;
+    }
+
+    setProcessing(true);
+    const toastId = toast.loading("Processing payment with Stripe...");
+
+    try {
+      // Create a Stripe Elements instance
+      const stripe = window.Stripe('pk_test_51MhN7gSDG3y4sX2v6q8Z9J1x2v6q8Z9J1x2v6q8Z9J1x2v6q8Z9J1x2v6q8Z9J1x2v'); // Test key
+      
+      // Create a payment method with the card details
+      const { error, paymentMethod } = await stripe.createPaymentMethod({
+        type: 'card',
+        card: {
+          number: cardNumber.replace(/\s/g, ''),
+          exp_month: parseInt(expiry.split('/')[0]),
+          exp_year: parseInt('20' + expiry.split('/')[1]),
+          cvv: cvv,
+        },
+        billing_details: {
+          email: email,
+        },
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      // Simulate payment confirmation (in a real app, this would be done on your backend)
+      setTimeout(async () => {
+        try {
+          // Generate a payment ID
+          const paymentId = paymentMethod.id;
+          
+          // Generate invoice data
+          const invoiceData = generateInvoiceData("stripe", paymentId);
+          
+          // Save payment data
+          await savePaymentData(invoiceData);
+          
+          // Send invoice email
+          const emailResult = await sendInvoiceEmail(invoiceData);
+          
+          if (emailResult.success) {
+            toast.success("Invoice sent to your email!", { duration: 3000 });
+          } else {
+            toast.error(`Payment successful! But email failed: ${emailResult.error}`, { 
+              duration: 6000 
+            });
+          }
+          
+          // Set payment success
+          setPaymentSuccess(true);
+          setInvoiceSent(true);
+          toast.success("Payment Successful!", { id: toastId, duration: 5000 });
+          
+          addNotification({
+            type: "payment",
+            message: `Payment of $${finalTotal} for ${plan ? plan.planName : campaign.description} was successful!`,
+          });
+          
+        } catch (error) {
+          console.error("Stripe payment processing error:", error);
+          toast.error(`Payment successful but processing failed: ${error.message}`, { 
+            id: toastId,
+            duration: 10000 
+          });
+        } finally {
+          setProcessing(false);
+        }
+      }, 2000);
+      
+    } catch (error) {
+      console.error("Stripe payment error:", error);
+      toast.error(`Stripe payment failed: ${error.message}`, { id: toastId });
+      setProcessing(false);
+    }
+  };
+
+  // PayPal payment handler
+  const handlePayPalPayment = async () => {
+    if (!paypalLoaded) {
+      toast.error("PayPal is still loading. Please wait...");
+      return;
+    }
+
+    if (!email.includes("@")) {
+      toast.error("Please enter a valid email address");
+      return;
+    }
+
+    if (!agreed) {
+      toast.error("Please agree to the terms and conditions");
+      return;
+    }
+
+    // Validate card details
+    const cardError = validateCardNumber(cardNumber);
+    if (cardError) {
+      setCardNumberError(cardError);
+      toast.error("Please fix card number errors", { duration: 5000 });
+      return;
+    }
+
+    if (expiryError) {
+      toast.error("Please fix the expiry date error", { duration: 5000 });
+      return;
+    }
+
+    if (cvvError) {
+      toast.error("Please fix the CVV error", { duration: 5000 });
+      return;
+    }
+
+    setProcessing(true);
+    const toastId = toast.loading("Processing payment with PayPal...");
+
+    try {
+      // Create a PayPal payment (in a real app, this would be done on your backend)
+      // For demo purposes, we'll simulate the payment flow
+      
+      // Simulate payment approval
+      setTimeout(async () => {
+        try {
+          // Generate a payment ID
+          const paymentId = `PAYID-${Date.now()}`;
+          
+          // Generate invoice data
+          const invoiceData = generateInvoiceData("paypal", paymentId);
+          
+          // Save payment data
+          await savePaymentData(invoiceData);
+          
+          // Send invoice email
+          const emailResult = await sendInvoiceEmail(invoiceData);
+          
+          if (emailResult.success) {
+            toast.success("Invoice sent to your email!", { duration: 3000 });
+          } else {
+            toast.error(`Payment successful! But email failed: ${emailResult.error}`, { 
+              duration: 6000 
+            });
+          }
+          
+          // Set payment success
+          setPaymentSuccess(true);
+          setInvoiceSent(true);
+          toast.success("Payment Successful!", { id: toastId, duration: 5000 });
+          
+          addNotification({
+            type: "payment",
+            message: `Payment of $${finalTotal} for ${plan ? plan.planName : campaign.description} was successful!`,
+          });
+          
+        } catch (error) {
+          console.error("PayPal payment processing error:", error);
+          toast.error(`Payment successful but processing failed: ${error.message}`, { 
+            id: toastId,
+            duration: 10000 
+          });
+        } finally {
+          setProcessing(false);
+        }
+      }, 2000);
+      
+    } catch (error) {
+      console.error("PayPal payment error:", error);
+      toast.error(`PayPal payment failed: ${error.message}`, { id: toastId });
+      setProcessing(false);
+    }
+  };
+
+  const handlePay = async () => {
+    const authToken = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+    console.log("=== PAYMENT PROCESSING DEBUG START ===");
+    console.log("Auth token present:", !!authToken);
+    console.log("API URL:", import.meta.env.VITE_API_URL);
+    console.log("Plan data:", plan);
+    console.log("Campaign data:", campaign);
+
+    if (!authToken) {
+      toast.error("Please log in first.", { duration: 5000 });
+      navigate("/login");
+      return;
+    }
+
+    // Validate form fields first
+    if (selectedGateway !== "razorpay") {
+      const cardError = validateCardNumber(cardNumber);
+      if (cardError) {
+        setCardNumberError(cardError);
+        toast.error("Please fix card number errors", { duration: 5000 });
+        return;
+      }
+
+      if (expiryError) {
+        toast.error("Please fix the expiry date error", { duration: 5000 });
+        return;
+      }
+
+      if (cvvError) {
+        toast.error("Please fix the CVV error", { duration: 5000 });
+        return;
+      }
     }
 
     if (!canPay) {
@@ -992,11 +1342,11 @@ export default function PaymentPage() {
         </div>
       )}
 
-      {/* <div className="mb-6">
+      <div className="mb-6">
         <Link to="/pricingdash" className="text-sm text-[#d4af37] hover:underline inline-block">
           ← Back to Pricing
         </Link>
-      </div> */}
+      </div>
 
       <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
         {/* Payment Form */}
@@ -1038,105 +1388,140 @@ export default function PaymentPage() {
             </div>
           )}
 
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm mb-1 text-gray-300">
-                Card Number <span className="text-red-500">*</span>
-              </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  className={`w-full bg-[#111] border ${cardNumberError ? 'border-red-500' : 'border-gray-700'} text-white px-3 py-2 rounded pr-12`}
-                  placeholder="1234 5678 9012 3456"
-                  value={cardNumber}
-                  onChange={handleCardInput}
-                  maxLength={cardType ? (cardType.name === "American Express" ? 17 : 19) : 19}
-                  required
-                />
+          {/* Payment Method Selection */}
+          <div className="mb-6">
+            <p className="text-sm font-medium text-gray-300 mb-3">Select Payment Method:</p>
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              {["card", "razorpay", "stripe", "paypal"].map((gateway) => (
+                <button
+                  key={gateway}
+                  className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-all ${
+                    selectedGateway === gateway
+                      ? "border-[#d4af37] bg-[#d4af3710]"
+                      : "border-gray-700 hover:border-gray-600"
+                  }`}
+                  onClick={() => setSelectedGateway(gateway)}
+                  disabled={processing}
+                >
+                  <div className="mb-2">
+                    {gateway === "card" ? (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                      </svg>
+                    ) : (
+                      <PaymentGatewayIcon gateway={gateway} />
+                    )}
+                  </div>
+                  <span className="text-xs capitalize">
+                    {gateway === "card" ? "Credit/Debit Card" : gateway}
+                  </span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Card Details Form - Only show for card, stripe, and paypal */}
+          {selectedGateway !== "razorpay" && (
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-sm mb-1 text-gray-300">
+                  Card Number <span className="text-red-500">*</span>
+                </label>
+                <div className="relative">
+                  <input
+                    type="text"
+                    className={`w-full bg-[#111] border ${cardNumberError ? 'border-red-500' : 'border-gray-700'} text-white px-3 py-2 rounded pr-12`}
+                    placeholder="1234 5678 9012 3456"
+                    value={cardNumber}
+                    onChange={handleCardInput}
+                    maxLength={cardType ? (cardType.name === "American Express" ? 17 : 19) : 19}
+                    required
+                  />
+                  {cardType && (
+                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center">
+                      <img
+                        src={cardType.icon}
+                        alt={cardType.name}
+                        className="w-10 h-6 object-contain"
+                      />
+                    </div>
+                  )}
+                </div>
+                {cardNumberError && (
+                  <p className="mt-1 text-xs text-red-500">{cardNumberError}</p>
+                )}
                 {cardType && (
-                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center">
-                    <img
-                      src={cardType.icon}
-                      alt={cardType.name}
-                      className="w-10 h-6 object-contain"
-                    />
+                  <div className="mt-1 text-xs text-gray-400 flex justify-between">
+                    <span className="flex items-center">
+                      <img
+                        src={cardType.icon}
+                        alt={cardType.name}
+                        className="w-5 h-3 mr-1 object-contain"
+                      />
+                      {cardType.name} detected
+                    </span>
+                    <span>
+                      {cardNumber.replace(/\s/g, "").length}/{cardType.maxLength} digits
+                    </span>
                   </div>
                 )}
               </div>
-              {cardNumberError && (
-                <p className="mt-1 text-xs text-red-500">{cardNumberError}</p>
-              )}
-              {cardType && (
-                <div className="mt-1 text-xs text-gray-400 flex justify-between">
-                  <span className="flex items-center">
-                    <img
-                      src={cardType.icon}
-                      alt={cardType.name}
-                      className="w-5 h-3 mr-1 object-contain"
-                    />
-                    {cardType.name} detected
-                  </span>
-                  <span>
-                    {cardNumber.replace(/\s/g, "").length}/{cardType.maxLength} digits
-                  </span>
+
+              <div className="flex flex-col sm:flex-row gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm mb-1 text-gray-300">
+                    Expiry Date <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    className={`w-full bg-[#111] border ${expiryError ? 'border-red-500' : 'border-gray-700'} text-white px-3 py-2 rounded`}
+                    placeholder="MM/YY"
+                    value={expiry}
+                    onChange={handleExpiryInput}
+                    maxLength={5}
+                    required
+                  />
+                  {expiryError && (
+                    <p className="mt-1 text-xs text-red-500">{expiryError}</p>
+                  )}
                 </div>
-              )}
-            </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="flex-1">
-                <label className="block text-sm mb-1 text-gray-300">
-                  Expiry Date <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  className={`w-full bg-[#111] border ${expiryError ? 'border-red-500' : 'border-gray-700'} text-white px-3 py-2 rounded`}
-                  placeholder="MM/YY"
-                  value={expiry}
-                  onChange={handleExpiryInput}
-                  maxLength={5}
-                  required
-                />
-                {expiryError && (
-                  <p className="mt-1 text-xs text-red-500">{expiryError}</p>
-                )}
-              </div>
-
-              <div className="flex-1">
-                <label className="block text-sm mb-1 text-gray-300">
-                  CVV <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="password"
-                  className={`w-full bg-[#111] border ${cvvError ? 'border-red-500' : 'border-gray-700'} text-white px-3 py-2 rounded`}
-                  placeholder="3-4 digits"
-                  value={cvv}
-                  onChange={handleCvvInput}
-                  maxLength={4}
-                  required
-                />
-                {cvvError && (
-                  <p className="mt-1 text-xs text-red-500">{cvvError}</p>
-                )}
+                <div className="flex-1">
+                  <label className="block text-sm mb-1 text-gray-300">
+                    CVV <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="password"
+                    className={`w-full bg-[#111] border ${cvvError ? 'border-red-500' : 'border-gray-700'} text-white px-3 py-2 rounded`}
+                    placeholder="3-4 digits"
+                    value={cvv}
+                    onChange={handleCvvInput}
+                    maxLength={4}
+                    required
+                  />
+                  {cvvError && (
+                    <p className="mt-1 text-xs text-red-500">{cvvError}</p>
+                  )}
+                </div>
               </div>
             </div>
+          )}
 
-            <div className="mt-6">
-              <p className="text-sm font-medium text-gray-300 mb-2">Or pay with:</p>
-              <div className="flex flex-col sm:flex-row gap-3">
-                {["razorpay", "stripe", "paypal"].map((gateway) => (
-                  <button
-                    key={gateway}
-                    className="cursor-pointer flex-1 bg-[#ffffff0d] hover:bg-[#ffffff1a] border border-gray-600 py-2 rounded text-sm flex justify-center items-center transition-transform hover:scale-105"
-                  >
-                    <div className="bg-white p-2 rounded w-24 h-10 flex items-center justify-center shadow-md">
-                      <PaymentGatewayIcon gateway={gateway} />
-                    </div>
-                  </button>
-                ))}
+          {/* Razorpay Notice */}
+          {selectedGateway === "razorpay" && (
+            <div className="mb-6 p-4 bg-blue-900 bg-opacity-30 rounded-lg border border-blue-700">
+              <div className="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-blue-400 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="text-sm text-blue-300">
+                    You will be redirected to Razorpay's secure payment page to complete your payment. No card details are stored on our servers.
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
+          )}
 
           <div className="mt-6">
             <button
@@ -1233,11 +1618,50 @@ export default function PaymentPage() {
             </div>
 
             <button
-              onClick={handlePay}
-              className={`w-full ${canPay ? "bg-[#d4af37] hover:bg-[#eac94d]" : "bg-gray-700 cursor-not-allowed"} text-black font-bold py-2 rounded transition`}
+              onClick={() => {
+                if (selectedGateway === 'razorpay') {
+                  handleRazorpayPayment();
+                } else if (selectedGateway === 'stripe') {
+                  handleStripePayment();
+                } else if (selectedGateway === 'paypal') {
+                  handlePayPalPayment();
+                } else {
+                  handlePay(); // Default card payment
+                }
+              }}
+              className={`w-full ${canPay ? "bg-[#d4af37] hover:bg-[#eac94d]" : "bg-gray-700 cursor-not-allowed"} text-black font-bold py-3 rounded-lg transition flex items-center justify-center`}
               disabled={!canPay || processing}
             >
-              {processing ? "Processing..." : `Pay $${finalTotal}`}
+              {processing ? (
+                <>
+                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  Processing...
+                </>
+              ) : (
+                <>
+                  {selectedGateway === 'razorpay' ? (
+                    <>
+                      <PaymentGatewayIcon gateway="razorpay" />
+                      <span className="ml-2">Pay with Razorpay</span>
+                    </>
+                  ) : selectedGateway === 'stripe' ? (
+                    <>
+                      <PaymentGatewayIcon gateway="stripe" />
+                      <span className="ml-2">Pay with Stripe</span>
+                    </>
+                  ) : selectedGateway === 'paypal' ? (
+                    <>
+                      <PaymentGatewayIcon gateway="paypal" />
+                      <span className="ml-2">Pay with PayPal</span>
+                    </>
+                  ) : (
+                    `Pay $${finalTotal}`
+                  )}
+                </>
+              )}
             </button>
             
             {retryCount > 0 && (
