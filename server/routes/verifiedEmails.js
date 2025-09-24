@@ -1,594 +1,255 @@
-// verifiedEmails.js - Updated for Vite frontend on port 5173
-import express from "express";
-import crypto from "crypto";
-import sgMail from "@sendgrid/mail";
-import { prisma } from "../prisma/prismaClient.js";
-import cors from "cors";
+// server/routes/verifiedEmails.js
+import express from 'express';
+import { PrismaClient } from '@prisma/client';
+import sgMail from '@sendgrid/mail';
 
 const router = express.Router();
+const prisma = new PrismaClient();
 
-// Initialize SendGrid
-sgMail.setApiKey(process.env.SENDGRID_CMP_API_KEY);
+// Set SendGrid API key
+sgMail.setApiKey(process.env.SENDGRID_CMP_API_KEY); // Use the correct API key
 
-// Enable CORS for frontend
-router.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:5173',
-  credentials: true
-}));
-
-// Send verification email
-router.post("/send-verification", async (req, res) => {
+// POST /api/verified-emails/send-verification
+router.post('/send-verification', async (req, res) => {
   try {
+    console.log('Received verification request:', req.body);
+    
     const { email, fromName } = req.body;
-
+    
+    // Validate inputs
     if (!email || !fromName) {
-      return res.status(400).json({ error: "Email and sender name are required" });
+      console.error('Missing required fields:', { email, fromName });
+      return res.status(400).json({ error: "Email and fromName are required" });
     }
-
-    // Validate email format
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({ error: "Invalid email format" });
-    }
-
-    // Generate shorter verification token (32 characters)
-    const verificationToken = crypto.randomBytes(16).toString('hex');
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-    // Check if email already exists
-    let verifiedEmail = await prisma.campaignVerifiedEmail.findUnique({
-      where: { email }
-    });
-
-    if (verifiedEmail) {
-      if (verifiedEmail.isVerified) {
-        return res.status(200).json({ 
-          message: "Email is already verified",
-          isVerified: true 
-        });
-      }
-      // Update existing record
-      verifiedEmail = await prisma.campaignVerifiedEmail.update({
-        where: { email },
-        data: {
-          verificationToken,
-          expiresAt,
-          fromName
-        }
-      });
-    } else {
-      // Create new verification record
-      verifiedEmail = await prisma.campaignVerifiedEmail.create({
-        data: {
-          email,
-          fromName,
-          verificationToken,
-          expiresAt,
-          isVerified: false
-        }
-      });
-    }
-
-    // Verify token was stored correctly
-    const storedRecord = await prisma.campaignVerifiedEmail.findUnique({
-      where: { email }
-    });
-
-    console.log(`Generated token for ${email}:`, verificationToken);
-    console.log(`Token stored in database:`, storedRecord.verificationToken);
-    console.log(`Token expires at:`, expiresAt);
     
-    // Check if token was stored correctly
-    if (storedRecord.verificationToken !== verificationToken) {
-      throw new Error('Token was not stored correctly in the database');
-    }
-
-    // Send verification email - Updated to use Vite frontend URL
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email?token=${verificationToken}`;
+    // Generate a verification token
+    const verificationToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
+    console.log('Generated token:', verificationToken);
     
-    // Validate sender email
-    const senderEmail = process.env.VERIFIED_SENDER_EMAIL;
-    if (!senderEmail) {
-      throw new Error('VERIFIED_SENDER_EMAIL environment variable is not set');
-    }
-
-    // Validate sender email format
-    if (!emailRegex.test(senderEmail)) {
-      throw new Error(`Invalid sender email format: ${senderEmail}`);
-    }
-
-    const msg = {
-      to: email,
-      from: {
-        email: senderEmail,
-        name: 'Email Marketing Platform'
+    // Set expiration time (24 hours from now)
+    const expiresAt = new Date();
+    expiresAt.setHours(expiresAt.getHours() + 24);
+    
+    // Save verification token to database
+    console.log('Saving to database...');
+    const dbRecord = await prisma.campaignVerifiedEmail.upsert({
+      where: { email },
+      update: { 
+        verificationToken, 
+        isVerified: false,
+        verifiedAt: null,
+        expiresAt,
+        fromName
       },
-      subject: 'Verify your sender email address',
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Verify Email Address</title>
-        </head>
-        <body style="margin:0;padding:0;font-family:Arial,sans-serif;background-color:#f4f4f4;">
-            <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                    <td align="center" style="padding:40px 20px;">
-                        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background-color:#ffffff;border-radius:8px;">
-                            <tr>
-                                <td style="padding:40px;">
-                                    <h1 style="margin:0 0 20px 0;font-size:24px;color:#333333;text-align:center;">
-                                        Verify Your Email Address
-                                    </h1>
-                                    <p style="margin:0 0 20px 0;font-size:16px;line-height:1.6;color:#333333;">
-                                        Hi ${fromName},
-                                    </p>
-                                    <p style="margin:0 0 20px 0;font-size:16px;line-height:1.6;color:#333333;">
-                                        To start sending email campaigns from <strong>${email}</strong>, please verify your email address by clicking the button below.
-                                    </p>
-                                    <table cellpadding="0" cellspacing="0" border="0" style="margin:30px auto;">
-                                        <tr>
-                                            <td style="background-color:#c2831f;padding:15px 30px;border-radius:6px;">
-                                                <a href="${verificationUrl}" style="color:#ffffff;text-decoration:none;font-weight:bold;font-size:16px;">
-                                                    Verify Email Address
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    </table>
-                                    <p style="margin:30px 0 10px 0;font-size:14px;color:#666666;">
-                                        Or copy and paste this link in your browser:
-                                    </p>
-                                    <p style="margin:0 0 20px 0;font-size:14px;color:#007bff;word-break:break-all;">
-                                        ${verificationUrl}
-                                    </p>
-                                    <p style="margin:20px 0 0 0;font-size:12px;color:#999999;">
-                                        This verification link will expire in 24 hours. If you didn't request this verification, you can safely ignore this email.
-                                    </p>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-        </body>
-        </html>
-      `
-    };
-
-    await sgMail.send(msg);
-
-    res.status(200).json({
-      message: "Verification email sent successfully",
-      email: email
+      create: { 
+        email, 
+        verificationToken, 
+        isVerified: false,
+        expiresAt,
+        fromName
+      }
     });
-
-  } catch (error) {
-    console.error("Error sending verification email:", error);
+    console.log('Database record saved:', dbRecord);
     
-    // Enhanced error handling for SendGrid errors
-    if (error.response) {
-      console.error("SendGrid API Error:", {
-        status: error.response.statusCode,
-        body: error.response.body,
-        headers: error.response.headers
-      });
-      
-      return res.status(500).json({ 
-        error: "Failed to send verification email",
-        details: error.response.body.errors.map(e => e.message).join(", ")
-      });
+    // Create verification URL - Update this to your actual domain
+    const baseUrl = process.env.BASE_URL || 'http://localhost:5173';
+    const verificationUrl = `${baseUrl}/verify-email?token=${verificationToken}`;
+    console.log('Verification URL:', verificationUrl);
+    
+    // Setup email data for SendGrid (REAL EMAIL DELIVERY)
+    const msg = {
+      to: email, // This will be the ACTUAL recipient
+      from: {
+        email: process.env.SENDGRID_FROM_EMAIL, // Your verified sender email
+        name: fromName
+      },
+      subject: 'Verify Your Email Address',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background-color: #f9f9f9;">
+          <div style="background-color: white; padding: 30px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <div style="text-align: center; margin-bottom: 30px;">
+              <h1 style="color: #333; margin: 0; font-size: 28px;">Email Verification</h1>
+              <p style="color: #666; font-size: 16px; margin: 10px 0 0 0;">Please verify your email address to continue</p>
+            </div>
+            
+            <div style="text-align: center; margin: 40px 0;">
+              <a href="${verificationUrl}" 
+                 style="background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%); 
+                        color: white; 
+                        padding: 15px 30px; 
+                        text-decoration: none; 
+                        border-radius: 25px; 
+                        display: inline-block; 
+                        font-weight: bold; 
+                        font-size: 16px;
+                        box-shadow: 0 4px 15px rgba(76, 175, 80, 0.3);
+                        transition: transform 0.2s;">
+                ✓ Verify Email Address
+              </a>
+            </div>
+            
+            <div style="margin: 30px 0; padding: 20px; background-color: #f8f9fa; border-left: 4px solid #4CAF50; border-radius: 4px;">
+              <p style="margin: 0; color: #666; font-size: 14px;">
+                <strong>Can't click the button?</strong> Copy and paste this link into your browser:
+              </p>
+              <p style="word-break: break-all; background-color: #fff; padding: 10px; border-radius: 4px; margin: 10px 0 0 0; border: 1px solid #ddd;">
+                ${verificationUrl}
+              </p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 30px; padding-top: 20px; border-top: 1px solid #eee;">
+              <p style="color: #999; font-size: 14px; margin: 5px 0;">This link will expire in 24 hours</p>
+              <p style="color: #999; font-size: 12px; margin: 5px 0;">If you didn't request this verification, please ignore this email</p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 20px;">
+              <p style="color: #333; font-size: 16px; margin: 0;">
+                Best regards,<br>
+                <strong>${fromName}</strong>
+              </p>
+            </div>
+          </div>
+        </div>
+      `,
+    };
+    
+    // Send the REAL email using SendGrid
+    console.log('Sending REAL email with SendGrid to:', email);
+    await sgMail.send(msg);
+    console.log('✅ REAL email sent successfully to recipient');
+    
+    res.json({ 
+      success: true, 
+      message: "Verification email sent successfully to recipient",
+      recipient: email
+    });
+    
+  } catch (error) {
+    console.error("❌ Error sending verification email:", error);
+    
+    // Better error handling for SendGrid
+    let errorMessage = "Failed to send verification email";
+    if (error.response?.body?.errors) {
+      errorMessage = error.response.body.errors.map(err => err.message).join(', ');
+    } else if (error.message) {
+      errorMessage = error.message;
     }
     
     res.status(500).json({ 
-      error: "Failed to send verification email",
-      details: error.message 
+      error: errorMessage,
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
-// Verify email token
-// verifiedEmails.js - Updated with comprehensive debugging
-router.get("/verify/:token", async (req, res) => {
+// GET /api/verified-emails/verify/:token - VERIFICATION ENDPOINT
+router.get('/verify/:token', async (req, res) => {
   try {
     const { token } = req.params;
     
-    console.log("=== VERIFICATION ATTEMPT ===");
-    console.log("Raw token from URL:", token);
-    console.log("Token length:", token.length);
+    console.log('🔍 Verification request received');
+    console.log('📝 Token from URL:', token);
     
-    // Check token length (should be 32 characters)
-    if (token.length !== 32) {
-      console.error(`Invalid token length: ${token.length}, expected 32`);
-      return res.status(400).json({ 
-        error: "Invalid verification token",
-        details: "The token is not the expected length."
-      });
-    }
-    
-    // Log database query attempt
-    console.log("Attempting to find token in database...");
-    const verifiedEmail = await prisma.campaignVerifiedEmail.findUnique({
+    // Find the verification record by token
+    const record = await prisma.campaignVerifiedEmail.findFirst({
       where: { verificationToken: token }
     });
     
-    console.log("Database query result:", verifiedEmail ? "Found" : "Not found");
-    
-    if (!verifiedEmail) {
-      // Get recent records for debugging
-      const recentRecords = await prisma.campaignVerifiedEmail.findMany({
-        take: 5,
-        orderBy: { createdAt: 'desc' }
-      });
-      
-      console.log("Recent records in database:");
-      recentRecords.forEach((record, index) => {
-        console.log(`Record ${index + 1}:`, {
-          id: record.id,
-          email: record.email,
-          token: record.verificationToken,
-          isVerified: record.isVerified,
-          expiresAt: record.expiresAt
-        });
-      });
-      
-      return res.status(400).json({ 
+    if (!record) {
+      console.error('❌ Token not found in database');
+      return res.status(404).json({ 
         error: "Invalid verification token",
-        details: "The verification token is invalid or has already been used.",
-        debug: {
-          tokenSearched: token,
-          recentRecords: recentRecords.map(r => ({
-            email: r.email,
-            token: r.verificationToken,
-            isVerified: r.isVerified
-          }))
-        }
+        details: "The token does not exist in our database"
       });
     }
     
-    // Log expiration check
-    const now = new Date();
-    const expiresAt = new Date(verifiedEmail.expiresAt);
-    console.log("Expiration check:");
-    console.log("  Current time:", now.toISOString());
-    console.log("  Expires at:", expiresAt.toISOString());
-    console.log("  Is expired:", now > expiresAt);
+    console.log('✅ Token found in database');
+    console.log('📧 Email associated with token:', record.email);
     
-    if (now > expiresAt) {
+    // Check if token is expired
+    const now = new Date();
+    console.log('⏰ Current time:', now);
+    console.log('⏳ Token expires at:', record.expiresAt);
+    
+    if (now > record.expiresAt) {
+      console.error('❌ Token expired');
       return res.status(400).json({ 
         error: "Verification token has expired",
-        details: "Please request a new verification email.",
-        debug: {
-          currentTime: now.toISOString(),
-          expiresAt: expiresAt.toISOString()
-        }
+        details: "Please request a new verification email"
       });
     }
     
-    // Log verification status check
-    console.log("Verification status:", verifiedEmail.isVerified);
-    
-    if (verifiedEmail.isVerified) {
-      return res.status(200).json({ 
+    // Check if already verified
+    if (record.isVerified) {
+      console.log('✅ Email already verified for:', record.email);
+      return res.json({ 
         message: "Email is already verified",
-        email: verifiedEmail.email 
+        email: record.email 
       });
     }
     
-    // Log update attempt
-    console.log("Attempting to mark email as verified...");
+    // Update the record to mark as verified
+    console.log('🔄 Marking email as verified...');
     const updatedRecord = await prisma.campaignVerifiedEmail.update({
-      where: { id: verifiedEmail.id },
+      where: { id: record.id },
       data: {
         isVerified: true,
-        verifiedAt: now,
-        verificationToken: null // Clear the token to prevent reuse
+        verifiedAt: now
       }
     });
     
-    console.log("Update successful. New record state:", {
-      isVerified: updatedRecord.isVerified,
-      verifiedAt: updatedRecord.verifiedAt,
-      verificationToken: updatedRecord.verificationToken
+    console.log('✅ Email verified successfully for:', record.email);
+    console.log('📊 Updated record:', updatedRecord);
+    
+    return res.json({ 
+      message: "Email verified successfully",
+      email: record.email 
     });
     
-    console.log(`Email ${verifiedEmail.email} verified successfully`);
-
-    res.status(200).json({
-      message: "Email verified successfully",
-      email: verifiedEmail.email,
-      fromName: verifiedEmail.fromName
-    });
-
   } catch (error) {
-    console.error("Error verifying email:", error);
+    console.error("❌ Error verifying email:", error);
     res.status(500).json({ 
       error: "Failed to verify email",
-      details: error.message 
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
   }
 });
 
-// Debug endpoint for troubleshooting
-router.get("/debug-verification/:token", async (req, res) => {
-  try {
-    const { token } = req.params;
-    
-    console.log("=== DEBUG VERIFICATION ===");
-    console.log("Token received:", token);
-    console.log("Token length:", token.length);
-    
-    // Step 1: Check token format
-    if (token.length !== 32) {
-      return res.json({
-        status: "error",
-        step: "token_format",
-        message: `Invalid token length: ${token.length}, expected 32`
-      });
-    }
-    
-    // Step 2: Database query
-    console.log("Querying database for token...");
-    const verifiedEmail = await prisma.campaignVerifiedEmail.findUnique({
-      where: { verificationToken: token }
-    });
-    
-    if (!verifiedEmail) {
-      // Try to find all records to see if any exist
-      const allRecords = await prisma.campaignVerifiedEmail.findMany({
-        take: 5,
-        orderBy: { createdAt: 'desc' }
-      });
-      
-      return res.json({
-        status: "error",
-        step: "database_query",
-        message: "Token not found in database",
-        tokenSearched: token,
-        recentRecords: allRecords.map(r => ({
-          email: r.email,
-          token: r.verificationToken,
-          isVerified: r.isVerified
-        }))
-      });
-    }
-    
-    // Step 3: Check expiration
-    const now = new Date();
-    const expiresAt = new Date(verifiedEmail.expiresAt);
-    const isExpired = now > expiresAt;
-    
-    // Step 4: Check verification status
-    const isVerified = verifiedEmail.isVerified;
-    
-    return res.json({
-      status: "success",
-      step: "verification_check",
-      tokenFound: true,
-      email: verifiedEmail.email,
-      isVerified,
-      isExpired,
-      expiresAt: expiresAt.toISOString(),
-      currentTime: now.toISOString(),
-      timeRemaining: Math.max(0, expiresAt - now)
-    });
-    
-  } catch (error) {
-    console.error("Debug verification error:", error);
-    res.status(500).json({
-      status: "error",
-      step: "unexpected_error",
-      message: error.message
-    });
-  }
-});
-
-// Check if email is verified
-router.get("/check/:email", async (req, res) => {
+// GET /api/verified-emails/check/:email
+router.get('/check/:email', async (req, res) => {
   try {
     const { email } = req.params;
-
-    const verifiedEmail = await prisma.campaignVerifiedEmail.findUnique({
-      where: { email: decodeURIComponent(email) }
-    });
-
-    if (!verifiedEmail) {
-      return res.status(404).json({ 
-        isVerified: false,
-        message: "Email not found" 
-      });
-    }
-
-    res.status(200).json({
-      isVerified: verifiedEmail.isVerified,
-      email: verifiedEmail.email,
-      fromName: verifiedEmail.fromName,
-      verifiedAt: verifiedEmail.verifiedAt
-    });
-
-  } catch (error) {
-    console.error("Error checking email verification:", error);
-    res.status(500).json({ 
-      error: "Failed to check email verification",
-      details: error.message 
-    });
-  }
-});
-
-// Get all verified emails for a user
-router.get("/", async (req, res) => {
-  try {
-    const verifiedEmails = await prisma.campaignVerifiedEmail.findMany({
-      where: { isVerified: true },
-      select: {
-        id: true,
-        email: true,
-        fromName: true,
-        verifiedAt: true
-      },
-      orderBy: { verifiedAt: 'desc' }
-    });
-
-    res.status(200).json(verifiedEmails);
-  } catch (error) {
-    console.error("Error fetching verified emails:", error);
-    res.status(500).json({ 
-      error: "Failed to fetch verified emails",
-      details: error.message 
-    });
-  }
-});
-
-// Delete verified email
-router.delete("/:id", async (req, res) => {
-  try {
-    const { id } = req.params;
     
-    await prisma.campaignVerifiedEmail.delete({
-      where: { id: parseInt(id) }
-    });
-
-    res.status(200).json({ message: "Verified email deleted successfully" });
-  } catch (error) {
-    console.error("Error deleting verified email:", error);
-    res.status(500).json({ 
-      error: "Failed to delete verified email",
-      details: error.message 
-    });
-  }
-});
-
-// Resend verification email
-router.post("/resend-verification", async (req, res) => {
-  try {
-    const { email } = req.body;
-
-    if (!email) {
-      return res.status(400).json({ error: "Email is required" });
-    }
-
-    // Find the email record
-    const verifiedEmail = await prisma.campaignVerifiedEmail.findUnique({
+    const record = await prisma.campaignVerifiedEmail.findUnique({
       where: { email }
     });
-
-    if (!verifiedEmail) {
-      return res.status(404).json({ error: "Email not found in our system" });
-    }
-
-    if (verifiedEmail.isVerified) {
-      return res.status(400).json({ error: "Email is already verified" });
-    }
-
-    // Generate new token
-    const verificationToken = crypto.randomBytes(16).toString('hex');
-    const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
-
-    // Update the record with new token
-    await prisma.campaignVerifiedEmail.update({
-      where: { email },
-      data: {
-        verificationToken,
-        expiresAt
-      }
-    });
-
-    // Send verification email - Updated to use Vite frontend URL
-    const verificationUrl = `${process.env.FRONTEND_URL || 'http://localhost:5173'}/verify-email?token=${verificationToken}`;
     
-    const senderEmail = process.env.VERIFIED_SENDER_EMAIL;
-    if (!senderEmail) {
-      throw new Error('VERIFIED_SENDER_EMAIL environment variable is not set');
+    if (!record) {
+      return res.json({ isVerified: false });
     }
-
-    const msg = {
-      to: email,
-      from: {
-        email: senderEmail,
-        name: 'Email Marketing Platform'
-      },
-      subject: 'Verify your sender email address',
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="UTF-8">
-            <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>Verify Email Address</title>
-        </head>
-        <body style="margin:0;padding:0;font-family:Arial,sans-serif;background-color:#f4f4f4;">
-            <table width="100%" cellpadding="0" cellspacing="0" border="0">
-                <tr>
-                    <td align="center" style="padding:40px 20px;">
-                        <table width="600" cellpadding="0" cellspacing="0" border="0" style="max-width:600px;background-color:#ffffff;border-radius:8px;">
-                            <tr>
-                                <td style="padding:40px;">
-                                    <h1 style="margin:0 0 20px 0;font-size:24px;color:#333333;text-align:center;">
-                                        Verify Your Email Address
-                                    </h1>
-                                    <p style="margin:0 0 20px 0;font-size:16px;line-height:1.6;color:#333333;">
-                                        Hi ${verifiedEmail.fromName},
-                                    </p>
-                                    <p style="margin:0 0 20px 0;font-size:16px;line-height:1.6;color:#333333;">
-                                        To start sending email campaigns from <strong>${email}</strong>, please verify your email address by clicking the button below.
-                                    </p>
-                                    <table cellpadding="0" cellspacing="0" border="0" style="margin:30px auto;">
-                                        <tr>
-                                            <td style="background-color:#c2831f;padding:15px 30px;border-radius:6px;">
-                                                <a href="${verificationUrl}" style="color:#ffffff;text-decoration:none;font-weight:bold;font-size:16px;">
-                                                    Verify Email Address
-                                                </a>
-                                            </td>
-                                        </tr>
-                                    </table>
-                                    <p style="margin:30px 0 10px 0;font-size:14px;color:#666666;">
-                                        Or copy and paste this link in your browser:
-                                    </p>
-                                    <p style="margin:0 0 20px 0;font-size:14px;color:#007bff;word-break:break-all;">
-                                        ${verificationUrl}
-                                    </p>
-                                    <p style="margin:20px 0 0 0;font-size:12px;color:#999999;">
-                                        This verification link will expire in 24 hours. If you didn't request this verification, you can safely ignore this email.
-                                    </p>
-                                </td>
-                            </tr>
-                        </table>
-                    </td>
-                </tr>
-            </table>
-        </body>
-        </html>
-      `
-    };
-
-    await sgMail.send(msg);
-
-    res.status(200).json({
-      message: "Verification email resent successfully",
-      email: email
+    
+    res.json({ 
+      isVerified: record.isVerified, 
+      verifiedAt: record.verifiedAt,
+      fromName: record.fromName
     });
-
   } catch (error) {
-    console.error("Error resending verification email:", error);
-    
-    if (error.response) {
-      console.error("SendGrid API Error:", {
-        status: error.response.statusCode,
-        body: error.response.body,
-        headers: error.response.headers
-      });
-      
-      return res.status(500).json({ 
-        error: "Failed to resend verification email",
-        details: error.response.body.errors.map(e => e.message).join(", ")
-      });
-    }
-    
-    res.status(500).json({ 
-      error: "Failed to resend verification email",
-      details: error.message 
+    console.error("Error checking email verification:", error);
+    res.status(500).json({ error: "Failed to check email verification" });
+  }
+});
+
+// GET /api/verified-emails
+router.get('/', async (req, res) => {
+  try {
+    const verifiedEmails = await prisma.campaignVerifiedEmail.findMany({
+      where: { isVerified: true }
     });
+    
+    res.json(verifiedEmails);
+  } catch (error) {
+    console.error("Error fetching verified emails:", error);
+    res.status(500).json({ error: "Failed to fetch verified emails" });
   }
 });
 

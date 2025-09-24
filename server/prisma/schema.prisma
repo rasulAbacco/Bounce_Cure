@@ -296,29 +296,6 @@ model Order {
   deleted   Boolean @default(false)
 }
 
-model Conversation {
-  id        Int       @id @default(autoincrement())
-  subject   String?
-  snippet   String? // 👈 add this
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  messages  Message[]
-}
-
-model Message {
-  id             Int           @id @default(autoincrement())
-  conversationId Int?
-  conversation   Conversation? @relation(fields: [conversationId], references: [id])
-
-  body      String
-  from      String
-  to        String
-  fromName  String?
-  fromEmail String?
-  direction String
-  sentAt    DateTime @default(now())
-}
-
 model VerificationBatch {
   id               Int           @id @default(autoincrement())
   name             String?
@@ -424,8 +401,8 @@ model ScheduledCampaign {
   fromName           String
   fromEmail          String
   recipients         Json
-  template           String? // 👈 new field to store template choice
-  canvasData         Json? // 👈 new field to store canvas data
+  template           String? // template choice
+  canvasData         Json? // canvas data
   scheduleType       String
   scheduledDateTime  DateTime?
   timezone           String?
@@ -433,6 +410,7 @@ model ScheduledCampaign {
   recurringDays      Json?
   recurringEndDate   DateTime?
   status             String      @default("scheduled")
+  error              String? // 👈 ADD THIS LINE - stores error messages when campaigns fail
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
   SentEmail          SentEmail[]
