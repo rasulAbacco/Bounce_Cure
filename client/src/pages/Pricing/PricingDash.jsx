@@ -20,7 +20,7 @@ const PricingDash = () => {
   const plans = [
     {
       name: "Standard",
-      price: 1149.71,
+      basePrice: 1149.71, // Base price for 500 contacts
       users: 1,
       emails: "5,000",
       support: "Standard Support",
@@ -28,7 +28,7 @@ const PricingDash = () => {
     },
     {
       name: "Pro",
-      price: 2299.99,
+      basePrice: 2299.99, // Base price for 500 contacts
       users: 5,
       emails: "20,000",
       support: "Priority Support",
@@ -37,7 +37,7 @@ const PricingDash = () => {
     },
     {
       name: "Enterprise",
-      price: 4599.99,
+      basePrice: 4599.99, // Base price for 500 contacts
       users: "Unlimited",
       emails: "100,000+",
       support: "Dedicated Support",
@@ -47,13 +47,19 @@ const PricingDash = () => {
 
   // Price calculators
   const calculatePrice = (basePrice, contacts) => {
-    return (basePrice * (contacts / 500)).toFixed(2);
+    // Calculate price based on base price for 500 contacts
+    const baseContacts = 500;
+    const pricePerContact = basePrice / baseContacts;
+    return (pricePerContact * contacts).toFixed(2);
   };
 
-  const promoPrice = calculatePrice(37.5, promoContacts);
+  // Get Pro plan for promo calculations
+  const proPlan = plans.find(plan => plan.name === "Pro");
+  const promoBasePrice = proPlan ? proPlan.basePrice * 0.5 : 37.5; // 50% off Pro plan
+  const promoPrice = calculatePrice(promoBasePrice, promoContacts);
 
   const calculatedPrices = plans.reduce((acc, plan) => {
-    acc[plan.name] = calculatePrice(plan.price, cardContacts);
+    acc[plan.name] = calculatePrice(plan.basePrice, cardContacts);
     return acc;
   }, {});
 
@@ -84,7 +90,7 @@ const PricingDash = () => {
 
   // Handle Buy Now
   const handleBuyNow = (plan, contacts, price) => {
-    const basePrice = plan.price;
+    const basePrice = plan.basePrice; // Use the base price from the plan
     const totalPrice = parseFloat(price);
 
     const selectedPlan = buildPlanObject({
@@ -170,14 +176,14 @@ const PricingDash = () => {
               </select>
               <div className="mt-4 text-xl font-bold">${promoPrice}</div>
               <p className="text-xs text-gray-500">
-                Then ${calculatePrice(115, promoContacts)} after 12 months
+                Then ${calculatePrice(proPlan ? proPlan.basePrice : 2299.99, promoContacts)} after 12 months
               </p>
               <button
                 onClick={() =>
                   handleBuyNow(
                     {
                       name: "Pro Plan",
-                      price: 37.5,
+                      basePrice: promoBasePrice,
                       users: 5,
                       emails: "10,000",
                       support: "Priority Support",
