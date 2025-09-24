@@ -237,6 +237,7 @@ router.post("/send", async (req, res) => {
           },
         });
       } catch (err) {
+        console.error("SendGrid error for recipient:", recipient.email, err);
         let errorMessage = "Unknown error";
         if (err.response?.body?.errors) {
           errorMessage = err.response.body.errors[0]?.message || err.message;
@@ -279,6 +280,7 @@ router.post("/send", async (req, res) => {
       results
     });
   } catch (error) {
+    
     res.status(500).json({ 
       error: "Failed to send campaign",
       details: error.message 
