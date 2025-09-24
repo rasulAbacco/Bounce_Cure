@@ -24,7 +24,9 @@ fs.readdirSync(tempDir).forEach(file => {
   try {
     const filePath = path.join(tempDir, file);
     if (Date.now() - fs.statSync(filePath).mtimeMs > 10 * 60 * 1000) fs.unlinkSync(filePath);
-  } catch {}
+  } catch (err) {
+    console.error("Error cleaning temp files:", err);
+  }
 });
 
 const prisma = new PrismaClient();
@@ -283,39 +285,46 @@ async function createInvoice(data) {
       if (data.issuedBy.website) { doc.text(`Website: ${data.issuedBy.website}`, rightColX, rightY); rightY += 14; }
       if (data.issuedBy.taxId) { doc.text(`Tax ID: ${data.issuedBy.taxId}`, rightColX, rightY); rightY += 14; }
 
-      // --- TABLE SECTION (replace original)
+      // --- TABLE SECTION ---
       const tableY = Math.max(leftY, rightY) + 30;
 
-      // Draw a thin separator line (keeps full width header line)
+      // Draw a thin separator line
       doc.moveTo(margin, tableY - 10).lineTo(pageWidth - margin, tableY - 10)
         .strokeColor(headingColor).lineWidth(1).stroke();
 
       doc.fillColor(headingColor).fontSize(14).font("Helvetica-Bold").text("Invoice Details", margin + 10, tableY + 5);
 
-      // Use an inner X so table isn't flush to the container edge
-      const innerPad = 10;                // adjust to taste (10-16 px is common)
-      const tableX = margin + innerPad;   // left start of the table
-      const tableWidth = 320 - innerPad*2; // shrink to allow right padding
-      const col1Width = 120;              // label column
+      // Table dimensions
+      const innerPad = 10;
+      const tableX = margin + innerPad;
+      const tableWidth = 320 - innerPad * 2;
+      const col1Width = 120;
       const col2Width = tableWidth - col1Width;
 
       let currentY = tableY + 30;
 
+      // Dynamic row drawing function
       const drawRow = (label, value, y) => {
-        // draw the row box inset by innerPad
-        doc.rect(tableX, y, tableWidth, 22).strokeColor("#666").lineWidth(0.5).stroke();
+        // Measure text height
+        const labelHeight = doc.heightOfString(label, { width: col1Width - 16 });
+        const valueHeight = doc.heightOfString(value || "-", { width: col2Width - 16 });
+        const rowHeight = Math.max(labelHeight, valueHeight) + 12; // padding
 
-        // label (left aligned in label column)
+        // Draw the row box with dynamic height
+        doc.rect(tableX, y, tableWidth, rowHeight).strokeColor("#666").lineWidth(0.5).stroke();
+
+        // Label
         doc.fillColor(headingColor).fontSize(10).font("Helvetica-Bold")
           .text(label, tableX + 8, y + 6, { width: col1Width - 16, align: "left" });
 
-        // value (right column, left aligned inside that column)
+        // Value
         doc.fillColor(textColor).fontSize(10).font("Helvetica")
           .text(value || "-", tableX + col1Width + 8, y + 6, { width: col2Width - 16, align: "left" });
 
-        return y + 22;
+        return y + rowHeight; // Move Y down for next row
       };
 
+      // Draw invoice details rows
       currentY = drawRow("Plan Name", data.planName, currentY);
       currentY = drawRow("Contacts", data.contacts?.toString(), currentY);
       if (data.discountTitle) currentY = drawRow("Discount", `${data.discountTitle} - $${data.discountAmount}`, currentY);
@@ -329,14 +338,17 @@ async function createInvoice(data) {
       if (data.nextPaymentDate) currentY = drawRow("Next Payment Date", data.nextPaymentDate, currentY);
 
       // PAYMENT SUMMARY BOX
-      const summaryX = margin + tableWidth + 30, summaryWidth = 190, summaryY = tableY + 30;
+      const summaryX = margin + tableWidth + 30;
+      const summaryWidth = 190;
+      const summaryY = currentY + 15; // Position after payment table
+      
       doc.rect(summaryX, summaryY - 5, summaryWidth, 170).strokeColor(accent).lineWidth(2).stroke();
       doc.fillColor(headingColor).fontSize(14).font("Helvetica-Bold").text("Payment Summary", summaryX + 10, summaryY + 5);
 
-      // --- SUMMARY BOX CODE ---
+      // Summary box content
       let sumY = summaryY + 30;
       const valueColWidth = 60;
-      const labelColWidth = summaryWidth - 20 - valueColWidth; // padding from both sides
+      const labelColWidth = summaryWidth - 20 - valueColWidth;
 
       const addSumRow = (label, value, bold = false) => {
         doc.fillColor(textColor).fontSize(10).font(bold ? "Helvetica-Bold" : "Helvetica")
@@ -359,16 +371,14 @@ async function createInvoice(data) {
         .text("TOTAL:", summaryX + 15, sumY + 6, { width: summaryWidth - valueColWidth - 40, align: "left" })
         .text(`${data.finalTotal}`, summaryX + summaryWidth - 60, sumY + 6, { width: 50, align: "right" });
 
-      // Footer line position (safe above bottom margin)
+      // Footer
       const footerY = pageHeight - 80;
-
       doc.moveTo(margin, footerY)
          .lineTo(doc.page.width - margin, footerY)
          .strokeColor("#EAA64D")
          .lineWidth(1)
          .stroke();
 
-      // Footer text
       doc.fontSize(12)
          .fillColor("#EAA64D")
          .text("Abacco Technology", margin, footerY + 10, {
@@ -474,15 +484,13 @@ router.post("/send-invoice", authenticateToken, async (req, res) => {
 
     // Create email transporter
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-      tls: {
-        rejectUnauthorized: false
-      }
-    });
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS,
+  }
+});
+
 
     // Verify email configuration
     try {
@@ -576,77 +584,11 @@ router.post("/send-invoice", authenticateToken, async (req, res) => {
 });
 
 // Save payment data endpoint
+// Save payment endpoint
 router.post("/save-payment", authenticateToken, async (req, res) => {
-  // console.log("=== SAVE PAYMENT DEBUG ===");
-  console.log("User from token:", req.user);
-  console.log('Payment data received:', req.body);
-  
-  const { 
-    email, 
-    transactionId, 
-    planName, 
-    paymentDate, 
-    nextPaymentDate, 
-    amount, 
-    planType, 
-    provider, 
-    contacts, 
-    currency, 
-    paymentMethod, 
-    cardLast4, 
-    status 
-  } = req.body;
-  
+  console.log("=== SAVE PAYMENT DEBUG ===");
   try {
-    // Validate required fields
-    if (!email || !transactionId || !planName || !amount) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Missing required fields: email, transactionId, planName, amount",
-        debug: {
-          missingFields: { email, transactionId, planName, amount },
-          receivedData: req.body
-        }
-      });
-    }
-    
-    // Use userId from token (fallback to id if present)
-    const finalUserId = req.user.userId || req.user.id;
-    
-    if (!finalUserId) {
-      return res.status(400).json({
-        success: false,
-        message: "User ID missing from token. Cannot save payment.",
-        debug: {
-          tokenPayload: req.user
-        }
-      });
-    }
-    
-    console.log("Using user ID from token:", finalUserId);
-    
-    // Create payment with all required fields
-    const payment = await prisma.payment.create({
-      data: {
-        userId: finalUserId,
-        email,
-        transactionId,
-        planName,
-        planType: planType || "monthly",
-        provider: provider || "Stripe",
-        contacts: contacts ? parseInt(contacts) : 0,
-        amount: parseFloat(amount),
-        currency: currency || "USD",
-        paymentMethod: paymentMethod || "Card",
-        cardLast4: cardLast4 || null,
-        paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
-        nextPaymentDate: nextPaymentDate ? new Date(nextPaymentDate) : null,
-        status: status || "success"
-      }
-    });
-    
-    console.log("=== FINAL PAYMENT DATA ===", {
-      userId: finalUserId,
+    const {
       email,
       transactionId,
       planName,
@@ -660,24 +602,52 @@ router.post("/save-payment", authenticateToken, async (req, res) => {
       paymentDate,
       nextPaymentDate,
       status
-    });
-    
-    console.log('Payment saved successfully:', payment);
-    return res.json({ success: true, message: "Payment data saved", payment });
-  } catch (err) {
-    console.error('Error saving payment:', err);
-    return res.status(500).json({ 
-      success: false, 
-      message: err.message,
-      debug: {
-        error: err.message,
-        stack: err.stack
+    } = req.body;
+
+    if (!email || !transactionId || !amount) {
+      return res.status(400).json({
+        success: false,
+        message: "Missing required fields (email, transactionId, amount)"
+      });
+    }
+
+    const user = await prisma.user.findUnique({ where: { email } });
+    if (!user) {
+      return res.status(404).json({ success: false, message: "User not found" });
+    }
+
+    const payment = await prisma.payment.create({
+      data: {
+        userId: user.id,
+        email,
+        transactionId,
+        planName,
+        planType,
+        provider,
+        contacts,
+        amount: parseFloat(amount),
+        currency,
+        paymentMethod,
+        cardLast4,
+        paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
+        nextPaymentDate: nextPaymentDate ? new Date(nextPaymentDate) : null,
+        status
       }
+    });
+
+    res.json({ success: true, message: "Payment saved successfully", payment });
+  } catch (error) {
+    console.error("Error saving payment:", error);
+    res.status(500).json({
+      success: false,
+      message: "Failed to save payment",
+      error: error.message
     });
   }
 });
 
-// Global error handler to catch any unhandled errors
+
+// Global error handler
 router.use((err, req, res, next) => {
   console.error("Global error handler:", err);
   res.status(500).json({
