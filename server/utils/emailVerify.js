@@ -1,6 +1,6 @@
 // server/utils/emailVerify.js
 import sgMail from "@sendgrid/mail";
-sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+sgMail.setApiKey(process.env.SENDGRID_CMP_API_KEY);
 
 export async function sendTestEmail(to) {
   const msg = {
