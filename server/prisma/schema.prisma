@@ -80,27 +80,6 @@ model OTPCode {
   user      User     @relation(fields: [userId], references: [id])
 }
 
-model Verification {
-  id             Int      @id @default(autoincrement())
-  email          String   @unique
-  status         String
-  score          Int
-  syntax_valid   Boolean
-  domain_valid   Boolean
-  mailbox_exists Boolean?
-  catch_all      Boolean?
-  disposable     Boolean
-  role_based     Boolean
-  greylisted     Boolean
-  provider       String?
-  mxRecord       String?
-  isFreeDomain   Boolean?
-  error          String?
-  createdAt      DateTime @default(now())
-
-  @@index([email])
-}
-
 model SupportMessage {
   id        Int      @id @default(autoincrement())
   name      String
@@ -217,7 +196,7 @@ model EmailAccount {
   userId   Int
   email    String  @unique
   provider String?
-
+  authType String // "password" or "oauth"
   imapHost String
   imapPort Int
   imapUser String
@@ -322,7 +301,6 @@ model VerificationBatch {
   name             String?
   source           String
   includeOnlyValid Boolean       @default(false)
-  maxRich          Boolean       @default(false)
   total            Int
   validCount       Int
   invalidCount     Int
@@ -346,11 +324,34 @@ model BatchResult {
   disposable     Boolean
   role_based     Boolean
   greylisted     Boolean
+  free_provider  Boolean?
+  provider       String?
   mx             String?
   error          String?
   createdAt      DateTime @default(now())
 
   batch VerificationBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+
+  @@index([email])
+}
+
+model Verification {
+  id             Int      @id @default(autoincrement())
+  email          String   @unique
+  status         String
+  score          Int?
+  syntax_valid   Boolean?
+  domain_valid   Boolean
+  mailbox_exists Boolean?
+  catch_all      Boolean?
+  disposable     Boolean
+  role_based     Boolean
+  greylisted     Boolean
+  free_provider  Boolean?
+  provider       String?
+  mx             String[]
+  error          String?
+  createdAt      DateTime @default(now())
 
   @@index([email])
 }
@@ -375,33 +376,6 @@ model Message {
   fromEmail      String?
   direction      String
   sentAt         DateTime      @default(now())
-}
-
-model Campaign {
-  id              Int      @id @default(autoincrement())
-  name            String
-  subject         String
-  fromName        String
-  fromEmail       String
-  sentCount       Int      @default(0)
-  openCount       Int      @default(0)
-  clickCount      Int      @default(0)
-  conversionCount Int      @default(0)
-  designJson      String? // store canvas JSON
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  events CampaignEvent[]
-}
-
-model CampaignEvent {
-  id         Int      @id @default(autoincrement())
-  campaignId Int
-  type       String // "sent" | "open" | "click" | "conversion"
-  email      String?
-  createdAt  DateTime @default(now())
-
-  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 }
 
 model MmsCampaign {
@@ -440,4 +414,77 @@ model Payment {
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
   User            User      @relation(fields: [userId], references: [id])
+}
+
+model ScheduledCampaign {
+  id                 Int         @id @default(autoincrement())
+  campaignName       String
+  subject            String
+  fromName           String
+  fromEmail          String
+  recipients         Json
+  template           String? // template choice
+  canvasData         Json? // canvas data
+  scheduleType       String
+  scheduledDateTime  DateTime?
+  timezone           String?
+  recurringFrequency String?
+  recurringDays      Json?
+  recurringEndDate   DateTime?
+  status             String      @default("scheduled")
+  error              String? // 👈 ADD THIS LINE - stores error messages when campaigns fail
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  SentEmail          SentEmail[]
+}
+
+model SentEmail {
+  id         Int               @id @default(autoincrement())
+  campaignId Int
+  email      String
+  status     String // sent | failed
+  error      String?
+  sentAt     DateTime          @default(now())
+  campaign   ScheduledCampaign @relation(fields: [campaignId], references: [id])
+}
+
+model Campaign {
+  id              Int      @id @default(autoincrement())
+  name            String
+  subject         String
+  fromName        String
+  fromEmail       String
+  sentCount       Int      @default(0)
+  openCount       Int      @default(0)
+  clickCount      Int      @default(0)
+  conversionCount Int      @default(0)
+  designJson      String? // store canvas JSON
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  events CampaignEvent[]
+}
+
+model CampaignEvent {
+  id         Int      @id @default(autoincrement())
+  campaignId Int
+  type       String // "sent" | "open" | "click" | "conversion"
+  email      String?
+  createdAt  DateTime @default(now())
+
+  campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+}
+
+model CampaignVerifiedEmail {
+  id                Int       @id @default(autoincrement())
+  email             String    @unique
+  fromName          String
+  verificationToken String?   @unique
+  isVerified        Boolean   @default(false)
+  verifiedAt        DateTime?
+  expiresAt         DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+
+  @@map("campaign_verified_emails")
 }

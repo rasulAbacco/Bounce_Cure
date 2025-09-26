@@ -1,768 +1,697 @@
+// Verification.jsx
 import React, { useState, useEffect } from "react";
 import axios from "axios";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
-import { FaEye, FaEdit, FaTrash } from "react-icons/fa";
-import { HiOutlineDownload } from "react-icons/hi";
+import {
+  HiOutlineDownload,
+  HiCheckCircle,
+  HiXCircle,
+  HiExclamationCircle,
+} from "react-icons/hi";
+import { FaEye, FaTrash } from "react-icons/fa";
 import DashboardLayout from "../../components/DashboardLayout";
-import { useNavigate } from "react-router-dom";
 
+const VRI_URL = import.meta.env.VITE_VRI_URL || "";
 
-const VRI_URL = import.meta.env.VITE_VRI_URL;
+const LoaderInline = ({ text = "Processing..." }) => (
+  <div className="flex items-center gap-3 text-yellow-400">
+    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24" fill="none">
+      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
+      <path fill="currentColor" d="M4 12a8 8 0 018-8v8z" className="opacity-75" />
+    </svg>
+    <span className="font-medium">{text}</span>
+  </div>
+);
+
+const StatusPill = ({ status = "invalid", score = 0 }) => {
+  const cls =
+    status === "valid"
+      ? "bg-green-600 text-white"
+      : status === "risky"
+        ? "bg-yellow-400 text-black"
+        : "bg-red-600 text-white";
+  return (
+    <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full font-semibold ${cls}`}>
+      <span className="text-sm">{status?.toUpperCase()}</span>
+      <span className="text-xs opacity-90">({score}%)</span>
+    </div>
+  );
+};
+
+const formatNumber = (n) => (typeof n === "number" ? n : 0);
+
 const Verification = () => {
-
   const [activeTab, setActiveTab] = useState("single");
+
+  // single
   const [singleEmail, setSingleEmail] = useState("");
   const [singleResult, setSingleResult] = useState(null);
   const [singleHistory, setSingleHistory] = useState([]);
-  const [viewingBatchId, setViewingBatchId] = useState(null);
-  const [filter, setFilter] = useState("all");
-  const [downloadDropdownOpen, setDownloadDropdownOpen] = useState(false);
-  const [loadingBulk, setLoadingBulk] = useState(false);
   const [loadingSingle, setLoadingSingle] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const navigate = useNavigate();
 
-  // at top: new state
+  // bulk
+  const [loadingBulk, setLoadingBulk] = useState(false);
+  const [bulkProgress, setBulkProgress] = useState(0);
+  const [bulkHistory, setBulkHistory] = useState([]);
+  const [viewingBulkId, setViewingBulkId] = useState(null);
+
+  // manual
   const [pasteText, setPasteText] = useState("");
   const [includeOnlyValid, setIncludeOnlyValid] = useState(false);
-  const [maxRich, setMaxRich] = useState(false);
+  const [loadingManual, setLoadingManual] = useState(false);
   const [manualHistory, setManualHistory] = useState([]);
-  const [viewingManualBatchId, setViewingManualBatchId] = useState(null);
-  const [bulkHistory, setBulkHistory] = useState([]);
-  const [viewingBulkBatchId, setViewingBulkBatchId] = useState(null);
+  const [viewingManualId, setViewingManualId] = useState(null);
 
-  // new function to call manual verify
-  const verifyManual = async () => {
-    if (!pasteText.trim()) return alert("Paste emails first");
-    setLoadingBulk(true);
-    try {
-      const res = await axios.post(`${VRI_URL}/verification/verify-manual`, {
-        text: pasteText,
-        includeOnlyValid,
-        maxRich,
-        name: "manual_paste_" + new Date().toISOString()
-      });
+  const [filter, setFilter] = useState("all");
+  const [downloadOpen, setDownloadOpen] = useState(false);
 
-      const newBatch = {
-        id: res.data.batchId,
-        timestamp: new Date().toLocaleString(),
-        name: "Manual Paste",
-        summary: res.data.summary,
-        results: res.data.results
-      };
-
-      // 👇 update manual state instead of bulk
-      setManualHistory(prev => [newBatch, ...prev]);
-      setViewingManualBatchId(newBatch.id);
-
-      setPasteText("");
-    } catch (err) {
-      console.error(err);
-      alert("Manual verification failed: " + (err.response?.data?.error || err.message));
-    } finally {
-      setLoadingBulk(false);
-    }
-  };
-
-
-  // copy filtered emails
-  const copyFilteredEmails = () => {
-    const emails = filteredResults.map(r => r.email).join('\n');
-    navigator.clipboard.writeText(emails).then(() => {
-      alert("Copied to clipboard");
-    }).catch(() => alert("Copy failed"));
-  };
-
-  // on component mount fetch server-side history
+  // Load history on mount
   useEffect(() => {
-    const loadManualHistory = async () => {
-      try {
-        const res = await axios.get(`${VRI_URL}/verification/batches?source=manual`);
-        setManualHistory(res.data.batches || []);
-        if (res.data.batches.length > 0) {
-          setViewingManualBatchId(res.data.batches[0].id);
-        }
-      } catch (e) {
-        console.warn("Could not load manual history", e);
-      }
-    };
-    loadManualHistory();
-  }, []);
-
-  useEffect(() => {
-    const loadBulkHistory = async () => {
+    const loadBulk = async () => {
       try {
         const res = await axios.get(`${VRI_URL}/verification/batches?source=bulk`);
         setBulkHistory(res.data.batches || []);
-        if (res.data.batches.length > 0) {
-          setViewingBulkBatchId(res.data.batches[0].id);
-        }
+        if ((res.data.batches || []).length > 0) setViewingBulkId(res.data.batches[0].id);
       } catch (e) {
-        console.warn("Could not load bulk history", e);
+        console.warn("Could not fetch bulk history", e?.message || e);
       }
     };
-    loadBulkHistory();
+    const loadManual = async () => {
+      try {
+        const res = await axios.get(`${VRI_URL}/verification/batches?source=manual`);
+        setManualHistory(res.data.batches || []);
+        if ((res.data.batches || []).length > 0) setViewingManualId(res.data.batches[0].id);
+      } catch (e) {
+        console.warn("Could not fetch manual history", e?.message || e);
+      }
+    };
+    loadBulk();
+    loadManual();
   }, []);
 
-
-
-  // --- SINGLE VERIFICATION ---
+  // ---------------- Single verify ----------------
   const verifySingle = async () => {
-    if (!singleEmail) return alert("Enter an email");
-
+    if (!singleEmail?.trim()) return alert("Please enter an email");
     setLoadingSingle(true);
-
     try {
-      const res = await axios.post(`${VRI_URL}/verification/verify-single`, {
-        email: singleEmail,
-      });
-
-      setSingleResult(res.data);
-      setSingleHistory((prev) => [res.data, ...prev]);
+      const res = await axios.post(`${VRI_URL}/verification/verify-single`, { email: singleEmail.trim() });
+      // backend returns saved verification object (or raw result) — accept either
+      const result = res.data?.email ? res.data : res.data?.result || res.data;
+      setSingleResult(result);
+      setSingleHistory((p) => [result, ...p]);
     } catch (err) {
-      console.error(err);
-      alert("Single verification failed: " + (err.response?.data?.error || err.message));
+      console.error("Single verify error", err?.response?.data || err?.message || err);
+      alert("Single verification failed: " + (err?.response?.data?.error || err?.message || "Unknown"));
     } finally {
       setSingleEmail("");
       setLoadingSingle(false);
     }
   };
 
-  // --- BULK VERIFICATION ---
+  // ---------------- Bulk Upload ----------------
   const handleBulkUpload = async (e) => {
-    const file = e.target.files[0];
+    const file = e.target.files?.[0];
     if (!file) return;
 
-    const ext = file.name.split(".").pop().toLowerCase();
-    if (!["csv", "xlsx", "txt"].includes(ext)) return alert("Only CSV, XLSX, TXT allowed");
-
     setLoadingBulk(true);
-    setProgress(0);
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    // Simulate smooth progress
-    const interval = setInterval(() => {
-      setProgress((prev) => {
-        if (prev >= 95) {
-          clearInterval(interval);
-          return prev;
-        }
-        return prev + Math.random() * 3;
-      });
-    }, 200);
+    setBulkProgress(5);
 
     try {
-      const res = await axios.post(`${VRI_URL}/verification/verify-bulk`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
+      const reader = new FileReader();
+      reader.onload = async (event) => {
+        const content = event.target.result;
+        const emails = content
+          .split(/\r?\n/)
+          .map(line => line.trim())
+          .filter(line => line && /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/.test(line))
+          .slice(0, 1000); // Limit to prevent excessive requests
 
-      const newBatch = {
-        id: Date.now(),
-        timestamp: new Date().toLocaleString(),
-        filename: file.name,
-        results: res.data.results,
-        summary: {
-          total: res.data.total,
-          valid: res.data.valid,
-          invalid: res.data.invalid,
-          risky: res.data.risky,
-          disposable: res.data.disposable,
-          role_based: res.data.role_based,
-          catch_all: res.data.catch_all
+        if (emails.length === 0) {
+          alert("No valid emails found in the file.");
+          return;
+        }
+
+        try {
+          const res = await axios.post(`${VRI_URL}/verification/verify-bulk`, { emails }, {
+            headers: { "Content-Type": "application/json" },
+          });
+
+          // Handle response...
+        } catch (err) {
+          console.error("Bulk upload error", err);
+          alert("Bulk verification failed: " + (err.response?.data?.error || err.message));
+        } finally {
+          setLoadingBulk(false);
         }
       };
 
-      setBulkHistory((prev) => [newBatch, ...prev]);
-      setViewingBatchId(newBatch.id);
-      setFilter("all");
-      setDownloadDropdownOpen(false);
-      setProgress(100);
+      reader.readAsText(file);
     } catch (err) {
-      console.error(err);
-      alert("Bulk verification failed: " + (err.response?.data?.error || err.message));
-    } finally {
-      setLoadingBulk(false);
-      e.target.value = "";
-      setTimeout(() => setProgress(0), 500);
+      console.error("File reading error", err);
+      alert("Error reading file");
     }
   };
 
-  // --- DOWNLOAD FUNCTION ---
-  const downloadFile = (format, data) => {
-    if (!data?.length) return alert("No results to download");
-    // Enhanced data for download with all verification details
-    const enhancedData = data.map(r => ({
+  // ---------------- Manual verify ----------------
+  const verifyManual = async () => {
+    if (!pasteText?.trim()) return alert("Paste emails or text first");
+    setLoadingManual(true);
+    try {
+      const res = await axios.post(`${VRI_URL}/verification/verify-manual`, {
+        text: pasteText,
+        includeOnlyValid,
+        name: `manual_${Date.now()}`,
+      });
+
+      // similar shape handling to bulk
+      let newBatch = null;
+      if (res.data?.batchId) {
+        newBatch = {
+          id: res.data.batchId,
+          name: res.data.name || "Manual Paste",
+          timestamp: new Date().toLocaleString(),
+          results: res.data.results || [],
+          summary: res.data.summary || {
+            total: (res.data.results || []).length,
+            validCount: (res.data.results || []).filter((r) => r.status === "valid").length,
+            invalidCount: (res.data.results || []).filter((r) => r.status === "invalid").length,
+            riskyCount: (res.data.results || []).filter((r) => r.status === "risky").length,
+          },
+        };
+      } else if (res.data?.id) {
+        newBatch = {
+          id: res.data.id,
+          name: res.data.name || "Manual Paste",
+          timestamp: new Date(res.data.createdAt).toLocaleString(),
+          results: res.data.results || [],
+          summary: {
+            total: res.data.total ?? (res.data.results || []).length,
+            validCount: res.data.validCount ?? (res.data.results || []).filter((r) => r.status === "valid").length,
+            invalidCount: res.data.invalidCount ?? (res.data.results || []).filter((r) => r.status === "invalid").length,
+            riskyCount: res.data.riskyCount ?? (res.data.results || []).filter((r) => r.status === "risky").length,
+          },
+        };
+      } else {
+        newBatch = {
+          id: Date.now(),
+          name: "Manual Paste",
+          timestamp: new Date().toLocaleString(),
+          results: res.data.results || [],
+          summary: res.data.summary || { total: (res.data.results || []).length },
+        };
+      }
+
+      setManualHistory((p) => [newBatch, ...p]);
+      setViewingManualId(newBatch.id);
+      setPasteText("");
+    } catch (err) {
+      console.error("Manual verify error", err?.response?.data || err?.message || err);
+      alert("Manual verification failed: " + (err?.response?.data?.error || err?.message || "Unknown"));
+    } finally {
+      setLoadingManual(false);
+    }
+  };
+
+  // ---------------- Utilities ----------------
+  const downloadResults = (results = [], format = "csv", filename = "results") => {
+    if (!results || results.length === 0) return alert("No results to download");
+    // In the downloadResults function, update the mapping:
+    const mapped = results.map((r) => ({
       email: r.email,
       status: r.status,
-      score: r.score + '%',
-      syntax_valid: r.syntax_valid ? 'Yes' : 'No',
-      domain_valid: r.domain_valid ? 'Yes' : 'No',
-      mailbox_exists: r.mailbox_exists ? 'Yes' : 'No',
-      catch_all: r.catch_all ? 'Yes' : 'No',
-      disposable: r.disposable ? 'Yes' : 'No',
-      role_based: r.role_based ? 'Yes' : 'No',
-      greylisted: r.greylisted ? 'Yes' : 'No'
+      score: `${r.score}%`,
+      syntax_valid: r.syntax_valid ? "YES" : "NO",
+      domain_valid: r.domain_valid ? "YES" : "NO",
+      mailbox_exists: r.mailbox_exists ? "YES" : "NO",
+      catch_all: r.catch_all ? "YES" : "NO",
+      disposable: r.disposable ? "YES" : "NO",
+      role_based: r.role_based ? "YES" : "NO",
+      free_provider: r.free_provider ? "YES" : "NO",
+      provider: r.provider || "-",
+      mx: (r.mx || []).join(", "),
+      reason: r.reason || "-",
+      error: r.error || "-",
+      quality_score: r.quality_score || 0,
     }));
-    if (["csv", "xlsx"].includes(format)) {
-      const ws = XLSX.utils.json_to_sheet(enhancedData);
+
+    if (format === "csv" || format === "xlsx") {
+      const ws = XLSX.utils.json_to_sheet(mapped);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, "Results");
-      XLSX.writeFile(wb, `verification_results.${format}`);
-    } else if (format === "txt") {
-      const blob = new Blob([enhancedData.map((r) => `${r.email} - ${r.status} (${r.score})`).join("\n")], {
-        type: "text/plain;charset=utf-8",
-      });
-      saveAs(blob, "verification_results.txt");
+      XLSX.writeFile(wb, `${filename}.${format}`);
     } else {
-      const blob = new Blob([JSON.stringify(enhancedData, null, 2)], { type: "application/json" });
-      saveAs(blob, "verification_results.json");
+      const blob = new Blob([JSON.stringify(mapped, null, 2)], { type: "application/json" });
+      saveAs(blob, `${filename}.json`);
     }
-    setDownloadDropdownOpen(false);
   };
 
-  // Enhanced status badge component
-  const StatusBadge = ({ result }) => {
-    const getStatusColor = (status, score) => {
-      if (status === "valid" && score >= 90) return "bg-green-600";
-      if (status === "valid" && score >= 70) return "bg-green-500";
-      if (status === "risky") return "bg-yellow-500";
-      if (status === "invalid") return "bg-red-600";
-      return "bg-gray-500";
-    };
+  // get currently selected batch results (bulk / manual)
+  const currentBulk = bulkHistory.find((b) => b.id === viewingBulkId) || null;
+  const currentManual = manualHistory.find((b) => b.id === viewingManualId) || null;
 
-    return (
-      <div className="flex items-center gap-2">
-        <span
-          className={`inline-block px-3 py-1 rounded-full text-sm font-bold text-white ${getStatusColor(result.status, result.score)}`}
-        >
-          {result.status.toUpperCase()}
-        </span>
-        <span className="text-xs text-gray-400">({result.score}%)</span>
-      </div>
-    );
+  const filterResults = (arr = []) => {
+    if (!arr) return [];
+    if (filter === "all") return arr;
+    if (filter === "valid") return arr.filter((r) => r.status === "valid");
+    if (filter === "invalid") return arr.filter((r) => r.status === "invalid");
+    if (filter === "risky") return arr.filter((r) => r.status === "risky");
+    if (filter === "disposable") return arr.filter((r) => r.disposable);
+    if (filter === "role_based") return arr.filter((r) => r.role_based);
+    if (filter === "catch_all") return arr.filter((r) => r.catch_all);
+    return arr;
   };
 
-  // Detailed result component
-  const DetailedResult = ({ result }) => (
-    <div className="bg-[#111] p-4 rounded-md border border-gray-700 mb-4">
-      <div className="flex justify-between items-start mb-3">
-        <h4 className="text-lg font-bold text-yellow-600">{result.email}</h4>
-        <StatusBadge result={result} />
-      </div>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-        <div className={`p-2 rounded ${result.syntax_valid ? 'bg-green-900' : 'bg-red-900'}`}>
-          <div className="text-gray-300">Syntax</div>
-          <div className="font-bold">{result.syntax_valid ? '✅' : '❌'}</div>
-        </div>
-        <div className={`p-2 rounded ${result.domain_valid ? 'bg-green-900' : 'bg-red-900'}`}>
-          <div className="text-gray-300">Domain</div>
-          <div className="font-bold">{result.domain_valid ? '✅' : '❌'}</div>
-        </div>
-        <div className={`p-2 rounded ${result.mailbox_exists ? 'bg-green-900' : 'bg-red-900'}`}>
-          <div className="text-gray-300">Mailbox</div>
-          <div className="font-bold">{result.mailbox_exists ? '✅' : '❌'}</div>
-        </div>
-        <div className={`p-2 rounded ${result.catch_all ? 'bg-yellow-900' : 'bg-gray-800'}`}>
-          <div className="text-gray-300">Catch-All</div>
-          <div className="font-bold">{result.catch_all ? '⚠️' : '✅'}</div>
-        </div>
-        <div className={`p-2 rounded ${result.disposable ? 'bg-red-900' : 'bg-green-900'}`}>
-          <div className="text-gray-300">Disposable</div>
-          <div className="font-bold">{result.disposable ? '❌' : '✅'}</div>
-        </div>
-        <div className={`p-2 rounded ${result.role_based ? 'bg-green-900' : 'bg-green-900'}`}>
-          <div className="text-gray-300">Role-Based</div>
-          <div className="font-bold">{result.role_based ? '⚠️' : '✅'}</div>
-        </div>
-        <div className={`p-2 rounded ${result.greylisted ? 'bg-yellow-900' : 'bg-green-900'}`}>
-          <div className="text-gray-300">Greylisted</div>
-          <div className="font-bold">{result.greylisted ? '⚠️' : '✅'}</div>
-        </div>
-        <div className="p-2 rounded bg-blue-900">
-          <div className="text-gray-300">Score</div>
-          <div className="font-bold text-blue-300">{result.score}%</div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const viewingBatch = bulkHistory.find((b) => b.id === viewingBatchId);
-  const filteredResults =
-    viewingBatch && filter !== "all"
-      ? viewingBatch.results.filter((r) => {
-        if (filter === "valid") return r.status === "valid";
-        if (filter === "invalid") return r.status === "invalid";
-        if (filter === "risky") return r.status === "risky";
-        if (filter === "disposable") return r.disposable;
-        if (filter === "role_based") return r.role_based;
-        if (filter === "catch_all") return r.catch_all;
-        return true;
-      })
-      : viewingBatch?.results || [];
-
+  // ---------------- Render ----------------
   return (
     <DashboardLayout>
-      <div className="bg-black text-gray-200 font-sans mt-[20%] sm:mt-[15%] md:mt-[10%] lg:mt-[5%] px-4 sm:px-6 lg:px-16 py-10 max-w-[1400px] mx-auto">
+      <div className="max-w-6xl mx-auto px-4 py-8 text-gray-200 mt-[5%]">
         {/* Tabs */}
-        <div className="flex flex-wrap justify-center mt:5 gap-3 mb-8">
-          {["single", "bulk", "manual"].map((tab) => (
+        <div className="flex justify-center gap-4 mb-8">
+          {["single", "bulk", "manual"].map((t) => (
             <button
-              key={tab}
-              onClick={() => setActiveTab(tab)}
-              className={`${activeTab === tab
-                ? "bg-white text-yellow-700 border-2 border-yellow-600 shadow-md font-bold"
-                : "bg-transparent text-gray-200 border border-yellow-600 font-semibold"
-                } px-6 py-2 rounded-md transition-all duration-300 w-full sm:w-[300px] text-center`}
+              key={t}
+              onClick={() => setActiveTab(t)}
+              className={`px-6 py-2 rounded-md font-semibold transition ${activeTab === t ? "bg-yellow-500 text-black shadow-md" : "bg-gray-800 text-gray-300"
+                }`}
             >
-              {tab === "single"
-                ? "Single Verification"
-                : tab === "bulk"
-                  ? "Bulk Verification"
-                  : "Manual Paste"}
+              {t === "single" ? "Single Verification" : t === "bulk" ? "Bulk Verification" : "Manual Paste"}
             </button>
           ))}
-
         </div>
 
-        {/* SINGLE VERIFICATION */}
+        {/* ---------- SINGLE ---------- */}
         {activeTab === "single" && (
-          <div>
-            <h2 className="text-xl font-bold border-b border-gray-600 pb-2 mb-5">
-              7-Layer Email Verification
-            </h2>
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 mb-6">
+          <div className="bg-gray-900 p-6 rounded-lg shadow">
+            <h2 className="text-xl font-bold mb-4">Single Email Verification</h2>
+
+            <div className="flex gap-3 items-center mb-4">
               <input
                 type="email"
+                placeholder="Enter email"
                 value={singleEmail}
                 onChange={(e) => setSingleEmail(e.target.value)}
-                placeholder="Enter email"
-                className="bg-[#111] text-yellow-600 font-bold px-4 py-2 rounded-md border border-gray-600 w-full sm:w-80"
+                className="flex-1 px-4 py-2 bg-gray-800 border border-gray-700 rounded"
               />
               <button
                 onClick={verifySingle}
                 disabled={loadingSingle}
-                className={`px-4 py-2 rounded-md font-bold ${loadingSingle
-
-                  ? "bg-gray-600 text-gray-300 cursor-not-allowed"
-                  : "bg-white text-yellow-700 hover:bg-gray-100"
-
-                  }`}
+                className="px-4 py-2 bg-yellow-500 text-black rounded font-bold"
               >
                 {loadingSingle ? "Verifying..." : "Verify"}
               </button>
             </div>
 
-            {singleResult && <DetailedResult result={singleResult} />}
+            {loadingSingle && <LoaderInline text="Verifying email..." />}
 
-            <h3 className="text-lg font-bold border-b border-gray-600 pb-2 mb-4">
-              Verification History
-            </h3>
-            {singleHistory.length === 0 ? (
-              <p>No verification history.</p>
-            ) : (
-              <div className="space-y-3">
-                {singleHistory.map((item, idx) => (
-                  <div key={idx} className="bg-[#111] p-3 rounded-md border border-gray-700">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">{item.email}</span>
-                      <StatusBadge result={item} />
+            {singleResult && (
+              <div className="mt-4 bg-[#0f1720] border border-gray-700 p-4 rounded">
+                <div className="flex items-start justify-between gap-4 mb-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-yellow-300">{singleResult.email}</h3>
+                    <div className="text-sm text-gray-400 mt-1">
+                      Provider: <span className="text-gray-200">{singleResult.provider || "-"}</span>
+                      {" • "}
+                      MX: <span className="text-gray-200">{(singleResult.mx || []).join(", ") || "-"}</span>
                     </div>
                   </div>
-                ))}
+                  <div className="flex flex-col items-end gap-2">
+                    <StatusPill status={singleResult.status} score={singleResult.score ?? 0} />
+                    {singleResult.reason && <div className="text-xs text-gray-400">Reason: {singleResult.reason}</div>}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                  {/* Syntax */}
+                  <div className="bg-gray-800 p-3 rounded">
+                    <div className="text-sm text-gray-400">Syntax</div>
+                    <div className={`font-semibold ${singleResult.syntax_valid ? "text-green-400" : "text-red-400"}`}>
+                      {singleResult.syntax_valid ? "Valid" : "Invalid"}
+                    </div>
+                  </div>
+
+                  {/* Domain */}
+                  <div className="bg-gray-800 p-3 rounded">
+                    <div className="text-sm text-gray-400">Domain</div>
+                    <div className={`font-semibold ${singleResult.domain_valid ? "text-green-400" : "text-red-400"}`}>
+                      {singleResult.domain_valid ? "Valid" : "Invalid"}
+                    </div>
+                  </div>
+
+                  {/* Mailbox */}
+                  <div className="bg-gray-800 p-3 rounded">
+                    <div className="text-sm text-gray-400">Mailbox</div>
+                    <div className={`font-semibold ${singleResult.mailbox_exists ? "text-green-400" : "text-red-400"}`}>
+                      {singleResult.mailbox_exists ? "Exists" : "Missing"}
+                    </div>
+                  </div>
+
+                  {/* Catch-all */}
+                  <div className="bg-gray-800 p-3 rounded">
+                    <div className="text-sm text-gray-400">Catch-All</div>
+                    <div className={`font-semibold ${singleResult.catch_all ? "text-yellow-300" : "text-green-400"}`}>
+                      {singleResult.catch_all ? "Yes" : "No"}
+                    </div>
+                  </div>
+
+                  {/* Disposable */}
+                  <div className="bg-gray-800 p-3 rounded">
+                    <div className="text-sm text-gray-400">Disposable</div>
+                    <div className={`font-semibold ${singleResult.disposable ? "text-red-400" : "text-green-400"}`}>
+                      {singleResult.disposable ? "Yes" : "No"}
+                    </div>
+                  </div>
+
+                  {/* Role-based */}
+                  <div className="bg-gray-800 p-3 rounded">
+                    <div className="text-sm text-gray-400">Role-Based</div>
+                    <div className={`font-semibold ${singleResult.role_based ? "text-yellow-300" : "text-green-400"}`}>
+                      {singleResult.role_based ? "Yes" : "No"}
+                    </div>
+                  </div>
+
+                  {/* Free provider */}
+                  <div className="bg-gray-800 p-3 rounded">
+                    <div className="text-sm text-gray-400">Free Provider</div>
+                    <div className={`font-semibold ${singleResult.free_provider ? "text-green-400" : "text-gray-300"}`}>
+                      {singleResult.free_provider ? "Yes" : "No"}
+                    </div>
+                  </div>
+
+                  {/* Score */}
+                  <div className="bg-gray-800 p-3 rounded">
+                    <div className="text-sm text-gray-400">Score</div>
+                    <div className="font-bold text-blue-300">{singleResult.score ?? 0}%</div>
+                  </div>
+
+                  {/* Reason / Error (span full) */}
+                  {singleResult.reason && (
+                    <div className="bg-gray-800 p-3 rounded col-span-full sm:col-span-3 md:col-span-4 text-sm text-red-300">
+                      Reason: {singleResult.reason}
+                    </div>
+                  )}
+                  {singleResult.error && (
+                    <div className="bg-gray-800 p-3 rounded col-span-full sm:col-span-3 md:col-span-4 text-sm text-red-400">
+                      Error: {singleResult.error}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
           </div>
         )}
 
-        {/* BULK VERIFICATION */}
+        {/* ---------- BULK ---------- */}
         {activeTab === "bulk" && (
-          <div>
-            <h2 className="text-xl font-bold border-b border-gray-600 pb-2 mb-4">
-              Bulk 7-Layer Verification
-            </h2>
+          <div className="bg-gray-900 p-6 rounded-lg shadow">
+            <h2 className="text-xl font-bold mb-4">Bulk Verification</h2>
 
-            {/* File upload */}
-            <div className="mb-6 w-full sm:w-[300px]">
-              {loadingBulk && (
-                <div className="w-full h-1 bg-gray-700 mb-2 rounded-full overflow-hidden">
-                  <div
-                    className="bg-yellow-500 h-full transition-all duration-500"
-                    style={{ width: `${progress}%` }}
-                  ></div>
-                </div>
-              )}
-
+            <div className="mb-4">
               <input
                 type="file"
                 accept=".csv,.xlsx,.txt"
                 onChange={handleBulkUpload}
                 disabled={loadingBulk}
-                className="bg-black text-yellow-600 border border-gray-600 rounded-md px-4 py-2 w-full cursor-pointer disabled:opacity-50"
+                className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded"
               />
-              <button
-                onClick={() => navigate("/email-campaign")}
-                className="fixed top-10% right-20 bg-black border-2 border-[#c2831f] text-white px-5 py-2 rounded-md font-bold hover:bg-gray-900 transition-colors duration-300 z-50"
-              >
-                New Campaign
-              </button>
             </div>
 
-            {/* Currently viewed batch */}
-            {viewingBatch && (
-              <>
-                {/* Summary Cards */}
-                <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-3 mb-6">
-                  {[
-                    { key: "total", label: "Total", color: "text-blue-400" },
-                    { key: "valid", label: "Valid", color: "text-green-400" },
-                    { key: "invalid", label: "Invalid", color: "text-red-400" },
-                    { key: "risky", label: "Risky", color: "text-yellow-400" },
-                    { key: "disposable", label: "Disposable", color: "text-orange-400" },
-                    { key: "roleBased", label: "Role-Based", color: "text-purple-400" },
-                    { key: "catchAll", label: "Catch-All", color: "text-cyan-400" },
-                  ].map((stat) => (
-                    <div key={stat.key} className="bg-[#111] p-3 rounded-md text-center">
-                      <div className={`text-2xl font-bold ${stat.color}`}>
-                        {viewingBatch.summary?.[stat.key] ?? 0}
-                      </div>
-                      <div className="text-xs text-gray-400">{stat.label}</div>
-                    </div>
-                  ))}
+            {loadingBulk && (
+              <div className="mb-4">
+                <LoaderInline text="Processing bulk upload..." />
+                <div className="w-full bg-gray-700 rounded h-2 mt-2 overflow-hidden">
+                  <div className="bg-yellow-500 h-2 transition-all" style={{ width: `${bulkProgress}%` }} />
+                </div>
+              </div>
+            )}
+
+            {/* Active batch */}
+            {currentBulk ? (
+              <div className="mt-4">
+                <div className="flex justify-between items-start gap-4 mb-4">
+                  <div>
+                    <h3 className="text-lg font-bold text-yellow-300">{currentBulk.name}</h3>
+                    <div className="text-sm text-gray-400">{currentBulk.timestamp}</div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => downloadResults(currentBulk.results || [], "csv", `bulk_${currentBulk.id}`)}
+                      className="px-3 py-1 bg-yellow-500 text-black rounded font-semibold"
+                    >
+                      Download CSV
+                    </button>
+                    <div className="text-sm text-gray-400">Total: {formatNumber(currentBulk.summary?.total)}</div>
+                  </div>
                 </div>
 
-                {/* Filters + Download */}
-                <div className="flex flex-wrap items-center gap-3 mb-6">
+                {/* Summary tiles */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                  <div className="bg-gray-800 p-3 rounded text-center">
+                    <div className="text-2xl font-bold text-blue-400">{formatNumber(currentBulk.summary?.total)}</div>
+                    <div className="text-xs text-gray-400">Total</div>
+                  </div>
+                  <div className="bg-gray-800 p-3 rounded text-center">
+                    <div className="text-2xl font-bold text-green-400">{formatNumber(currentBulk.summary?.validCount)}</div>
+                    <div className="text-xs text-gray-400">Valid</div>
+                  </div>
+                  <div className="bg-gray-800 p-3 rounded text-center">
+                    <div className="text-2xl font-bold text-red-400">{formatNumber(currentBulk.summary?.invalidCount)}</div>
+                    <div className="text-xs text-gray-400">Invalid</div>
+                  </div>
+                  <div className="bg-gray-800 p-3 rounded text-center">
+                    <div className="text-2xl font-bold text-yellow-400">{formatNumber(currentBulk.summary?.riskyCount)}</div>
+                    <div className="text-xs text-gray-400">Risky</div>
+                  </div>
+                </div>
+
+                {/* Filters */}
+                <div className="flex flex-wrap gap-2 items-center mb-4">
                   {["all", "valid", "invalid", "risky", "disposable", "role_based", "catch_all"].map((f) => (
                     <button
                       key={f}
                       onClick={() => setFilter(f)}
-                      className={`px-4 py-2 rounded-md border text-sm ${filter === f ? "bg-gray-700 text-white" : "text-gray-400"
-                        } border-yellow-600`}
+                      className={`px-3 py-1 rounded text-sm ${filter === f ? "bg-gray-700 text-white" : "bg-gray-800 text-gray-300"}`}
                     >
-                      {f.split("_").map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")}
+                      {f.split("_").map((w) => w[0].toUpperCase() + w.slice(1)).join(" ")}
                     </button>
                   ))}
-
-                  {/* Download dropdown */}
-                  <div className="relative">
-                    <button
-                      onClick={() => setDownloadDropdownOpen((p) => !p)}
-                      className="text-yellow-600 text-2xl"
-                      title="Download filtered results"
-                    >
-                      <HiOutlineDownload />
-                    </button>
-                    {downloadDropdownOpen && (
-                      <div className="absolute top-full right-0 mt-2 bg-[#111] border border-gray-700 rounded-md z-50">
-                        {["csv", "xlsx", "txt", "json"].map((fmt) => (
-                          <button
-                            key={fmt}
-                            onClick={() => downloadFile(fmt, filteredResults, `bulk_results_${viewingBatch.id}`)}
-                            className="block px-4 py-2 w-full text-left hover:bg-gray-700 text-gray-200"
-                          >
-                            Download {fmt.toUpperCase()}
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                  </div>
                 </div>
 
-                {/* Results Table */}
-                <div className="overflow-x-auto mb-6">
-                  {filteredResults.length ? (
-                    <table className="w-full min-w-[800px] border-collapse">
-                      <thead>
-                        <tr className="bg-[#111]">
-                          <th className="px-4 py-3 text-yellow-600 text-left">Email</th>
-                          <th className="px-4 py-3 text-yellow-600 text-left">Status</th>
-                          <th className="px-4 py-3 text-yellow-600 text-left">Score</th>
-                          <th className="px-4 py-3 text-yellow-600 text-left">Flags</th>
+                {/* Results table */}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-800">
+                      <tr>
+                        <th className="px-3 py-2 text-left">Email</th>
+                        <th className="px-3 py-2">Status</th>
+                        <th className="px-3 py-2">Score</th>
+                        <th className="px-3 py-2">Flags</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filterResults(currentBulk.results || []).map((r) => (
+                        <tr key={r.email} className="border-t border-gray-700 hover:bg-gray-800">
+                          <td className="px-3 py-2">{r.email}</td>
+                          <td className="px-3 py-2"><StatusPill status={r.status} score={r.score ?? 0} /></td>
+                          <td className="px-3 py-2">{r.score ?? 0}%</td>
+                          <td className="px-3 py-2">
+                            <div className="flex gap-2 flex-wrap">
+                              {r.disposable && <span className="px-2 py-0.5 bg-red-600 rounded text-xs">DISP</span>}
+                              {r.role_based && <span className="px-2 py-0.5 bg-purple-600 rounded text-xs">ROLE</span>}
+                              {r.catch_all && <span className="px-2 py-0.5 bg-yellow-600 rounded text-xs">CATCH</span>}
+                              {r.free_provider && <span className="px-2 py-0.5 bg-blue-600 rounded text-xs">FREE</span>}
+                            </div>
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {filteredResults.map((r, i) => (
-                          <tr key={i}>
-                            <td className="px-4 py-3 border-b border-gray-800">{r.email}</td>
-                            <td className="px-4 py-3 border-b border-gray-800">
-                              <StatusBadge result={r} />
-                            </td>
-                            <td className="px-4 py-3 border-b border-gray-800">
-                              <span className="font-bold">{r.score}%</span>
-                            </td>
-                            <td className="px-4 py-3 border-b border-gray-800">
-                              <div className="flex gap-1">
-                                {r.disposable && <span className="text-xs bg-red-600 px-1 rounded">DISP</span>}
-                                {r.role_based && <span className="text-xs bg-purple-600 px-1 rounded">ROLE</span>}
-                                {r.catch_all && <span className="text-xs bg-yellow-600 px-1 rounded">CATCH</span>}
-                                {r.greylisted && <span className="text-xs bg-orange-600 px-1 rounded">GREY</span>}
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  ) : (
-                    <p>No results for this filter.</p>
-                  )}
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
-              </>
+              </div>
+            ) : (
+              <div className="text-gray-400">No batch selected. Upload a file or pick from history below.</div>
             )}
 
-            {/* Bulk History */}
-            <h3 className="text-lg font-bold border-b border-gray-600 pb-2 mb-4">
-              Bulk Verification History
-            </h3>
-            {bulkHistory.length === 0 ? (
-              <p>No bulk verification history.</p>
-            ) : (
-              <div className="space-y-4">
-                {bulkHistory.map((batch) => (
-                  <div
-                    key={batch.id}
-                    onClick={() => setViewingBatchId(batch.id)}
-                    className={`flex justify-between items-center p-4 border rounded-md cursor-pointer ${viewingBatchId === batch.id ? "bg-gray-800" : "border-gray-600"
-                      }`}
-                  >
-                    <div>
-                      <strong>{batch.name || "Bulk Upload"}</strong>
-                      <div className="text-sm text-gray-400">
-                        {batch.timestamp || new Date(batch.createdAt).toLocaleString()}
+            {/* Bulk history */}
+            <div className="mt-6">
+              <h3 className="text-lg font-bold mb-3">Bulk History</h3>
+              {bulkHistory.length === 0 ? (
+                <div className="text-gray-400">No bulk history yet.</div>
+              ) : (
+                <div className="space-y-3">
+                  {bulkHistory.map((b) => (
+                    <div
+                      key={b.id}
+                      onClick={() => setViewingBulkId(b.id)}
+                      className={`p-3 rounded bg-gray-800 flex justify-between items-center cursor-pointer ${viewingBulkId === b.id ? "ring-2 ring-yellow-500" : ""}`}
+                    >
+                      <div>
+                        <div className="font-semibold text-yellow-300">{b.name || "Batch"}</div>
+                        <div className="text-xs text-gray-400">{b.timestamp}</div>
+                        <div className="text-xs text-gray-500">
+                          {formatNumber(b.summary?.total)} emails • {formatNumber(b.summary?.validCount)} valid • {formatNumber(b.summary?.invalidCount)} invalid
+                        </div>
                       </div>
-                      <div className="text-xs text-gray-500">
-                        {batch.summary?.total ?? batch.results?.length ?? 0} emails •{" "}
-                        {batch.summary?.valid ?? 0} valid • {batch.summary?.invalid ?? 0} invalid
+                      <div className="flex items-center gap-2">
+                        <button title="View" onClick={(e) => { e.stopPropagation(); setViewingBulkId(b.id); }} className="text-yellow-400"><FaEye /></button>
+                        <button
+                          title="Download CSV"
+                          onClick={(e) => { e.stopPropagation(); downloadResults(b.results || [], "csv", `bulk_${b.id}`); }}
+                          className="text-green-400"
+                        >
+                          <HiOutlineDownload />
+                        </button>
+                        <button
+                          title="Delete"
+                          onClick={(e) => { e.stopPropagation(); setBulkHistory((p) => p.filter((x) => x.id !== b.id)); }}
+                          className="text-red-400"
+                        >
+                          <FaTrash />
+                        </button>
                       </div>
                     </div>
-                    <div className="flex gap-2">
-                      <button
-                        title="View"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setViewingBatchId(batch.id);
-                        }}
-                        className="text-yellow-500 hover:text-yellow-300"
-                      >
-                        <FaEye />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const csv = [
-                            "Email,Status,Score,DomainValid,Error",
-                            ...batch.results.map(
-                              (r) =>
-                                `${r.email},${r.status},${r.score},${r.domain_valid ? "YES" : "NO"},${r.error || ""}`
-                            ),
-                          ].join("\n");
-                          const blob = new Blob([csv], { type: "text/csv" });
-                          const url = window.URL.createObjectURL(blob);
-                          const link = document.createElement("a");
-                          link.href = url;
-                          link.download = `bulk_results_${batch.id}.csv`;
-                          link.click();
-                        }}
-                        className="text-green-500 hover:text-green-400"
-                      >
-                        <HiOutlineDownload />
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setBulkHistory((p) => p.filter((b) => b.id !== batch.id));
-                        }}
-                        className="text-red-500 hover:text-red-400"
-                      >
-                        <FaTrash />
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
-        {/* MANUAL PASTE VERIFICATION */}
+        {/* ---------- MANUAL ---------- */}
         {activeTab === "manual" && (
-          <div className="mb-4">
-            {/* Manual paste area */}
-            <label className="block text-sm text-gray-400 mb-1">
-              Paste emails (one per line or text)
-            </label>
+          <div className="bg-gray-900 p-6 rounded-lg shadow">
+            <h2 className="text-xl font-bold mb-4">Manual Paste Verification</h2>
+
             <textarea
               rows={6}
               value={pasteText}
               onChange={(e) => setPasteText(e.target.value)}
-              className="w-full p-3 bg-[#111] border border-gray-600 rounded text-yellow-200"
-              placeholder={`alice@example.com
-bob@test.com
-or paste content from clipboard...`}
+              placeholder="Paste emails or text..."
+              className="w-full p-3 mb-3 bg-gray-800 border border-gray-700 rounded"
             />
-            <div className="flex gap-3 mt-2 items-center">
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={includeOnlyValid}
-                  onChange={() => setIncludeOnlyValid((p) => !p)}
-                />
-                <span className="text-xs">Include only valid (exclude invalid)</span>
-              </label>
-              <label className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  checked={maxRich}
-                  onChange={() => setMaxRich((p) => !p)}
-                />
-                <span className="text-xs">MaxRich (enrich MX & details)</span>
+
+            <div className="flex items-center gap-3 mb-4">
+              <label className="flex items-center gap-2 text-sm">
+                <input type="checkbox" checked={includeOnlyValid} onChange={() => setIncludeOnlyValid((p) => !p)} />
+                Include only valid
               </label>
               <button
                 onClick={verifyManual}
-                disabled={loadingBulk}
-                className="px-4 py-1 bg-white text-yellow-700 rounded"
+                disabled={loadingManual}
+                className="px-4 py-2 bg-yellow-500 text-black rounded font-bold"
               >
-                Parse & Verify
+                {loadingManual ? "Verifying..." : "Verify"}
               </button>
               <button
-                onClick={copyFilteredEmails}
+                onClick={() => {
+                  const lines = pasteText
+                    .split(/\s|,|;/)
+                    .map((t) => t.trim())
+                    .filter((t) => t.includes("@"));
+                  if (!lines.length) return alert("No emails found");
+                  navigator.clipboard.writeText(lines.join("\n")).then(() => alert("Copied emails"));
+                }}
                 className="px-3 py-1 border rounded text-sm"
               >
-                Copy
+                Copy Emails
               </button>
             </div>
 
-            {/* Manual History List */}
-            {manualHistory.length > 0 && (
-              <div className="mt-6">
-                <h3 className="text-lg font-bold mb-3 text-white">Manual Verification History</h3>
-                <div className="flex flex-wrap gap-2 mb-4">
-                  {manualHistory.map((batch) => (
+            {loadingManual && <LoaderInline text="Processing manual input..." />}
+
+            {currentManual ? (
+              <div className="mt-4">
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <div className="font-bold text-yellow-300">{currentManual.name}</div>
+                    <div className="text-xs text-gray-400">{currentManual.timestamp}</div>
+                  </div>
+                  <div>
                     <button
-                      key={batch.id}
-                      onClick={() => setViewingManualBatchId(batch.id)}
-                      className={`px-3 py-1 rounded text-sm ${viewingManualBatchId === batch.id
-                        ? "bg-yellow-600 text-black"
-                        : "bg-gray-700 text-yellow-200"
-                        }`}
+                      onClick={() => downloadResults(currentManual.results || [], "csv", `manual_${currentManual.id}`)}
+                      className="px-3 py-1 bg-yellow-500 text-black rounded font-semibold"
                     >
-                      {batch.name || "Manual Paste"} –{" "}
-                      {batch.timestamp || new Date(batch.createdAt).toLocaleString()}
+                      Download CSV
                     </button>
-                  ))}
+                  </div>
                 </div>
 
-                {/* Selected batch results */}
-                {viewingManualBatchId &&
-                  manualHistory
-                    .filter((b) => b.id === viewingManualBatchId)
-                    .map((batch) => (
-                      <div key={batch.id}>
-                        <h3 className="text-lg font-bold mb-2 text-white">
-                          Results – {batch.name}{" "}
-                          <span className="text-sm text-gray-400">
-                            ({batch.timestamp || new Date(batch.createdAt).toLocaleString()})
-                          </span>
-                        </h3>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="bg-gray-800 p-3 rounded text-center">
+                    <div className="text-2xl font-bold text-blue-400">{formatNumber(currentManual.summary?.total)}</div>
+                    <div className="text-xs text-gray-400">Total</div>
+                  </div>
+                  <div className="bg-gray-800 p-3 rounded text-center">
+                    <div className="text-2xl font-bold text-green-400">{formatNumber(currentManual.summary?.validCount)}</div>
+                    <div className="text-xs text-gray-400">Valid</div>
+                  </div>
+                  <div className="bg-gray-800 p-3 rounded text-center">
+                    <div className="text-2xl font-bold text-red-400">{formatNumber(currentManual.summary?.invalidCount)}</div>
+                    <div className="text-xs text-gray-400">Invalid</div>
+                  </div>
+                </div>
 
-                        {/* Summary Cards */}
-                        <div className="grid grid-cols-6 gap-4 text-center mb-6 text-white">
-                          <div className="bg-[#111] py-3 rounded">
-                            <div className="text-blue-400 text-xl font-bold">{batch.summary.total}</div>
-                            <div className="text-sm">Total</div>
-                          </div>
-                          <div className="bg-[#111] py-3 rounded">
-                            <div className="text-green-400 text-xl font-bold">{batch.summary.valid}</div>
-                            <div className="text-sm">Valid</div>
-                          </div>
-                          <div className="bg-[#111] py-3 rounded">
-                            <div className="text-red-500 text-xl font-bold">{batch.summary.invalid}</div>
-                            <div className="text-sm">Invalid</div>
-                          </div>
-                          <div className="bg-[#111] py-3 rounded">
-                            <div className="text-yellow-400 text-xl font-bold">{batch.summary.risky}</div>
-                            <div className="text-sm">Risky</div>
-                          </div>
-                          <div className="bg-[#111] py-3 rounded">
-                            <div className="text-purple-400 text-xl font-bold">{batch.summary.roleBased || 0}</div>
-                            <div className="text-sm">Role-Based</div>
-                          </div>
-                          <div className="bg-[#111] py-3 rounded">
-                            <div className="text-gray-400 text-xl font-bold">{batch.summary.catchAll || 0}</div>
-                            <div className="text-sm">Catch-All</div>
-                          </div>
-                        </div>
-
-                        {/* Download Button */}
-                        <button
-                          onClick={() => {
-                            const csv = [
-                              "Email,Status,Score,DomainValid,Error",
-                              ...batch.results.map(
-                                (r) =>
-                                  `${r.email},${r.status},${r.score},${r.domain_valid ? "YES" : "NO"},${r.error || ""}`
-                              ),
-                            ].join("\n");
-
-                            const blob = new Blob([csv], { type: "text/csv" });
-                            const url = window.URL.createObjectURL(blob);
-                            const link = document.createElement("a");
-                            link.href = url;
-                            link.download = `manual_results_${batch.id}.csv`;
-                            link.click();
-                          }}
-                          className="mb-4 px-4 py-2 bg-yellow-600 text-black rounded"
-                        >
-                          ⬇ Download CSV
-                        </button>
-
-                        {/* Results Table */}
-                        <div className="overflow-x-auto">
-                          <table className="w-full text-sm text-left border border-gray-700 text-white">
-                            <thead className="bg-gray-800 text-yellow-300">
-                              <tr>
-                                <th className="px-4 py-2">Email</th>
-                                <th className="px-4 py-2">Status</th>
-                                <th className="px-4 py-2">Score</th>
-                                <th className="px-4 py-2">Domain</th>
-                                <th className="px-4 py-2">Error</th>
-                              </tr>
-                            </thead>
-                            <tbody className="bg-[#111]">
-                              {batch.results.map((r) => (
-                                <tr key={r.email} className="border-t border-gray-700">
-                                  <td className="px-4 py-2">{r.email}</td>
-                                  <td className="px-4 py-2">
-                                    <span
-                                      className={`px-2 py-1 rounded text-xs font-bold ${r.status.toLowerCase() === "valid"
-                                        ? "bg-green-600 text-white"
-                                        : r.status.toLowerCase() === "invalid"
-                                          ? "bg-red-600 text-white"
-                                          : "bg-yellow-400 text-black"
-                                        }`}
-                                    >
-                                      {r.status}
-                                    </span>
-                                  </td>
-                                  <td className="px-4 py-2">{r.score}%</td>
-                                  <td className="px-4 py-2">{r.domain_valid ? "✔" : "✖"}</td>
-                                  <td className="px-4 py-2">{r.error || "-"}</td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      </div>
-                    ))}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-800">
+                      <tr>
+                        <th className="px-3 py-2 text-left">Email</th>
+                        <th className="px-3 py-2">Status</th>
+                        <th className="px-3 py-2">Score</th>
+                        <th className="px-3 py-2">Flags</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {filterResults(currentManual.results || []).map((r) => (
+                        <tr key={r.email} className="border-t border-gray-700 hover:bg-gray-800">
+                          <td className="px-3 py-2">{r.email}</td>
+                          <td className="px-3 py-2"><StatusPill status={r.status} score={r.score ?? 0} /></td>
+                          <td className="px-3 py-2">{r.score ?? 0}%</td>
+                          <td className="px-3 py-2">
+                            <div className="flex gap-2">
+                              {r.disposable && <span className="px-2 py-0.5 bg-red-600 rounded text-xs">DISP</span>}
+                              {r.role_based && <span className="px-2 py-0.5 bg-purple-600 rounded text-xs">ROLE</span>}
+                              {r.catch_all && <span className="px-2 py-0.5 bg-yellow-600 rounded text-xs">CATCH</span>}
+                              {r.free_provider && <span className="px-2 py-0.5 bg-blue-600 rounded text-xs">FREE</span>}
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
               </div>
+            ) : (
+              <div className="text-gray-400">No manual batch selected yet.</div>
             )}
+
+            {/* Manual history */}
+            <div className="mt-6">
+              <h3 className="text-lg font-bold mb-3">Manual History</h3>
+              {manualHistory.length === 0 ? (
+                <div className="text-gray-400">No manual history yet.</div>
+              ) : (
+                <div className="space-y-2">
+                  {manualHistory.map((m) => (
+                    <div key={m.id} className="p-3 rounded bg-gray-800 flex justify-between items-center">
+                      <div>
+                        <div className="font-semibold text-yellow-300">{m.name}</div>
+                        <div className="text-xs text-gray-400">{m.timestamp}</div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button onClick={() => setViewingManualId(m.id)} className="text-yellow-400"><FaEye /></button>
+                        <button onClick={() => downloadResults(m.results || [], "csv", `manual_${m.id}`)} className="text-green-400">
+                          <HiOutlineDownload />
+                        </button>
+                        <button onClick={() => setManualHistory((p) => p.filter((x) => x.id !== m.id))} className="text-red-400"><FaTrash /></button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         )}
-
-
-
       </div>
     </DashboardLayout>
   );
