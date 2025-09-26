@@ -48,6 +48,21 @@ import { initSocket } from "./services/socketService.js";
 // Middleware
 import { protect } from "./middleware/auth.js";
 
+import dashboardRoutes from "./routes/dashboardRoutes.js";
+
+import multimediaRoutes from './routes/multimedia.js';
+// Server and Socket
+import http from "http";
+import { Server as IOServer } from "socket.io";
+import invoiceRoutes from "./routes/invoiceRoutes.js";
+import campaignsAutoRouter from './routes/campaignsAuto.js'; // adjust path as needed
+import { router as verifiedEmailsRouter } from './routes/verifiedEmails.js'; // Add this import
+// example: in src/index.js or server.js
+import verifiedEmailsRouters from "./routes/userMailVerify.js"; // adjust path as needed
+
+import sendgridSendersRouter from "./routes/sendgridSenders.js";
+
+
 // ENV setup
 dotenv.config();
 
@@ -130,7 +145,12 @@ app.use("/api/campaigncontacts", protect, campaignContactsRoutes);
 app.use("/api/campaigns", protect, campaignsRoutes);
 app.use("/api/verified-emails", protect, verifiedEmailsRouter);
 
- 
+
+
+// Socket service
+initSocket(io);
+
+app.use("/api/senders", sendgridSendersRouter);
 
 // Root route
 app.get('/', (req, res) => {

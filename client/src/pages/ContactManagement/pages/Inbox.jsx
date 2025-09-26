@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import AddEmailModal from "./AddEmailForm";
 import Inbox from "../../../components/inbox/Inbox";
-
+const API_URL = import.meta.env.VITE_VRI_URL;
 // const InboxPage = () => {
 //   const [mails, setMails] = useState([]);
 //   const [accounts, setAccounts] = useState([]);
@@ -25,7 +25,7 @@ import Inbox from "../../../components/inbox/Inbox";
 //   useEffect(() => {
 //     const fetchAccounts = async () => {
 //       try {
-//         const res = await fetch("http://localhost:5000/api/email-account");
+//         const res = await fetch(`${API_URL}/api/email-account`);
 //         if (!res.ok) throw new Error("Failed to fetch accounts");
 //         const data = await res.json();
 //         setAccounts(data);
@@ -44,8 +44,8 @@ import Inbox from "../../../components/inbox/Inbox";
 //       try {
 //         const endpoint =
 //           selectedAccount === "all"
-//             ? "http://localhost:5000/api/emails"
-//             : `http://localhost:5000/api/emails?accountId=${selectedAccount}`;
+//             ? `${API_URL}/api/emails`
+//             : `${API_URL}/api/emails?accountId=${selectedAccount}`;
 //         const res = await fetch(endpoint);
 //         if (!res.ok) throw new Error("Failed to fetch inbox");
 //         const data = await res.json();

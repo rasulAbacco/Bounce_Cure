@@ -16,7 +16,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 
-const API_URL = "http://localhost:5000/api/leads";
+const API_URL = import.meta.env.VITE_VRI_URL;
 
 const Leads = () => {
   const [leads, setLeads] = useState([]);

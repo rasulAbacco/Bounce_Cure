@@ -20,7 +20,7 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-
+const API_URL = import.meta.env.VITE_VRI_URL;
 const statusColors = {
   Active: "#22c55e",
   Inactive: "#ef4444",
@@ -96,7 +96,7 @@ function ContactsPage() {
     e.preventDefault();
     const formData = new FormData(e.target);
     try {
-      const res = await fetch("http://localhost:5000/contact/import", {
+      const res = await fetch(`${API_URL}/contact/import`, {
         method: "POST",
         body: formData,
       });
@@ -116,7 +116,7 @@ function ContactsPage() {
 
   const addContact = async (e) => {
     e.preventDefault();
-    const res = await fetch("http://localhost:5000/contact", {
+    const res = await fetch(`${API_URL}/contact`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(newContact),
@@ -135,7 +135,7 @@ function ContactsPage() {
   const updatePriority = async (id) => {
     const newVal = editPriority[id];
     try {
-      const res = await fetch(`http://localhost:5000/contact/${id}`, {
+      const res = await fetch(`${API_URL}/contact/${id}`, {
         method: "PUT",
         headers: {
           "Content-Type": "application/json",
@@ -163,7 +163,7 @@ function ContactsPage() {
 
   const deleteContact = async (id) => {
     if (!window.confirm("Are you sure you want to delete this contact?")) return;
-    await fetch(`http://localhost:5000/contact/${id}`, {
+    await fetch(`${API_URL}/contact/${id}`, {
       method: "DELETE",
     });
     setContacts(contacts.filter((c) => c.id !== id));
@@ -174,7 +174,7 @@ function ContactsPage() {
   // Fetch all contacts for stats
   const fetchAllContacts = async () => {
     try {
-      const res = await fetch("http://localhost:5000/contact?all=true");
+      const res = await fetch(`${API_URL}/contact?all=true`);
       const data = await res.json();
       setAllContacts(data.data || []);
     } catch (err) {
@@ -184,7 +184,7 @@ function ContactsPage() {
 
   useEffect(() => {
     // Fetch paginated contacts
-    fetch(`http://localhost:5000/contact?page=${page}&search=${search}`)
+    fetch(`${API_URL}/contact?page=${page}&search=${search}`)
       .then((res) => res.json())
       .then((data) => {
         setContacts(data.data);
