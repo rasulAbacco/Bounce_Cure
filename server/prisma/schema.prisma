@@ -466,3 +466,17 @@ model CampaignVerifiedEmail {
 
   @@map("campaign_verified_emails")
 }
+
+model VerifiedSender {
+  id               Int       @id @default(autoincrement())
+  email            String    @unique
+  fromName         String?
+  verified         Boolean   @default(false)
+  verifiedAt       DateTime?
+  sendgridSenderId Int? // <-- store SendGrid sender identity id
+  sendgridStatus   String? // <-- store SendGrid status (for debugging)
+  token            String?
+  tokenExpiresAt   DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}

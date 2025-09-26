@@ -49,11 +49,10 @@ import Signupd from './pages/Pricing/Signupd';
 import MultimediaCampaign from './pages/Multimedia/MultimediCampaign';
 import WhatsappCampaign from './pages/Multimedia/WhatsappCampaign';
 import SMScampaign from './pages/Multimedia/SMScampaign';
-import TermsConditions from './pages/Terms&conditions';
+import TermsConditions from './pages/Terms&Conditions';
 import RefundPolicy from './pages/RefundPolicy';
 import Signin from './pages/Pricing/Signin';
 import VerifydEmail from './pages/Campaign/pages/VerifydEmail';
-import Signupd from './pages/Pricing/Signupd';
 
 function App() {
   return (

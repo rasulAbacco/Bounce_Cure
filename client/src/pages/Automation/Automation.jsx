@@ -2,12 +2,13 @@ import React, { useEffect, useState } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Line, Pie, Bar } from "react-chartjs-2";
 import "chart.js/auto";
-import { 
-  Zap, Activity, CheckCircle, Play, Clock, Calendar, 
+import {
+  Zap, Activity, CheckCircle, Play, Clock, Calendar,
   Mail, Edit, Trash2, Pause, PlayCircle, MoreVertical,
   Filter, Search, Eye, AlertCircle, TrendingUp, Users,
   RefreshCw, Send, XCircle, Shield, AlertTriangle, X
 } from "lucide-react";
+const API_URL = import.meta.env.VITE_VRI_URL;
 
 const Automation = () => {
   const [logs, setLogs] = useState([]);
@@ -33,17 +34,17 @@ const Automation = () => {
   // Fetch automation data from backend
   const fetchAutomationData = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/automation/logs");
+      const response = await fetch(`${API_URL}/api/automation/logs`);
       if (response.ok) {
         const data = await response.json();
         setLogs(data);
-        
+
         // Calculate stats from logs
         const stats = data.reduce((acc, log) => {
           acc[log.status] = (acc[log.status] || 0) + 1;
           return acc;
         }, {});
-        
+
         setCampaignStats(prev => ({
           ...prev,
           ...stats
@@ -56,11 +57,11 @@ const Automation = () => {
 
   const fetchScheduledCampaigns = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/automation/scheduled");
+      const response = await fetch(`${API_URL}/api/automation/scheduled`);
       if (response.ok) {
         const data = await response.json();
         setScheduledCampaigns(data);
-        
+
         // Update scheduled count
         setCampaignStats(prev => ({
           ...prev,
@@ -77,7 +78,7 @@ const Automation = () => {
 
   const checkSenderVerification = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/automation/sender/verification");
+      const response = await fetch(`${API_URL}/api/automation/sender/verification`);
       if (response.ok) {
         const data = await response.json();
         setSenderVerified(data.verified);
@@ -89,10 +90,10 @@ const Automation = () => {
 
   const handleCampaignAction = async (campaignId, action) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/automation/${campaignId}/${action}`, {
+      const response = await fetch(`${API_URL}/api/automation/${campaignId}/${action}`, {
         method: 'POST',
       });
-      
+
       if (response.ok) {
         await fetchScheduledCampaigns();
         setShowActionMenu(null);
@@ -108,14 +109,14 @@ const Automation = () => {
 
   const handleBulkAction = async (action) => {
     if (selectedCampaigns.length === 0) return;
-    
+
     try {
-      const promises = selectedCampaigns.map(id => 
-        fetch(`http://localhost:5000/api/automation/${id}/${action}`, {
+      const promises = selectedCampaigns.map(id =>
+        fetch(`${API_URL}/api/automation/${id}/${action}`, {
           method: 'POST',
         })
       );
-      
+
       await Promise.all(promises);
       await fetchScheduledCampaigns();
       setSelectedCampaigns([]);
@@ -125,8 +126,8 @@ const Automation = () => {
   };
 
   const toggleCampaignSelection = (campaignId) => {
-    setSelectedCampaigns(prev => 
-      prev.includes(campaignId) 
+    setSelectedCampaigns(prev =>
+      prev.includes(campaignId)
         ? prev.filter(id => id !== campaignId)
         : [...prev, campaignId]
     );
@@ -134,30 +135,30 @@ const Automation = () => {
 
   const handleTriggerSend = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/automation/trigger-cron", {
+      const response = await fetch(`${API_URL}/api/automation/trigger-cron`, {
         method: 'POST',
       });
       const data = await response.json();
-      
+
       // Fetch the latest scheduled campaigns
       await fetchScheduledCampaigns();
-      
+
       // Create message based on scheduled campaigns
       const scheduledCount = scheduledCampaigns.filter(c => c.status === 'scheduled').length;
-      
+
       if (scheduledCount > 0) {
         const campaignList = scheduledCampaigns
           .filter(c => c.status === 'scheduled')
           .map(c => `- ${c.campaignName}: ${new Date(c.scheduledDateTime).toLocaleString()}`)
           .join('\n');
-        
+
         setTriggerMessage(`Found ${scheduledCount} scheduled campaigns:\n${campaignList}`);
       } else {
         setTriggerMessage("No scheduled campaigns found.");
       }
-      
+
       setShowTriggerMessage(true);
-      
+
       // Hide message after 5 seconds
       setTimeout(() => setShowTriggerMessage(false), 5000);
     } catch (error) {
@@ -173,7 +174,7 @@ const Automation = () => {
     fetchAutomationData();
     fetchScheduledCampaigns();
     checkSenderVerification();
-    
+
     // Refresh data every 30 seconds
     const interval = setInterval(() => {
       fetchAutomationData();
@@ -185,7 +186,7 @@ const Automation = () => {
 
   const filteredCampaigns = scheduledCampaigns.filter(campaign => {
     const matchesSearch = campaign.campaignName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         campaign.subject.toLowerCase().includes(searchTerm.toLowerCase());
+      campaign.subject.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === "all" || campaign.status === filterStatus;
     return matchesSearch && matchesFilter;
   });
@@ -295,7 +296,7 @@ const Automation = () => {
         <Shield className="text-yellow-400 mr-2" />
         <h3 className="text-lg font-semibold text-white">Email Deliverability Tips</h3>
       </div>
-      
+
       {!senderVerified && (
         <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4 mb-4">
           <div className="flex items-start">
@@ -312,7 +313,7 @@ const Automation = () => {
           </div>
         </div>
       )}
-      
+
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         <div>
           <h4 className="font-medium text-white mb-2">Authentication</h4>
@@ -331,7 +332,7 @@ const Automation = () => {
             </li>
           </ul>
         </div>
-        
+
         <div>
           <h4 className="font-medium text-white mb-2">Content Best Practices</h4>
           <ul className="text-sm text-gray-300 space-y-1">
@@ -375,13 +376,13 @@ const Automation = () => {
                   <RefreshCw size={16} />
                   Trigger Send
                 </button>
-                
+
                 {/* Message popup */}
                 {showTriggerMessage && (
                   <div className="absolute right-0 top-full mt-2 w-80 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10 p-4">
                     <div className="flex justify-between items-start mb-2">
                       <h3 className="font-medium text-white">Scheduled Campaigns</h3>
-                      <button 
+                      <button
                         onClick={() => setShowTriggerMessage(false)}
                         className="text-gray-400 hover:text-white"
                       >
@@ -394,7 +395,7 @@ const Automation = () => {
                   </div>
                 )}
               </div>
-              
+
               <button
                 onClick={() => window.location.href = '/send-campaign'}
                 className="px-4 py-2 bg-[#c2831f] text-white rounded-lg hover:bg-[#d09025] flex items-center gap-2"
@@ -414,11 +415,10 @@ const Automation = () => {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${
-                  activeTab === tab
-                    ? 'bg-[#c2831f] text-white'
-                    : 'text-gray-400 hover:text-white hover:bg-gray-800'
-                }`}
+                className={`px-6 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === tab
+                  ? 'bg-[#c2831f] text-white'
+                  : 'text-gray-400 hover:text-white hover:bg-gray-800'
+                  }`}
               >
                 {tab.charAt(0).toUpperCase() + tab.slice(1)}
               </button>
@@ -456,7 +456,7 @@ const Automation = () => {
                     <Pie data={performanceData} options={chartOptions} />
                   </div>
                 </div>
-                
+
                 <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-white mb-4">Recent Activity</h3>
                   <div className="space-y-4">
@@ -508,7 +508,7 @@ const Automation = () => {
                     <option value="failed">Failed</option>
                   </select>
                 </div>
-                
+
                 {selectedCampaigns.length > 0 && (
                   <div className="flex gap-2">
                     <button
@@ -612,7 +612,7 @@ const Automation = () => {
                               >
                                 <MoreVertical size={16} />
                               </button>
-                              
+
                               {showActionMenu === campaign.id && (
                                 <div className="absolute right-0 top-full mt-1 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
                                   <div className="py-1">
@@ -665,7 +665,7 @@ const Automation = () => {
                     </tbody>
                   </table>
                 </div>
-                
+
                 {filteredCampaigns.length === 0 && (
                   <div className="text-center py-12">
                     <Calendar className="mx-auto text-gray-600 mb-4" size={48} />
@@ -710,7 +710,7 @@ const Automation = () => {
                     </div>
                   </div>
                 ))}
-                
+
                 {logs.length === 0 && (
                   <div className="text-center py-12">
                     <Activity className="mx-auto text-gray-600 mb-4" size={48} />

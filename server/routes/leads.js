@@ -8,7 +8,7 @@ const prisma = new PrismaClient();
 router.get("/", async (req, res) => {
   try {
     const leads = await prisma.lead.findMany({
-      where: { userId: req.user.id },
+      // where: { userId: req.user.id },
       orderBy: { id: "desc" }
     });
     res.json(leads);

@@ -49,6 +49,11 @@ import { Server as IOServer } from "socket.io";
 import invoiceRoutes from "./routes/invoiceRoutes.js";
 import campaignsAutoRouter from './routes/campaignsAuto.js'; // adjust path as needed
 import { router as verifiedEmailsRouter } from './routes/verifiedEmails.js'; // Add this import
+// example: in src/index.js or server.js
+import verifiedEmailsRouters from "./routes/userMailVerify.js"; // adjust path as needed
+
+import sendgridSendersRouter from "./routes/sendgridSenders.js";
+
 
 // ENV setup
 dotenv.config();
@@ -135,11 +140,14 @@ initSocket(io);
 // IMAP sync loop
 // startSyncLoop(prisma);
 
+app.use("/api/senders", sendgridSendersRouter);
 
 app.use('/api/campaigncontacts', campaignContactsRoutes);
 app.use('/api/campaigns', campaignsRoutes);
 app.use('/api/verified-emails', verifiedEmailsRouter);
 
+//sendgrid email verification routes
+app.use("/api/verified-email", verifiedEmailsRouters);
 
 // Root route
 app.get('/', (req, res) => {
