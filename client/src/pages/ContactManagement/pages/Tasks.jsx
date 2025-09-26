@@ -9,6 +9,8 @@ import {
   Search as SearchIcon,
 } from "lucide-react";
 
+const API_URL = import.meta.env.VITE_VRI_URL;
+
 function Tasks() {
   // Initial tasks
   const [tasks, setTasks] = useState([
@@ -69,7 +71,7 @@ function Tasks() {
     try {
       if (editingId) {
         // EDIT existing task (PUT)
-        await fetch(`http://localhost:5000/tasks/${editingId}`, {
+        await fetch(`${API_URL}/tasks/${editingId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newTask),
@@ -83,7 +85,7 @@ function Tasks() {
         setEditingId(null);
       } else {
         // ADD new task (POST)
-        const res = await fetch("http://localhost:5000/tasks", {
+        const res = await fetch(`${API_URL}/tasks`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newTask),
@@ -117,7 +119,7 @@ function Tasks() {
 
     try {
       // DELETE request to backend
-      await fetch(`http://localhost:5000/tasks/${id}`, {
+      await fetch(`${API_URL}/tasks/${id}`, {
         method: "DELETE",
       });
 
@@ -242,7 +244,7 @@ function Tasks() {
   };
 
   useEffect(() => {
-    fetch("http://localhost:5000/tasks")
+    fetch(`${API_URL}/tasks`)
       .then((res) => res.json())
       .then((data) => setTasks(data))
       .catch((err) => console.error(err));
