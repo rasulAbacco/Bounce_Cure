@@ -1,46 +1,64 @@
-import nodemailer from "nodemailer";
+// emailService.js - Updated SendGrid configuration
 
-let transporter;
+import sgMail from '@sendgrid/mail';
 
-export const initEmail = () => {
-  if (transporter) return transporter;
+// Set SendGrid API key
+sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-  transporter = nodemailer.createTransport({
-    service: "gmail", // <--- simpler & correct for Gmail
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
-    },
-  });
-
-  // Verify on startup
-  transporter.verify((err, success) => {
-    if (err) {
-      console.error("❌ Gmail SMTP connection failed:", err);
-    } else {
-      console.log("✅ Gmail SMTP ready to send emails");
-    }
-  });
-
-  return transporter;
-};
-
-export const sendEmail = async ({ to, subject, text, html }) => {
-  if (!transporter) initEmail();
-
+export const sendEmail = async (emailData) => {
   try {
-    const info = await transporter.sendMail({
-      from: `"Bounce Cure" <${process.env.GMAIL_USER}>`,
-      to :"",
-      subject,
-      text: text || "Plain text fallback",
-      html: html || "",
+    const { recipients, subject, fromName, fromEmail, htmlContent, templateId } = emailData;
+    
+    // Use your verified sender identity email
+    // This should be the email you verified in SendGrid, not the user's fromEmail
+    const verifiedSenderEmail = process.env.SENDGRID_FROM_EMAIL || 'noreply@yourdomain.com';
+    
+    const msg = {
+      to: recipients,
+      from: {
+        email: verifiedSenderEmail, // Use your verified sender email
+        name: fromName // But keep the name from the user
+      },
+      subject: subject,
+      html: htmlContent,
+      // Optional: Add reply-to if you want replies to go to the original fromEmail
+      replyTo: {
+        email: fromEmail,
+        name: fromName
+      }
+    };
+
+    // If using a template
+    if (templateId) {
+      msg.templateId = templateId;
+    }
+
+    console.log('Sending email with SendGrid...', {
+      to: recipients,
+      from: msg.from,
+      subject: subject
     });
 
-    console.log("✅ Email sent:", info.messageId);
-    return info;
-  } catch (err) {
-    console.error("❌ Email failed:", err);
-    throw err;
+    const response = await sgMail.send(msg);
+    console.log('Email sent successfully:', response[0].statusCode);
+    
+    return {
+      success: true,
+      messageId: response[0].headers['x-message-id'],
+      statusCode: response[0].statusCode
+    };
+    
+  } catch (error) {
+    console.error('SendGrid error:', error);
+    
+    // Extract more detailed error information
+    let errorMessage = 'Failed to send email';
+    if (error.response?.body?.errors) {
+      errorMessage = error.response.body.errors.map(err => err.message).join(', ');
+    } else if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    throw new Error(`Email sending failed: ${errorMessage}`);
   }
 };

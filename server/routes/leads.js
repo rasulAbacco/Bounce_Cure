@@ -7,7 +7,10 @@ const prisma = new PrismaClient();
 // GET all leads
 router.get("/", async (req, res) => {
   try {
-    const leads = await prisma.lead.findMany({ orderBy: { id: "desc" } });
+    const leads = await prisma.lead.findMany({
+      where: { userId: req.user.id },
+      orderBy: { id: "desc" }
+    });
     res.json(leads);
   } catch (err) {
     res.status(500).json({ error: err.message });

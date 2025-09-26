@@ -39,6 +39,7 @@ import { initSocket } from "./services/socketService.js";
 // import  startSyncLoop  from "./services/syncService.js";
 import { PrismaClient } from "@prisma/client";
 import cron from 'node-cron';
+
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 
 import multimediaRoutes from './routes/multimedia.js';
@@ -46,11 +47,11 @@ import multimediaRoutes from './routes/multimedia.js';
 import http from "http";
 import { Server as IOServer } from "socket.io";
 import invoiceRoutes from "./routes/invoiceRoutes.js";
-
+import campaignsAutoRouter from './routes/campaignsAuto.js'; // adjust path as needed
+import { router as verifiedEmailsRouter } from './routes/verifiedEmails.js'; // Add this import
 
 // ENV setup
 dotenv.config();
-console.log("Loaded SG API key:", process.env.SG_EMAIL_VAL_API_KEY?.substring(0, 10));
 
 // Init
 startEmailScheduler();
@@ -94,7 +95,6 @@ app.use("/api/auth", passwordRoutes);     // <- Combine later if needed
 app.use("/dashboard", dashboardCRM);
 app.use("/verification", verificationRoutes);
 
-// ✅ Mount Routes
 app.use("/api", dashboardRoutes);
 
 // Use routes
@@ -108,9 +108,11 @@ app.use("/api/push", pushRoutes);
 app.use("/notifications", notificationsRoutes);
 
 //campaign
+app.use("/api/automation", campaignsAutoRouter);
 app.use('/api/sendContacts', sendContactsRoutes);
 app.use('/api/sendCampaigns', sendCampaignsRoutes);
 // Multimedia campaigns
+
 app.use('/api/multimedia', multimediaRoutes);
 app.use("/tasks", taskRoutes);
 app.use("/deals", dealsRoutes);
@@ -136,6 +138,8 @@ initSocket(io);
 
 app.use('/api/campaigncontacts', campaignContactsRoutes);
 app.use('/api/campaigns', campaignsRoutes);
+app.use('/api/verified-emails', verifiedEmailsRouter);
+
 
 // Root route
 app.get('/', (req, res) => {
@@ -145,4 +149,96 @@ app.get('/', (req, res) => {
 // Start server
 server.listen(PORT, () => {
   console.log(`✅ Server started on port ${PORT}`);
+});
+
+// Add this after your other routes and before the root route
+app.get('/verify-email', async (req, res) => {
+  try {
+    const { token } = req.query;
+    
+    if (!token) {
+      return res.status(400).send('Verification token is required');
+    }
+    
+    // Find the verification record
+    const record = await prisma.campaignVerifiedEmail.findFirst({
+      where: { verificationToken: token }
+    });
+    
+    if (!record) {
+      return res.status(404).send('Invalid verification token');
+    }
+    
+    // Check if token is expired
+    if (record.expiresAt && new Date() > record.expiresAt) {
+      return res.status(400).send('Verification token has expired');
+    }
+    
+    // Mark the email as verified
+    await prisma.campaignVerifiedEmail.update({
+      where: { id: record.id },
+      data: { 
+        isVerified: true, 
+        verifiedAt: new Date(),
+        verificationToken: null // Clear the token after verification
+      }
+    });
+    
+    // Send a success response
+    res.send(`
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>Email Verified</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              display: flex;
+              justify-content: center;
+              align-items: center;
+              height: 100vh;
+              margin: 0;
+              background-color: #f5f5f5;
+            }
+            .container {
+              background-color: white;
+              padding: 40px;
+              border-radius: 8px;
+              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+              text-align: center;
+              max-width: 500px;
+            }
+            h1 {
+              color: #4CAF50;
+              margin-bottom: 20px;
+            }
+            p {
+              color: #333;
+              margin-bottom: 30px;
+            }
+            .btn {
+              background-color: #4CAF50;
+              color: white;
+              padding: 10px 20px;
+              border: none;
+              border-radius: 4px;
+              cursor: pointer;
+              font-size: 16px;
+              text-decoration: none;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="container">
+            <h1>Email Verified Successfully!</h1>
+            <p>Thank you for verifying your email address. You can now close this window.</p>
+            <button class="btn" onclick="window.close()">Close Window</button>
+          </div>
+        </body>
+      </html>
+    `);
+  } catch (error) {
+    console.error("Email verification error:", error);
+    res.status(500).send('An error occurred during email verification');
+  }
 });
