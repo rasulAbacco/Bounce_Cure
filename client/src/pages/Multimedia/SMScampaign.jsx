@@ -9,6 +9,8 @@ import {
 } from "lucide-react";
 import axios from 'axios';
 
+const API_URL = import.meta.env.VITE_VRI_URL;
+
 export default function SMSCampaignEditor() {
   const [message, setMessage] = useState('');
   const [campaignName, setCampaignName] = useState('');
@@ -69,7 +71,7 @@ const sendCampaign = async () => {
   }
 
   try {
-    const res = await axios.post('http://localhost:5000/api/multimedia/', {
+    const res = await axios.post(`${API_URL}/api/multimedia/`, {
       name: campaignName,
       message,
       mediaUrl: '', // You can later integrate file upload
@@ -87,7 +89,7 @@ const sendCampaign = async () => {
 
 useEffect(() => {
   const fetchCampaigns = async () => {
-    const res = await axios.get('http://localhost:5000/api/multimedia/');
+    const res = await axios.get(`${API_URL}/api/multimedia/`);
     setCampaigns(res.data);
   };
   fetchCampaigns();

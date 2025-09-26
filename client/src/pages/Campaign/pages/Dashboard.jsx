@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { MdRefresh } from "react-icons/md";
 import { FiEye, FiEdit, FiTrash2 } from "react-icons/fi";
+const API_URL = import.meta.env.VITE_VRI_URL;
 
 <div className="flex space-x-4">
     <button className="text-yellow-400 hover:text-yellow-300">
@@ -56,7 +57,7 @@ const Dashboard = () => {
     // 📌 Fetch Contacts
     const fetchContacts = async () => {
         try {
-            const res = await fetch("http://localhost:5000/api/contacts");
+            const res = await fetch(`${API_URL}/api/contacts`);
             const data = await res.json();
             setContacts(data);
         } catch (err) {
@@ -73,7 +74,7 @@ const Dashboard = () => {
     // 📌 Handle Add Contact
     const handleAddContact = async () => {
         try {
-            const res = await fetch("http://localhost:5000/api/contacts", {
+            const res = await fetch(`${API_URL }/api/contacts`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(newContact),
@@ -90,7 +91,7 @@ const Dashboard = () => {
     // 📌 Handle Edit Contact
     const handleUpdateContact = async () => {
         try {
-            const res = await fetch(`http://localhost:5000/api/contacts/${selectedContact.id}`, {
+            const res = await fetch(`${API_URL}/api/contacts/${selectedContact.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(selectedContact),
@@ -108,7 +109,7 @@ const Dashboard = () => {
     const handleDeleteContact = async (id) => {
         if (!window.confirm("Are you sure you want to delete this contact?")) return;
         try {
-            const res = await fetch(`http://localhost:5000/api/contacts/${id}`, {
+            const res = await fetch(`${API_URL}/api/contacts/${id}`, {
                 method: "DELETE",
             });
             if (!res.ok) throw new Error("Failed to delete contact");

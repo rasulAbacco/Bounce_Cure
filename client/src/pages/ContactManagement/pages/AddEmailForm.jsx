@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-
+const API_URL = import.meta.env.VITE_VRI_URL;
 const AddEmailModal = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState({
@@ -36,7 +36,7 @@ const AddEmailModal = () => {
     };
 
     try {
-      const response = await fetch('http://localhost:5000/api/email-account', {
+      const response = await fetch(`${API_URL}/api/email-account`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(emailData)
