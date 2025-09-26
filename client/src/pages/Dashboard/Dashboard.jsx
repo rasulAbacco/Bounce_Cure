@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+// client/src/pages/Dashboard/Dashboard.jsx
+import React, { useState, useEffect } from 'react';
 import {
     LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
     PieChart, Pie, Cell, AreaChart, Area, BarChart, Bar
@@ -8,24 +9,178 @@ import {
     Plus, Upload, Bell, Calendar, CheckCircle, AlertCircle,
     Activity, Globe, Target, DollarSign, Clock, Shield,
     Download, Filter, RefreshCw, Settings, Search, MoreVertical, Ban,
-    Zap, Database, Star, Award, AlertTriangle, Info
+    Zap, Database, Star, Award, AlertTriangle, Info,
+    Import, BarChart3, Send
 } from 'lucide-react';
 import DashboardLayout from '../../components/DashboardLayout';
 import Greeting from '../../components/Greeting';
 import '../../styles/dashboard.css';
+import { Link } from 'react-router-dom';
 
 const Dashboard = () => {
-    const [timeRange, setTimeRange] = useState('7d');
+    
+    // Campaigns state
+    const [campaigns, setCampaigns] = useState([]);
+    const [scheduledCampaigns, setScheduledCampaigns] = useState([]);
+    const [automationLogs, setAutomationLogs] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    
+    // Combined campaigns state
+    const [allCampaigns, setAllCampaigns] = useState([]);
+
+            const fetchWithAuth = async (url) => {
+            const token = localStorage.getItem('token'); // ✅ this should come from signup/login
+            const response = await fetch(url, {
+                headers: {
+                'Authorization': `Bearer ${token}`,  // ✅ header is set correctly
+                'Content-Type': 'application/json'
+                }
+            });
+
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                // Redirect to login or handle authentication error
+                window.location.href = '/login'; // Adjust this to your login route
+                throw new Error('Authentication required');
+            }
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        return response.json();
+    };
+
+    // Fetch campaigns from backend
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                setLoading(true);
+                setError(null);
+
+                // Fetch all campaigns with error handling
+                try {
+                    const campaignsData = await fetchWithAuth("http://localhost:5000/api/campaigns");
+                    // Ensure it's an array
+                    setCampaigns(Array.isArray(campaignsData) ? campaignsData : []);
+                } catch (err) {
+                    console.error("Error fetching campaigns:", err);
+                    setCampaigns([]);
+                }
+                
+                // Fetch scheduled campaigns with error handling
+                try {
+                    const scheduledData = await fetchWithAuth("http://localhost:5000/api/automation/scheduled");
+                    setScheduledCampaigns(Array.isArray(scheduledData) ? scheduledData : []);
+                } catch (err) {
+                    console.error("Error fetching scheduled campaigns:", err);
+                    setScheduledCampaigns([]);
+                }
+                
+                // Fetch automation logs with error handling
+                try {
+                    const logsData = await fetchWithAuth("http://localhost:5000/api/automation/logs");
+                    setAutomationLogs(Array.isArray(logsData) ? logsData : []);
+                } catch (err) {
+                    console.error("Error fetching automation logs:", err);
+                    setAutomationLogs([]);
+                }
+
+            } catch (err) {
+                setError(err.message);
+                console.error("Error in dashboard data fetch:", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchData();
+    }, []);
+
+    // Combine campaigns and scheduled campaigns
+    useEffect(() => {
+        // Create a map to avoid duplicates
+        const campaignMap = new Map();
+        
+        // Add regular campaigns (ensure campaigns is an array)
+        if (Array.isArray(campaigns)) {
+            campaigns.forEach(campaign => {
+                campaignMap.set(campaign.id, {
+                    ...campaign,
+                    source: 'campaigns'
+                });
+            });
+        }
+        
+        // Add or update with scheduled campaigns (ensure scheduledCampaigns is an array)
+        if (Array.isArray(scheduledCampaigns)) {
+            scheduledCampaigns.forEach(scheduled => {
+                if (campaignMap.has(scheduled.id)) {
+                    // Update existing campaign with scheduled data
+                    campaignMap.set(scheduled.id, {
+                        ...campaignMap.get(scheduled.id),
+                        ...scheduled,
+                        source: 'both'
+                    });
+                } else {
+                    // Add new scheduled campaign
+                    campaignMap.set(scheduled.id, {
+                        ...scheduled,
+                        name: scheduled.campaignName,
+                        source: 'scheduled'
+                    });
+                }
+            });
+        }
+        
+        // Convert map back to array
+        setAllCampaigns(Array.from(campaignMap.values()));
+    }, [campaigns, scheduledCampaigns]);
+
+    // Build derived stats
+    const totalSent = allCampaigns.reduce((sum, c) => sum + (c.sentCount || 0), 0);
+    const totalOpens = allCampaigns.reduce((sum, c) => sum + (c.openCount || 0), 0);
+    const totalClicks = allCampaigns.reduce((sum, c) => sum + (c.clickCount || 0), 0);
+    const totalConversions = allCampaigns.reduce((sum, c) => sum + (c.conversionCount || 0), 0);
+
+    const openRate = totalSent > 0 ? ((totalOpens / totalSent) * 100).toFixed(1) : 0;
+    const clickRate = totalSent > 0 ? ((totalClicks / totalSent) * 100).toFixed(1) : 0;
+    
+    // Calculate today's campaigns
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    
+    const todayCampaigns = allCampaigns.filter(campaign => {
+        // Check if campaign was created today
+        if (campaign.createdAt) {
+            const createdDate = new Date(campaign.createdAt);
+            if (createdDate >= today && createdDate < tomorrow) {
+                return true;
+            }
+        }
+        
+        // Check if campaign is scheduled for today
+        if (campaign.scheduledDateTime) {
+            const scheduledDate = new Date(campaign.scheduledDateTime);
+            if (scheduledDate >= today && scheduledDate < tomorrow) {
+                return true;
+            }
+        }
+        
+        return false;
+    });
 
     // Sample data for charts
     const campaignData = [
-        { name: 'Jan', opens: 4000, clicks: 2400, bounces: 400, revenue: 12000 },
-        { name: 'Feb', opens: 3000, clicks: 1398, bounces: 300, revenue: 9800 },
-        { name: 'Mar', opens: 2000, clicks: 9800, bounces: 200, revenue: 15600 },
-        { name: 'Apr', opens: 2780, clicks: 3908, bounces: 278, revenue: 18900 },
-        { name: 'May', opens: 1890, clicks: 4800, bounces: 189, revenue: 22100 },
-        { name: 'Jun', opens: 2390, clicks: 3800, bounces: 239, revenue: 19400 },
-        { name: 'Jul', opens: 3490, clicks: 4300, bounces: 349, revenue: 25800 },
+        { name: 'Jan', opens: 4000, clicks: 2400, bounces: 400 },
+        { name: 'Feb', opens: 3000, clicks: 1398, bounces: 300 },
+        { name: 'Mar', opens: 2000, clicks: 9800, bounces: 200 },
+        { name: 'Apr', opens: 2780, clicks: 3908, bounces: 278 },
+        { name: 'May', opens: 1890, clicks: 4800, bounces: 189 },
+        { name: 'Jun', opens: 2390, clicks: 3800, bounces: 239 },
+        { name: 'Jul', opens: 3490, clicks: 4300, bounces: 349 },
     ];
 
     const hourlyEngagementData = [
@@ -35,99 +190,121 @@ const Dashboard = () => {
         { hour: '18:00', engagement: 76 }, { hour: '20:00', engagement: 45 }, { hour: '22:00', engagement: 28 }
     ];
 
-    const deviceData = [
-        { name: 'Mobile', value: 65, color: '#7C00FE' },
-        { name: 'Desktop', value: 28, color: '#4300FF' },
-        { name: 'Tablet', value: 7, color: '#16FF00' }
-    ];
+    // Top Performers (Campaigns with highest open rates)
+    const topPerformers = [...allCampaigns]
+        .filter(campaign => campaign.sentCount > 0) // Only include campaigns that have been sent
+        .sort((a, b) => (b.openCount / b.sentCount) - (a.openCount / a.sentCount))
+        .slice(0, 5)
+        .map(campaign => ({
+            name: campaign.name || campaign.campaignName || 'Unnamed Campaign',
+            openRate: campaign.sentCount > 0 ? ((campaign.openCount / campaign.sentCount) * 100).toFixed(1) : 0,
+            clickRate: campaign.sentCount > 0 ? ((campaign.clickCount / campaign.sentCount) * 100).toFixed(1) : 0,
+            date: campaign.createdAt ? new Date(campaign.createdAt).toLocaleDateString() : 
+                  campaign.scheduledDateTime ? new Date(campaign.scheduledDateTime).toLocaleDateString() : 'Unknown date'
+        }));
 
-    const geographicData = [
-        { country: 'United States', opens: 2400, clicks: 1200, flag: 'US' },
-        { country: 'United Kingdom', opens: 1800, clicks: 900, flag: 'GB' },
-        { country: 'Canada', opens: 1200, clicks: 600, flag: '🇨🇦' },
-        { country: 'Germany', opens: 1000, clicks: 450, flag: '🇩🇪' },
-        { country: 'Australia', opens: 800, clicks: 380, flag: '🇦🇺' }
-    ];
+    // Recent Activity (Most recent campaigns)
+    const recentActivity = [...allCampaigns]
+        .sort((a, b) => {
+            const dateA = a.createdAt ? new Date(a.createdAt) : (a.scheduledDateTime ? new Date(a.scheduledDateTime) : new Date(0));
+            const dateB = b.createdAt ? new Date(b.createdAt) : (b.scheduledDateTime ? new Date(b.scheduledDateTime) : new Date(0));
+            return dateB - dateA;
+        })
+        .slice(0, 5)
+        .map(campaign => ({
+            name: campaign.name || campaign.campaignName || 'Unnamed Campaign',
+            date: campaign.createdAt ? new Date(campaign.createdAt).toLocaleDateString() : 
+                  campaign.scheduledDateTime ? new Date(campaign.scheduledDateTime).toLocaleDateString() : 'Unknown date',
+            status: campaign.status || 'Unknown',
+            openRate: campaign.sentCount > 0 ? ((campaign.openCount / campaign.sentCount) * 100).toFixed(1) : 0,
+            clickRate: campaign.sentCount > 0 ? ((campaign.clickCount / campaign.sentCount) * 100).toFixed(1) : 0
+        }));
 
-    const contactListData = [
-        { name: 'Active Subscribers', value: 4500, color: '#4EF037' },
-        { name: 'Inactive Users', value: 1200, color: '#ff0000ff' },
-        { name: 'New Signups', value: 800, color: '#9400FF' },
-        { name: 'Unsubscribed', value: 300, color: '#0002A1' },
-    ];
+    // Upcoming Events (Scheduled campaigns)
+    const upcomingEvents = Array.isArray(scheduledCampaigns) ? scheduledCampaigns
+        .filter(campaign => campaign.status === 'scheduled' && campaign.scheduledDateTime)
+        .map(campaign => ({
+            title: campaign.campaignName || 'Unnamed Campaign',
+            date: new Date(campaign.scheduledDateTime).toLocaleDateString(),
+            time: new Date(campaign.scheduledDateTime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+            type: 'campaign'
+        }))
+        .slice(0, 4) : [];
 
-    const recentCampaigns = [
-        { name: 'Summer Sale Campaign', date: '2024-08-10', status: 'Sent', open: '24.5%', click: '8.2%', bounce: '2.1%', revenue: '$12,400' },
-        { name: 'Product Launch Alert', date: '2024-08-08', status: 'Sent', open: '32.1%', click: '12.4%', bounce: '1.8%', revenue: '$18,900' },
-        { name: 'Weekly Newsletter #32', date: '2024-08-05', status: 'Sent', open: '18.7%', click: '5.3%', bounce: '3.2%', revenue: '$5,600' },
-        { name: 'Flash Sale Announcement', date: '2024-08-03', status: 'Draft', open: '41.2%', click: '15.6%', bounce: '1.9%', revenue: '$22,100' },
-        { name: 'Customer Feedback Survey', date: '2024-08-01', status: 'Scheduled', open: '29.8%', click: '7.4%', bounce: '2.5%', revenue: '$8,300' }
-    ];
+    // Function to format date and time
+    const formatDateTime = (dateTime) => {
+        const date = new Date(dateTime);
+        return date.toLocaleString('en-US', {
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
 
-    const topContacts = [
-        { name: 'Sarah Johnson', email: 'sarah@example.com', engagement: '98%', score: 985, location: 'New York' },
-        { name: 'Mike Chen', email: 'mike@example.com', engagement: '95%', score: 942, location: 'San Francisco' },
-        { name: 'Emma Davis', email: 'emma@example.com', engagement: '92%', score: 918, location: 'London' },
-        { name: 'Alex Wilson', email: 'alex@example.com', engagement: '89%', score: 895, location: 'Toronto' },
-        { name: 'Lisa Brown', email: 'lisa@example.com', engagement: '87%', score: 872, location: 'Sydney' },
-    ];
+    // Function to get status color
+    const getStatusColor = (status) => {
+        switch (status) {
+            case 'scheduled': return 'text-blue-400 bg-blue-400/20';
+            case 'sent': return 'text-green-400 bg-green-400/20';
+            case 'paused': return 'text-yellow-400 bg-yellow-400/20';
+            case 'failed': return 'text-red-400 bg-red-400/20';
+            case 'processing': return 'text-purple-400 bg-purple-400/20';
+            case 'draft': return 'text-gray-400 bg-gray-400/20';
+            default: return 'text-gray-400 bg-gray-400/20';
+        }
+    };
 
-    const automationFlows = [
-        { name: 'Welcome Series', status: 'Active', emails: 5, subscribers: 1240, conversion: '18.5%' },
-        { name: 'Abandoned Cart', status: 'Active', emails: 3, subscribers: 856, conversion: '24.2%' },
-        { name: 'Re-engagement', status: 'Paused', emails: 4, subscribers: 2100, conversion: '12.8%' },
-        { name: 'VIP Customer', status: 'Active', emails: 7, subscribers: 340, conversion: '31.7%' }
-    ];
+    // Show loading state
+    if (loading) {
+        return (
+            <DashboardLayout>
+                <div className="min-h-screen text-white relative overflow-hidden pt-16">
+                    <div className="flex items-center justify-center h-64">
+                        <div className="text-center">
+                            <RefreshCw className="w-8 h-8 animate-spin mx-auto mb-4 text-[#c2831f]" />
+                            <p className="text-gray-400">Loading dashboard...</p>
+                        </div>
+                    </div>
+                </div>
+            </DashboardLayout>
+        );
+    }
 
-    const notifications = [
-        { type: 'success', message: 'Campaign "Summer Sale" delivered successfully to 5,400 subscribers', time: '2 hours ago', priority: 'high' },
-        { type: 'warning', message: 'Low engagement detected in segment A - consider re-targeting', time: '4 hours ago', priority: 'medium' },
-        { type: 'info', message: 'New contacts imported: 145 added, 12 duplicates removed', time: '6 hours ago', priority: 'low' },
-        { type: 'error', message: 'Authentication failed for Mailchimp integration', time: '8 hours ago', priority: 'high' },
-        { type: 'success', message: 'A/B test results: Version B outperformed by 15%', time: '1 day ago', priority: 'medium' }
-    ];
-
-    const upcomingEvents = [
-        { title: 'Product Launch Campaign', date: '2024-08-15', time: '10:00 AM', type: 'campaign' },
-        { title: 'Weekly Newsletter Send', date: '2024-08-13', time: '2:00 PM', type: 'newsletter' },
-        { title: 'A/B Test Analysis', date: '2024-08-14', time: '9:30 AM', type: 'analysis' },
-        { title: 'Quarterly Review Meeting', date: '2024-08-16', time: '3:00 PM', type: 'meeting' }
-    ];
+    // Show error state
+    if (error) {
+        return (
+            <DashboardLayout>
+                <div className="min-h-screen text-white relative overflow-hidden pt-16">
+                    <div className="flex items-center justify-center h-64">
+                        <div className="text-center">
+                            <AlertTriangle className="w-8 h-8 mx-auto mb-4 text-red-400" />
+                            <p className="text-red-400 mb-2">Error loading dashboard</p>
+                            <p className="text-gray-400 text-sm">{error}</p>
+                            <button 
+                                onClick={() => window.location.reload()}
+                                className="mt-4 px-4 py-2 bg-[#c2831f] text-white rounded-lg hover:bg-[#a66f1a] transition-colors"
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </DashboardLayout>
+        );
+    }
 
     return (
         <DashboardLayout>
             <div className="min-h-screen text-white relative overflow-hidden pt-16">
-                {/* Animated Background Elements */}
-
                 <div className="relative z-10">
                     {/* Header Section */}
-                    <div className="backdrop-blur-xl  border-b border-white/10 p-6">
+                    <div className="backdrop-blur-xl border-b border-white/10 p-6">
                         <div className="max-w-7xl mx-auto flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
                             <div>
                                 <Greeting />
                                 <p className="text-gray-400">Monitor your email marketing performance and insights</p>
-                            </div>
-
-                            <div className="cursor-pointer flex flex-wrap items-center gap-4">
-                                <select
-                                    value={timeRange}
-                                    onChange={(e) => setTimeRange(e.target.value)}
-                                    className=" cursor-pointer px-4 py-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl text-white outline-none focus:border-white/40 transition-all duration-300"
-                                >
-                                    <option value="1d" className="bg-black cursor-pointer">Last 24 hours</option>
-                                    <option value="7d" className="bg-black cursor-pointer">Last 7 days</option>
-                                    <option value="30d" className="bg-black cursor-pointer">Last 30 days</option>
-                                    <option value="90d" className="bg-black cursor-pointer">Last 3 months</option>
-                                </select>
-
-                                <button className="cursor-pointer p-2 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl hover:bg-white/20 transition-all duration-300">
-                                    <RefreshCw className="w-5 h-5" />
-                                </button>
-
-                                <button className="cursor-pointer px-4 py-2 bg-white text-black font-semibold rounded-xl hover:bg-gray-200 transition-all duration-300 flex items-center gap-2">
-                                    <Download className="w-4 h-4" />
-                                    Export Report
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -138,16 +315,11 @@ const Dashboard = () => {
                             <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all duration-500 group">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-gray-400 text-sm font-medium">Total Contacts</p>
-                                        <p className="text-3xl font-bold text-white mt-1">6,800</p>
-                                        <div className="flex items-center mt-3">
-                                            <TrendingUp className="w-4 h-4 text-white mr-1" />
-                                            <span className="text-white text-sm font-medium">+12.5%</span>
-                                            <span className="text-gray-500 text-sm ml-2">vs last month</span>
-                                        </div>
+                                        <p className="text-gray-400 text-sm font-medium">Total Campaigns</p>
+                                        <p className="text-3xl font-bold text-white mt-1">{allCampaigns.length}</p>
                                     </div>
                                     <div className="p-3 bg-white/10 rounded-2xl group-hover:bg-white/20 transition-all duration-300">
-                                        <Users className="w-8 h-8 text-[#c2831f]" />
+                                        <Mail className="w-8 h-8 text-[#c2831f]" />
                                     </div>
                                 </div>
                             </div>
@@ -155,16 +327,11 @@ const Dashboard = () => {
                             <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/10 transition-all duration-500 group">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="text-gray-400 text-sm font-medium">Revenue Generated</p>
-                                        <p className="text-3xl font-bold text-white mt-1">$28.4k</p>
-                                        <div className="flex items-center mt-3">
-                                            <TrendingUp className="w-4 h-4 text-white mr-1" />
-                                            <span className="text-white text-sm font-medium">+18.2%</span>
-                                            <span className="text-gray-500 text-sm ml-2">vs last month</span>
-                                        </div>
+                                        <p className="text-gray-400 text-sm font-medium">Today Campaigns</p>
+                                        <p className="text-3xl font-bold text-white mt-1">{todayCampaigns.length}</p>
                                     </div>
                                     <div className="p-3 bg-white/10 rounded-2xl group-hover:bg-white/20 transition-all duration-300">
-                                        <DollarSign className="w-8 h-8 text-[#c2831f]" />
+                                        <Send className="w-8 h-8 text-[#c2831f]" />
                                     </div>
                                 </div>
                             </div>
@@ -173,7 +340,7 @@ const Dashboard = () => {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-gray-400 text-sm font-medium">Average Open Rate</p>
-                                        <p className="text-3xl font-bold text-white mt-1">28.4%</p>
+                                        <p className="text-3xl font-bold text-white mt-1">{openRate}%</p>
                                         <div className="flex items-center mt-3">
                                             <TrendingDown className="w-4 h-4 text-gray-400 mr-1" />
                                             <span className="text-gray-400 text-sm font-medium">-2.1%</span>
@@ -190,7 +357,7 @@ const Dashboard = () => {
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <p className="text-gray-400 text-sm font-medium">Click-through Rate</p>
-                                        <p className="text-3xl font-bold text-white mt-1">9.7%</p>
+                                        <p className="text-3xl font-bold text-white mt-1">{clickRate}%</p>
                                         <div className="flex items-center mt-3">
                                             <TrendingUp className="w-4 h-4 text-white mr-1" />
                                             <span className="text-white text-sm font-medium">+4.3%</span>
@@ -206,10 +373,10 @@ const Dashboard = () => {
 
                         {/* Performance Charts */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {/* Revenue & Performance Chart */}
+                            {/* Performance Chart */}
                             <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/8 transition-all duration-500">
                                 <div className="flex items-center justify-between mb-6">
-                                    <h3 className="text-xl font-bold text-white">Revenue & Performance</h3>
+                                    <h3 className="text-xl font-bold text-white">Performance</h3>
                                     <button className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all duration-300">
                                         <MoreVertical className="w-4 h-4 text-white" />
                                     </button>
@@ -231,7 +398,6 @@ const Dashboard = () => {
                                         <Legend />
                                         <Line type="monotone" dataKey="opens" stroke="#ff4800ff" strokeWidth={2} dot={{ fill: '#ff0000ff', r: 3 }} />
                                         <Line type="monotone" dataKey="clicks" stroke="#ffe600ff" strokeWidth={2} dot={{ fill: '#ffe600ff', r: 3 }} />
-                                        <Line type="monotone" dataKey="revenue" stroke="#00ff2aff" strokeWidth={2} dot={{ fill: '#00ff0dff', r: 3 }} />
                                     </LineChart>
                                 </ResponsiveContainer>
                             </div>
@@ -265,272 +431,156 @@ const Dashboard = () => {
                             </div>
                         </div>
 
-                        {/* Analytics Grid */}
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            {/* Contact Distribution */}
-                            <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/8 transition-all duration-500">
-                                <h3 className="text-xl font-bold text-white mb-6">Contact Distribution</h3>
-                                <ResponsiveContainer width="100%" height={250}>
-                                    <PieChart>
-                                        <Pie
-                                            data={contactListData}
-                                            cx="50%"
-                                            cy="50%"
-                                            outerRadius={80}
-                                            fill="#ffffffff"
-                                            dataKey="value"
-                                            label={({ name, percent }) => `${(percent * 100).toFixed(0)}%`}
-                                        >
-                                            {contactListData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Pie>
-                                        <Tooltip
-                                            contentStyle={{
-                                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                                border: '1px solid rgba(255, 255, 255, 0.2)',
-                                                borderRadius: '12px',
-                                                color: '#fff',
-                                                backdropFilter: 'blur(20px)'
-                                            }}
-                                        />
-                                    </PieChart>
-                                </ResponsiveContainer>
-                                <div className="grid grid-cols-2 gap-4 mt-4">
-                                    {contactListData.map((item, index) => (
-                                        <div key={index} className="flex items-center gap-2">
-                                            <div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }}></div>
-                                            <span className="text-sm text-gray-300">{item.name}</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Device Analytics */}
-                            <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/8 transition-all duration-500">
-                                <h3 className="text-xl font-bold text-white mb-6">Device Usage</h3>
-                                <ResponsiveContainer width="100%" height={200}>
-                                    <BarChart
-                                        data={deviceData}
-                                        layout="vertical" // vertical layout is more common for name on Y-axis
-                                        margin={{ top: 10, right: 10, bottom: 10, left: 10 }}
-                                    >
-                                        <XAxis type="number" domain={[0, 100]} stroke="#9ca3af" />
-                                        <YAxis dataKey="name" type="category" stroke="#9ca3af" />
-                                        <Tooltip
-                                            contentStyle={{
-                                                backgroundColor: 'rgba(255, 255, 255, 0.9)',
-                                                border: '1px solid rgba(255, 255, 255, 0.2)',
-                                                borderRadius: '12px',
-                                                color: '#000000ff',
-                                                backdropFilter: 'blur(20px)',
-                                            }}
-                                        />
-                                        <Bar dataKey="value" radius={[0, 8, 8, 0]}>
-                                            {deviceData.map((entry, index) => (
-                                                <Cell key={`cell-${index}`} fill={entry.color} />
-                                            ))}
-                                        </Bar>
-                                    </BarChart>
-                                </ResponsiveContainer>
-
-
-                                <div className="space-y-3 mt-6">
-                                    {deviceData.map((device, index) => (
-                                        <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-xl">
-                                            <span className="text-white font-medium">{device.name}</span>
-                                            <span className="text-white font-bold">{device.value}%</span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Geographic Performance */}
-                            <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/8 transition-all duration-500">
-                                <h3 className="text-xl font-bold text-white mb-6">Top Regions</h3>
-                                <div className="space-y-4">
-                                    {geographicData.map((country, index) => (
-                                        <div key={index} className="flex items-center justify-between p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-all duration-300">
-                                            <div className="flex items-center gap-3">
-                                                <span className="text-2xl">{countryCodeToFlagEmoji(country.flag)}</span>
-                                                <div>
-                                                    <p className="text-white font-medium">{country.country}</p>
-                                                    <p className="text-gray-400 text-sm">{country.opens} opens</p>
-                                                </div>
-                                            </div>
-                                            <div className="text-right">
-                                                <p className="text-white font-bold">{country.clicks}</p>
-                                                <p className="text-gray-400 text-sm">clicks</p>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Recent Campaigns Table */}
+                        {/* Campaign Performance Table */}
                         <div className="backdrop-blur-md border border-white/10 rounded-2xl p-6 hover:bg-white/8 transition-all duration-500">
                             <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
                                 <h3 className="text-xl font-bold text-white">Campaign Performance</h3>
                                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4 w-full sm:w-auto">
-                                    <div className="relative w-full sm:w-auto">
-                                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                                        <input
-                                            type="text"
-                                            placeholder="Search campaigns..."
-                                            className="pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 outline-none focus:border-white/40 transition-all duration-300 w-full"
-                                        />
-                                    </div>
-                                    <button className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all duration-300">
-                                        <Filter className="w-4 h-4 text-white" />
-                                    </button>
+                                <div className="relative w-full sm:w-auto">
+                                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
+                                    <input
+                                    type="text"
+                                    placeholder="Search campaigns..."
+                                    className="pl-10 pr-4 py-2 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 outline-none focus:border-white/40 transition-all duration-300 w-full"
+                                    />
+                                </div>
+                                <button className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all duration-300">
+                                    <Filter className="w-4 h-4 text-white" />
+                                </button>
                                 </div>
                             </div>
-                            <div className="overflow-x-auto">
-                                <table className="w-full text-left">
-                                    <thead>
-                                        <tr className="border-b border-white/20">
-                                            <th className="text-left text-gray-300 py-4 font-medium">Campaign</th>
-                                            <th className="text-left text-gray-300 py-4 font-medium min-w-[100px]">Date</th>
-                                            <th className="text-left text-gray-300 py-4 font-medium min-w-[100px]">Status</th>
-                                            <th className="text-left text-gray-300 py-4 font-medium">Opens</th>
-                                            <th className="text-left text-gray-300 py-4 font-medium">Clicks</th>
-                                            <th className="text-left text-gray-300 py-4 font-medium">Revenue</th>
-                                            <th className="text-left text-gray-300 py-4 font-medium">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {recentCampaigns.map((campaign, index) => (
-                                            <tr key={index} className="border-b border-white/10 hover:bg-white/5 transition-colors group">
-                                                <td className="py-4 whitespace-nowrap">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="w-2 h-2 bg-white rounded-full"></div>
-                                                        <span className="text-white font-medium">{campaign.name}</span>
-                                                    </div>
-                                                </td>
-                                                <td className="py-4 text-gray-300 whitespace-nowrap">{campaign.date}</td>
-                                                <td className="py-4 whitespace-nowrap">
-                                                    <span className={`px-3 py-1 rounded-full text-sm font-medium ${campaign.status === 'Sent' ? 'bg-[#16FF00]/70 text-black' :
-                                                        campaign.status === 'Draft' ? 'bg-[#6528F7]/80 text-gray-300' :
-                                                            'bg-[#FFED00]/80 text-black'
-                                                        }`}>
-                                                        {campaign.status}
-                                                    </span>
-                                                </td>
-                                                <td className="py-4 text-white font-medium whitespace-nowrap">{campaign.open}</td>
-                                                <td className="py-4 text-white font-medium whitespace-nowrap">{campaign.click}</td>
-                                                <td className="py-4 text-white font-bold whitespace-nowrap">{campaign.revenue}</td>
-                                                <td className="py-4">
-                                                    <button className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all duration-300 opacity-0 group-hover:opacity-100">
-                                                        <MoreVertical className="w-4 h-4 text-white" />
-                                                    </button>
-                                                </td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
+
+                            {/* Scrollable table container with fixed height */}
+                            <div className="overflow-y-auto max-h-96 border-t border-white/20">
+                                <table className="w-full text-left border-collapse">
+                                <thead className="sticky top-0 bg-black/100 z-10">
+                                    <tr className="border-b border-white/20">
+                                    <th className="text-left text-gray-300 py-4 font-medium">Campaign</th>
+                                    <th className="text-left text-gray-300 py-4 font-medium min-w-[100px]">Date</th>
+                                    <th className="text-left text-gray-300 py-4 font-medium min-w-[100px]">Status</th>
+                                    <th className="text-left text-gray-300 py-4 font-medium">Opens</th>
+                                    <th className="text-left text-gray-300 py-4 font-medium">Clicks</th>
+                                    <th className="py-4"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {allCampaigns.map((campaign, index) => (
+                                    <tr key={index} className="border-b border-white/10 hover:bg-white/5 transition-colors group">
+                                        <td className="py-4 whitespace-nowrap">
+                                        <div className="flex items-center gap-3">
+                                            <div className="w-2 h-2 bg-white rounded-full"></div>
+                                            <span className="text-white font-medium">
+                                            {campaign.name || campaign.campaignName || 'Unnamed Campaign'}
+                                            {campaign.source === 'scheduled' && (
+                                                <span className="ml-2 text-xs bg-blue-500/20 text-blue-400 px-2 py-1 rounded-full">Scheduled</span>
+                                            )}
+                                            {campaign.source === 'both' && (
+                                                <span className="ml-2 text-xs bg-purple-500/20 text-purple-400 px-2 py-1 rounded-full">Both</span>
+                                            )}
+                                            </span>
+                                        </div>
+                                        </td>
+                                        <td className="py-4 text-gray-300 whitespace-nowrap">
+                                        {campaign.createdAt
+                                            ? new Date(campaign.createdAt).toLocaleDateString()
+                                            : campaign.scheduledDateTime
+                                            ? new Date(campaign.scheduledDateTime).toLocaleDateString()
+                                            : 'Unknown date'}
+                                        </td>
+                                        <td className="py-4 whitespace-nowrap">
+                                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getStatusColor(campaign.status)}`}>
+                                            {campaign.status || 'draft'}
+                                        </span>
+                                        </td>
+                                        <td className="py-4 text-white font-medium whitespace-nowrap">
+                                        {campaign.sentCount > 0 ? ((campaign.openCount / campaign.sentCount) * 100).toFixed(1) : 0}%
+                                        </td>
+                                        <td className="py-4 text-white font-medium whitespace-nowrap">
+                                        {campaign.sentCount > 0 ? ((campaign.clickCount / campaign.sentCount) * 100).toFixed(1) : 0}%
+                                        </td>
+                                        <td className="py-4">
+                                        <button className="p-2 bg-white/10 rounded-lg hover:bg-white/20 transition-all duration-300 opacity-0 group-hover:opacity-100">
+                                            <MoreVertical className="w-4 h-4 text-white" />
+                                        </button>
+                                        </td>
+                                    </tr>
+                                    ))}
+                                </tbody>
                                 </table>
                             </div>
                         </div>
 
+
                         {/* Bottom Grid */}
                         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
-                            {/* Top Contacts */}
+                            {/* Top Performers */}
                             <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/8 transition-all duration-500">
                                 <div className="flex items-center justify-between mb-6">
                                     <h3 className="text-xl font-bold text-white">Top Performers</h3>
                                     <Award className="w-5 h-5 text-white" />
                                 </div>
                                 <div className="space-y-4">
-                                    {topContacts.map((contact, index) => (
+                                    {topPerformers.length > 0 ? topPerformers.map((campaign, index) => (
                                         <div key={index} className="flex items-center justify-between p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-all duration-300 group">
                                             <div className="flex items-center gap-3">
                                                 <div className="w-10 h-10 bg-gradient-to-br from-white/20 to-white/10 rounded-full flex items-center justify-center">
                                                     <span className="text-white font-bold text-sm">{index + 1}</span>
                                                 </div>
                                                 <div>
-                                                    <p className="text-white font-medium">{contact.name}</p>
-                                                    <p className="text-gray-400 text-sm">{contact.location}</p>
+                                                    <p className="text-white font-medium">{campaign.name}</p>
+                                                    <p className="text-gray-400 text-sm">{campaign.date}</p>
                                                 </div>
                                             </div>
                                             <div className="text-right">
-                                                <p className="text-white font-bold">{contact.engagement}</p>
-                                                <p className="text-gray-400 text-sm">Score: {contact.score}</p>
+                                                <p className="text-white font-bold">{campaign.openRate}%</p>
+                                                <p className="text-gray-400 text-sm">Click: {campaign.clickRate}%</p>
                                             </div>
                                         </div>
-                                    ))}
+                                    )) : (
+                                        <div className="text-center py-8 text-gray-400">
+                                            <Award className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                                            <p>No campaign data available</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
-                            {/* Automation Flows */}
-                            <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/8 transition-all duration-500">
-                                <div className="flex items-center justify-between mb-6">
-                                    <h3 className="text-xl font-bold text-white">Automation Flows</h3>
-                                    <Zap className="w-5 h-5 text-white" />
-                                </div>
-                                <div className="space-y-4">
-                                    {automationFlows.map((flow, index) => (
-                                        <div key={index} className="p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-all duration-300 group">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <h4 className="text-white font-medium">{flow.name}</h4>
-                                                <span className={`px-2 py-1 rounded-full text-xs font-medium ${flow.status === 'Active' ? 'bg-[#16FF00]/70 text-black' : 'bg-[#FFED00]/80 text-black'
-                                                    }`}>
-                                                    {flow.status}
-                                                </span>
-                                            </div>
-                                            <div className="grid grid-cols-3 gap-4 text-sm">
-                                                <div>
-                                                    <p className="text-gray-400">Emails</p>
-                                                    <p className="text-white font-medium">{flow.emails}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-gray-400">Subscribers</p>
-                                                    <p className="text-white font-medium">{flow.subscribers}</p>
-                                                </div>
-                                                <div>
-                                                    <p className="text-gray-400">Conversion</p>
-                                                    <p className="text-white font-medium">{flow.conversion}</p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Notifications Panel */}
+                            {/* Recent Activity */}
                             <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/8 transition-all duration-500">
                                 <div className="flex items-center justify-between mb-6">
                                     <h3 className="text-xl font-bold text-white">Recent Activity</h3>
-                                    <Bell className="w-5 h-5 text-white" />
+                                    <Activity className="w-5 h-5 text-white" />
                                 </div>
                                 <div className="space-y-4 h-120 overflow-y-auto dash-notification">
-                                    {notifications.map((notification, index) => (
+                                    {recentActivity.length > 0 ? recentActivity.map((activity, index) => (
                                         <div key={index} className="flex items-start gap-3 p-3 bg-white/5 rounded-xl hover:bg-white/10 transition-all duration-300">
                                             <div className="mt-1 flex-shrink-0">
-                                                {notification.type === 'success' && <CheckCircle className="w-5 h-5 text-[#16FF00]" />}
-                                                {notification.type === 'warning' && <AlertTriangle className="w-5 h-5 text-[#9C19E0]" />}
-                                                {notification.type === 'info' && <Info className="w-5 h-5 text-[#033FFF]" />}
-                                                {notification.type === 'error' && <Ban className="w-5 h-5 text-[#FF1E1E]" />}
+                                                <Mail className="w-5 h-5 text-[#c2831f]" />
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-white text-sm leading-relaxed">{notification.message}</p>
+                                                <p className="text-white text-sm leading-relaxed">Campaign "{activity.name}" {activity.status.toLowerCase()}</p>
                                                 <div className="flex items-center justify-between mt-2">
-                                                    <p className="text-gray-400 text-xs">{notification.time}</p>
-                                                    <span className={`px-2 py-1 rounded-full text-xs ${notification.priority === 'high' ? 'bg-[#06FF00]/80 text-white' :
-                                                        notification.priority === 'medium' ? 'bg-[#7900FF]/80 text-gray-300' :
-                                                            'bg-[#32E0C4] text-black'
-                                                        }`}>
-                                                        {notification.priority}
-                                                    </span>
+                                                    <p className="text-gray-400 text-xs">{activity.date}</p>
+                                                    <div className="flex gap-2">
+                                                        <span className="px-2 py-1 rounded-full text-xs bg-[#16FF00]/80 text-black">
+                                                            Open: {activity.openRate}%
+                                                        </span>
+                                                        <span className="px-2 py-1 rounded-full text-xs bg-[#033FFF]/80 text-white">
+                                                            Click: {activity.clickRate}%
+                                                        </span>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    ))}
+                                    )) : (
+                                        <div className="text-center py-8 text-gray-400">
+                                            <Activity className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                                            <p>No recent activity</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                        </div>
 
-                        {/* Additional Sections */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                             {/* Upcoming Events */}
                             <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/8 transition-all duration-500">
                                 <div className="flex items-center justify-between mb-6">
@@ -538,13 +588,10 @@ const Dashboard = () => {
                                     <Calendar className="w-5 h-5 text-white" />
                                 </div>
                                 <div className="space-y-4">
-                                    {upcomingEvents.map((event, index) => (
+                                    {upcomingEvents.length > 0 ? upcomingEvents.map((event, index) => (
                                         <div key={index} className="flex items-center gap-4 p-4 bg-white/5 rounded-xl hover:bg-white/10 transition-all duration-300 group">
                                             <div className="w-12 h-12 bg-white/10 rounded-xl flex items-center justify-center group-hover:bg-white/20 transition-all duration-300">
-                                                {event.type === 'campaign' && <Mail className="w-6 h-6 text-[#c2831f]" />}
-                                                {event.type === 'newsletter' && <Globe className="w-6 h-6 text-[#c2831f]" />}
-                                                {event.type === 'analysis' && <Activity className="w-6 h-6 text-[#c2831f]" />}
-                                                {event.type === 'meeting' && <Users className="w-6 h-6 text-[#c2831f]" />}
+                                                <Mail className="w-6 h-6 text-[#c2831f]" />
                                             </div>
                                             <div className="flex-1">
                                                 <h4 className="text-white font-medium">{event.title}</h4>
@@ -557,73 +604,52 @@ const Dashboard = () => {
                                                 <MoreVertical className="w-4 h-4 text-white" />
                                             </button>
                                         </div>
-                                    ))}
+                                    )) : (
+                                        <div className="text-center py-8 text-gray-400">
+                                            <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                                            <p>No upcoming campaigns scheduled</p>
+                                        </div>
+                                    )}
                                 </div>
                                 <button className="cursor-pointer w-full mt-4 p-3 bg-white/10 hover:bg-white/20 rounded-xl text-white font-medium transition-all duration-300 border border-white/10 hover:border-white/20">
-                                    View All Events
+                                    <Link to="/automation">View All Events</Link>
                                 </button>
-                            </div>
-
-                            {/* Quick Actions */}
-                            <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/8 transition-all duration-500">
-                                <h3 className="text-xl font-bold text-white mb-6">Quick Actions</h3>
-                                <div className="grid grid-cols-1 gap-4">
-                                    <button className="cursor-pointer w-full bg-white text-black font-semibold py-4 px-6 rounded-xl transition-all duration-300 hover:bg-gray-200 flex items-center justify-center gap-3 group">
-                                        <Plus className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
-                                        Create New Campaign
-                                    </button>
-
-                                    <button className="cursor-pointer w-full bg-white/10 hover:bg-white/20 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 border border-white/20 hover:border-white/30 flex items-center justify-center gap-3 group">
-                                        <Upload className="w-5 h-5 group-hover:scale-110 transition-transform duration-300 text-[#c2831f]" />
-                                        Import Contacts
-                                    </button>
-
-                                    <button className="cursor-pointer w-full bg-white/10 hover:bg-white/20 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 border border-white/20 hover:border-white/30 flex items-center justify-center gap-3 group">
-                                        <Target className="w-5 h-5 group-hover:scale-110 transition-transform duration-300 text-[#c2831f]" />
-                                        Create Segment
-                                    </button>
-
-                                    <button className="cursor-pointer w-full bg-white/10 hover:bg-white/20 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 border border-white/20 hover:border-white/30 flex items-center justify-center gap-3 group">
-                                        <Database className="w-5 h-5 group-hover:scale-110 transition-transform duration-300 text-[#c2831f]" />
-                                        Validate Email List
-                                    </button>
-                                </div>
-
-                                {/* Settings Quick Access */}
-                                <div className="mt-6 pt-6 border-t border-white/10">
-                                    <h4 className="text-white font-medium mb-4">Settings & Tools</h4>
-                                    <div className="grid grid-cols-2 gap-3">
-                                        <button className="cursor-pointer p-3 bg-white/5 hover:bg-white/10 rounded-xl text-white transition-all duration-300 flex items-center gap-2">
-                                            <Settings className="w-4 h-4 text-[#c2831f]" />
-                                            <span className="text-sm">Settings</span>
-                                        </button>
-                                        <button className="cursor-pointer p-3 bg-white/5 hover:bg-white/10 rounded-xl text-white transition-all duration-300 flex items-center gap-2">
-                                            <Shield className="w-4 h-4 text-[#c2831f]" />
-                                            <span className="text-sm">Security</span>
-                                        </button>
-                                    </div>
-                                </div>
                             </div>
                         </div>
 
-                        {/* Summary Footer */}
-                        <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-8 text-center">
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-                                <div>
-                                    <h4 className="text-2xl font-bold text-white mb-2">99.5%</h4>
-                                    <p className="text-gray-400">Deliverability Rate</p>
-                                </div>
-                                <div>
-                                    <h4 className="text-2xl font-bold text-white mb-2">2.4M</h4>
-                                    <p className="text-gray-400">Emails Processed</p>
-                                </div>
-                                <div>
-                                    <h4 className="text-2xl font-bold text-white mb-2">98.7%</h4>
-                                    <p className="text-gray-400">System Uptime</p>
-                                </div>
-                                <div>
-                                    <h4 className="text-2xl font-bold text-white mb-2">24/7</h4>
-                                    <p className="text-gray-400">Support Available</p>
+                        {/* Quick Actions */}
+                        <div className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-2xl p-6 hover:bg-white/8 transition-all duration-500">
+                            <h3 className="text-xl font-bold text-white mb-6">Quick Actions</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                                <button className="cursor-pointer w-full bg-white text-black font-semibold py-4 px-6 rounded-xl transition-all duration-300 hover:bg-gray-200 flex items-center justify-center gap-3 group">
+                                    <Plus className="w-5 h-5 group-hover:scale-110 transition-transform duration-300" />
+                                    <Link to="/email-campaign">Create New Campaign</Link>
+                                </button>
+
+                                <button className="cursor-pointer w-full bg-white/10 hover:bg-white/20 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 border border-white/20 hover:border-white/30 flex items-center justify-center gap-3 group">
+                                    <Upload className="w-5 h-5 group-hover:scale-110 transition-transform duration-300 text-[#c2831f]" />
+                                    <Link to="/automation">Automations</Link>
+                                </button>
+
+                                <button className="cursor-pointer w-full bg-white/10 hover:bg-white/20 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 border border-white/20 hover:border-white/30 flex items-center justify-center gap-3 group">
+                                    <BarChart3 className="w-5 h-5 group-hover:scale-110 transition-transform duration-300 text-[#c2831f]" />
+                                    <Link to="/analytics">Analytics</Link>
+                                </button>
+
+                                <button className="cursor-pointer w-full bg-white/10 hover:bg-white/20 text-white font-semibold py-4 px-6 rounded-xl transition-all duration-300 border border-white/20 hover:border-white/30 flex items-center justify-center gap-3 group">
+                                    <Database className="w-5 h-5 group-hover:scale-110 transition-transform duration-300 text-[#c2831f]" />
+                                    <Link to="/verification">Email Validation</Link>
+                                </button>
+                            </div>
+
+                            {/* Settings Quick Access */}
+                            <div className="mt-6 pt-6 border-t border-white/10">
+                                <h4 className="text-white font-medium mb-4">Settings</h4>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <button className="cursor-pointer p-3 bg-white/5 hover:bg-white/10 rounded-xl text-white transition-all duration-300 flex items-center gap-2">
+                                        <Settings className="w-4 h-4 text-[#c2831f]" />
+                                        <Link className="text-sm" to="/settings">Settings</Link>
+                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -635,15 +661,3 @@ const Dashboard = () => {
 }
 
 export default Dashboard;
-function countryCodeToFlagEmoji(flag) {
-    // If it's already an emoji (length > 2), just return it directly
-    if (!flag) return '';
-    if (flag.length > 2) return flag;
-
-    // Otherwise convert 2-letter country code to emoji
-    const codePoints = flag
-        .toUpperCase()
-        .split('')
-        .map(char => 127397 + char.charCodeAt());
-    return String.fromCodePoint(...codePoints);
-}
