@@ -15,7 +15,7 @@ import {
   Bar,
 } from "recharts";
 import DashboardLayout from "../../components/DashboardLayout";
-
+const API_URL = import.meta.env.VITE_VRI_URL;
 export default function Analytics() {
   const [activeTab, setActiveTab] = useState("funnel");
 
@@ -40,6 +40,10 @@ export default function Analytics() {
       const token = localStorage.getItem("token"); // ✅ must be set at login
       if (!token) {
         setError("No token found. Please log in again.");
+    fetch(`${API_URL}/api/campaigns`)
+      .then((res) => res.json())
+      .then((data) => {
+        setCampaigns(data);
         setLoading(false);
         return;
       }
@@ -130,7 +134,7 @@ export default function Analytics() {
   const handleDelete = (id) => {
     if (window.confirm("Are you sure you want to delete this campaign?")) {
       const token = localStorage.getItem("token");
-      fetch(`http://localhost:5000/api/campaigns/${id}`, {
+      fetch(`${API_URL}/api/campaigns/${id}`, {
         method: "DELETE",
         headers: {
           Authorization: `Bearer ${token}`, // ✅ secure delete too
@@ -283,21 +287,19 @@ export default function Analytics() {
             </h2>
             <div className="flex gap-2">
               <button
-                className={`px-3 py-1 rounded-lg text-sm ${
-                  activeTab === "funnel"
+                className={`px-3 py-1 rounded-lg text-sm ${activeTab === "funnel"
                     ? "bg-[#c2831f] text-black"
                     : "bg-black text-gray-300 border border-gray-700"
-                }`}
+                  }`}
                 onClick={() => setActiveTab("funnel")}
               >
                 Conversion Funnel
               </button>
               <button
-                className={`px-3 py-1 rounded-lg text-sm ${
-                  activeTab === "overtime"
+                className={`px-3 py-1 rounded-lg text-sm ${activeTab === "overtime"
                     ? "bg-[#c2831f] text-black"
                     : "bg-black text-gray-300 border border-gray-700"
-                }`}
+                  }`}
                 onClick={() => setActiveTab("overtime")}
               >
                 Conversions Over Time

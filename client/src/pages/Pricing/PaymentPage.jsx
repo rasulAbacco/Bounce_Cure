@@ -1,22 +1,345 @@
-import React, { useState, useEffect, useMemo, useRef } from "react";
+// paymentpage.jsx
+import React, { useState, useEffect, useMemo, useRef, useCallback } from "react";
 import { useLocation, Link, useNavigate } from "react-router-dom";
 import toast, { Toaster } from "react-hot-toast";
 import { useNotificationContext } from "../../components/NotificationContext";
+import { loadStripe } from '@stripe/stripe-js';
+import { Elements, CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
-// Utility function to parse JWT token
-function parseJwt(token) {
+// Dynamic import for QRCode with fallback
+let QRCode;
+try {
+  QRCode = require("qrcode.react").default;
+} catch (e) {
+  console.warn("QRCode library not available. Using fallback component.");
+  QRCode = ({ value, size }) => (
+    <div className="bg-gray-200 flex items-center justify-center" style={{ width: size, height: size }}>
+      <div className="text-center text-gray-700 p-2">
+        <div className="font-bold mb-1">UPI Payment</div>
+        <div className="text-xs">QR Code Unavailable</div>
+      </div>
+    </div>
+  );
+}
+
+// Payment Gateway Icons Component
+const PaymentGatewayIcon = ({ gateway }) => {
+  const icons = {
+    razorpay: <svg viewBox="0 0 100 30" width="80" height="24"><text x="50" y="20" fontSize="16" textAnchor="middle" fill="#0745a3" fontWeight="bold">Razorpay</text></svg>,
+    stripe: <svg viewBox="0 0 100 30" width="80" height="24"><text x="50" y="20" fontSize="16" textAnchor="middle" fill="#635bff" fontWeight="bold">Stripe</text></svg>,
+    upi: <svg viewBox="0 0 100 30" width="80" height="24"><text x="50" y="20" fontSize="16" textAnchor="middle" fill="#0F9D58" fontWeight="bold">UPI</text></svg>
+  };
+
+  return icons[gateway] || null;
+};
+
+// UPI Scanner Component
+const UPIScanner = ({ amount, upiId, note, onPaymentConfirmed }) => {
+  const [showManual, setShowManual] = useState(false);
+  const [upiLink, setUpiLink] = useState("");
+  const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    const upiPaymentLink = `upi://pay?pa=${upiId}&pn=BounceCure&am=${amount}&cu=INR&tn=${encodeURIComponent(note)}`;
+    setUpiLink(upiPaymentLink);
+  }, [amount, upiId, note]);
+
+  const copyToClipboard = () => {
+    navigator.clipboard.writeText(upiLink);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  return (
+    <div className="space-y-6">
+      <div className="text-center">
+        <h3 className="text-lg font-semibold text-white mb-2">Pay with UPI</h3>
+        <p className="text-gray-400 text-sm">Scan the QR code or use the UPI ID to complete your payment</p>
+      </div>
+
+      <div className="flex flex-col items-center">
+        <div className="bg-white p-4 rounded-lg mb-4">
+          <QRCode 
+            value={upiLink} 
+            size={180} 
+            level="H"
+            includeMargin={true}
+          />
+        </div>
+        
+        <div className="text-center">
+          <p className="text-sm text-gray-400 mb-2">Scan with any UPI app</p>
+          <button 
+            onClick={() => setShowManual(!showManual)}
+            className="text-sm text-[#d4af37] hover:underline"
+          >
+            {showManual ? "Hide details" : "Show UPI details"}
+          </button>
+        </div>
+      </div>
+
+      {showManual && (
+        <div className="bg-gray-800 p-4 rounded-lg">
+          <div className="mb-3">
+            <label className="block text-sm text-gray-400 mb-1">UPI ID:</label>
+            <div className="flex items-center">
+              <input
+                type="text"
+                readOnly
+                value={upiId}
+                className="bg-gray-700 text-white px-3 py-2 rounded w-full"
+              />
+              <button
+                onClick={copyToClipboard}
+                className="ml-2 bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded"
+              >
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+          </div>
+          
+          <div className="mb-3">
+            <label className="block text-sm text-gray-400 mb-1">Payment Link:</label>
+            <div className="flex items-center">
+              <input
+                type="text"
+                readOnly
+                value={upiLink}
+                className="bg-gray-700 text-white px-3 py-2 rounded w-full text-xs"
+              />
+              <button
+                onClick={copyToClipboard}
+                className="ml-2 bg-gray-700 hover:bg-gray-600 text-white px-3 py-2 rounded"
+              >
+                {copied ? "Copied!" : "Copy"}
+              </button>
+            </div>
+          </div>
+          
+          <div>
+            <label className="block text-sm text-gray-400 mb-1">Amount:</label>
+            <div className="bg-gray-700 text-white px-3 py-2 rounded">
+              ₹{amount}
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div className="text-center">
+        <button
+          onClick={onPaymentConfirmed}
+          className="bg-[#d4af37] hover:bg-[#eac94d] text-black font-bold py-3 px-6 rounded-lg transition"
+        >
+          I've Completed the Payment
+        </button>
+        <p className="text-xs text-gray-500 mt-2">Click this button after making the payment</p>
+      </div>
+    </div>
+  );
+};
+
+// Stripe Payment Form Component
+const StripePaymentForm = ({ 
+  email, 
+  agreed, 
+  processing, 
+  finalTotal, 
+  plan, 
+  campaign, 
+  generateInvoiceData, 
+  savePaymentData, 
+  sendInvoiceEmail, 
+  addNotification,
+  onProcessingChange,
+  onPaymentSuccess,
+  onPaymentError,
+  clientSecret,
+  selectedGateway,
+  useFallbackPayment
+}) => {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [cardType, setCardType] = useState(null);
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    if (!agreed) {
+      onPaymentError("Please agree to the terms and conditions");
+      return;
+    }
+
+    // If we're using fallback payment, skip the client secret check
+    if (!useFallbackPayment && !clientSecret) {
+      onPaymentError("Payment session expired. Please refresh the page and try again.");
+      return;
+    }
+
+    onProcessingChange(true);
+
+    try {
+      let paymentId;
+      let paymentMethodDetails = {};
+      
+      if (useFallbackPayment) {
+        // Generate a mock payment ID for fallback
+        paymentId = `mock_${Date.now()}`;
+        toast("Using fallback payment processing. Your payment will be processed manually.", {
+          duration: 5000,
+          icon: 'ℹ️'
+        });
+      } else {
+        if (!stripe || !elements) {
+          onPaymentError("Stripe is not properly initialized");
+          return;
+        }
+
+        const { error, paymentIntent } = await stripe.confirmCardPayment(clientSecret, {
+          payment_method: {
+            card: elements.getElement(CardElement),
+            billing_details: { email },
+          },
+        });
+
+        if (error) {
+          // Handle specific error cases
+          if (error.type === 'invalid_request_error' && error.message.includes('test mode')) {
+            throw new Error("There's a mismatch between your Stripe account mode and the payment session. Please refresh the page and try again.");
+          }
+          throw new Error(error.message);
+        }
+
+        if (paymentIntent.status !== 'succeeded') {
+          throw new Error("Payment not successful");
+        }
+        
+        paymentId = paymentIntent.id;
+        
+        // Get payment method details if available
+        if (paymentIntent.payment_method) {
+          const paymentMethod = await stripe.retrievePaymentMethod(paymentIntent.payment_method);
+          if (paymentMethod.paymentMethod && paymentMethod.paymentMethod.card) {
+            paymentMethodDetails = {
+              cardType: paymentMethod.paymentMethod.card.brand,
+              last4: paymentMethod.paymentMethod.card.last4,
+              expMonth: paymentMethod.paymentMethod.card.exp_month,
+              expYear: paymentMethod.paymentMethod.card.exp_year
+            };
+            setCardType(paymentMethod.paymentMethod.card.brand);
+          }
+        }
+      }
+
+      const invoiceData = generateInvoiceData("stripe", paymentId, paymentMethodDetails);
+      
+      await savePaymentData(invoiceData);
+      
+      const emailResult = await sendInvoiceEmail(invoiceData);
+      
+      if (emailResult.success) {
+        toast.success("Invoice sent to your email!", { duration: 3000 });
+      } else {
+        toast.error(`Payment successful! But email failed: ${emailResult.error}`, { duration: 6000 });
+      }
+      
+      onPaymentSuccess();
+    } catch (error) {
+      onPaymentError(error.message);
+    } finally {
+      onProcessingChange(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit}>
+      {!useFallbackPayment && (
+        <div className="mb-6">
+          <label className="block text-sm mb-1 text-gray-300">
+            Card Details <span className="text-red-500">*</span>
+          </label>
+          <div className="bg-[#111] border border-gray-700 text-white px-3 py-2 rounded">
+            <CardElement 
+              options={{ 
+                style: { 
+                  base: { 
+                    color: '#fff',
+                    '::placeholder': { color: '#aab7c4' }
+                  } 
+                },
+                iconStyle: 'solid',
+                hidePostalCode: true
+              }} 
+              onChange={(event) => {
+                if (event.brand) {
+                  setCardType(event.brand);
+                }
+              }}
+            />
+          </div>
+          {cardType && (
+            <div className="mt-1 text-xs text-gray-400 flex items-center">
+              <span className="capitalize">{cardType} detected</span>
+            </div>
+          )}
+        </div>
+      )}
+      
+      {useFallbackPayment && (
+        <div className="mb-4 p-3 bg-yellow-900 bg-opacity-30 rounded-lg border border-yellow-700">
+          <div className="flex items-start">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-400 mr-2 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+            </svg>
+            <div>
+              <p className="text-sm text-yellow-300">
+                Payment service is currently unavailable. Your payment will be processed manually. 
+                You will receive a confirmation email within 24 hours.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+      
+      {selectedGateway === 'stripe' && (
+        <button 
+          type="submit" 
+          disabled={!agreed || processing || (!useFallbackPayment && !clientSecret)} 
+          className="w-full bg-[#d4af37] hover:bg-[#eac94d] text-black font-bold py-3 rounded-lg transition flex items-center justify-center disabled:bg-gray-700"
+        >
+          {processing ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Processing...
+            </>
+          ) : (
+            <>
+              <PaymentGatewayIcon gateway="stripe" />
+              <span className="ml-2">
+                {useFallbackPayment ? "Process Payment (Fallback Mode)" : "Pay with Stripe"}
+              </span>
+            </>
+          )}
+        </button>
+      )}
+    </form>
+  );
+};
+
+// Utility functions
+const parseJwt = (token) => {
   try {
     return JSON.parse(atob(token.split('.')[1]));
   } catch (e) {
     return null;
   }
-}
+};
 
-// Normalize plan data
 const normalizePlan = (data) => {
   if (!data) return null;
-
-  // Handle data from Pricing page
+  
   if (data.planName && data.basePrice !== undefined) {
     return {
       planName: data.planName,
@@ -31,18 +354,15 @@ const normalizePlan = (data) => {
     };
   }
 
-  // Handle legacy data structure
   if (data.name) {
-    const basePrice = data.basePrice !== undefined ? Number(data.basePrice) : Number(data.price || 0);
-    const totalCost = data.totalCost !== undefined ? Number(data.totalCost) : Number(data.price || 0);
+    const basePrice = Number(data.basePrice !== undefined ? data.basePrice : data.price || 0);
+    const totalCost = Number(data.totalCost !== undefined ? data.totalCost : data.price || 0);
 
     return {
       planName: data.name,
       slots: data.contacts || 0,
       basePrice,
-      additionalSlotsCost: data.basePrice !== undefined
-        ? Number(data.price || 0) - basePrice
-        : 0,
+      additionalSlotsCost: data.basePrice !== undefined ? Number(data.price || 0) - basePrice : 0,
       integrationCosts: 0,
       selectedIntegrations: [],
       totalCost
@@ -52,7 +372,6 @@ const normalizePlan = (data) => {
   return null;
 };
 
-// Card type detection function
 const detectCardType = (cardNumber) => {
   const patterns = {
     visa: /^4/,
@@ -62,26 +381,10 @@ const detectCardType = (cardNumber) => {
   };
 
   const cardTypes = {
-    visa: {
-      name: "Visa",
-      maxLength: 16,
-      icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' width='60' height='60'%3E%3Crect width='48' height='48' rx='4' fill='%231A1F71'/%3E%3Cpath fill='%23FFFFFF' d='M18.8,30.5 L20.8,18.2 L23.8,18.2 L21.8,30.5 L18.8,30.5 Z M31.8,18.5 C31.1,18.2 30,18 28.7,18 C25.8,18 23.7,19.5 23.7,21.6 C23.7,23.2 25.2,24.1 26.3,24.7 C27.5,25.3 27.9,25.7 27.9,26.2 C27.9,27 26.9,27.4 26,27.4 C24.7,27.4 24,27.1 22.9,26.6 L22.5,26.4 L22,29.2 C22.8,29.6 24.2,29.9 25.7,30 C28.8,30 30.8,28.5 30.8,26.2 C30.8,24.9 30,23.9 28.2,23.1 C27.1,22.5 26.4,22.1 26.4,21.5 C26.4,21 27,20.4 28.2,20.4 C29.2,20.4 30,20.6 30.6,20.9 L30.9,21 L31.4,18.3 L31.8,18.5 Z M38,18.2 L35.5,18.2 C34.7,18.2 34.2,18.4 33.8,19.2 L29.3,30.5 L32.5,30.5 C32.5,30.5 33,29.1 33.1,28.8 C33.6,28.8 36.6,28.8 37.2,28.8 C37.3,29.2 37.7,30.5 37.7,30.5 L40.5,30.5 L38,18.2 Z M34,26.2 C34.3,25.4 35.4,22.6 35.4,22.6 C35.4,22.6 35.7,21.7 35.9,21.1 L36.2,22.5 C36.2,22.6 36.9,25.5 37.1,26.2 H34 Z M15.8,18.2 L13,26.5 C13,26.5 12.4,24.4 12.2,23.6 C10.8,20.5 8.5,19.2 8.5,19.2 L11,30.5 L14.3,30.5 L19.1,18.2 L15.8,18.2 Z'/%3E%3C/svg%3E"
-    },
-    mastercard: {
-      name: "Mastercard",
-      maxLength: 16,
-      icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' width='60' height='60'%3E%3Ccircle cx='17' cy='24' r='8' fill='%23EB001B'/%3E%3Ccircle cx='31' cy='24' r='8' fill='%23F79E1B'/%3E%3Cpath fill='%23FF5F00' d='M24 18a8.002 8.002 0 010 12 8.002 8.002 0 010-12z'/%3E%3C/svg%3E"
-    },
-    amex: {
-      name: "American Express",
-      maxLength: 15,
-      icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' width='60' height='60'%3E%3Cpath fill='%23006FCF' d='M45 35a3 3 0 01-3 3H6a3 3 0 01-3-3V13a3 3 0 013-3h36a3 3 0 013 3v22z'/%3E%3Cpath fill='%23FFFFFF' d='M14 20h-3v8h3v-8zm1 0l4 8 4-8h-3l-1 2-1-2h-3zm8 0v8h5v-2h-3v-1h3v-2h-3v-1h3v-2h-5zm7 0v2h2v6h3v-6h2v-2h-7zm8 0v8h5v-2h-3v-1h3v-2h-3v-1h3v-2h-5z'/%3E%3C/svg%3E"
-    },
-    discover: {
-      name: "Discover",
-      maxLength: 16,
-      icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' width='60' height='60'%3E%3Cpath fill='%23FF6000' d='M45 35a3 3 0 01-3 3H6a3 3 0 01-3-3V13a3 3 0 013-3h36a3 3 0 013 3v22z'/%3E%3Cpath fill='%23FFFFFF' d='M24 30c-3.3 0-6-2.7-6-6s2.7-6 6-6 6 2.7 6 6-2.7 6-6 6zm0-10c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4z'/%3E%3Cpath fill='%23FFFFFF' d='M24 20c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 7c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3z'/%3E%3C/svg%3E"
-    }
+    visa: { name: "Visa", maxLength: 16, icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' width='60' height='60'%3E%3Crect width='48' height='48' rx='4' fill='%231A1F71'/%3E%3Cpath fill='%23FFFFFF' d='M18.8,30.5 L20.8,18.2 L23.8,18.2 L21.8,30.5 L18.8,30.5 Z M31.8,18.5 C31.1,18.2 30,18 28.7,18 C25.8,18 23.7,19.5 23.7,21.6 C23.7,23.2 25.2,24.1 26.3,24.7 C27.5,25.3 27.9,25.7 27.9,26.2 C27.9,27 26.9,27.4 26,27.4 C24.7,27.4 24,27.1 22.9,26.6 L22.5,26.4 L22,29.2 C22.8,29.6 24.2,29.9 25.7,30 C28.8,30 30.8,28.5 30.8,26.2 C30.8,24.9 30,23.9 28.2,23.1 C27.1,22.5 26.4,22.1 26.4,21.5 C26.4,21 27,20.4 28.2,20.4 C29.2,20.4 30,20.6 30.6,20.9 L30.9,21 L31.4,18.3 L31.8,18.5 Z M38,18.2 L35.5,18.2 C34.7,18.2 34.2,18.4 33.8,19.2 L29.3,30.5 L32.5,30.5 C32.5,30.5 33,29.1 33.1,28.8 C33.6,28.8 36.6,28.8 37.2,28.8 C37.3,29.2 37.7,30.5 37.7,30.5 L40.5,30.5 L38,18.2 Z M34,26.2 C34.3,25.4 35.4,22.6 35.4,22.6 C35.4,22.6 35.7,21.7 35.9,21.1 L36.2,22.5 C36.2,22.6 36.9,25.5 37.1,26.2 H34 Z M15.8,18.2 L13,26.5 C13,26.5 12.4,24.4 12.2,23.6 C10.8,20.5 8.5,19.2 8.5,19.2 L11,30.5 L14.3,30.5 L19.1,18.2 L15.8,18.2 Z'/%3E%3C/svg%3E" },
+    mastercard: { name: "Mastercard", maxLength: 16, icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' width='60' height='60'%3E%3Ccircle cx='17' cy='24' r='8' fill='%23EB001B'/%3E%3Ccircle cx='31' cy='24' r='8' fill='%23F79E1B'/%3E%3Cpath fill='%23FF5F00' d='M24 18a8.002 8.002 0 010 12 8.002 8.002 0 010-12z'/%3E%3C/svg%3E" },
+    amex: { name: "American Express", maxLength: 15, icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' width='60' height='60'%3E%3Cpath fill='%23006FCF' d='M45 35a3 3 0 01-3 3H6a3 3 0 01-3-3V13a3 3 0 013-3h36a3 3 0 013 3v22z'/%3E%3Cpath fill='%23FFFFFF' d='M14 20h-3v8h3v-8zm1 0l4 8 4-8h-3l-1 2-1-2h-3zm8 0v8h5v-2h-3v-1h3v-2h-3v-1h3v-2h-5zm7 0v2h2v6h3v-6h2v-2h-7zm8 0v8h5v-2h-3v-1h3v-2h-3v-1h3v-2h-5z'/%3E%3C/svg%3E" },
+    discover: { name: "Discover", maxLength: 16, icon: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 48 48' width='60' height='60'%3E%3Cpath fill='%23FF6000' d='M45 35a3 3 0 01-3 3H6a3 3 0 01-3-3V13a3 3 0 013-3h36a3 3 0 013 3v22z'/%3E%3Cpath fill='%23FFFFFF' d='M24 30c-3.3 0-6-2.7-6-6s2.7-6 6-6 6 2.7 6 6-2.7 6-6 6zm0-10c-2.2 0-4 1.8-4 4s1.8 4 4 4 4-1.8 4-4-1.8-4-4-4zm0 7c-1.7 0-3-1.3-3-3s1.3-3 3-3 3 1.3 3 3-1.3 3-3 3z'/%3E%3C/svg%3E" }
   };
 
   const cleanedNumber = cardNumber.replace(/\s/g, "");
@@ -95,42 +398,14 @@ const detectCardType = (cardNumber) => {
   return null;
 };
 
-// Payment Gateway Icons Component
-const PaymentGatewayIcon = ({ gateway }) => {
-  switch (gateway) {
-    case 'razorpay':
-      return (
-        <svg viewBox="0 0 100 30" width="80" height="24">
-          <text x="50" y="20" fontSize="16" textAnchor="middle" fill="#0745a3" fontWeight="bold">Razorpay</text>
-        </svg>
-      );
-    case 'stripe':
-      return (
-        <svg viewBox="0 0 100 30" width="80" height="24">
-          <text x="50" y="20" fontSize="16" textAnchor="middle" fill="#635bff" fontWeight="bold">Stripe</text>
-        </svg>
-      );
-    case 'paypal':
-      return (
-        <svg viewBox="0 0 100 30" width="80" height="24">
-          <text x="50" y="20" fontSize="16" textAnchor="middle" fill="#003087" fontWeight="bold">PayPal</text>
-        </svg>
-      );
-    default:
-      return null;
-  }
-};
-
 // Payment Page Component
 export default function PaymentPage() {
-  // ALL HOOKS MUST BE CALLED AT THE TOP LEVEL IN THE SAME ORDER
-  
   const { state } = useLocation();
   const navigate = useNavigate();
   const { addNotification } = useNotificationContext();
   const redirectAttempted = useRef(false);
 
-  // State declarations - all hooks at the top
+  // State declarations
   const [plan, setPlan] = useState(normalizePlan(state?.plan));
   const [campaign, setCampaign] = useState(state?.campaign || null);
   const [redirecting, setRedirecting] = useState(false);
@@ -146,55 +421,61 @@ export default function PaymentPage() {
   const [expiryError, setExpiryError] = useState("");
   const [cardNumberError, setCardNumberError] = useState("");
   const [cvvError, setCvvError] = useState("");
-  const [discount, setDiscount] = useState(0);
-  const [discountType, setDiscountType] = useState(null);
   const [specialOffer, setSpecialOffer] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
   const [hasCheckedStorage, setHasCheckedStorage] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [testingEmail, setTestingEmail] = useState(false);
-  const [retryCount, setRetryCount] = useState(0);
-  const [selectedGateway, setSelectedGateway] = useState("card"); // Default to card
+  const [testingStripe, setTestingStripe] = useState(false);
+  const [selectedGateway, setSelectedGateway] = useState("card");
   const [razorpayLoaded, setRazorpayLoaded] = useState(false);
   const [stripeLoaded, setStripeLoaded] = useState(false);
-  const [paypalLoaded, setPaypalLoaded] = useState(false);
+  const [stripePromise, setStripePromise] = useState(null);
+  const [clientSecret, setClientSecret] = useState("");
+  const [stripeMode, setStripeMode] = useState("test");
+  const [stripeError, setStripeError] = useState(null);
+  const [useFallbackPayment, setUseFallbackPayment] = useState(false);
 
-  // Memoized calculations - must be called before any conditional logic
-  const { basePrice, additionalSlotsCost, integrationCosts, subtotal, discountAmount, tax, finalTotal } =
-    useMemo(() => {
-      let basePrice = plan ? (plan.basePrice !== undefined
-        ? Number(plan.basePrice)
-        : (plan.basePricing && plan.planType ? Number(plan.basePricing[plan.planType]) : 0))
-        : (campaign ? Number(campaign.price) : 0);
+  // UPI specific state
+  const [upiId, setUpiId] = useState("bouncecure@upi");
+  const [exchangeRate, setExchangeRate] = useState(75);
 
-      const additionalSlotsCost = plan ? Number(plan.additionalSlotsCost || 0) : 0;
-      const integrationCosts = plan ? Number(plan.integrationCosts || 0) : 0;
+  // Memoized calculations
+  const { basePrice, additionalSlotsCost, integrationCosts, subtotal, discountAmount, tax, finalTotal } = useMemo(() => {
+    let basePrice = plan ? (plan.basePrice !== undefined
+      ? Number(plan.basePrice)
+      : (plan.basePricing && plan.planType ? Number(plan.basePricing[plan.planType]) : 0))
+      : (campaign ? Number(campaign.price) : 0);
 
-      const subtotal = plan && plan.totalCost !== undefined
-        ? Number(plan.totalCost)
-        : (basePrice + additionalSlotsCost + integrationCosts);
+    const additionalSlotsCost = plan ? Number(plan.additionalSlotsCost || 0) : 0;
+    const integrationCosts = plan ? Number(plan.integrationCosts || 0) : 0;
 
-      let discountAmount = 0;
-      if (discountType === "percentage") discountAmount = (subtotal * discount) / 100;
-      if (discountType === "fixed") discountAmount = Math.min(discount, subtotal);
+    const subtotal = plan && plan.totalCost !== undefined
+      ? Number(plan.totalCost)
+      : (basePrice + additionalSlotsCost + integrationCosts);
 
-      const discountedSubtotal = Math.max(0, subtotal - discountAmount);
-      const tax = +(discountedSubtotal * 0.1).toFixed(2);
-      const finalTotal = +(discountedSubtotal + tax).toFixed(2);
+    let discountAmount = 0;
+    if (specialOffer) {
+      if (specialOffer.discountType === "percentage") {
+        discountAmount = (subtotal * specialOffer.discountValue) / 100;
+      } else if (specialOffer.discountType === "fixed") {
+        discountAmount = Math.min(specialOffer.discountValue, subtotal);
+      }
+    }
 
-      return { basePrice, additionalSlotsCost, integrationCosts, subtotal, discountAmount, tax, finalTotal };
-    }, [plan, campaign, discount, discountType]);
+    const discountedSubtotal = Math.max(0, subtotal - discountAmount);
+    const tax = +(discountedSubtotal * 0.1).toFixed(2);
+    const finalTotal = +(discountedSubtotal + tax).toFixed(2);
 
-  // useEffect hooks - all called in the same order
-  useEffect(() => {
-    console.log("=== PAYMENT PAGE DEBUG ===");
-    console.log("PaymentPage state:", state);
-    console.log("Plan from state:", normalizePlan(state?.plan));
-    console.log("Campaign from state:", state?.campaign);
-    console.log("Current plan state:", plan);
-    console.log("Current campaign state:", campaign);
-  }, [state, plan, campaign]);
+    return { basePrice, additionalSlotsCost, integrationCosts, subtotal, discountAmount, tax, finalTotal };
+  }, [plan, campaign, specialOffer]);
 
+  // Calculate UPI amount in INR
+  const upiAmount = useMemo(() => {
+    return Math.round(finalTotal * exchangeRate);
+  }, [finalTotal, exchangeRate]);
+
+  // Effects
   useEffect(() => {
     const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
     if (token) {
@@ -215,45 +496,26 @@ export default function PaymentPage() {
   useEffect(() => {
     if (isLoading || redirecting || redirectAttempted.current) return;
     
-    console.log("=== CHECKING FOR PLAN DATA ===");
-    console.log("isLoading:", isLoading);
-    console.log("redirecting:", redirecting);
-    console.log("redirectAttempted.current:", redirectAttempted.current);
-    console.log("hasCheckedStorage:", hasCheckedStorage);
-    console.log("plan:", plan);
-    console.log("campaign:", campaign);
-    
     if (!plan && !campaign && !hasCheckedStorage) {
-      console.log("No plan or campaign in state, checking storage...");
-      
-      const pendingPlan = localStorage.getItem("pendingUpgradePlan") ||
-        sessionStorage.getItem("pendingUpgradePlan");
-      const pendingCampaign = localStorage.getItem("pendingUpgradeCampaign") ||
-        sessionStorage.getItem("pendingUpgradeCampaign");
-
-      console.log("pendingPlan from storage:", pendingPlan);
-      console.log("pendingCampaign from storage:", pendingCampaign);
+      const pendingPlan = localStorage.getItem("pendingUpgradePlan") || sessionStorage.getItem("pendingUpgradePlan");
+      const pendingCampaign = localStorage.getItem("pendingUpgradeCampaign") || sessionStorage.getItem("pendingUpgradeCampaign");
 
       if (pendingPlan) {
         try {
-          console.log("Found plan in storage:", pendingPlan);
           const parsed = JSON.parse(pendingPlan);
           const normalizedPlan = normalizePlan(parsed);
-          console.log("Normalized plan:", normalizedPlan);
           
           if (normalizedPlan) {
             setPlan(normalizedPlan);
             localStorage.removeItem("pendingUpgradePlan");
             sessionStorage.removeItem("pendingUpgradePlan");
           } else {
-            console.error("Failed to normalize plan from storage");
             toast.error("Invalid plan data. Redirecting to pricing...", { duration: 5000 });
             setRedirecting(true);
             redirectAttempted.current = true;
             setTimeout(() => navigate("/pricingdash"), 2000);
           }
         } catch (e) {
-          console.error("Error parsing plan from storage:", e);
           toast.error("Invalid plan data. Redirecting to pricing...", { duration: 5000 });
           setRedirecting(true);
           redirectAttempted.current = true;
@@ -261,20 +523,17 @@ export default function PaymentPage() {
         }
       } else if (pendingCampaign) {
         try {
-          console.log("Found campaign in storage:", pendingCampaign);
           const parsed = JSON.parse(pendingCampaign);
           setCampaign(parsed);
           localStorage.removeItem("pendingUpgradeCampaign");
           sessionStorage.removeItem("pendingUpgradeCampaign");
         } catch (e) {
-          console.error("Error parsing campaign from storage:", e);
           toast.error("Invalid campaign data. Redirecting to pricing...", { duration: 5000 });
           setRedirecting(true);
           redirectAttempted.current = true;
           setTimeout(() => navigate("/pricingdash"), 2000);
         }
       } else {
-        console.log("No plan or campaign found in storage");
         toast.error("No plan selected. Redirecting to pricing...", { duration: 5000 });
         setRedirecting(true);
         redirectAttempted.current = true;
@@ -283,7 +542,6 @@ export default function PaymentPage() {
       
       setHasCheckedStorage(true);
     } else if (hasCheckedStorage && !plan && !campaign && !redirecting) {
-      console.log("Already checked storage and no plan found - redirecting");
       toast.error("No plan selected. Redirecting to pricing...", { duration: 5000 });
       setRedirecting(true);
       redirectAttempted.current = true;
@@ -292,27 +550,10 @@ export default function PaymentPage() {
   }, [plan, campaign, hasCheckedStorage, isLoading, navigate, redirecting]);
 
   useEffect(() => {
-    if (plan) {
-      console.log("Plan data:", plan);
-      console.log("Base price:", plan.basePrice);
-      console.log("Additional slots cost:", plan.additionalSlotsCost);
-      console.log("Total cost (from plan):", plan.totalCost);
-      console.log("Calculated total (base + additional):", plan.basePrice + plan.additionalSlotsCost);
-    }
-  }, [plan]);
-
-  useEffect(() => {
     if (paymentSuccess && invoiceSent) {
       const timer = setTimeout(() => {
         const isLoggedIn = !!localStorage.getItem("authToken");
-
-        if (isLoggedIn) {
-          navigate("/dashboard"); // logged in → dashboard
-        } else {
-          navigate("/signin", {
-            state: { redirectTo: "/dashboard" }, // after login, send them to dashboard
-          });
-        }
+        navigate(isLoggedIn ? "/dashboard" : "/signin", { state: { redirectTo: "/dashboard" } });
       }, 3000);
 
       return () => clearTimeout(timer);
@@ -320,128 +561,325 @@ export default function PaymentPage() {
   }, [paymentSuccess, invoiceSent, navigate]);
 
   useEffect(() => {
-    if (plan && plan.planName === "Pro Plan") {
+    if (plan?.planName === "Pro Plan") {
       setSpecialOffer({
         title: "50% off for 12 months!",
         description: "Special discount for Pro Plan users",
         discountType: "percentage",
         discountValue: 50,
       });
-      setDiscountType("percentage");
-      setDiscount(50);
-    } else if (plan && plan.planName === "Growth Plan") {
+    } else if (plan?.planName === "Growth Plan") {
       setSpecialOffer({
         title: "$20 off your first payment",
         description: "Limited time offer for Growth Plan",
         discountType: "fixed",
         discountValue: 20,
       });
-      setDiscountType("fixed");
-      setDiscount(20);
     } else {
       setSpecialOffer(null);
-      setDiscount(0);
-      setDiscountType(null);
     }
   }, [plan?.planName]);
 
-  // Load Razorpay SDK
+  // Load payment SDKs
   useEffect(() => {
-    const loadRazorpay = () => {
+    if (!razorpayLoaded) {
       const script = document.createElement('script');
       script.src = 'https://checkout.razorpay.com/v1/checkout.js';
       script.onload = () => setRazorpayLoaded(true);
       document.body.appendChild(script);
-    };
-
-    if (!razorpayLoaded) {
-      loadRazorpay();
     }
   }, [razorpayLoaded]);
 
-  // Load Stripe SDK
   useEffect(() => {
-    const loadStripe = () => {
+    if (!stripeLoaded && !document.querySelector('script[src^="https://js.stripe.com"]')) {
       const script = document.createElement('script');
       script.src = 'https://js.stripe.com/v3/';
       script.onload = () => setStripeLoaded(true);
       document.body.appendChild(script);
-    };
-
-    if (!stripeLoaded) {
-      loadStripe();
+    } else if (document.querySelector('script[src^="https://js.stripe.com"]')) {
+      setStripeLoaded(true);
     }
   }, [stripeLoaded]);
 
-  // Load PayPal SDK
+  // Initialize Stripe with mode detection
   useEffect(() => {
-    const loadPayPal = () => {
-      const script = document.createElement('script');
-      script.src = 'https://www.paypal.com/sdk/js?client-id=sb&currency=USD';
-      script.onload = () => setPaypalLoaded(true);
-      document.body.appendChild(script);
-    };
-
-    if (!paypalLoaded) {
-      loadPayPal();
-    }
-  }, [paypalLoaded]);
-
-  // Test email configuration function
-  const testEmailConfiguration = async () => {
-    const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
-    if (!token) {
-      toast.error("Please log in first.");
-      return;
-    }
-
-    setTestingEmail(true);
-    const toastId = toast.loading("Testing email configuration...");
-
-    try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/test-email`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
+    if (stripeLoaded && !stripePromise) {
+      const initializeStripe = async () => {
+        const stripeKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+        
+        if (!stripeKey) {
+          console.error("Stripe publishable key is not set in environment variables.");
+          setStripeError("Stripe configuration is missing. Please contact support.");
+          return;
         }
-      });
 
-      const result = await response.json();
-      console.log("Test email result:", result);
+        if (!stripeKey.startsWith('pk_')) {
+          setStripeError("Invalid Stripe key. Please use a publishable key (pk_...) instead of a restricted key.");
+          return;
+        }
 
-      if (result.success) {
-        toast.success("Test email sent successfully! Check your inbox.", { id: toastId });
-      } else {
-        toast.error(`Email test failed: ${result.message}`, { id: toastId });
-        console.error("Email test debug:", result.debug);
-      }
-    } catch (error) {
-      console.error("Email test error:", error);
-      toast.error(`Email test error: ${error.message}`, { id: toastId });
-    } finally {
-      setTestingEmail(false);
+        try {
+          const isLiveMode = stripeKey.startsWith('pk_live_');
+          setStripeMode(isLiveMode ? 'live' : 'test');
+          
+          console.log("Initializing Stripe with key:", stripeKey.substring(0, 10) + "...");
+          const stripeInstance = await loadStripe(stripeKey);
+          if (!stripeInstance) {
+            throw new Error("Failed to load Stripe. Check your publishable key.");
+          }
+          setStripePromise(stripeInstance);
+          setStripeError(null);
+          console.log("Stripe initialized successfully");
+        } catch (error) {
+          console.error("Error initializing Stripe:", error);
+          setStripeError(`Failed to initialize Stripe: ${error.message}`);
+        }
+      };
+      initializeStripe();
     }
-  };
+  }, [stripeLoaded, stripePromise]);
+
+  // Create Stripe payment intent with improved error handling
+  useEffect(() => {
+    if (stripePromise && selectedGateway === 'stripe' && !clientSecret && !useFallbackPayment) {
+      const createPaymentIntent = async () => {
+        try {
+          // Validate environment variables first
+          const apiUrl = import.meta.env.VITE_API_URL;
+          const stripeKey = import.meta.env.VITE_STRIPE_PUBLIC_KEY;
+          
+          if (!apiUrl) {
+            throw new Error("VITE_API_URL is not configured in environment variables");
+          }
+          
+          if (!stripeKey) {
+            throw new Error("VITE_STRIPE_PUBLIC_KEY is not configured in environment variables");
+          }
+
+          // Validate payment amount
+          if (typeof finalTotal !== 'number' || isNaN(finalTotal) || finalTotal <= 0) {
+            throw new Error("Invalid payment amount");
+          }
+          
+          const amountInCents = Math.round(finalTotal * 100);
+          
+          if (amountInCents < 50) {
+            throw new Error("Payment amount must be at least $0.50 USD");
+          }
+          
+          // Validate email
+          const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+          if (!email || !emailRegex.test(email)) {
+            throw new Error("Valid email address is required");
+          }
+
+          console.log("Creating payment intent with amount:", amountInCents);
+          
+          const authToken = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+          if (!authToken) {
+            throw new Error("Authentication required. Please log in again.");
+          }
+          
+          const planDetails = plan ? 
+            `${plan.planName} (${plan.planType || 'monthly'} plan, ${plan.slots} contacts)` : 
+            `Campaign: ${campaign?.description || 'Unknown'}`;
+          
+          // Create a short statement descriptor (max 22 characters)
+          const shortDescriptor = `BounceCure ${plan ? plan.planName.substring(0, 10) : 'Payment'}`;
+          
+          // Ensure description is not too long for Stripe (max 1000 chars)
+          const description = `BounceCure ${planDetails}. Customer: ${email}`.substring(0, 1000);
+          
+          const requestData = { 
+            amount: amountInCents,
+            email: email,
+            planName: plan ? plan.planName : (campaign?.description || 'Unknown Plan'),
+            planType: plan ? (plan.planType || 'monthly') : 'monthly',
+            contacts: plan ? plan.slots : (campaign?.emails || 0),
+            mode: stripeMode,
+            description: description,
+            statement_descriptor: shortDescriptor,
+            currency: 'usd' // Explicitly set currency
+          };
+          
+          console.log("Request data:", JSON.stringify(requestData, null, 2));
+          
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // Increase timeout to 30s
+          
+          try {
+            const response = await fetch(`${apiUrl}/create-payment-intent`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${authToken}`,
+                'Accept': 'application/json'
+              },
+              body: JSON.stringify(requestData),
+              signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            console.log("Response status:", response.status);
+            console.log("Response headers:", Object.fromEntries(response.headers.entries()));
+            
+            // Handle different response types
+            const contentType = response.headers.get('content-type');
+            let responseData;
+            
+            if (contentType && contentType.includes('application/json')) {
+              responseData = await response.json();
+            } else {
+              const responseText = await response.text();
+              console.error("Non-JSON response:", responseText);
+              
+              // If we get HTML, it means the endpoint doesn't exist
+              if (responseText.includes('<!DOCTYPE html>') || responseText.includes('<html')) {
+                throw new Error("API endpoint not found. Using fallback mode.");
+              }
+              
+              throw new Error(`Server returned non-JSON response: ${response.status}`);
+            }
+            
+            console.log("Payment intent response:", responseData);
+            
+            // Handle error responses
+            if (!response.ok) {
+              // Handle specific error cases that should trigger fallback
+              if (response.status === 400 && responseData.message) {
+                if (responseData.message.includes("statement_descriptor") ||
+                    responseData.message.includes("account") ||
+                    responseData.message.includes("configuration")) {
+                  console.log("Stripe configuration error, enabling fallback mode");
+                  setUseFallbackPayment(true);
+                  toast("Payment service temporarily unavailable. Using manual processing mode.", {
+                    duration: 5000,
+                    icon: 'ℹ️'
+                  });
+                  return;
+                }
+              }
+              
+              if (response.status === 500) {
+                console.log("Server error, enabling fallback mode");
+                setUseFallbackPayment(true);
+                toast("Payment service temporarily unavailable. Using manual processing mode.", {
+                  duration: 5000,
+                  icon: 'ℹ️'
+                });
+                return;
+              }
+              
+              throw new Error(responseData.message || `HTTP error! status: ${response.status}`);
+            }
+            
+            if (!responseData.success) {
+              throw new Error(responseData.message || "Payment intent creation failed");
+            }
+            
+            if (!responseData.clientSecret) {
+              throw new Error("No client secret returned from server");
+            }
+            
+            // Validate mode consistency
+            if (responseData.mode && responseData.mode !== stripeMode) {
+              console.warn(`Mode mismatch: Frontend is ${stripeMode}, backend is ${responseData.mode}`);
+              // Don't throw error, just warn and continue
+            }
+            
+            console.log("Successfully set client secret");
+            setClientSecret(responseData.clientSecret);
+            setStripeError(null);
+            
+          } catch (fetchError) {
+            clearTimeout(timeoutId);
+            
+            if (fetchError.name === 'AbortError') {
+              throw new Error("Request timed out. Please check your internet connection.");
+            } else {
+              throw fetchError;
+            }
+          }
+          
+        } catch (error) {
+          console.error("Error creating payment intent:", error);
+          
+          // Determine if we should use fallback mode
+          const shouldUseFallback = (
+            error.message.includes("Failed to fetch") ||
+            error.message.includes("NetworkError") ||
+            error.message.includes("timed out") ||
+            error.message.includes("Server error") ||
+            error.message.includes("configuration") ||
+            error.message.includes("endpoint not found") ||
+            error.message.includes("VITE_API_URL is not configured") ||
+            error.message.includes("Database") ||
+            error.message.includes("account") ||
+            error.message.includes("statement_descriptor")
+          );
+          
+          if (shouldUseFallback) {
+            console.log("Enabling fallback payment mode due to:", error.message);
+            setUseFallbackPayment(true);
+            setStripeError(null);
+            toast("Payment service temporarily unavailable. Your order will be processed manually.", { 
+              duration: 8000,
+              icon: 'ℹ️'
+            });
+            return;
+          }
+          
+          // For other errors, show error message but don't enable fallback
+          if (error.message.includes("VITE_STRIPE_PUBLIC_KEY is not configured")) {
+            setStripeError("Stripe is not properly configured. Please contact support.");
+          } else if (error.message.includes("Authentication required")) {
+            setStripeError("Session expired. Please refresh the page and log in again.");
+            setTimeout(() => navigate("/login"), 3000);
+          } else if (error.message.includes("Invalid payment amount")) {
+            setStripeError("Invalid payment amount. Please refresh the page.");
+          } else if (error.message.includes("Valid email address is required")) {
+            setStripeError("Please enter a valid email address.");
+          } else {
+            setStripeError(`Payment initialization failed: ${error.message}`);
+          }
+        }
+      };
+      
+      createPaymentIntent();
+    }
+  }, [stripePromise, selectedGateway, finalTotal, plan, campaign, email, stripeMode, navigate, useFallbackPayment]);
+
+  // Reset client secret when switching payment methods
+  useEffect(() => {
+    if (selectedGateway !== 'stripe') {
+      setClientSecret("");
+      setUseFallbackPayment(false);
+    }
+  }, [selectedGateway]);
 
   // Helper functions
-  const validateCardNumber = (cardNumber) => {
-    const cleaned = cardNumber.replace(/\D/g, '');
+  const getCardNumberErrorMessage = useCallback((cardNumber, cardType) => {
+    const cleaned = cardNumber.replace(/\s/g, '');
 
-    if (!cleaned) {
-      return "Card number is required";
-    }
+    if (!cleaned) return "Card number is required";
 
     if (cardType) {
-      if (cleaned.length !== cardType.maxLength) {
-        return `Invalid ${cardType.name} card number length`;
+      if (cleaned.length < cardType.maxLength) {
+        return `${cardType.name} card number must be ${cardType.maxLength} digits`;
+      }
+      if (cleaned.length > cardType.maxLength) {
+        return `${cardType.name} card number must be ${cardType.maxLength} digits`;
       }
     } else {
-      if (cleaned.length < 13 || cleaned.length > 19) {
-        return "Invalid card number length";
+      if (cleaned.length < 13) {
+        return "Card number must be at least 13 digits";
+      }
+      if (cleaned.length > 19) {
+        return "Card number must be no more than 19 digits";
       }
     }
 
+    // Luhn algorithm check
     let sum = 0;
     let shouldDouble = false;
 
@@ -450,9 +888,7 @@ export default function PaymentPage() {
 
       if (shouldDouble) {
         digit *= 2;
-        if (digit > 9) {
-          digit -= 9;
-        }
+        if (digit > 9) digit -= 9;
       }
 
       sum += digit;
@@ -460,13 +896,47 @@ export default function PaymentPage() {
     }
 
     if (sum % 10 !== 0) {
-      return "Invalid card number";
+      return "Invalid card number. Please check and try again.";
     }
 
     return "";
-  };
+  }, []);
 
-  const handleCardInput = (e) => {
+  const validateCardNumber = useCallback((cardNumber, cardTypeParam) => {
+    const cleaned = cardNumber.replace(/\D/g, '');
+
+    if (!cleaned) return "Card number is required";
+
+    if (cardTypeParam) {
+      if (cleaned.length !== cardTypeParam.maxLength) {
+        return `Invalid ${cardTypeParam.name} card number length`;
+      }
+    } else {
+      if (cleaned.length < 13 || cleaned.length > 19) {
+        return "Invalid card number length";
+      }
+    }
+
+    // Luhn algorithm check
+    let sum = 0;
+    let shouldDouble = false;
+
+    for (let i = cleaned.length - 1; i >= 0; i--) {
+      let digit = parseInt(cleaned.charAt(i), 10);
+
+      if (shouldDouble) {
+        digit *= 2;
+        if (digit > 9) digit -= 9;
+      }
+
+      sum += digit;
+      shouldDouble = !shouldDouble;
+    }
+
+    return sum % 10 !== 0 ? "Invalid card number" : "";
+  }, []);
+
+  const handleCardInput = useCallback((e) => {
     let value = e.target.value.replace(/\D/g, "");
     const detectedType = detectCardType(value);
     setCardType(detectedType);
@@ -482,12 +952,10 @@ export default function PaymentPage() {
     }
 
     setCardNumber(value);
+    setCardNumberError(getCardNumberErrorMessage(value, detectedType));
+  }, [getCardNumberErrorMessage]);
 
-    const error = validateCardNumber(value);
-    setCardNumberError(error);
-  };
-
-  const handleExpiryInput = (e) => {
+  const handleExpiryInput = useCallback((e) => {
     let value = e.target.value.replace(/\D/g, "").substring(0, 4);
     if (value.length >= 3) value = value.substring(0, 2) + "/" + value.substring(2, 4);
     setExpiry(value);
@@ -497,9 +965,9 @@ export default function PaymentPage() {
     } else {
       setExpiryError("");
     }
-  };
+  }, []);
 
-  const validateExpiryDate = (expiryValue) => {
+  const validateExpiryDate = useCallback((expiryValue) => {
     if (!/^\d{2}\/\d{2}$/.test(expiryValue)) {
       setExpiryError("Invalid format. Use MM/YY");
       return false;
@@ -530,48 +998,62 @@ export default function PaymentPage() {
 
     setExpiryError("");
     return true;
-  };
+  }, []);
 
-  const handleCvvInput = (e) => {
+  const handleCvvInput = useCallback((e) => {
     let value = e.target.value.replace(/\D/g, "").substring(0, 4);
     setCvv(value);
 
     if (value.length > 0) {
       if (cardType && cardType.name === "American Express") {
-        if (value.length !== 4) {
-          setCvvError("Amex requires 4-digit CVV");
-        } else {
-          setCvvError("");
-        }
+        setCvvError(value.length !== 4 ? "Amex requires 4-digit CVV" : "");
       } else {
-        if (value.length !== 3) {
-          setCvvError("CVV must be 3 digits");
-        } else {
-          setCvvError("");
-        }
+        setCvvError(value.length !== 3 ? "CVV must be 3 digits" : "");
       }
     } else {
       setCvvError("");
     }
-  };
+  }, [cardType]);
 
-  const canPay =
+  const canPay = useMemo(() => 
     agreed &&
-    (selectedGateway === "razorpay" || 
-      (cardNumber.replace(/\s/g, "").length >= 13 &&
-      !cardNumberError &&
-      /^\d{2}\/\d{2}$/.test(expiry) &&
-      !expiryError &&
-      cvv.length >= 3 &&
-      !cvvError)) &&
-    email.includes("@");
+    email.includes("@") &&
+    (
+      selectedGateway === "razorpay" || 
+      selectedGateway === "upi" ||
+      selectedGateway === "stripe" ||
+      (
+        cardNumber.replace(/\s/g, "").length >= 13 &&
+        !cardNumberError &&
+        /^\d{2}\/\d{2}$/.test(expiry) &&
+        !expiryError &&
+        cvv.length >= 3 &&
+        !cvvError
+      )
+    ),
+    [agreed, selectedGateway, email, cardNumber, cardNumberError, expiry, expiryError, cvv, cvvError]
+  );
 
-  const generateInvoiceData = (gateway, paymentId) => {
+  const generateInvoiceData = useCallback((gateway, paymentId, paymentMethodDetails = {}) => {
     const transactionId = paymentId || `TXN${Date.now()}${Math.floor(Math.random() * 1000)}`;
     const processedDate = new Date().toLocaleString("en-US", { timeZone: "America/New_York" }) + " New York";
     const paymentDate = new Date().toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" });
     const nextPaymentDate = new Date();
     nextPaymentDate.setDate(nextPaymentDate.getDate() + 30);
+
+    // Determine payment method details
+    let paymentMethodInfo = "";
+    if (gateway) {
+      paymentMethodInfo = `${gateway.charAt(0).toUpperCase() + gateway.slice(1)} (Payment ID: ${paymentId})`;
+      
+      // If we have Stripe card details, add them
+      if (gateway === 'stripe' && paymentMethodDetails.cardType) {
+        paymentMethodInfo += ` - ${paymentMethodDetails.cardType} ending in ${paymentMethodDetails.last4}`;
+      }
+    } else {
+      // For direct card payments
+      paymentMethodInfo = `${cardType?.name || "Card"} ending in ${cardNumber.slice(-4)} expires ${expiry}`;
+    }
 
     return {
       transactionId,
@@ -582,14 +1064,12 @@ export default function PaymentPage() {
       selectedIntegrations: plan ? plan.selectedIntegrations : [],
       discountTitle: specialOffer?.title || "",
       discountAmount: discountAmount.toFixed(2),
-      discountType,
+      discountType: specialOffer?.discountType || "",
       integrationCosts: integrationCosts.toFixed(2),
       subtotal: subtotal.toFixed(2),
       tax: tax.toFixed(2),
       finalTotal: finalTotal.toFixed(2),
-      paymentMethod: gateway 
-        ? `${gateway.charAt(0).toUpperCase() + gateway.slice(1)} (Payment ID: ${paymentId})`
-        : `${cardType?.name || "Card"} ending in ${cardNumber.slice(-4)} expires ${expiry}`,
+      paymentMethod: paymentMethodInfo,
       paymentDate,
       nextPaymentDate: nextPaymentDate.toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }),
       email,
@@ -606,26 +1086,12 @@ export default function PaymentPage() {
         taxId: "9922USA29012OSN",
       },
     };
-  };
+  }, [plan, campaign, basePrice, specialOffer, discountAmount, integrationCosts, subtotal, tax, finalTotal, cardType, cardNumber, expiry, userInfo, email]);
 
-  const validatePaymentWithBackend = async () => {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({ success: true });
-      }, 1000);
-    });
-  };
-
-  const sendInvoiceEmail = async (invoiceData) => {
+  const sendInvoiceEmail = useCallback(async (invoiceData) => {
     try {
-      const token = localStorage.getItem('authToken') ||
-        sessionStorage.getItem('authToken') ||
-        null;
-
-      if (!token) {
-        console.error('Authentication token not found for invoice');
-        return { success: false, error: 'Authentication required' };
-      }
+      const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
+      if (!token) return { success: false, error: 'Authentication required' };
 
       const response = await fetch(`${import.meta.env.VITE_API_URL}/send-invoice`, {
         method: 'POST',
@@ -642,23 +1108,36 @@ export default function PaymentPage() {
       }
 
       const result = await response.json();
-      console.log('Invoice email response:', result);
-
-      if (!result.success) {
-        throw new Error(result.message || 'Failed to send invoice');
-      }
-
-      return result;
+      return result.success ? result : { success: false, error: result.message || 'Failed to send invoice' };
     } catch (error) {
       console.error("Failed to send invoice email:", error);
       return { success: false, error: error.message };
     }
-  };
+  }, []);
 
-  const savePaymentData = async (invoiceData) => {
-    console.log("=== SAVE PAYMENT DATA FUNCTION START ===");
-    
+  const savePaymentData = useCallback(async (invoiceData) => {
     try {
+      // Extract card details from invoice if available (for Stripe)
+      let cardLast4 = "0000";
+      let cardBrand = "Unknown";
+      
+      if (invoiceData.paymentMethod.includes("Stripe") && invoiceData.paymentMethod.includes("ending in")) {
+        // Extract card details from Stripe payment method
+        const match = invoiceData.paymentMethod.match(/ending in (\d{4})/);
+        if (match) {
+          cardLast4 = match[1];
+        }
+        
+        const brandMatch = invoiceData.paymentMethod.match(/- (\w+) ending in/);
+        if (brandMatch) {
+          cardBrand = brandMatch[1];
+        }
+      } else if (selectedGateway === "card" && cardNumber && cardNumber.length >= 4) {
+        // For direct card payments
+        cardLast4 = cardNumber.slice(-4);
+        cardBrand = cardType?.name || "Card";
+      }
+
       const paymentData = {
         email: invoiceData.email,
         transactionId: invoiceData.transactionId,
@@ -671,32 +1150,23 @@ export default function PaymentPage() {
         contacts: plan?.slots || campaign?.emails || 0,
         currency: 'USD',
         paymentMethod: invoiceData.paymentMethod,
-        cardLast4: cardNumber.slice(-4),
+        cardLast4: cardLast4,
+        cardBrand: cardBrand,
         status: 'success'
       };
 
-      console.log('Payment data to save:', paymentData);
-
       const token = localStorage.getItem('authToken') || sessionStorage.getItem('authToken');
-      if (!token) {
-        throw new Error('No authentication token found');
-      }
+      if (!token) throw new Error('No authentication token found');
 
-      console.log('Token found, length:', token.length);
-      console.log('API URL:', import.meta.env.VITE_API_URL);
-
-      // Try multiple possible endpoints
- const endpoint = `${import.meta.env.VITE_API_URL}/api/save-payment`;
-
+      const possibleEndpoints = [
+        `${import.meta.env.VITE_API_URL}/api/save-payment`,
+        `${import.meta.env.VITE_API_URL}/save-payment`,
+        `${import.meta.env.VITE_API_URL}/payment/save`
+      ];
 
       let response;
-      let usedEndpoint;
-      let lastError;
-      
       for (const endpoint of possibleEndpoints) {
         try {
-          console.log(`Trying endpoint: ${endpoint}`);
-          
           response = await fetch(endpoint, {
             method: 'POST',
             headers: {
@@ -706,87 +1176,109 @@ export default function PaymentPage() {
             body: JSON.stringify(paymentData),
           });
 
-          usedEndpoint = endpoint;
-          console.log(`Endpoint ${endpoint} responded with status:`, response.status);
-          
-          if (response.status !== 404) {
-            // If it's not a 404, we found the right endpoint (even if it errors)
-            break;
-          }
+          if (response.status !== 404) break;
         } catch (fetchError) {
-          console.log(`Endpoint ${endpoint} failed:`, fetchError.message);
-          lastError = fetchError;
-          
-          // Continue to next endpoint unless this is the last one
           if (endpoint === possibleEndpoints[possibleEndpoints.length - 1]) {
             throw new Error(`All endpoints failed. Last error: ${fetchError.message}`);
           }
         }
       }
 
-      if (!response) {
-        throw new Error(`No valid response received. Last error: ${lastError?.message || 'Unknown'}`);
-      }
+      if (!response) throw new Error(`No valid response received`);
 
-      console.log(`Used endpoint: ${usedEndpoint}`);
-      console.log('Response status:', response.status);
-      console.log('Response ok:', response.ok);
-
-      // Get response text first for better debugging
       const responseText = await response.text();
-      console.log('Raw response text:', responseText);
-
       if (!response.ok) {
         let errorMessage = `HTTP ${response.status}`;
-        
         try {
           const errorData = JSON.parse(responseText);
           errorMessage = errorData.message || errorData.error || errorMessage;
         } catch (parseError) {
-          // If JSON parsing fails, use the raw text
           errorMessage = responseText || errorMessage;
         }
-        
         throw new Error(`API Error (${response.status}): ${errorMessage}`);
       }
 
-      // Try to parse response as JSON
       let result;
       try {
         result = JSON.parse(responseText);
       } catch (parseError) {
-        console.error('Failed to parse response as JSON:', parseError);
-        console.error('Response text was:', responseText);
-        
-        // If it's not JSON but response was OK, maybe the endpoint doesn't exist
-        // but server returned HTML instead
         if (responseText.includes('<!DOCTYPE html>') || responseText.includes('<html')) {
           throw new Error('Endpoint returned HTML instead of JSON - endpoint likely does not exist');
         }
-        
         throw new Error(`Invalid JSON response: ${responseText.substring(0, 100)}...`);
       }
 
-      console.log('Parsed save result:', result);
-
-      // Check if the result indicates success
-      if (result.success === false) {
-        throw new Error(result.message || result.error || 'API returned success: false');
-      }
-
-      // If no explicit success field, assume success if we got this far
       return result.success !== undefined ? result : { success: true, data: result };
-
     } catch (error) {
-      console.error('=== SAVE PAYMENT DATA ERROR ===');
-      console.error('Error message:', error.message);
-      console.error('Error stack:', error.stack);
-      throw error; // Re-throw for handlePay to catch
+      console.error('Save payment data error:', error);
+      throw error;
     }
-  };
+  }, [plan, campaign, selectedGateway, cardType, cardNumber]);
 
-  // Razorpay payment handler
-  const handleRazorpayPayment = async () => {
+  const testEmailConfiguration = useCallback(async () => {
+    const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+    if (!token) {
+      toast.error("Please log in first.");
+      return;
+    }
+
+    setTestingEmail(true);
+    const toastId = toast.loading("Testing email configuration...");
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/test-email`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success("Test email sent successfully! Check your inbox.", { id: toastId });
+      } else {
+        toast.error(`Email test failed: ${result.message}`, { id: toastId });
+      }
+    } catch (error) {
+      toast.error(`Email test error: ${error.message}`, { id: toastId });
+    } finally {
+      setTestingEmail(false);
+    }
+  }, []);
+
+  const testStripeConfiguration = useCallback(async () => {
+    const token = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
+    if (!token) {
+      toast.error("Please log in first.");
+      return;
+    }
+
+    setTestingStripe(true);
+    const toastId = toast.loading("Testing Stripe configuration...");
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/test-stripe`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        toast.success("Stripe configuration is working correctly!", { id: toastId });
+      } else {
+        toast.error(`Stripe test failed: ${result.message}`, { id: toastId });
+      }
+    } catch (error) {
+      toast.error(`Stripe test error: ${error.message}`, { id: toastId });
+    } finally {
+      setTestingStripe(false);
+    }
+  }, []);
+
+  const handleRazorpayPayment = useCallback(async () => {
     if (!razorpayLoaded) {
       toast.error("Razorpay is still loading. Please wait...");
       return;
@@ -806,25 +1298,15 @@ export default function PaymentPage() {
     const toastId = toast.loading("Processing payment with Razorpay...");
 
     try {
-      // Create a Razorpay order (in a real app, this would be done on your backend)
       const options = {
-        key: "rzp_test_1DP5mmOlF5G5ag", // Test key
-        amount: finalTotal * 100, // Amount in paise
+        key: "rzp_test_1DP5mmOlF5G5ag",
+        amount: finalTotal * 100,
         currency: "USD",
         name: "BounceCure",
         description: `Payment for ${plan ? plan.planName : campaign.description}`,
-        image: "", // Add your logo URL
-        prefill: {
-          email: email,
-          contact: "" // Add phone number if available
-        },
-        notes: {
-          plan: plan ? plan.planName : "Campaign",
-          amount: finalTotal
-        },
-        theme: {
-          color: "#d4af37"
-        },
+        prefill: { email: email },
+        notes: { plan: plan ? plan.planName : "Campaign", amount: finalTotal },
+        theme: { color: "#d4af37" },
         modal: {
           ondismiss: function() {
             setProcessing(false);
@@ -832,28 +1314,20 @@ export default function PaymentPage() {
           }
         },
         handler: async function(response) {
-          // This function is called when payment is successful
           try {
             const paymentId = response.razorpay_payment_id;
-            
-            // Generate invoice data
             const invoiceData = generateInvoiceData("razorpay", paymentId);
             
-            // Save payment data
             await savePaymentData(invoiceData);
             
-            // Send invoice email
             const emailResult = await sendInvoiceEmail(invoiceData);
             
             if (emailResult.success) {
               toast.success("Invoice sent to your email!", { duration: 3000 });
             } else {
-              toast.error(`Payment successful! But email failed: ${emailResult.error}`, { 
-                duration: 6000 
-              });
+              toast.error(`Payment successful! But email failed: ${emailResult.error}`, { duration: 6000 });
             }
             
-            // Set payment success
             setPaymentSuccess(true);
             setInvoiceSent(true);
             toast.success("Payment Successful!", { id: toastId, duration: 5000 });
@@ -865,10 +1339,7 @@ export default function PaymentPage() {
             
           } catch (error) {
             console.error("Razorpay payment processing error:", error);
-            toast.error(`Payment successful but processing failed: ${error.message}`, { 
-              id: toastId,
-              duration: 10000 
-            });
+            toast.error(`Payment successful but processing failed: ${error.message}`, { id: toastId, duration: 10000 });
           } finally {
             setProcessing(false);
           }
@@ -883,229 +1354,77 @@ export default function PaymentPage() {
       toast.error(`Razorpay payment failed: ${error.message}`, { id: toastId });
       setProcessing(false);
     }
-  };
+  }, [razorpayLoaded, email, agreed, finalTotal, plan, campaign, generateInvoiceData, savePaymentData, sendInvoiceEmail, addNotification]);
 
-  // Stripe payment handler
-  const handleStripePayment = async () => {
-    if (!stripeLoaded) {
-      toast.error("Stripe is still loading. Please wait...");
-      return;
-    }
-
-    if (!email.includes("@")) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
-
-    if (!agreed) {
-      toast.error("Please agree to the terms and conditions");
-      return;
-    }
-
-    // Validate card details
-    const cardError = validateCardNumber(cardNumber);
-    if (cardError) {
-      setCardNumberError(cardError);
-      toast.error("Please fix card number errors", { duration: 5000 });
-      return;
-    }
-
-    if (expiryError) {
-      toast.error("Please fix the expiry date error", { duration: 5000 });
-      return;
-    }
-
-    if (cvvError) {
-      toast.error("Please fix the CVV error", { duration: 5000 });
-      return;
-    }
-
+  // UPI payment handler
+  const handleUPIPayment = useCallback(async () => {
     setProcessing(true);
-    const toastId = toast.loading("Processing payment with Stripe...");
+    const toastId = toast.loading("Processing UPI payment...");
 
     try {
-      // Create a Stripe Elements instance
-      const stripe = window.Stripe('pk_test_51MhN7gSDG3y4sX2v6q8Z9J1x2v6q8Z9J1x2v6q8Z9J1x2v6q8Z9J1x2v6q8Z9J1x2v'); // Test key
+      const paymentId = `UPI${Date.now()}`;
+      const invoiceData = generateInvoiceData("upi", paymentId);
       
-      // Create a payment method with the card details
-      const { error, paymentMethod } = await stripe.createPaymentMethod({
-        type: 'card',
-        card: {
-          number: cardNumber.replace(/\s/g, ''),
-          exp_month: parseInt(expiry.split('/')[0]),
-          exp_year: parseInt('20' + expiry.split('/')[1]),
-          cvv: cvv,
-        },
-        billing_details: {
-          email: email,
-        },
-      });
-
-      if (error) {
-        throw new Error(error.message);
+      await savePaymentData(invoiceData);
+      
+      const emailResult = await sendInvoiceEmail(invoiceData);
+      
+      if (emailResult.success) {
+        toast.success("Invoice sent to your email!", { duration: 3000 });
+      } else {
+        toast.error(`Payment successful! But email failed: ${emailResult.error}`, { duration: 6000 });
       }
-
-      // Simulate payment confirmation (in a real app, this would be done on your backend)
-      setTimeout(async () => {
-        try {
-          // Generate a payment ID
-          const paymentId = paymentMethod.id;
-          
-          // Generate invoice data
-          const invoiceData = generateInvoiceData("stripe", paymentId);
-          
-          // Save payment data
-          await savePaymentData(invoiceData);
-          
-          // Send invoice email
-          const emailResult = await sendInvoiceEmail(invoiceData);
-          
-          if (emailResult.success) {
-            toast.success("Invoice sent to your email!", { duration: 3000 });
-          } else {
-            toast.error(`Payment successful! But email failed: ${emailResult.error}`, { 
-              duration: 6000 
-            });
-          }
-          
-          // Set payment success
-          setPaymentSuccess(true);
-          setInvoiceSent(true);
-          toast.success("Payment Successful!", { id: toastId, duration: 5000 });
-          
-          addNotification({
-            type: "payment",
-            message: `Payment of $${finalTotal} for ${plan ? plan.planName : campaign.description} was successful!`,
-          });
-          
-        } catch (error) {
-          console.error("Stripe payment processing error:", error);
-          toast.error(`Payment successful but processing failed: ${error.message}`, { 
-            id: toastId,
-            duration: 10000 
-          });
-        } finally {
-          setProcessing(false);
-        }
-      }, 2000);
+      
+      setPaymentSuccess(true);
+      setInvoiceSent(true);
+      toast.success("UPI Payment Successful!", { id: toastId, duration: 5000 });
+      
+      addNotification({
+        type: "payment",
+        message: `UPI payment of ₹${upiAmount} for ${plan ? plan.planName : campaign.description} was successful!`,
+      });
       
     } catch (error) {
-      console.error("Stripe payment error:", error);
-      toast.error(`Stripe payment failed: ${error.message}`, { id: toastId });
+      console.error("UPI payment processing error:", error);
+      toast.error(`UPI payment failed: ${error.message}`, { id: toastId, duration: 10000 });
+    } finally {
       setProcessing(false);
     }
-  };
+  }, [upiAmount, plan, campaign, generateInvoiceData, savePaymentData, sendInvoiceEmail, addNotification]);
 
-  // PayPal payment handler
-  const handlePayPalPayment = async () => {
-    if (!paypalLoaded) {
-      toast.error("PayPal is still loading. Please wait...");
-      return;
+  // Stripe payment handlers
+  const handleStripePaymentSuccess = useCallback(() => {
+    setPaymentSuccess(true);
+    setInvoiceSent(true);
+    toast.success("Payment Successful!", { duration: 5000 });
+    addNotification({
+      type: "payment",
+      message: `Payment of $${finalTotal} for ${plan ? plan.planName : campaign.description} was successful!`,
+    });
+  }, [finalTotal, plan, campaign, addNotification]);
+
+  const handleStripePaymentError = useCallback((errorMessage) => {
+    if (errorMessage.includes('test mode') || errorMessage.includes('live mode')) {
+      toast.error("There's a configuration issue with Stripe. Please refresh the page and try again.", { duration: 5000 });
+    } else {
+      toast.error(`Stripe payment failed: ${errorMessage}`, { duration: 5000 });
     }
+  }, []);
 
-    if (!email.includes("@")) {
-      toast.error("Please enter a valid email address");
-      return;
-    }
+  const handleStripeProcessingChange = useCallback((isProcessing) => {
+    setProcessing(isProcessing);
+  }, []);
 
-    if (!agreed) {
-      toast.error("Please agree to the terms and conditions");
-      return;
-    }
-
-    // Validate card details
-    const cardError = validateCardNumber(cardNumber);
-    if (cardError) {
-      setCardNumberError(cardError);
-      toast.error("Please fix card number errors", { duration: 5000 });
-      return;
-    }
-
-    if (expiryError) {
-      toast.error("Please fix the expiry date error", { duration: 5000 });
-      return;
-    }
-
-    if (cvvError) {
-      toast.error("Please fix the CVV error", { duration: 5000 });
-      return;
-    }
-
-    setProcessing(true);
-    const toastId = toast.loading("Processing payment with PayPal...");
-
-    try {
-      // Create a PayPal payment (in a real app, this would be done on your backend)
-      // For demo purposes, we'll simulate the payment flow
-      
-      // Simulate payment approval
-      setTimeout(async () => {
-        try {
-          // Generate a payment ID
-          const paymentId = `PAYID-${Date.now()}`;
-          
-          // Generate invoice data
-          const invoiceData = generateInvoiceData("paypal", paymentId);
-          
-          // Save payment data
-          await savePaymentData(invoiceData);
-          
-          // Send invoice email
-          const emailResult = await sendInvoiceEmail(invoiceData);
-          
-          if (emailResult.success) {
-            toast.success("Invoice sent to your email!", { duration: 3000 });
-          } else {
-            toast.error(`Payment successful! But email failed: ${emailResult.error}`, { 
-              duration: 6000 
-            });
-          }
-          
-          // Set payment success
-          setPaymentSuccess(true);
-          setInvoiceSent(true);
-          toast.success("Payment Successful!", { id: toastId, duration: 5000 });
-          
-          addNotification({
-            type: "payment",
-            message: `Payment of $${finalTotal} for ${plan ? plan.planName : campaign.description} was successful!`,
-          });
-          
-        } catch (error) {
-          console.error("PayPal payment processing error:", error);
-          toast.error(`Payment successful but processing failed: ${error.message}`, { 
-            id: toastId,
-            duration: 10000 
-          });
-        } finally {
-          setProcessing(false);
-        }
-      }, 2000);
-      
-    } catch (error) {
-      console.error("PayPal payment error:", error);
-      toast.error(`PayPal payment failed: ${error.message}`, { id: toastId });
-      setProcessing(false);
-    }
-  };
-
-  const handlePay = async () => {
+  const handlePay = useCallback(async () => {
     const authToken = localStorage.getItem("authToken") || sessionStorage.getItem("authToken");
-    console.log("=== PAYMENT PROCESSING DEBUG START ===");
-    console.log("Auth token present:", !!authToken);
-    console.log("API URL:", import.meta.env.VITE_API_URL);
-    console.log("Plan data:", plan);
-    console.log("Campaign data:", campaign);
-
     if (!authToken) {
       toast.error("Please log in first.", { duration: 5000 });
       navigate("/login");
       return;
     }
 
-    // Validate form fields first
     if (selectedGateway !== "razorpay") {
-      const cardError = validateCardNumber(cardNumber);
+      const cardError = validateCardNumber(cardNumber, cardType);
       if (cardError) {
         setCardNumberError(cardError);
         toast.error("Please fix card number errors", { duration: 5000 });
@@ -1132,66 +1451,44 @@ export default function PaymentPage() {
     const toastId = toast.loading("Processing payment...");
     
     try {
-      console.log("=== STEP 1: GENERATING INVOICE DATA ===");
       const invoiceData = generateInvoiceData();
-      console.log("Generated invoice data:", invoiceData);
-
-      console.log("=== STEP 2: ATTEMPTING TO SAVE PAYMENT DATA ===");
       toast.loading("Saving payment information...", { id: toastId });
       
       let saveResult;
       try {
         saveResult = await savePaymentData(invoiceData);
-        console.log("✅ Payment data saved successfully:", saveResult);
       } catch (saveError) {
-        console.error("❌ Save payment failed:", saveError.message);
-        
-        // For debugging, let's continue even if save fails
-        // In production, you might want to fail here
-        console.log("⚠️ Continuing with mock save for testing...");
+        console.error("Save payment failed:", saveError.message);
         saveResult = { success: true, message: "Mock save - backend unavailable" };
-        
-        toast.error(`Database save failed: ${saveError.message}. Continuing for testing...`, { 
-          duration: 3000 
-        });
+        toast.error(`Database save failed: ${saveError.message}. Continuing for testing...`, { duration: 3000 });
       }
 
-      console.log("=== STEP 3: SIMULATING PAYMENT PROCESSING ===");
       toast.loading("Processing payment with gateway...", { id: toastId });
       
-      // Simulate payment processing delay
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      if (selectedGateway === 'stripe' && useFallbackPayment) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        toast.success("Payment processed successfully in fallback mode!", { id: toastId, duration: 3000 });
+      } else if (selectedGateway === 'stripe') {
+        throw new Error("Stripe payment should be handled by the Stripe form");
+      } else {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
       
-      // Simulate successful payment processing
-      console.log("✅ Payment processing successful");
-
-      console.log("=== STEP 4: SENDING INVOICE EMAIL ===");
       toast.loading("Sending invoice email...", { id: toastId });
-      
       try {
         const emailResult = await sendInvoiceEmail(invoiceData);
         
         if (emailResult.success) {
-          console.log("✅ Invoice email sent successfully");
           toast.success("Invoice sent to your email!", { duration: 3000 });
         } else {
-          console.warn("⚠️ Email failed but payment succeeded:", emailResult.error);
-          toast.error(`Payment successful! But email failed: ${emailResult.error}`, { 
-            duration: 6000 
-          });
+          toast.error(`Payment successful! But email failed: ${emailResult.error}`, { duration: 6000 });
         }
       } catch (emailError) {
-        console.error("❌ Invoice email error:", emailError);
-        toast.error(`Payment successful! Email error: ${emailError.message}`, { 
-          duration: 6000 
-        });
+        toast.error(`Payment successful! Email error: ${emailError.message}`, { duration: 6000 });
       }
 
-      // SUCCESS - Payment completed
-      console.log("🎉 PAYMENT PROCESSING COMPLETED SUCCESSFULLY 🎉");
       setPaymentSuccess(true);
       setInvoiceSent(true);
-      setRetryCount(0); // Reset retry count on success
       toast.success("Payment Successful!", { id: toastId, duration: 5000 });
 
       addNotification({
@@ -1200,14 +1497,8 @@ export default function PaymentPage() {
       });
 
     } catch (error) {
-      console.error("💥 PAYMENT PROCESSING FAILED 💥");
-      console.error("Error details:", {
-        message: error.message,
-        stack: error.stack,
-        name: error.name
-      });
+      console.error("Payment processing failed:", error);
       
-      // More specific error messages
       let errorMessage = "Payment processing failed. Please try again.";
       let actionRequired = false;
       
@@ -1238,41 +1529,18 @@ export default function PaymentPage() {
         errorMessage = `Payment failed: ${error.message}`;
       }
 
-      // Implement retry logic
-      if (retryCount < 2) {
-        const newRetryCount = retryCount + 1;
-        setRetryCount(newRetryCount);
-        
-        toast.error(`${errorMessage} Retrying... (${newRetryCount}/2)`, { 
-          id: toastId,
-          duration: 3000,
-          icon: actionRequired ? '💳' : '🔄'
-        });
-        
-        // Add a small delay before retry
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        // Retry the payment
-        setProcessing(false);
-        return handlePay();
-      } else {
-        toast.error(errorMessage, { 
-          id: toastId, 
-          duration: 10000,
-          icon: actionRequired ? '💳' : '⚠️'
-        });
-        
-        // Reset retry count after max retries
-        setRetryCount(0);
-      }
+      toast.error(errorMessage, { 
+        id: toastId, 
+        duration: 10000,
+        icon: actionRequired ? '💳' : '⚠️'
+      });
       
     } finally {
       setProcessing(false);
-      console.log("=== PAYMENT PROCESSING DEBUG END ===");
     }
-  };
+  }, [canPay, selectedGateway, cardNumber, validateCardNumber, expiryError, cvvError, generateInvoiceData, savePaymentData, sendInvoiceEmail, finalTotal, plan, campaign, addNotification, navigate, useFallbackPayment]);
 
-  // Conditional rendering after all hooks
+  // Conditional rendering
   if (redirecting) {
     return (
       <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
@@ -1317,7 +1585,6 @@ export default function PaymentPage() {
     <div className="min-h-screen bg-[#0f0f0f] text-white py-10 px-4 md:px-8 font-sans">
       <Toaster position="top-right" duration={5000} />
 
-      {/* Payment Success Overlay */}
       {paymentSuccess && (
         <div className="fixed inset-0 bg-black bg-opacity-90 flex items-center justify-center z-50">
           <div className="bg-[#1a1a1a] p-8 rounded-xl max-w-md w-full mx-4 text-center">
@@ -1388,11 +1655,10 @@ export default function PaymentPage() {
             </div>
           )}
 
-          {/* Payment Method Selection */}
           <div className="mb-6">
             <p className="text-sm font-medium text-gray-300 mb-3">Select Payment Method:</p>
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              {["card", "razorpay", "stripe", "paypal"].map((gateway) => (
+              {["card", "razorpay", "stripe", "upi"].map((gateway) => (
                 <button
                   key={gateway}
                   className={`flex flex-col items-center justify-center p-3 rounded-lg border transition-all ${
@@ -1420,94 +1686,6 @@ export default function PaymentPage() {
             </div>
           </div>
 
-          {/* Card Details Form - Only show for card, stripe, and paypal */}
-          {selectedGateway !== "razorpay" && (
-            <div className="space-y-4 mb-6">
-              <div>
-                <label className="block text-sm mb-1 text-gray-300">
-                  Card Number <span className="text-red-500">*</span>
-                </label>
-                <div className="relative">
-                  <input
-                    type="text"
-                    className={`w-full bg-[#111] border ${cardNumberError ? 'border-red-500' : 'border-gray-700'} text-white px-3 py-2 rounded pr-12`}
-                    placeholder="1234 5678 9012 3456"
-                    value={cardNumber}
-                    onChange={handleCardInput}
-                    maxLength={cardType ? (cardType.name === "American Express" ? 17 : 19) : 19}
-                    required
-                  />
-                  {cardType && (
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center">
-                      <img
-                        src={cardType.icon}
-                        alt={cardType.name}
-                        className="w-10 h-6 object-contain"
-                      />
-                    </div>
-                  )}
-                </div>
-                {cardNumberError && (
-                  <p className="mt-1 text-xs text-red-500">{cardNumberError}</p>
-                )}
-                {cardType && (
-                  <div className="mt-1 text-xs text-gray-400 flex justify-between">
-                    <span className="flex items-center">
-                      <img
-                        src={cardType.icon}
-                        alt={cardType.name}
-                        className="w-5 h-3 mr-1 object-contain"
-                      />
-                      {cardType.name} detected
-                    </span>
-                    <span>
-                      {cardNumber.replace(/\s/g, "").length}/{cardType.maxLength} digits
-                    </span>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex flex-col sm:flex-row gap-4">
-                <div className="flex-1">
-                  <label className="block text-sm mb-1 text-gray-300">
-                    Expiry Date <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    className={`w-full bg-[#111] border ${expiryError ? 'border-red-500' : 'border-gray-700'} text-white px-3 py-2 rounded`}
-                    placeholder="MM/YY"
-                    value={expiry}
-                    onChange={handleExpiryInput}
-                    maxLength={5}
-                    required
-                  />
-                  {expiryError && (
-                    <p className="mt-1 text-xs text-red-500">{expiryError}</p>
-                  )}
-                </div>
-
-                <div className="flex-1">
-                  <label className="block text-sm mb-1 text-gray-300">
-                    CVV <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="password"
-                    className={`w-full bg-[#111] border ${cvvError ? 'border-red-500' : 'border-gray-700'} text-white px-3 py-2 rounded`}
-                    placeholder="3-4 digits"
-                    value={cvv}
-                    onChange={handleCvvInput}
-                    maxLength={4}
-                    required
-                  />
-                  {cvvError && (
-                    <p className="mt-1 text-xs text-red-500">{cvvError}</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Razorpay Notice */}
           {selectedGateway === "razorpay" && (
             <div className="mb-6 p-4 bg-blue-900 bg-opacity-30 rounded-lg border border-blue-700">
               <div className="flex items-start">
@@ -1523,15 +1701,240 @@ export default function PaymentPage() {
             </div>
           )}
 
-          <div className="mt-6">
-            <button
-              onClick={testEmailConfiguration}
-              disabled={testingEmail}
-              className="text-sm text-[#d4af37] hover:underline"
-            >
-              {testingEmail ? "Testing..." : "Test email configuration"}
-            </button>
-          </div>
+          {selectedGateway === "stripe" && (
+            <div className="mb-6 p-4 bg-purple-900 bg-opacity-30 rounded-lg border border-purple-700">
+              <div className="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-purple-400 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="text-sm text-purple-300">
+                    Your payment will be processed securely through Stripe. No card details are stored on our servers.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {selectedGateway === "upi" && (
+            <div className="mb-6 p-4 bg-green-900 bg-opacity-30 rounded-lg border border-green-700">
+              <div className="flex items-start">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-green-400 mr-2 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                  <p className="text-sm text-green-300">
+                    Pay using UPI (Unified Payments Interface). Scan the QR code with any UPI app or use the UPI ID directly.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Payment Method Specific Forms */}
+          {selectedGateway === "stripe" && stripePromise ? (
+            <div>
+              {stripeError ? (
+                <div className="mb-6 p-4 bg-red-900 bg-opacity-30 rounded-lg border border-red-700">
+                  <div className="flex items-start">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-red-400 mr-2 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    <div className="flex-1">
+                      <p className="text-sm text-red-300">
+                        {stripeError}
+                      </p>
+                      <div className="mt-3 flex space-x-2">
+                        <button
+                          onClick={() => {
+                            setStripeError(null);
+                            setClientSecret("");
+                            setStripePromise(null);
+                            setStripeLoaded(false);
+                          }}
+                          className="text-sm text-white underline"
+                        >
+                          Retry Stripe Setup
+                        </button>
+                        <button
+                          onClick={() => {
+                            setUseFallbackPayment(true);
+                            setStripeError(null);
+                          }}
+                          className="text-sm text-white underline"
+                        >
+                          Use Fallback Mode
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <div className="mb-4 p-3 bg-gray-800 rounded-lg text-sm text-gray-300 flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-400 mr-2" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                    Using Stripe in {stripeMode} mode
+                  </div>
+                  
+                  {useFallbackPayment ? (
+                    <div className="mb-6 p-4 bg-yellow-900 bg-opacity-30 rounded-lg border border-yellow-700">
+                      <div className="flex items-start">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-yellow-400 mr-2 mt-0.5" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                        <div>
+                          <p className="text-sm text-yellow-300">
+                            Payment service is currently unavailable. Your payment will be processed manually. 
+                            You will receive a confirmation email within 24 hours.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  ) : clientSecret ? (
+                    <Elements stripe={stripePromise} options={{ clientSecret }}>
+                      <StripePaymentForm 
+                        email={email}
+                        agreed={agreed}
+                        processing={processing}
+                        finalTotal={finalTotal}
+                        plan={plan}
+                        campaign={campaign}
+                        generateInvoiceData={generateInvoiceData}
+                        savePaymentData={savePaymentData}
+                        sendInvoiceEmail={sendInvoiceEmail}
+                        addNotification={addNotification}
+                        onProcessingChange={handleStripeProcessingChange}
+                        onPaymentSuccess={handleStripePaymentSuccess}
+                        onPaymentError={handleStripePaymentError}
+                        clientSecret={clientSecret}
+                        selectedGateway={selectedGateway}
+                        useFallbackPayment={useFallbackPayment}
+                      />
+                    </Elements>
+                  ) : (
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 border-t-4 border-[#d4af37] border-solid rounded-full animate-spin mx-auto mb-4"></div>
+                      <p className="text-gray-400">Initializing secure payment...</p>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          ) : (
+            <>
+              {selectedGateway !== "razorpay" && selectedGateway !== "upi" && (
+                <div className="space-y-4 mb-6">
+                  <div>
+                    <label className="block text-sm mb-1 text-gray-300">
+                      Card Number <span className="text-red-500">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        className={`w-full bg-[#111] border ${cardNumberError ? 'border-red-500' : 'border-gray-700'} text-white px-3 py-2 rounded pr-12`}
+                        placeholder="1234 5678 9012 3456"
+                        value={cardNumber}
+                        onChange={handleCardInput}
+                        maxLength={cardType ? (cardType.name === "American Express" ? 17 : 19) : 19}
+                        required
+                      />
+                      {cardType && (
+                        <div className="absolute right-3 top-1/2 transform -translate-y-1/2 flex items-center">
+                          <img
+                            src={cardType.icon}
+                            alt={cardType.name}
+                            className="w-10 h-6 object-contain"
+                          />
+                        </div>
+                      )}
+                    </div>
+                    {cardNumberError && (
+                      <div className="mt-1 text-xs text-red-500 flex items-start">
+                        <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1 mt-0.5 flex-shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                          <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                        </svg>
+                        <span>{cardNumberError}</span>
+                      </div>
+                    )}
+                    {cardType && (
+                      <div className="mt-1 text-xs text-gray-400 flex justify-between">
+                        <span className="flex items-center">
+                          <img src={cardType.icon} alt={cardType.name} className="w-5 h-3 mr-1 object-contain" />
+                          {cardType.name} detected
+                        </span>
+                        <span>{cardNumber.replace(/\s/g, "").length}/{cardType.maxLength} digits</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex flex-col sm:flex-row gap-4">
+                    <div className="flex-1">
+                      <label className="block text-sm mb-1 text-gray-300">
+                        Expiry Date <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        className={`w-full bg-[#111] border ${expiryError ? 'border-red-500' : 'border-gray-700'} text-white px-3 py-2 rounded`}
+                        placeholder="MM/YY"
+                        value={expiry}
+                        onChange={handleExpiryInput}
+                        maxLength={5}
+                        required
+                      />
+                      {expiryError && <p className="mt-1 text-xs text-red-500">{expiryError}</p>}
+                    </div>
+
+                    <div className="flex-1">
+                      <label className="block text-sm mb-1 text-gray-300">
+                        CVV <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="password"
+                        className={`w-full bg-[#111] border ${cvvError ? 'border-red-500' : 'border-gray-700'} text-white px-3 py-2 rounded`}
+                        placeholder="3-4 digits"
+                        value={cvv}
+                        onChange={handleCvvInput}
+                        maxLength={4}
+                        required
+                      />
+                      {cvvError && <p className="mt-1 text-xs text-red-500">{cvvError}</p>}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {selectedGateway === "upi" && (
+                <div className="mb-6">
+                  <UPIScanner 
+                    amount={upiAmount}
+                    upiId={upiId}
+                    note={`Payment for ${plan ? plan.planName : campaign.description}`}
+                    onPaymentConfirmed={handleUPIPayment}
+                  />
+                </div>
+              )}
+
+              <div className="mt-6 flex space-x-4">
+                <button
+                  onClick={testEmailConfiguration}
+                  disabled={testingEmail}
+                  className="text-sm text-[#d4af37] hover:underline"
+                >
+                  {testingEmail ? "Testing..." : "Test email configuration"}
+                </button>
+                
+                <button
+                  onClick={testStripeConfiguration}
+                  disabled={testingStripe}
+                  className="text-sm text-[#d4af37] hover:underline"
+                >
+                  {testingStripe ? "Testing Stripe..." : "Test Stripe configuration"}
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Summary Section */}
@@ -1578,7 +1981,7 @@ export default function PaymentPage() {
               {discountAmount > 0 && (
                 <li className="flex justify-between text-green-400">
                   <span>
-                    Discount ({discountType === "percentage" ? `${discount}%` : `$${discount}`}):
+                    Discount ({specialOffer?.discountType === "percentage" ? `${specialOffer.discountValue}%` : `$${specialOffer?.discountValue}`}):
                   </span>
                   <span>- {discountAmount.toFixed(2)}</span>
                 </li>
@@ -1592,6 +1995,12 @@ export default function PaymentPage() {
                 <span>Total:</span>
                 <span>${finalTotal}</span>
               </li>
+              {selectedGateway === "upi" && (
+                <li className="flex justify-between text-sm text-gray-400 mt-2">
+                  <span>Equivalent in INR:</span>
+                  <span>₹{upiAmount}</span>
+                </li>
+              )}
               {discountAmount > 0 && (
                 <li className="flex justify-center text-green-400 text-sm mt-2">
                   You're saving ${discountAmount.toFixed(2)} with this offer!
@@ -1617,57 +2026,51 @@ export default function PaymentPage() {
               </label>
             </div>
 
-            <button
-              onClick={() => {
-                if (selectedGateway === 'razorpay') {
-                  handleRazorpayPayment();
-                } else if (selectedGateway === 'stripe') {
-                  handleStripePayment();
-                } else if (selectedGateway === 'paypal') {
-                  handlePayPalPayment();
-                } else {
-                  handlePay(); // Default card payment
-                }
-              }}
-              className={`w-full ${canPay ? "bg-[#d4af37] hover:bg-[#eac94d]" : "bg-gray-700 cursor-not-allowed"} text-black font-bold py-3 rounded-lg transition flex items-center justify-center`}
-              disabled={!canPay || processing}
-            >
-              {processing ? (
-                <>
-                  <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Processing...
-                </>
-              ) : (
-                <>
-                  {selectedGateway === 'razorpay' ? (
-                    <>
-                      <PaymentGatewayIcon gateway="razorpay" />
-                      <span className="ml-2">Pay with Razorpay</span>
-                    </>
-                  ) : selectedGateway === 'stripe' ? (
-                    <>
-                      <PaymentGatewayIcon gateway="stripe" />
-                      <span className="ml-2">Pay with Stripe</span>
-                    </>
-                  ) : selectedGateway === 'paypal' ? (
-                    <>
-                      <PaymentGatewayIcon gateway="paypal" />
-                      <span className="ml-2">Pay with PayPal</span>
-                    </>
-                  ) : (
-                    `Pay $${finalTotal}`
-                  )}
-                </>
-              )}
-            </button>
-            
-            {retryCount > 0 && (
-              <p className="text-xs text-yellow-400 mt-2 text-center">
-                Retry attempt {retryCount} of 2
-              </p>
+            {selectedGateway !== "upi" && (
+              <button
+                onClick={() => {
+                  if (selectedGateway === 'razorpay') {
+                    handleRazorpayPayment();
+                  } else if (selectedGateway === 'stripe') {
+                    if (useFallbackPayment) {
+                      handlePay();
+                    }
+                    return;
+                  } else {
+                    handlePay();
+                  }
+                }}
+                className={`w-full ${canPay ? "bg-[#d4af37] hover:bg-[#eac94d]" : "bg-gray-700 cursor-not-allowed"} text-black font-bold py-3 rounded-lg transition flex items-center justify-center`}
+                disabled={!canPay || processing || (selectedGateway === 'stripe' && !useFallbackPayment)}
+              >
+                {processing ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    {selectedGateway === 'razorpay' ? (
+                      <>
+                        <PaymentGatewayIcon gateway="razorpay" />
+                        <span className="ml-2">Pay with Razorpay</span>
+                      </>
+                    ) : selectedGateway === 'stripe' ? (
+                      <>
+                        <PaymentGatewayIcon gateway="stripe" />
+                        <span className="ml-2">
+                          {useFallbackPayment ? "Process Payment (Fallback Mode)" : "Pay with Stripe"}
+                        </span>
+                      </>
+                    ) : (
+                      `Pay $${finalTotal}`
+                    )}
+                  </>
+                )}
+              </button>
             )}
           </div>
         </div>
@@ -1676,11 +2079,7 @@ export default function PaymentPage() {
       <div className="text-center mt-10 text-sm text-gray-500">
         <p>
           Need help?{" "}
-          <Link
-            to="/support"
-            className="underline text-white cursor-pointer"
-            aria-label="Go to support page"
-          >
+          <Link to="/support" className="underline text-white cursor-pointer" aria-label="Go to support page">
             Contact support
           </Link>
         </p>
@@ -1703,6 +2102,10 @@ export function InvoicePage() {
     }
   }, [state, navigate]);
 
+  const handleDownload = useCallback(() => {
+    toast.success("Invoice downloaded successfully!", { duration: 5000 });
+  }, []);
+
   if (!invoiceData) {
     return (
       <div className="min-h-screen bg-[#0f0f0f] flex items-center justify-center">
@@ -1711,16 +2114,11 @@ export function InvoicePage() {
     );
   }
 
-  const handleDownload = () => {
-    toast.success("Invoice downloaded successfully!", { duration: 5000 });
-  };
-
   return (
     <div className="min-h-screen bg-white text-black p-8">
       <Toaster position="top-right" duration={5000} />
 
       <div className="max-w-4xl mx-auto bg-white shadow-lg rounded-lg overflow-hidden">
-        {/* Header Section */}
         <div className="flex justify-between items-start p-8 border-b">
           <div className="flex items-center">
             <div className="w-16 h-16 bg-[#d4af37] rounded-full flex items-center justify-center text-white font-bold text-xl mr-4">
@@ -1739,7 +2137,6 @@ export function InvoicePage() {
           </div>
         </div>
 
-        {/* Issued To and Issued By Section */}
         <div className="grid grid-cols-2 gap-8 p-8 border-b">
           <div>
             <h2 className="text-lg font-semibold mb-4 text-gray-700">Issued To:</h2>
@@ -1758,7 +2155,6 @@ export function InvoicePage() {
           </div>
         </div>
 
-        {/* Invoice Details Section */}
         <div className="p-8">
           <h2 className="text-xl font-semibold mb-6 text-gray-800">Invoice Details</h2>
 

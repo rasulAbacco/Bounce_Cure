@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import Papa from "papaparse";
 
-const API_URL = "http://localhost:5000"; // ✅ centralize API
+const API_URL = import.meta.env.VITE_VRI_URL;
 
 // --- Create Modal ---
 const CreateListModal = ({ onClose, onListCreated }) => {
