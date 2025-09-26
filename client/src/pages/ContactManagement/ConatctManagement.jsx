@@ -35,6 +35,7 @@ import Tasks from "./pages/Tasks";
 import Lists from "./pages/Lists";
 import Orders from "./pages/Orders";
 import Inboxs from "./pages/Inbox";
+const API_URL = import.meta.env.VITE_VRI_URL;
 
 /**
  * NOTE:
@@ -217,7 +218,7 @@ export default function ContactManagement() {
     { icon: Package, label: "Orders" },
   ];
 
-  const baseURL = "http://localhost:5000";
+  const baseURL = import.meta.env.VITE_VRI_URL;
 
   // Helper: try multiple endpoints for a resource and return first successful result
   const fetchWithFallback = async (paths = []) => {
@@ -291,7 +292,7 @@ export default function ContactManagement() {
   useEffect(() => {
     const fetchDashboardStats = async () => {
       try {
-        const res = await axios.get("http://localhost:5000/stats");
+        const res = await axios.get(`${baseURL}/stats`);
         setPipelinePercents(res.data.pipelinePercents || []);
         setChartData(res.data.chartData || []);
       } catch (err) {

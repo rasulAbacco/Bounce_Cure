@@ -23,9 +23,9 @@
 //         },
 //     ];
 // };
-
+const API_URL = import.meta.env.VITE_VRI_URL;
 export const getEmails = async () => {
-    const response = await fetch('http://localhost:5000/api/emails');
+    const response = await fetch(`${API_URL}/api/emails`);
     if (!response.ok) throw new Error('Failed to fetch emails');
     return await response.json();
 };

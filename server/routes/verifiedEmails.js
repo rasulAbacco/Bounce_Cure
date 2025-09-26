@@ -7,55 +7,56 @@ const router = express.Router();
 const prisma = new PrismaClient();
 
 // Set SendGrid API key
-sgMail.setApiKey(process.env.SENDGRID_CMP_API_KEY); // Use the correct API key
+sgMail.setApiKey(process.env.SENDGRID_USER_API_KEY); // Use the correct API key
 
 // POST /api/verified-emails/send-verification
 router.post('/send-verification', async (req, res) => {
   try {
     console.log('Received verification request:', req.body);
-    
+
     const { email, fromName } = req.body;
-    
+
     // Validate inputs
     if (!email || !fromName) {
       console.error('Missing required fields:', { email, fromName });
       return res.status(400).json({ error: "Email and fromName are required" });
     }
-    
+
     // Generate a verification token
     const verificationToken = Math.random().toString(36).substring(2, 15) + Math.random().toString(36).substring(2, 15);
     console.log('Generated token:', verificationToken);
-    
+
     // Set expiration time (24 hours from now)
     const expiresAt = new Date();
     expiresAt.setHours(expiresAt.getHours() + 24);
-    
+
     // Save verification token to database
     console.log('Saving to database...');
     const dbRecord = await prisma.campaignVerifiedEmail.upsert({
       where: { email },
-      update: { 
-        verificationToken, 
+      update: {
+        verificationToken,
         isVerified: false,
         verifiedAt: null,
         expiresAt,
         fromName
       },
-      create: { 
-        email, 
-        verificationToken, 
+      create: {
+        email,
+        verificationToken,
         isVerified: false,
         expiresAt,
         fromName
       }
     });
     console.log('Database record saved:', dbRecord);
-    
+
     // Create verification URL - Update this to your actual domain
     const baseUrl = process.env.BASE_URL || 'http://localhost:5173';
-    const verificationUrl = `${baseUrl}/verify-email?token=${verificationToken}`;
+    const redirectPath = req.body.redirect || 'login'; // default to login
+    const verificationUrl = `${baseUrl}/verify-email?token=${verificationToken}&redirect=${redirectPath}&email=${encodeURIComponent(email)}`;
     console.log('Verification URL:', verificationUrl);
-    
+
     // Setup email data for SendGrid (REAL EMAIL DELIVERY)
     const msg = {
       to: email, // This will be the ACTUAL recipient
@@ -112,21 +113,21 @@ router.post('/send-verification', async (req, res) => {
         </div>
       `,
     };
-    
+
     // Send the REAL email using SendGrid
     console.log('Sending REAL email with SendGrid to:', email);
     await sgMail.send(msg);
     console.log('✅ REAL email sent successfully to recipient');
-    
-    res.json({ 
-      success: true, 
+
+    res.json({
+      success: true,
       message: "Verification email sent successfully to recipient",
       recipient: email
     });
-    
+
   } catch (error) {
     console.error("❌ Error sending verification email:", error);
-    
+
     // Better error handling for SendGrid
     let errorMessage = "Failed to send verification email";
     if (error.response?.body?.errors) {
@@ -134,8 +135,8 @@ router.post('/send-verification', async (req, res) => {
     } else if (error.message) {
       errorMessage = error.message;
     }
-    
-    res.status(500).json({ 
+
+    res.status(500).json({
       error: errorMessage,
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
@@ -146,48 +147,48 @@ router.post('/send-verification', async (req, res) => {
 router.get('/verify/:token', async (req, res) => {
   try {
     const { token } = req.params;
-    
+
     console.log('🔍 Verification request received');
     console.log('📝 Token from URL:', token);
-    
+
     // Find the verification record by token
     const record = await prisma.campaignVerifiedEmail.findFirst({
       where: { verificationToken: token }
     });
-    
+
     if (!record) {
       console.error('❌ Token not found in database');
-      return res.status(404).json({ 
+      return res.status(404).json({
         error: "Invalid verification token",
         details: "The token does not exist in our database"
       });
     }
-    
+
     console.log('✅ Token found in database');
     console.log('📧 Email associated with token:', record.email);
-    
+
     // Check if token is expired
     const now = new Date();
     console.log('⏰ Current time:', now);
     console.log('⏳ Token expires at:', record.expiresAt);
-    
+
     if (now > record.expiresAt) {
       console.error('❌ Token expired');
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Verification token has expired",
         details: "Please request a new verification email"
       });
     }
-    
+
     // Check if already verified
     if (record.isVerified) {
       console.log('✅ Email already verified for:', record.email);
-      return res.json({ 
+      return res.json({
         message: "Email is already verified",
-        email: record.email 
+        email: record.email
       });
     }
-    
+
     // Update the record to mark as verified
     console.log('🔄 Marking email as verified...');
     const updatedRecord = await prisma.campaignVerifiedEmail.update({
@@ -197,18 +198,18 @@ router.get('/verify/:token', async (req, res) => {
         verifiedAt: now
       }
     });
-    
+
     console.log('✅ Email verified successfully for:', record.email);
     console.log('📊 Updated record:', updatedRecord);
-    
-    return res.json({ 
+
+    return res.json({
       message: "Email verified successfully",
-      email: record.email 
+      email: record.email
     });
-    
+
   } catch (error) {
     console.error("❌ Error verifying email:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to verify email",
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
@@ -219,17 +220,17 @@ router.get('/verify/:token', async (req, res) => {
 router.get('/check/:email', async (req, res) => {
   try {
     const { email } = req.params;
-    
+
     const record = await prisma.campaignVerifiedEmail.findUnique({
       where: { email }
     });
-    
+
     if (!record) {
       return res.json({ isVerified: false });
     }
-    
-    res.json({ 
-      isVerified: record.isVerified, 
+
+    res.json({
+      isVerified: record.isVerified,
       verifiedAt: record.verifiedAt,
       fromName: record.fromName
     });
@@ -245,7 +246,7 @@ router.get('/', async (req, res) => {
     const verifiedEmails = await prisma.campaignVerifiedEmail.findMany({
       where: { isVerified: true }
     });
-    
+
     res.json(verifiedEmails);
   } catch (error) {
     console.error("Error fetching verified emails:", error);
