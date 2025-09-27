@@ -59,7 +59,7 @@ const Leads = () => {
     const fetchLeads = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(API_URL);
+        const response = await axios.get(`${API_URL}/api/leads`);
         setLeads(response.data);
       } catch (err) {
         setError("Failed to fetch leads. Please try again.");
@@ -103,7 +103,7 @@ const Leads = () => {
   const handleAddLead = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.post(API_URL, newLead);
+      const response = await axios.post(`${API_URL}/api/leads`, newLead);
       setLeads([response.data, ...leads]);
       setNewLead({
         name: "",
@@ -125,7 +125,7 @@ const Leads = () => {
   const handleUpdateLead = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.put(`${API_URL}/${editingLead.id}`, editingLead);
+      const response = await axios.put(`${API_URL}/api/leads/${editingLead.id}`, editingLead);
       setLeads(leads.map(lead => 
         lead.id === editingLead.id ? response.data : lead
       ));
@@ -163,7 +163,7 @@ const Leads = () => {
   const handleDeleteLead = async (id) => {
     if (window.confirm("Are you sure you want to delete this lead?")) {
       try {
-        await axios.delete(`${API_URL}/${id}`);
+        await axios.delete(`${API_URL}/api/leads/${id}`);
         setLeads(leads.filter(lead => lead.id !== id));
       } catch (err) {
         setError("Failed to delete lead. Please try again.");
@@ -190,22 +190,26 @@ const Leads = () => {
   };
   
   // Filter leads based on filters and search term
-  const filteredLeads = leads.filter((lead) => {
+  // Make sure leads is always an array before filtering
+  const safeLeads = Array.isArray(leads) ? leads : [];
+
+  const filteredLeads = safeLeads.filter((lead) => {
     const matchesStatus = filters.status ? lead.status === filters.status : true;
     const matchesCampaign = filters.campaign ? lead.campaign === filters.campaign : true;
     const matchesSource = filters.source ? lead.source === filters.source : true;
-    const matchesSearch = searchTerm 
+    const matchesSearch = searchTerm
       ? lead.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        lead.campaign.toLowerCase().includes(searchTerm.toLowerCase())
+      lead.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      lead.campaign.toLowerCase().includes(searchTerm.toLowerCase())
       : true;
-    
+
     return matchesStatus && matchesCampaign && matchesSource && matchesSearch;
   });
+
   
   // Get unique campaigns and sources for filter dropdowns
-  const campaigns = [...new Set(leads.map(lead => lead.campaign))];
-  const sources = [...new Set(leads.map(lead => lead.source))];
+  const campaigns = [...new Set(safeLeads.map(lead => lead.campaign))];
+  const sources = [...new Set(safeLeads.map(lead => lead.source))];
   
   const badgeStyle = {
     Opened: "bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 border border-green-300 dark:border-green-700",
@@ -234,7 +238,7 @@ const Leads = () => {
       )}
       
       {/* Quick Stats */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
           { label: "Total Leads", value: leads.length },
           { label: "Active Campaigns", value: campaigns.length },
@@ -247,7 +251,7 @@ const Leads = () => {
           </div>
         ))}
       </div>
-      
+       */}
       {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
         <div className="flex items-center gap-2 bg-black dark:bg-zinc-900 border border-[#c2831f] dark:border-zinc-800 rounded-lg px-3 py-2 w-full sm:w-1/3">
