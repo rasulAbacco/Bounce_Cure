@@ -69,26 +69,49 @@ router.post("/create", async (req, res) => {
 router.get("/check/:email", async (req, res) => {
     try {
         const email = decodeURIComponent(req.params.email).toLowerCase();
-        const record = await prisma.verifiedSender.findUnique({ where: { email } });
-        if (!record) return res.status(404).json({ error: "No sender record found" });
-        if (!record.sendgridSenderId) {
-            // If no sendgridSenderId, the sender was not created via the SendGrid API
-            return res.json({ isRegisteredWithSendGrid: false, isVerified: !!record.verified, record });
+        let record = await prisma.verifiedSender.findUnique({ where: { email } });
+
+        if (!record) {
+            return res.status(404).json({ error: "No sender record found" });
         }
 
-        // fetch SendGrid sender info
-        const sgRes = await axios.get(`${SG_BASE}/senders/${record.sendgridSenderId}`, { headers: sgHeaders() });
+        if (!record.sendgridSenderId) {
+            return res.json({
+                isRegisteredWithSendGrid: false,
+                isVerified: !!record.verified,
+                record,
+            });
+        }
+
+        // fetch from SendGrid
+        const sgRes = await axios.get(
+            `${SG_BASE}/senders/${record.sendgridSenderId}`,
+            { headers: sgHeaders() }
+        );
         const sgData = sgRes.data;
 
-        // Determine "verified" heuristically:
+        // ✅ check sender-specific verified flag
         const isVerified =
-            !!sgData.verified ||
+            sgData.verified?.status === true ||
+            sgData.verified?.sender === true ||
             sgData.status === "verified" ||
             sgData.status === "active" ||
             sgData.status === "approved";
 
-        // update local DB status
-        await prisma.verifiedSender.update({
+        const updated = await prisma.verifiedSender.update({
+            where: { id: sender.id },
+            data: {
+                sendgridStatus: sgData.status || JSON.stringify(sgData),
+                verified: isVerified,                         // ✅ always sync
+                verifiedAt: isVerified ? new Date() : null,   // ✅ clear if unverified
+            },
+        });
+
+
+
+
+        // update DB
+        record = await prisma.verifiedSender.update({
             where: { email },
             data: {
                 sendgridStatus: sgData.status || JSON.stringify(sgData),
@@ -96,26 +119,100 @@ router.get("/check/:email", async (req, res) => {
             },
         });
 
-        return res.json({ sendgrid: sgData, isVerified });
+        return res.json({
+            sendgrid: sgData,
+            isVerified,
+            record,
+        });
     } catch (err) {
         console.error("check sender error:", err.response?.data || err.message);
-        return res.status(500).json({ error: "Failed to check sendgrid sender", details: err.response?.data || err.message });
+        return res.status(500).json({
+            error: "Failed to check sendgrid sender",
+            details: err.response?.data || err.message,
+        });
     }
 });
+;
 
 // server/src/routes/sendgridSenders.js
+// GET /api/senders/verified
+// GET /api/senders/verified
+// GET /api/senders/verified
 router.get("/verified", async (req, res) => {
     try {
-        const verified = await prisma.verifiedSender.findMany({
-            where: { verified: true },
-            orderBy: { verifiedAt: "desc" },
-        });
-        res.json(verified);
+        // 1️⃣ Get all senders from DB (verified + unverified)
+        const senders = await prisma.verifiedSender.findMany();
+        const refreshed = [];
+
+        for (const sender of senders) {
+            if (!sender.sendgridSenderId) {
+                refreshed.push(sender);
+                continue;
+            }
+
+            try {
+                const sgRes = await axios.get(
+                    `${SG_BASE}/senders/${sender.sendgridSenderId}`,
+                    { headers: sgHeaders() }
+                );
+                const sgData = sgRes.data;
+
+                // 🔍 Check verification & deletion
+                const isVerified =
+                    sgData.verified?.status === true ||
+                    sgData.verified?.sender === true ||
+                    sgData.status === "verified" ||
+                    sgData.status === "active" ||
+                    sgData.status === "approved";
+
+                const isDeletedOrLocked = sgData.locked === true || sgData.verified?.status === false;
+
+                const updated = await prisma.verifiedSender.update({
+                    where: { id: sender.id },
+                    data: {
+                        sendgridStatus: sgData.status || JSON.stringify(sgData),
+                        verified: isVerified && !isDeletedOrLocked,
+                        verifiedAt: isVerified && !isDeletedOrLocked ? new Date() : null,
+                    },
+                });
+
+                refreshed.push(updated);
+            } catch (err) {
+                if (err.response?.status === 404) {
+                    // ✅ Sender truly deleted in SendGrid
+                    const updated = await prisma.verifiedSender.update({
+                        where: { id: sender.id },
+                        data: {
+                            verified: false,
+                            verifiedAt: null,
+                            sendgridStatus: "deleted",
+                        },
+                    });
+                    refreshed.push(updated);
+                } else {
+                    console.error(`❌ Failed to refresh sender ${sender.email}:`, err.message);
+                    refreshed.push(sender);
+                }
+            }
+        }
+
+
+        // 5️⃣ Only return verified senders for dropdown
+        const onlyVerified = refreshed.filter((s) => s.verified === true);
+        res.json(onlyVerified);
     } catch (err) {
-        console.error("fetch verified senders error:", err);
+        console.error("❌ fetch verified senders error:", err);
         res.status(500).json({ error: "Failed to fetch verified senders" });
     }
 });
+
+
+
+router.get("/debug/all-senders", async (req, res) => {
+    const all = await prisma.verifiedSender.findMany();
+    res.json(all);
+});
+
 
 
 export default router;
