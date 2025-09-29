@@ -98,7 +98,7 @@ function App() {
             <Route path="/signin" element={<Signin />} />
             <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
             <Route path="/faq" element={<FaqSection />} />
-            {/* <Route path="/dashboard" element={<Dashboard />} /> */}
+            
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
             <Route path="/services/bulk-verification" element={<ProtectedRoute><BulkVerification /></ProtectedRoute>} />

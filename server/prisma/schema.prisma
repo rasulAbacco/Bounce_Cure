@@ -193,10 +193,10 @@ model Deal {
 
 model EmailAccount {
   id       Int     @id @default(autoincrement())
-  userId   Int
+  userId   Int? // optional foreign key
   email    String  @unique
   provider String?
-  authType String // "password" or "oauth"
+  authType String
   imapHost String
   imapPort Int
   imapUser String
@@ -213,10 +213,8 @@ model EmailAccount {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relation to User
-  user User @relation(fields: [userId], references: [id])
-
-  // Relation to Emails
+  // Optional relation to User
+  user   User?   @relation(fields: [userId], references: [id])
   emails Email[]
 }
 
@@ -426,6 +424,7 @@ model SentEmail {
   campaign   ScheduledCampaign @relation(fields: [campaignId], references: [id])
 }
 
+// Your existing models stay the same:
 model Campaign {
   id              Int      @id @default(autoincrement())
   name            String
