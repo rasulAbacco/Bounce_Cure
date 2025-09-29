@@ -90,16 +90,16 @@ const PricingDash = () => {
 
   // Handle Buy Now
   const handleBuyNow = (plan, contacts, price) => {
-    const basePrice = plan.basePrice; // Use the base price from the plan
-    const totalPrice = parseFloat(price);
-
+    // Calculate base price for selected contacts
+    const basePriceForContacts = parseFloat(calculatePrice(plan.basePrice, contacts));
+    
     const selectedPlan = buildPlanObject({
       planName: plan.name,
-      basePrice,
-      totalCost: totalPrice,
+      basePrice: basePriceForContacts, // Use calculated base price
+      totalCost: parseFloat(price),
       slots: contacts,
       billingPeriod: "month",
-      baseContacts: 500,
+      baseContacts: contacts, // Update baseContacts to selected contacts
       pricingModel: "multiplier",
     });
 
@@ -110,8 +110,8 @@ const PricingDash = () => {
     if (!isLoggedIn) {
       navigate("/signin", {
         state: {
-          plan: selectedPlan, // ✅ pass plan
-          redirectTo: "/payment", // ✅ signin will redirect here
+          plan: selectedPlan,
+          redirectTo: "/payment",
         },
       });
     } else {

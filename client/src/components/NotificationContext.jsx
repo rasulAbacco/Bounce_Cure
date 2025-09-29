@@ -40,10 +40,8 @@ const loadNotifications = () => {
     { id: 14, type: "payment", message: "Your plan will renew in 7 days", time: "1 day ago", unread: false },
     
     // Slot Exhaustion Notification
-    { id: 15, type: "slots_exhausted", message: "Your email slots are exhausted", time: "2 hours ago", unread: true },
     
     // Payment Success Notification
-    { id: 16, type: "payment_success", message: "Payment successful! Plan activated with 10,000 email slots (9,950 new slots added).", time: "Just now", unread: true },
   ];
 };
 
