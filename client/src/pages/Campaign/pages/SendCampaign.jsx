@@ -619,19 +619,8 @@ export default function CampaignBuilder() {
     if (!email) return;
 
     try {
-      const token = getAuthToken();
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
 
-      const response = await fetch(`${API_URL}/api/sendrs/check/${encodeURIComponent(email)}`, {
-        headers
-      });
-
+      const response = await fetch(`${API_URL}/api/senders/check/${encodeURIComponent(email)}`);
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         const errorText = await response.text();
@@ -639,13 +628,14 @@ export default function CampaignBuilder() {
       }
 
       const data = await response.json();
+      console.log("Check verification response:", data);
 
       setEmailVerificationStatus(prev => ({
         ...prev,
         [email]: {
           isVerified: data.isVerified || false,
-          verifiedAt: data.verifiedAt,
-          fromName: data.fromName
+          verifiedAt: data.record?.verifiedAt,   // include if backend adds it
+          fromName: data.record?.fromName        // include if backend adds it
         }
       }));
     } catch (error) {
@@ -656,6 +646,7 @@ export default function CampaignBuilder() {
       }));
     }
   };
+
 
   // Send verification email
   const sendVerificationEmail = async (email, fromName) => {
@@ -718,26 +709,7 @@ export default function CampaignBuilder() {
   useEffect(() => {
     const fetchVerifiedEmails = async () => {
       try {
-        const token = getAuthToken();
-        const headers = {
-          'Content-Type': 'application/json',
-        };
-        
-        if (token) {
-          headers['Authorization'] = `Bearer ${token}`;
-        }
-
-        const response = await fetch(`${API_URL}/api/verified-email`, {
-          headers
-        });
-
-        // Handle 404 specifically for this endpoint
-        if (response.status === 404) {
-          console.warn("Verified emails endpoint not found. Using custom verification option.");
-          setVerificationOption('custom');
-          return;
-        }
-
+        const response = await fetch(`${API_URL}/api/senders/verified`);
         const contentType = response.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
           const errorText = await response.text();
@@ -746,6 +718,7 @@ export default function CampaignBuilder() {
 
         if (response.ok) {
           const data = await response.json();
+          console.log("Fetched verified emails:", data);
           setVerifiedEmails(data);
           // If there are no pre-verified emails, switch to custom option
           if (data.length === 0) {
@@ -1405,26 +1378,27 @@ export default function CampaignBuilder() {
                             {verificationOption === 'preverified' && (
                               <div>
                                 <select
-                                  className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
+                                  className="w-full bg-black"
                                   value={formData.fromEmail}
-                                  onChange={(e) => {
-                                    const selectedEmail = verifiedEmails.find(email => email.email === e.target.value);
+                                  onChange={async (e) => {
+                                    const selectedEmail = verifiedEmails.find(
+                                      (email) => email.email === e.target.value
+                                    );
                                     if (selectedEmail) {
-                                      setFormData(prev => ({
+                                      setFormData((prev) => ({
                                         ...prev,
                                         fromEmail: selectedEmail.email,
-                                        fromName: selectedEmail.fromName
+                                        fromName: selectedEmail.fromName,
                                       }));
-                                      // Mark as verified
-                                      setEmailVerificationStatus(prev => ({
-                                        ...prev,
-                                        [selectedEmail.email]: { isVerified: true }
-                                      }));
+
+                                      // 🔍 Call backend to check latest verification status
+                                      await checkEmailVerification(selectedEmail.email);
+
                                     }
                                   }}
                                 >
                                   <option value="">Select a pre-verified email</option>
-                                  {verifiedEmails.map(email => (
+                                  {verifiedEmails.map((email) => (
                                     <option key={email.id} value={email.email}>
                                       {email.fromName} &lt;{email.email}&gt;
                                     </option>
@@ -1438,6 +1412,7 @@ export default function CampaignBuilder() {
                                 )}
                               </div>
                             )}
+
 
                             {/* Option 2: Custom email input and verification */}
                             {verificationOption === 'custom' && (

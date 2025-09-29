@@ -12,7 +12,7 @@ import {
 import { PipelineChart, ConversionChart } from "../../../components/DealCharts";
 import { FaEdit } from "react-icons/fa";
 import { AiFillDelete } from "react-icons/ai";
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_VRI_URL;
 
 function Deals() {
   const [deals, setDeals] = useState([

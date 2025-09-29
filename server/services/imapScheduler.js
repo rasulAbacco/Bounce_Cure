@@ -13,7 +13,7 @@ export function startEmailScheduler() {
                 return;
             }
 
-            console.log(`⏳ Running IMAP sync for ${accounts.length} accounts...`);
+            console.log(`⏳ Running IMAP sync for ${ accounts.length } accounts...`);
 
             for (const account of accounts) {
                 if (!account || !account.imapUser || !account.imapHost || !account.encryptedPass) {
@@ -24,7 +24,7 @@ export function startEmailScheduler() {
                 try {
                     await syncEmailsForAccount(prisma, account);
                 } catch (err) {
-                    console.error(`❌ Failed sync for ${account.imapUser || account.email}:`, err.message);
+                    console.error(`❌ Failed sync for ${ account.imapUser || account.email }:`, err.message);
                 }
             }
         } catch (err) {
