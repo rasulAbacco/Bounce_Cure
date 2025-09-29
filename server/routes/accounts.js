@@ -33,48 +33,64 @@ router.post("/", async (req, res) => {
     authType,
   } = req.body;
 
-  if (!userId || !email || !provider || !imapHost || !imapPort || !imapUser || !smtpHost || !smtpPort || !smtpUser) {
+  if (
+    !userId ||
+    !email ||
+    !provider ||
+    !imapHost ||
+    !imapPort ||
+    !imapUser ||
+    !smtpHost ||
+    !smtpPort ||
+    !smtpUser
+  ) {
     return res.status(400).json({ error: "All connection fields are required" });
   }
 
-  // Validate based on auth type
   if (authType === "password" && !encryptedPass) {
     return res.status(400).json({ error: "App password is required" });
   }
 
-  if (authType === "oauth" && (!oauthClientId || !oauthClientSecret || !refreshToken)) {
-    return res.status(400).json({ error: "OAuth2 requires clientId, clientSecret and refreshToken" });
+  if (
+    authType === "oauth" &&
+    (!oauthClientId || !oauthClientSecret || !refreshToken)
+  ) {
+    return res
+      .status(400)
+      .json({ error: "OAuth2 requires clientId, clientSecret and refreshToken" });
   }
 
   try {
-    const account = await prisma.emailAccount.create({
-      data: {
-        email,
-        provider,
-        imapHost,
-        imapPort: parseInt(imapPort, 10),
-        imapUser,
-        smtpHost,
-        smtpPort: parseInt(smtpPort, 10),
-        smtpUser,
-        encryptedPass,
-        oauthClientId,
-        oauthClientSecret,
-        refreshToken,
-        authType, // Make sure to save the authType
-        user: {
-          connectOrCreate: {
-            where: { id: parseInt(userId, 10) },
-            create: {
-              email: `user${userId}@example.com`,
-              firstName: "Default",
-              lastName: "User",
-              password: "defaultpassword",
-            },
-          },
-        },
-      },
+    // ✅ Use findFirst instead of findUnique
+    const existing = await prisma.emailAccount.findFirst({
+      where: { email },
     });
+
+    if (existing) {
+      return res
+        .status(400)
+        .json({ error: `Account with email ${email} already exists` });
+    }
+
+    const account = await prisma.emailAccount.create({
+  data: {
+    email,
+    provider,
+    imapHost,
+    imapPort: parseInt(imapPort, 10),
+    imapUser,
+    smtpHost,
+    smtpPort: parseInt(smtpPort, 10),
+    smtpUser,
+    encryptedPass,
+    oauthClientId,
+    oauthClientSecret,
+    refreshToken,
+    authType,
+    // user: optional, can skip entirely
+  },
+});
+
 
     console.log(`✅ Account created: ${account.email}, starting sync...`);
     safeRun(() => syncEmailsForAccount(prisma, account));
@@ -82,10 +98,21 @@ router.post("/", async (req, res) => {
     res.status(201).json(account);
   } catch (err) {
     console.error("❌ Error creating account:", err);
-    if (err.code === "P2003") return res.status(400).json({ error: "Invalid userId" });
+
+    if (err.code === "P2002") {
+      return res
+        .status(400)
+        .json({ error: `Account with email ${email} already exists` });
+    }
+
+    if (err.code === "P2003") {
+      return res.status(400).json({ error: "Invalid userId" });
+    }
+
     res.status(500).json({ error: "Failed to create account" });
   }
 });
+
 
 /**
  * Get all accounts

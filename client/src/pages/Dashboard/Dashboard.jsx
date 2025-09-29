@@ -12,8 +12,9 @@ import {
     Zap, Database, Star, Award, AlertTriangle, Info,
     Import, BarChart3, Send
 } from 'lucide-react';
-import DashboardLayout from '../../components/DashboardLayout';
+import DashboardLayout from '../../components/DashboardLayout'
 import Greeting from '../../components/Greeting';
+
 import '../../styles/dashboard.css';
 import { Link } from 'react-router-dom';
 
