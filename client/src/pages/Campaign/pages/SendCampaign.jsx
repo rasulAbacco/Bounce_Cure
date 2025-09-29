@@ -607,14 +607,30 @@ export default function CampaignBuilder() {
   const [verificationSent, setVerificationSent] = useState(false);
   const [verifiedEmails, setVerifiedEmails] = useState([]);
   const [verificationOption, setVerificationOption] = useState('preverified'); // 'preverified' or 'custom'
+  const [authError, setAuthError] = useState(false);
+
+  // Helper function to get auth token
+  const getAuthToken = () => {
+    return localStorage.getItem('token');
+  };
 
   // Check email verification status
   const checkEmailVerification = async (email) => {
     if (!email) return;
 
     try {
-      const response = await fetch(`
-        /api/sendrs/check/${encodeURIComponent(email)}`);
+      const token = getAuthToken();
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_URL}/api/sendrs/check/${encodeURIComponent(email)}`, {
+        headers
+      });
 
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
@@ -645,10 +661,19 @@ export default function CampaignBuilder() {
   const sendVerificationEmail = async (email, fromName) => {
     setIsVerifying(true);
     try {
+      const token = getAuthToken();
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
       const response = await fetch(`${API_URL}/api/senders/create`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, name: fromName })  // <-- changed here
+        headers,
+        body: JSON.stringify({ email, name: fromName })
       });
 
       if (!response) {
@@ -663,31 +688,55 @@ export default function CampaignBuilder() {
 
       const data = await response.json();
 
-      if (response.ok) {
-        setVerificationSent(true);
-        alert(`Verification email sent to ${email}. Please check your inbox and click the verification link.`);
+     if (response.ok) {
+  setVerificationSent(true);
+  alert(
+    `Verification email sent to ${email}. Please check your inbox and click the verification link.`
+  );
+  setTimeout(() => checkEmailVerification(email), 2000);
+
+  // ✅ Auto-select the email after verification
+  setFromEmail(email);
+  setSelectedSenderOption("custom");
+} else {
+  // Instead of raw error, check if it's duplicate sender
+  if (data.errors && data.errors[0]?.message.includes("same nickname")) {
+    alert("This sender email is already registered. Please check your verified senders.");
+    // Optionally trigger a status re-check
         setTimeout(() => checkEmailVerification(email), 2000);
       } else {
         alert(data.error || "Failed to send verification email");
       }
-    } catch (error) {
-      console.error("Error sending verification email:", error);
-      if (error.message.includes("Failed to fetch") || error.message.includes("Unable to connect")) {
-        alert("Unable to connect to the server. Please ensure the backend is running on port 5000.");
-      } else {
-        alert(`Error: ${error.message}`);
-      }
+    }
+
     } finally {
       setIsVerifying(false);
     }
   };
 
-
   // Fetch verified emails on component mount
   useEffect(() => {
     const fetchVerifiedEmails = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/verified-email`);
+        const token = getAuthToken();
+        const headers = {
+          'Content-Type': 'application/json',
+        };
+        
+        if (token) {
+          headers['Authorization'] = `Bearer ${token}`;
+        }
+
+        const response = await fetch(`${API_URL}/api/verified-email`, {
+          headers
+        });
+
+        // Handle 404 specifically for this endpoint
+        if (response.status === 404) {
+          console.warn("Verified emails endpoint not found. Using custom verification option.");
+          setVerificationOption('custom');
+          return;
+        }
 
         const contentType = response.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
@@ -705,6 +754,7 @@ export default function CampaignBuilder() {
         }
       } catch (error) {
         console.error("Error fetching verified emails:", error);
+        setVerificationOption('custom');
       }
     };
 
@@ -737,9 +787,31 @@ export default function CampaignBuilder() {
   // Function to fetch contacts from API
   const fetchContacts = async () => {
     try {
-      const response = await fetch(
-        `${API_URL}/api/campaigncontacts`
-      );
+      const token = getAuthToken();
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_URL}/api/campaigncontacts`, {
+        headers
+      });
+      
+      if (response.status === 401) {
+        setAuthError(true);
+        console.error("Authentication error: Please log in again");
+        return;
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const errorText = await response.text();
+        throw new Error(`Server returned non-JSON response: ${errorText.substring(0, 100)}...`);
+      }
+
       if (response.ok) {
         const data = await response.json();
         setContacts(data);
@@ -806,7 +878,26 @@ export default function CampaignBuilder() {
     setIsSending(true);
     try {
       // Fetch latest contacts
-      const contactsResponse = await fetch(`${API_URL}/api/campaigncontacts`);
+      const token = getAuthToken();
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const contactsResponse = await fetch(`${API_URL}/api/campaigncontacts`, {
+        headers
+      });
+      
+      if (contactsResponse.status === 401) {
+        setAuthError(true);
+        setIsSending(false);
+        console.error("Authentication error: Please log in again");
+        return;
+      }
+
       if (!contactsResponse.ok) throw new Error("Failed to fetch contacts");
       const contactsData = await contactsResponse.json();
 
@@ -887,7 +978,7 @@ export default function CampaignBuilder() {
       // Send request
       const response = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers,
         body: JSON.stringify(payload),
       });
 
@@ -968,6 +1059,26 @@ export default function CampaignBuilder() {
     const today = new Date();
     return today.toISOString().slice(0, 10);
   };
+
+  // Handle authentication error
+  if (authError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-6">
+        <div className="max-w-md w-full bg-gray-900 rounded-lg p-8 border border-gray-800">
+          <h2 className="text-2xl font-bold text-red-500 mb-4">Authentication Error</h2>
+          <p className="text-gray-300 mb-6">
+            You need to be logged in to access this feature. Please log in again.
+          </p>
+          <button
+            onClick={() => navigate('/login')}
+            className="w-full py-3 bg-[#c2831f] hover:bg-[#d09025] text-white rounded-md font-medium"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white">

@@ -19,12 +19,11 @@ import notificationsRoutes from "./routes/notificationsRoutes.js";
 import forgotPasswordRoutes from "./routes/forgotPasswordRoute.js";
 import advancedVerificationRoute from "./routes/advancedVerification.js";
 import passwordRoutes from "./routes/passwordRoutes.js";
-import contactRoutes from "./routes/contactRoutes.js";
+import contactCRMRoutes from "./routes/contactCRM.js";
 import sendContactsRoutes from "./routes/SendCampaignContact.js";
 import sendCampaignsRoutes from "./routes/CampaignRoutes.js";
 import taskRoutes from "./routes/tasks.js";
 import dealsRoutes from "./routes/deals.js";
-import contactCRMRoutes from "./routes/contactCRM.js";
 import { router as campaignContactsRoutes } from './routes/contacts.js';
 import { router as campaignsRoutes } from './routes/campaigns.js';
 import leadsRouter from "./routes/leads.js";
@@ -40,6 +39,8 @@ import multimediaRoutes from './routes/multimedia.js';
 import invoiceRoutes from "./routes/invoiceRoutes.js";
 import campaignsAutoRouter from './routes/campaignsAuto.js';
 import { router as verifiedEmailsRouter } from './routes/verifiedEmails.js';
+import verifiedEmailsRouters from "./routes/userMailVerify.js"; // if actually used
+import sendgridSendersRouter from "./routes/sendgridSenders.js";
 
 // Services
 import { startEmailScheduler } from "./services/imapScheduler.js";
@@ -48,19 +49,6 @@ import { initSocket } from "./services/socketService.js";
 // Middleware
 import { protect } from "./middleware/auth.js";
 
-import dashboardRoutes from "./routes/dashboardRoutes.js";
-
-import multimediaRoutes from './routes/multimedia.js';
-// Server and Socket
-import http from "http";
-import { Server as IOServer } from "socket.io";
-import invoiceRoutes from "./routes/invoiceRoutes.js";
-import campaignsAutoRouter from './routes/campaignsAuto.js'; // adjust path as needed
-import { router as verifiedEmailsRouter } from './routes/verifiedEmails.js'; // Add this import
-// example: in src/index.js or server.js
-import verifiedEmailsRouters from "./routes/userMailVerify.js"; // adjust path as needed
-
-import sendgridSendersRouter from "./routes/sendgridSenders.js";
 
 
 // ENV setup

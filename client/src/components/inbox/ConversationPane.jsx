@@ -225,6 +225,14 @@ export default function ConversationPane({
     setIsForwardOpen(false);
     setReplyContent("");
     setShowEmojiPicker(false);
+    
+    // Scroll to bottom after a brief delay to ensure the reply box is rendered
+    setTimeout(() => {
+      const replyBox = document.getElementById('reply-box');
+      if (replyBox) {
+        replyBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 100);
   };
 
 const handleSendReply = () => {
@@ -260,6 +268,14 @@ const handleSendReply = () => {
     setForwardContent(`\n\n---------- Forwarded message ---------\nFrom: ${message.from}\nDate: ${new Date(message.createdAt).toLocaleString()}\nSubject: ${conv?.subject}\n\n${message.body}\n---------- End of forwarded message ---------\n`);
     setForwardTo("");
     setShowEmojiPicker(false);
+    
+    // Scroll to bottom after a brief delay
+    setTimeout(() => {
+      const forwardBox = document.getElementById('forward-box');
+      if (forwardBox) {
+        forwardBox.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      }
+    }, 100);
   };
 
   const handleSendForward = async () => {
@@ -346,190 +362,299 @@ const handleSendReply = () => {
 
   if (!conversation) {
     return (
-      <div className="flex-1 p-8 bg-black text-white">
-        Select a conversation
+      <div className="flex-1 flex items-center justify-center bg-gray-950 text-gray-400">
+        <div className="text-center">
+          <svg className="w-16 h-16 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+          </svg>
+          <p className="text-lg">Select a conversation to view messages</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="flex-1 flex flex-col bg-black text-white relative" style={{height: '96vh'}}>
+    <div className="flex-1 flex flex-col bg-gray-950 text-white relative h-screen">
       {/* Header */}
-      <div className="p-4 border-b border-gray-700 flex flex-col sm:flex-row items-start sm:items-center justify-between bg-black">
-        <div>
-          <div className="font-bold text-lg">{conv?.subject}</div>
-          <div className="text-sm text-gray-400">
-            From: {messages[0]?.fromName} • To: {messages[0]?.to}
+      <div className="sticky top-0 z-10 flex-shrink-0 px-6 py-4 border-b border-gray-800 bg-gray-900 shadow-lg">
+        <div className="max-w-5xl mx-auto">
+          <h1 className="text-xl font-semibold text-white mb-2">{conv?.subject || "No Subject"}</h1>
+          <div className="flex items-center gap-4 text-sm text-gray-400">
+            <span>From: {messages[0]?.fromName || messages[0]?.from}</span>
+            <span>•</span>
+            <span>To: {messages[0]?.to}</span>
           </div>
           {conv?.account && (
-            <div className="text-xs text-blue-400 mt-1">
-              Using account: {conv.account.email}
+            <div className="text-xs text-blue-400 mt-2 flex items-center gap-1">
+              <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
+                <path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884z" />
+                <path d="M18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z" />
+              </svg>
+              <span>Using account: {conv.account.email}</span>
             </div>
           )}
         </div>
       </div>
 
-      {/* Messages in Email Style */}
-      <div className="flex-1 overflow-auto p-6 space-y-6 bg-black">
-        {messages.map((m) => (
-          <div
-            key={m.id}
-            className={`bg-gray-900 border border-gray-700 rounded-lg p-6 max-w-6x2 mx-auto ${m.isReply ? 'ml-8 border-l-4 border-l-blue-500' : ''}`}
-          >
-            <div className="mb-4 flex justify-between items-start">
-              <div>
-                <div className="font-semibold">{m.fromName}</div>
-                <div className="text-sm text-gray-400">
-                  to {m.to} • {new Date(m.createdAt).toLocaleString()}
+      {/* Messages Container - Scrollable */}
+      <div className="flex-1 overflow-y-auto bg-gray-950 mt-14">
+        <div className="max-w-5x3 mx-auto px-4 py-6 space-y-2">
+          {messages.map((m, index) => (
+            <div
+              key={m.id}
+              className={`bg-gray-900 border border-gray-800 rounded-lg overflow-hidden ${
+                m.isReply ? 'ml-12 border-l-4 border-l-blue-500' : ''
+              }`}
+            >
+              {/* Message Header */}
+              <div className="px-6 py-4 bg-gray-800 border-b border-gray-700">
+                <div className="flex justify-between items-start">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white font-semibold">
+                        {m.fromName?.charAt(0)?.toUpperCase() || 'U'}
+                      </div>
+                      <div>
+                        <div className="font-medium text-white">{m.fromName || m.from}</div>
+                        <div className="text-sm text-gray-400">
+                          to {m.to}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end gap-2">
+                    <div className="text-xs text-gray-500">
+                      {new Date(m.createdAt).toLocaleDateString()} at {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleReplyClick(m)}
+                        className="px-3 py-1.5 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded transition-colors flex items-center gap-1"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
+                        </svg>
+                        Reply
+                      </button>
+                      <button
+                        onClick={() => handleForwardClick(m)}
+                        className="px-3 py-1.5 text-xs bg-gray-700 hover:bg-gray-600 text-white rounded transition-colors flex items-center gap-1"
+                      >
+                        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                        </svg>
+                        Forward
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
-              <div className="flex space-x-2">
-                <button
-                  onClick={() => handleReplyClick(m)}
-                  className="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded"
-                >
-                  Reply
-                </button>
-                <button
-                  onClick={() => handleForwardClick(m)}
-                  className="px-3 py-1 text-sm bg-gray-700 hover:bg-gray-600 text-white rounded"
-                >
-                  Forward
-                </button>
+
+              {/* Message Body */}
+              <div className="px-6 py-5">
+                <div 
+                  className="text-gray-200 leading-relaxed prose prose-invert max-w-none"
+                  style={{ wordBreak: 'break-word' }}
+                  dangerouslySetInnerHTML={renderHTMLContent(m.body)}
+                />
               </div>
             </div>
-            
-            {/* Render HTML content safely */}
-            <div 
-              className="text-gray-100 whitespace-pre-wrap"
-              dangerouslySetInnerHTML={renderHTMLContent(m.body)}
-            />
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      {/* Reply Box */}
+      {/* Reply Box - Fixed at Bottom */}
       {isReplyOpen && (
-        <div className="p-4 border-t border-gray-700 bg-gray-800">
-          <div className="mb-2 text-sm text-gray-300">
-            Replying to: {replyingTo?.fromName}
-          </div>
-          <div className="flex flex-col gap-2">
-            <div className="text-sm text-gray-400">
-              From: {getSenderEmail() || "No account selected"}
-            </div>
-            <textarea
-              value={replyContent}
-              onChange={(e) => setReplyContent(e.target.value)}
-              placeholder="Type your reply..."
-              className="flex-1 p-3 border border-gray-600 rounded bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && e.ctrlKey) {
-                  handleSendReply();
-                }
-              }}
-            />
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => {
-                  setActiveTextArea('reply');
-                  setShowEmojiPicker(!showEmojiPicker);
-                }}
-                className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded"
-              >
-                😊
-              </button>
+        <div 
+          id="reply-box"
+          className="flex-shrink-0 bg-gray-900 border-t border-gray-800 shadow-2xl"
+        >
+          <div className="max-w-5xl mx-auto px-6 py-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium text-gray-300 mb-1">
+                  Replying to: {replyingTo?.fromName}
+                </div>
+                <div className="text-xs text-gray-500">
+                  From: {getSenderEmail() || "No account selected"}
+                </div>
+              </div>
               <button
                 onClick={handleCancelReply}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded"
+                className="text-gray-400 hover:text-gray-300"
                 disabled={isSending}
               >
-                Cancel
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
-              <button
-                onClick={handleSendReply}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded flex items-center"
-                disabled={isSending || !replyContent.trim()}
-              >
-                {isSending ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Sending...
-                  </>
-                ) : "Send Reply"}
-              </button>
+            </div>
+            
+            <div className="space-y-3">
+              <textarea
+                value={replyContent}
+                onChange={(e) => setReplyContent(e.target.value)}
+                placeholder="Type your reply..."
+                className="w-full p-4 border border-gray-700 rounded-lg bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                rows="4"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && e.ctrlKey) {
+                    handleSendReply();
+                  }
+                }}
+              />
+              
+              <div className="flex items-center justify-between">
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      setActiveTextArea('reply');
+                      setShowEmojiPicker(!showEmojiPicker);
+                    }}
+                    className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-gray-700 transition-colors"
+                    title="Add emoji"
+                  >
+                    😊
+                  </button>
+                  <span className="text-xs text-gray-500 self-center">
+                    Press Ctrl+Enter to send
+                  </span>
+                </div>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleCancelReply}
+                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-gray-700 transition-colors"
+                    disabled={isSending}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSendReply}
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isSending || !replyContent.trim()}
+                  >
+                    {isSending ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                        Send Reply
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Forward Box */}
+      {/* Forward Box - Fixed at Bottom */}
       {isForwardOpen && (
-        <div className="p-4 border-t border-gray-700 bg-gray-800">
-          <div className="mb-2 text-sm text-gray-300">
-            Forwarding message from: {forwardingMessage?.fromName}
-          </div>
-          <div className="flex flex-col gap-2">
-            <div className="text-sm text-gray-400">
-              From: {getSenderEmail() || "No account selected"}
-            </div>
-            <input
-              type="email"
-              value={forwardTo}
-              onChange={(e) => setForwardTo(e.target.value)}
-              placeholder="Recipient email"
-              className="p-3 border border-gray-600 rounded bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-            <textarea
-              value={forwardContent}
-              onChange={(e) => setForwardContent(e.target.value)}
-              placeholder="Add a message..."
-              className="flex-1 p-3 border border-gray-600 rounded bg-gray-900 text-white focus:outline-none focus:ring-2 focus:ring-blue-500 min-h-[100px]"
-            />
-            <div className="flex gap-2 justify-end">
-              <button
-                onClick={() => {
-                  setActiveTextArea('forward');
-                  setShowEmojiPicker(!showEmojiPicker);
-                }}
-                className="px-3 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded"
-              >
-                😊
-              </button>
+        <div 
+          id="forward-box"
+          className="flex-shrink-0 bg-gray-900 border-t border-gray-800 shadow-2xl"
+        >
+          <div className="max-w-5xl mx-auto px-6 py-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <div className="text-sm font-medium text-gray-300 mb-1">
+                  Forwarding message from: {forwardingMessage?.fromName}
+                </div>
+                <div className="text-xs text-gray-500">
+                  From: {getSenderEmail() || "No account selected"}
+                </div>
+              </div>
               <button
                 onClick={handleCancelForward}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 text-white rounded"
+                className="text-gray-400 hover:text-gray-300"
                 disabled={isSending}
               >
-                Cancel
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
-              <button
-                onClick={handleSendForward}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded flex items-center"
-                disabled={isSending || !forwardContent.trim() || !forwardTo.trim()}
-              >
-                {isSending ? (
-                  <>
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Sending...
-                  </>
-                ) : "Send Forward"}
-              </button>
+            </div>
+            
+            <div className="space-y-3">
+              <input
+                type="email"
+                value={forwardTo}
+                onChange={(e) => setForwardTo(e.target.value)}
+                placeholder="Recipient email address"
+                className="w-full p-3 border border-gray-700 rounded-lg bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+              
+              <textarea
+                value={forwardContent}
+                onChange={(e) => setForwardContent(e.target.value)}
+                placeholder="Add a message..."
+                className="w-full p-4 border border-gray-700 rounded-lg bg-gray-800 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                rows="4"
+              />
+              
+              <div className="flex items-center justify-between">
+                <button
+                  onClick={() => {
+                    setActiveTextArea('forward');
+                    setShowEmojiPicker(!showEmojiPicker);
+                  }}
+                  className="px-3 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-gray-700 transition-colors"
+                  title="Add emoji"
+                >
+                  😊
+                </button>
+                
+                <div className="flex gap-2">
+                  <button
+                    onClick={handleCancelForward}
+                    className="px-4 py-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg border border-gray-700 transition-colors"
+                    disabled={isSending}
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleSendForward}
+                    className="px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={isSending || !forwardContent.trim() || !forwardTo.trim()}
+                  >
+                    {isSending ? (
+                      <>
+                        <svg className="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        Sending...
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                        </svg>
+                        Send Forward
+                      </>
+                    )}
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* Emoji Picker */}
+      {/* Emoji Picker - Positioned above reply/forward box */}
       {showEmojiPicker && (
-        <div className="absolute bottom-20 right-4 z-10">
-          <EmojiPicker onEmojiClick={handleEmojiSelect} />
+        <div className="absolute bottom-0 right-4 z-50 mb-2" style={{ bottom: isReplyOpen || isForwardOpen ? '280px' : '20px' }}>
+          <EmojiPicker onEmojiClick={handleEmojiSelect} theme="dark" />
         </div>
       )}
     </div>
