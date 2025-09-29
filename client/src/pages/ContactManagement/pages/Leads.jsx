@@ -55,22 +55,26 @@ const Leads = () => {
   const [searchTerm, setSearchTerm] = useState("");
   
   // Fetch leads from API
-  useEffect(() => {
-    const fetchLeads = async () => {
-      try {
-        setLoading(true);
-        const response = await axios.get(API_URL);
-        setLeads(response.data);
-      } catch (err) {
-        setError("Failed to fetch leads. Please try again.");
-        console.error("Error fetching leads:", err);
-      } finally {
-        setLoading(false);
-      }
-    };
-    
-    fetchLeads();
-  }, []);
+useEffect(() => {
+  const fetchLeads = async () => {
+    try {
+      setLoading(true);
+      const response = await axios.get(API_URL);
+      const data = response.data;
+
+      // Ensure it's always an array
+      setLeads(Array.isArray(data) ? data : (data.data ?? []));
+    } catch (err) {
+      setError("Failed to fetch leads. Please try again.");
+      console.error("Error fetching leads:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  fetchLeads();
+}, []);
+
   
   // Handle form input changes for new lead
   const handleInputChange = (e) => {
