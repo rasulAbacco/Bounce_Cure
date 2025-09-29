@@ -20,7 +20,9 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
+
 const API_URL = import.meta.env.VITE_VRI_URL;
+
 const statusColors = {
   Active: "#22c55e",
   Inactive: "#ef4444",
@@ -29,6 +31,12 @@ const statusColors = {
 };
 
 function ContactsPage() {
+  // Auth helper function
+  const getAuthHeaders = () => {
+    const token = localStorage.getItem('token');
+    return token ? { Authorization: `Bearer ${token}` } : {};
+  };
+
   const badgeStyle = {
     Active:
       "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700",
@@ -51,11 +59,13 @@ function ContactsPage() {
     last: "",
   });
   const [contacts, setContacts] = useState([]);
-  const [allContacts, setAllContacts] = useState([]); // Store all contacts for stats
+  const [allContacts, setAllContacts] = useState([]);
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [editPriority, setEditPriority] = useState({});
   const [totalPages, setTotalPages] = useState(1);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   // Chart data aggregation
   const chartData = useMemo(() => {
@@ -78,7 +88,7 @@ function ContactsPage() {
         const addedDate = new Date(c.createdAt);
         const now = new Date();
         const diffDays = (now - addedDate) / (1000 * 60 * 60 * 24);
-        return diffDays <= 7; // last 7 days
+        return diffDays <= 7;
       }).length,
     };
   }, [allContacts]);
@@ -98,6 +108,7 @@ function ContactsPage() {
     try {
       const res = await fetch(`${API_URL}/contact/import`, {
         method: "POST",
+        headers: getAuthHeaders(),
         body: formData,
       });
       if (!res.ok) {
@@ -107,7 +118,6 @@ function ContactsPage() {
       alert('Import successful!');
       e.target.reset();
       setPage(1);
-      // Refetch all contacts after import
       fetchAllContacts();
     } catch (err) {
       alert(`Import failed: ${err.message}`);
@@ -116,20 +126,25 @@ function ContactsPage() {
 
   const addContact = async (e) => {
     e.preventDefault();
-    const res = await fetch(`${API_URL}/contact`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newContact),
-    });
-    if (!res.ok) {
-      console.error("Failed to add contact:", res.statusText);
-      return;
+    try {
+      const res = await fetch(`${API_URL}/contact`, {
+        method: "POST",
+        headers: {
+          ...getAuthHeaders(),
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(newContact),
+      });
+      if (!res.ok) {
+        throw new Error("Failed to add contact");
+      }
+      const created = await res.json();
+      setPage(1);
+      setModalOpen(false);
+      fetchAllContacts();
+    } catch (err) {
+      alert(`Error: ${err.message}`);
     }
-    const created = await res.json();
-    setPage(1);
-    setModalOpen(false);
-    // Refetch all contacts after adding
-    fetchAllContacts();
   };
 
   const updatePriority = async (id) => {
@@ -138,14 +153,14 @@ function ContactsPage() {
       const res = await fetch(`${API_URL}/contact/${id}`, {
         method: "PUT",
         headers: {
+          ...getAuthHeaders(),
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ priority: newVal }),
       });
       if (!res.ok) {
         const text = await res.text();
-        console.error("Failed to update:", res.status, text);
-        return;
+        throw new Error(`Failed to update: ${res.status} ${text}`);
       }
       const updated = await res.json();
       setEditPriority((prev) => {
@@ -154,45 +169,71 @@ function ContactsPage() {
         return copy;
       });
       setPage(page);
-      // Refetch all contacts after update
       fetchAllContacts();
     } catch (err) {
-      console.error("Error:", err);
+      alert(`Error: ${err.message}`);
     }
   };
 
   const deleteContact = async (id) => {
     if (!window.confirm("Are you sure you want to delete this contact?")) return;
-    await fetch(`${API_URL}/contact/${id}`, {
-      method: "DELETE",
-    });
-    setContacts(contacts.filter((c) => c.id !== id));
-    // Refetch all contacts after deletion
-    fetchAllContacts();
+    try {
+      const res = await fetch(`${API_URL}/contact/${id}`, {
+        method: "DELETE",
+        headers: getAuthHeaders(),
+      });
+      if (!res.ok) throw new Error("Failed to delete contact");
+      setContacts(contacts.filter((c) => c.id !== id));
+      fetchAllContacts();
+    } catch (err) {
+      alert(`Error: ${err.message}`);
+    }
   };
 
-  // Fetch all contacts for stats
   const fetchAllContacts = async () => {
     try {
-      const res = await fetch(`${API_URL}/contact?all=true`);
+      const res = await fetch(`${API_URL}/contact?all=true`, {
+        headers: getAuthHeaders()
+      });
+      if (!res.ok) throw new Error("Failed to fetch all contacts");
       const data = await res.json();
       setAllContacts(data.data || []);
     } catch (err) {
+      setError(err.message);
       console.error("Failed to fetch all contacts:", err);
     }
   };
 
   useEffect(() => {
-    // Fetch paginated contacts
-    fetch(`${API_URL}/contact?page=${page}&search=${search}`)
-      .then((res) => res.json())
-      .then((data) => {
-        setContacts(data.data);
-        setTotalPages(data.totalPages);
-      });
-    
-    // Fetch all contacts for stats
-    fetchAllContacts();
+    const fetchData = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        // Fetch paginated contacts
+        const res = await fetch(`${API_URL}/contact?page=${page}&search=${search}`, {
+          headers: getAuthHeaders()
+        });
+        
+        if (!res.ok) {
+          throw new Error(`Failed to fetch contacts: ${res.status}`);
+        }
+        
+        const data = await res.json();
+        setContacts(data.data || []);
+        setTotalPages(data.totalPages || 1);
+        
+        // Fetch all contacts for stats
+        await fetchAllContacts();
+      } catch (err) {
+        setError(err.message);
+        console.error("Fetch error:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchData();
   }, [page, search]);
 
   return (
@@ -218,7 +259,7 @@ function ContactsPage() {
         ].map((stat, i) => (
           <div
             key={i}
-            className="bg-white dark:bg-zinc-900 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm transition"
+            className="bg-black dark:bg-zinc-900 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm transition"
           >
             <p className="text-sm text-zinc-500 dark:text-zinc-400">{stat.label}</p>
             <p className="text-2xl font-bold text-zinc-800 dark:text-white mt-1">
@@ -230,7 +271,7 @@ function ContactsPage() {
       
       {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
-        <div className="flex items-center gap-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-lg px-3 py-2 w-full sm:w-1/3">
+        <div className="flex items-center gap-2 bg-black dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-lg px-3 py-2 w-full sm:w-1/3">
           <Search className="w-4 h-4 text-zinc-400" />
           <input
             type="text"
@@ -241,7 +282,7 @@ function ContactsPage() {
           />
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-3 py-2 bg-white dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">
+          <button className="flex items-center gap-2 px-3 py-2 bg-black dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">
             <Filter className="w-4 h-4" /> Filter
           </button>
         </div>
@@ -275,152 +316,179 @@ function ContactsPage() {
         </div>
       </div>
       
-      {/* Contacts Table */}
-      <div className="overflow-x-auto border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
-        <table className="min-w-full text-sm">
-          <thead>
-            <tr className="bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800">
-              {[
-                "Name",
-                "Email",
-                "Phone",
-                "Company",
-                "Priority",
-                "Status",
-                "Last Interaction",
-                "Action"
-              ].map((header) => (
-                <th
-                  key={header}
-                  className="px-4 py-3 text-left whitespace-nowrap"
-                >
-                  {header}
-                </th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {contacts.map((c) => (
-              <tr
-                key={c.id}
-                className="border-b border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"
-              >
-                <td className="px-4 py-3 whitespace-nowrap text-zinc-800 dark:text-white">
-                  <div className="flex items-center gap-2">
-                    <User className="w-4 h-4 text-yellow-500" />
-                    {c.name}
-                  </div>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-zinc-600 dark:text-zinc-300">
-                  <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4 text-zinc-400" />
-                    {c.email}
-                  </div>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-zinc-600 dark:text-zinc-300">
-                  <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-zinc-400" />
-                    {c.phone}
-                  </div>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-zinc-500 dark:text-zinc-400">
-                  <div className="flex items-center gap-2">
-                    <Building2 className="w-4 h-4 text-zinc-400" />
-                    {c.company}
-                  </div>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap text-zinc-500 dark:text-zinc-400">
-                  <select
-                    value={editPriority[c.id] ?? c.priority}
-                    onChange={(e) =>
-                      setEditPriority({
-                        ...editPriority,
-                        [c.id]: e.target.value,
-                      })
-                    }
-                    className="border px-2 py-1 rounded"
-                  >
-                    <option value="vip">VIP</option>
-                    <option value="subscriber">Subscriber</option>
-                    <option value="new">New</option>
-                  </select>
-                  <button
-                    onClick={() => updatePriority(c.id)}
-                    disabled={
-                      editPriority[c.id] === undefined ||
-                      editPriority[c.id] === c.priority
-                    }
-                    className={`ml-2 px-2 py-1 rounded ${editPriority[c.id] !== undefined &&
-                      editPriority[c.id] !== c.priority
-                      ? "bg-yellow-500 hover:bg-yellow-400 text-black font-bold"
-                      : "bg-gray-300 text-black font-bold cursor-not-allowed"
-                      }`}
-                  >
-                    Save
-                  </button>
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${badgeStyle[c.status]}`}
-                  >
-                    {c.status}
-                  </span>
-                </td>
-                <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
-                  {c.last}
-                </td>
-                <td className="px-4 py-3 whitespace-nowrap">
-                  <button
-                    onClick={() => deleteContact(c.id)}
-                    className="text-red-600 hover:text-red-800 text-sm font-bold"
-                  >
-                    Delete
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-      
-      <div className="flex justify-between items-center mt-4">
-        <p className="text-sm text-zinc-400">
-          Page {page} of {totalPages}
-        </p>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setPage(1)}
-            disabled={page === 1}
-            className="px-3 py-1 text-sm rounded bg-zinc-700 text-white hover:bg-zinc-600 disabled:opacity-40"
-          >
-            First
-          </button>
-          <button
-            onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
-            disabled={page === 1}
-            className="px-3 py-1 text-sm rounded bg-zinc-700 text-white hover:bg-zinc-600 disabled:opacity-40"
-          >
-            Prev
-          </button>
-          <button
-            onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
-            disabled={page === totalPages}
-            className="px-3 py-1 text-sm rounded bg-zinc-700 text-white hover:bg-zinc-600 disabled:opacity-40"
-          >
-            Next
-          </button>
-          <button
-            onClick={() => setPage(totalPages)}
-            disabled={page === totalPages}
-            className="px-3 py-1 text-sm rounded bg-zinc-700 text-white hover:bg-zinc-600 disabled:opacity-40"
-          >
-            Last
-          </button>
+      {/* Error Message */}
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
+          Error: {error}
         </div>
-      </div>
+      )}
+      
+      {/* Loading State */}
+      {loading ? (
+        <div className="flex justify-center items-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500 mx-auto"></div>
+            <p className="mt-4 text-zinc-600 dark:text-zinc-400">Loading contacts...</p>
+          </div>
+        </div>
+      ) : (
+        <>
+          {/* Contacts Table */}
+          <div className="overflow-x-auto border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800">
+                  {[
+                    "Name",
+                    "Email",
+                    "Phone",
+                    "Company",
+                    "Priority",
+                    "Status",
+                    "Last Interaction",
+                    "Action"
+                  ].map((header) => (
+                    <th
+                      key={header}
+                      className="px-4 py-3 text-left whitespace-nowrap"
+                    >
+                      {header}
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {contacts?.length > 0 ? (
+                  contacts.map((c) => (
+                    <tr
+                      key={c.id}
+                      className="border-b border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"
+                    >
+                      <td className="px-4 py-3 whitespace-nowrap text-zinc-800 dark:text-white">
+                        <div className="flex items-center gap-2">
+                          <User className="w-4 h-4 text-yellow-500" />
+                          {c.name}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-zinc-600 dark:text-zinc-300">
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-4 h-4 text-zinc-400" />
+                          {c.email}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-zinc-600 dark:text-zinc-300">
+                        <div className="flex items-center gap-2">
+                          <Phone className="w-4 h-4 text-zinc-400" />
+                          {c.phone}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-zinc-500 dark:text-zinc-400">
+                        <div className="flex items-center gap-2">
+                          <Building2 className="w-4 h-4 text-zinc-400" />
+                          {c.company}
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap text-zinc-500 dark:text-zinc-400">
+                        <select
+                          value={editPriority[c.id] ?? c.priority}
+                          onChange={(e) =>
+                            setEditPriority({
+                              ...editPriority,
+                              [c.id]: e.target.value,
+                            })
+                          }
+                          className="border px-2 py-1 rounded"
+                        >
+                          <option value="vip">VIP</option>
+                          <option value="subscriber">Subscriber</option>
+                          <option value="new">New</option>
+                        </select>
+                        <button
+                          onClick={() => updatePriority(c.id)}
+                          disabled={
+                            editPriority[c.id] === undefined ||
+                            editPriority[c.id] === c.priority
+                          }
+                          className={`ml-2 px-2 py-1 rounded ${editPriority[c.id] !== undefined &&
+                            editPriority[c.id] !== c.priority
+                            ? "bg-yellow-500 hover:bg-yellow-400 text-black font-bold"
+                            : "bg-gray-300 text-black font-bold cursor-not-allowed"
+                            }`}
+                        >
+                          Save
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <span
+                          className={`px-2 py-1 rounded-full text-xs font-medium ${badgeStyle[c.status]}`}
+                        >
+                          {c.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                        {c.last}
+                      </td>
+                      <td className="px-4 py-3 whitespace-nowrap">
+                        <button
+                          onClick={() => deleteContact(c.id)}
+                          className="text-red-600 hover:text-red-800 text-sm font-bold"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan={8} className="text-center py-8 text-zinc-500">
+                      No contacts found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          
+          <div className="flex justify-between items-center mt-4">
+            <p className="text-sm text-zinc-400">
+              Page {page} of {totalPages}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setPage(1)}
+                disabled={page === 1}
+                className="px-3 py-1 text-sm rounded bg-zinc-700 text-white hover:bg-zinc-600 disabled:opacity-40"
+              >
+                First
+              </button>
+              <button
+                onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
+                disabled={page === 1}
+                className="px-3 py-1 text-sm rounded bg-zinc-700 text-white hover:bg-zinc-600 disabled:opacity-40"
+              >
+                Prev
+              </button>
+              <button
+                onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
+                disabled={page === totalPages}
+                className="px-3 py-1 text-sm rounded bg-zinc-700 text-white hover:bg-zinc-600 disabled:opacity-40"
+              >
+                Next
+              </button>
+              <button
+                onClick={() => setPage(totalPages)}
+                disabled={page === totalPages}
+                className="px-3 py-1 text-sm rounded bg-zinc-700 text-white hover:bg-zinc-600 disabled:opacity-40"
+              >
+                Last
+              </button>
+            </div>
+          </div>
+        </>
+      )}
       
       {/* Bar Chart Insights */}
-      <div className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
+      <div className="bg-black dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
         <h2 className="text-xl font-semibold text-yellow-500 mb-4 flex items-center gap-2">
           <BarChart3 className="w-[1rem] h-5" /> Contacts by Status
         </h2>
@@ -448,7 +516,7 @@ function ContactsPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.3 }}
-            className="relative bg-white dark:bg-zinc-950 p-6 rounded-xl border border-zinc-300 dark:border-zinc-800 shadow-xl w-full max-w-md"
+            className="relative bg-black dark:bg-zinc-950 p-6 rounded-xl border border-zinc-300 dark:border-zinc-800 shadow-xl w-full max-w-md"
           >
             <h3 className="text-lg font-semibold text-yellow-500 mb-4">
               Add New Contact
@@ -524,7 +592,7 @@ function ContactsPage() {
           (title, i) => (
             <div
               key={i}
-              className="bg-white dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm"
+              className="bg-black dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm"
             >
               <h2 className="text-lg font-semibold text-yellow-500 mb-4 flex items-center gap-2">
                 <BarChart3 className="w-5 h-5" /> {title}

@@ -210,11 +210,12 @@ export default function Inbox() {
                     </>
                 ) : (
                     <div className="flex-1 overflow-y-auto">
-                        <AccountManager 
+                       <AccountManager 
                             onAccountSelected={handleAccountSelected}
                             onAccountAdded={handleAccountAdded}
                             currentSelectedAccount={selectedAccount}
                         />
+
                     </div>
                 )}
             </div>

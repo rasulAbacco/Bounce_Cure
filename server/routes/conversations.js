@@ -1,12 +1,15 @@
 // server/routes/conversations.js
 import express from "express";
 import { PrismaClient } from "@prisma/client";
-import { createTransporter } from "../services/mailer.js"; // ✅ SMTP helper
+import { sendEmail, initSendGrid } from "../services/mailer.js";
 
 // Initialize Prisma Client
 const prisma = new PrismaClient({
   log: ["query", "info", "warn", "error"],
 });
+
+// Initialize SendGrid
+initSendGrid();
 
 const router = express.Router();
 
@@ -89,8 +92,8 @@ router.get("/:id", async (req, res) => {
     const messages = threadEmails.map(e => ({
         id: e.id,
         messageId: e.messageId,
-        from: e.from,              // email address
-        fromName: e.from,          // (later you can parse a display name if available)
+        from: e.from,
+        fromName: e.from,
         to: e.to,
         body: e.bodyHtml || e.body,
         createdAt: e.date,
@@ -98,7 +101,6 @@ router.get("/:id", async (req, res) => {
         inReplyTo: e.inReplyTo,
         isReply: e.isReply
     }));
-
 
     res.json({
       id: email.id,
@@ -142,12 +144,15 @@ router.post("/:id/reply", async (req, res) => {
     const threadId = originalEmail.threadId || originalEmail.messageId;
     const accountId = originalEmail.accountId;
 
+    // Prepare email subject
+    const subject = inReplyTo
+      ? `Re: ${originalEmail.subject}`
+      : `Fwd: ${originalEmail.subject}`;
+
     // Save message in DB first
     const message = await prisma.email.create({
       data: {
-        subject: inReplyTo
-          ? `Re: ${originalEmail.subject}`
-          : `Fwd: ${originalEmail.subject}`,
+        subject,
         body,
         bodyHtml: body,
         from: fromEmail,
@@ -164,31 +169,31 @@ router.post("/:id/reply", async (req, res) => {
       },
     });
 
-    // Try sending via SMTP
+    // Try sending via SendGrid or SMTP
     try {
       const account = originalEmail.account;
-      const transporter = await createTransporter(account);
+      
+      // Prepare references for email threading
+      const references = inReplyTo
+        ? [inReplyTo, originalEmail.messageId].join(" ")
+        : originalEmail.messageId;
 
-      const mailOptions = {
-        from: `"${fromName}" <${fromEmail}>`,
+      // Send email using the universal sendEmail function
+      const result = await sendEmail({
+        from: fromEmail,
+        fromName: fromName || fromEmail.split('@')[0],
         to: toEmail,
-        subject: inReplyTo
-          ? `Re: ${originalEmail.subject}`
-          : `Fwd: ${originalEmail.subject}`,
-        text: body,
+        subject,
+        text: body.replace(/<[^>]*>/g, ''), // Strip HTML for plain text
         html: body,
         inReplyTo: inReplyTo || originalEmail.messageId,
-        references: (
-          inReplyTo
-            ? [inReplyTo, originalEmail.messageId]
-            : [originalEmail.messageId]
-        ).join(" "),
+        references,
         messageId,
-      };
+      }, account);
 
-      const info = await transporter.sendMail(mailOptions);
-      console.log("Email sent successfully:", info.messageId);
+      console.log('Email sent successfully:', result);
 
+      // Update status to sent
       await prisma.email.update({
         where: { id: message.id },
         data: { status: "sent" },
@@ -203,6 +208,7 @@ router.post("/:id/reply", async (req, res) => {
         id: createdMessage.id,
         messageId: createdMessage.messageId,
         fromName: fromName || createdMessage.from,
+        from: createdMessage.from,
         to: createdMessage.to,
         body: createdMessage.bodyHtml || createdMessage.body,
         createdAt: createdMessage.date,
@@ -212,16 +218,18 @@ router.post("/:id/reply", async (req, res) => {
         status: "sent",
       });
     } catch (emailError) {
-      console.error("SMTP send failed:", emailError);
+      console.error("Email send failed:", emailError);
 
+      // Update status to failed
       await prisma.email.update({
         where: { id: message.id },
         data: { status: "failed" },
       });
 
       return res.status(500).json({
-        error: "Failed to send email via SMTP",
+        error: "Failed to send email",
         details: emailError.message,
+        status: "failed"
       });
     }
   } catch (err) {
