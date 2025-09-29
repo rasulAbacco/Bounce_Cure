@@ -63,13 +63,13 @@ const PORT = process.env.PORT || 5000;
 // Allowed origins for CORS
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://bouncecure.onrender.com'
+  'https://www.bouncecure.com'
 ];
 
 // HTTP server and socket
 const server = http.createServer(app);
 const io = new IOServer(server, {
-  cors: { origin: "http://localhost:5173", credentials: true },
+  cors: { origin: "https://www.bouncecure.com", credentials: true },
 });
 
 // CORS
@@ -160,13 +160,19 @@ app.get('/verify-email', async (req, res) => {
   try {
     const { token } = req.query;
 
-    if (!token) return res.status(400).send('Verification token is required');
+    if (!token) {
+      return res.status(400).send('Verification token is required');
+    }
+
 
     const record = await prisma.campaignVerifiedEmail.findFirst({
       where: { verificationToken: token }
     });
 
-    if (!record) return res.status(404).send('Invalid verification token');
+    if (!record) {
+      return res.status(404).send('Invalid verification token');
+    }
+
 
     if (record.expiresAt && new Date() > record.expiresAt) {
       return res.status(400).send('Verification token has expired');
@@ -174,12 +180,13 @@ app.get('/verify-email', async (req, res) => {
 
     await prisma.campaignVerifiedEmail.update({
       where: { id: record.id },
-      data: { 
-        isVerified: true, 
+      data: {
+        isVerified: true,
         verifiedAt: new Date(),
         verificationToken: null
       }
     });
+
 
     res.send(`
       <!DOCTYPE html>
