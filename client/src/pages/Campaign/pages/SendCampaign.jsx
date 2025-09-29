@@ -687,7 +687,7 @@ export default function CampaignBuilder() {
   useEffect(() => {
     const fetchVerifiedEmails = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/verified-email`);
+        const response = await fetch(`${API_URL}/api/senders/verified`);
 
         const contentType = response.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
