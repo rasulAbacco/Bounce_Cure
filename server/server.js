@@ -67,13 +67,13 @@ const PORT = process.env.PORT || 5000;
 // Allowed origins for CORS
 const allowedOrigins = [
   'http://localhost:5173',
-  'https://bounce-cure-ui.onrender.com'
+  'https://bouncecure.com'
 ];
 
 // HTTP server and socket
 const server = http.createServer(app);
 const io = new IOServer(server, {
-  cors: { origin: "https://bounce-cure-ui.onrender.com", credentials: true },
+  cors: { origin: "https://bouncecure.com", credentials: true },
 });
 
 // CORS
