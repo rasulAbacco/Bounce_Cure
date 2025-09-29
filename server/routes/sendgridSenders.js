@@ -103,4 +103,19 @@ router.get("/check/:email", async (req, res) => {
     }
 });
 
+// server/src/routes/sendgridSenders.js
+router.get("/verified", async (req, res) => {
+    try {
+        const verified = await prisma.verifiedSender.findMany({
+            where: { verified: true },
+            orderBy: { verifiedAt: "desc" },
+        });
+        res.json(verified);
+    } catch (err) {
+        console.error("fetch verified senders error:", err);
+        res.status(500).json({ error: "Failed to fetch verified senders" });
+    }
+});
+
+
 export default router;
