@@ -425,7 +425,6 @@ model SentEmail {
   campaign   ScheduledCampaign @relation(fields: [campaignId], references: [id])
 }
 
-// Your existing models stay the same:
 model Campaign {
   id              Int      @id @default(autoincrement())
   name            String
@@ -448,7 +447,11 @@ model CampaignEvent {
   campaignId Int
   type       String // "sent" | "open" | "click" | "conversion"
   email      String?
-  createdAt  DateTime @default(now())
+  url        String? // For click events
+  userAgent  String? // For tracking
+  ip         String? // For tracking
+  timestamp  DateTime @default(now())
+  sgEventId  String?  @unique // SendGrid event ID to prevent duplicates
 
   campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
 }

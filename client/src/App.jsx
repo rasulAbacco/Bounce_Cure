@@ -30,6 +30,7 @@ import CreateCampaign from './pages/Campaign/pages/CreateCampaign';
 import EditorPage from './pages/Campaign/pages/EditorPage';
 import PhoneValidation from './pages/PhoneValidation/PhoneValidation';
 import { Toaster } from 'react-hot-toast';
+
 import { NotificationProvider } from "./components/NotificationContext";
 import ContactsPage from './pages/ContactManagement/pages/ContactsPage';
 import Leads from './pages/ContactManagement/pages/Leads';
@@ -39,7 +40,6 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import VerifyEmail from "./pages/VerifyEmail";
 import Templets from './pages/Campaign/pages/Templets';
 import CanvasArea from './pages/Campaign/Components/Editor/CanvasArea';
-import { useNavigate } from "react-router-dom";
 import SendCampaign from './pages/Campaign/pages/SendCampaign';
 import AllTemplates from './pages/Campaign/pages/AllTemplats';
 import WatsupCampaign from './pages/WatsupCampaign';
@@ -58,6 +58,10 @@ import Razorpay from './pages/Pricing/components/Razorpay'
 import Paypal from './pages/Pricing/components/Paypal'
 import CreditCardWrapper from './pages/Pricing/components/CreditCardWrapper' // Optional
 import ProtectedRoute from "./components/ProtectedRoute";
+import CampaignTextEditor from './pages/Campaign/Components/Editor/CampaignTextEditor';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+
+
 
 function App() {
   return (
@@ -100,17 +104,15 @@ function App() {
             <Route path="/refund-policy" element={<RefundPolicy />} />
             <Route path="/signupd" element={<Signupd />} />
 
-            <Route path="/MultimediaCampaign" element={<MultimediaCampaign />} />
-            <Route path="/whatsapp" element={<WhatsappCampaign />} />
-            <Route path="/sms" element={<SMScampaign />} />
             <Route path="/stripe" element={<StripeWrapper />} />
             <Route path="/razorpay" element={<Razorpay />} />
             <Route path="/paypal" element={<Paypal />} />
             <Route path="/creditcard" element={<StripeWrapper />} />
             <Route path="/signin" element={<Signin />} />
-            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/faq" element={<FaqSection />} />
-
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
             <Route path="/services/bulk-verification" element={<ProtectedRoute><BulkVerification /></ProtectedRoute>} />
@@ -143,6 +145,9 @@ function App() {
             <Route path="/MultimediaCampaign" element={<ProtectedRoute><MultimediaCampaign /></ProtectedRoute>} />
             <Route path="/whatsapp" element={<ProtectedRoute><WhatsappCampaign /></ProtectedRoute>} />
             <Route path="/sms" element={<ProtectedRoute><SMScampaign /></ProtectedRoute>} />
+            <Route path="/texteditor" element={<ProtectedRoute><CampaignTextEditor /></ProtectedRoute>} />
+
+
 
           </Routes>
 

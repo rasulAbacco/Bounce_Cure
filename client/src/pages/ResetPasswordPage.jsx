@@ -1,7 +1,7 @@
-// frontend/pages/ResetPasswordPage.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { Key, Eye, EyeOff } from "lucide-react";
+import toast from "react-hot-toast";
 
 export default function ResetPasswordPage() {
   const { token } = useParams();
@@ -9,73 +9,92 @@ export default function ResetPasswordPage() {
 
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
-  const [message, setMessage] = useState("");
-  const [status, setStatus] = useState(""); // "success" | "error"
   const [loading, setLoading] = useState(false);
+  const [tokenValid, setTokenValid] = useState(false);
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+  // Check if token is valid on page load
+  useEffect(() => {
+    const verifyToken = async () => {
+      try {
+        const res = await fetch(`${API_URL}/auth/reset-password/${token}`);
+        const data = await res.json();
+
+        if (res.ok) {
+          setTokenValid(true);
+        } else {
+          toast.error(data.message || "Invalid or expired link");
+          setTokenValid(false);
+        }
+      } catch (err) {
+        toast.error("Server error. Please try again later.");
+        setTokenValid(false);
+      }
+    };
+
+    verifyToken();
+  }, [token]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (password !== confirmPassword) {
-      setStatus("error");
-      setMessage("Passwords do not match.");
+      toast.error("Passwords do not match.");
       return;
     }
 
-    try {
-      setLoading(true);
-      setMessage("");
-      setStatus("");
+    setLoading(true);
 
-      const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/auth/reset-password/${token}`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ password }),
-        }
-      );
+    try {
+      const res = await fetch(`${API_URL}/auth/reset-password/${token}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ password }),
+      });
 
       const data = await res.json();
 
       if (res.ok) {
-        setStatus("success");
-        setMessage("✅ Password reset successful! Redirecting to login...");
+        toast.success("✅ Password reset successful! Redirecting to login...");
         setTimeout(() => navigate("/login"), 2000);
       } else {
-        setStatus("error");
-        setMessage(data.message || "❌ Something went wrong. Try again.");
+        toast.error(data.message || "Reset failed. Try again.");
       }
-    } catch (error) {
-      setStatus("error");
-      setMessage("❌ Something went wrong. Try again.");
+    } catch (err) {
+      toast.error("Server error. Try again later.");
     } finally {
       setLoading(false);
     }
   };
 
+  if (!tokenValid) {
+    return (
+      <div className="min-h-screen flex items-center justify-center p-6 bg-black text-white">
+        <p className="text-lg">
+          ❌ Invalid or expired reset link. Please request a new password reset.
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-black flex flex-col items-center px-6">
-      {/* Company Name Header */}
+    <div className="min-h-screen flex flex-col items-center px-6 bg-black">
       <header className="w-full py-6 text-center border-b border-gray-800 mb-20 mt-20">
-        <h1 className="text-9xl md:text-7xl font-bold text-[#c2831f] ">
-          Bounce Cure
-        </h1>
+        <h1 className="text-7xl font-bold text-[#c2831f]">Bounce Cure</h1>
       </header>
 
-      {/* Main Content */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-12 w-full max-w-5xl">
-        {/* LEFT SIDE: Info text */}
+        {/* LEFT SIDE */}
         <div className="flex flex-col justify-center text-gray-300 p-6 md:p-10">
           <h2 className="text-4xl font-bold text-white mb-6 flex items-center gap-2">
             Reset Your Password <span className="text-[#c2831f]">🔒</span>
           </h2>
           <p className="text-lg text-gray-400 mb-6 leading-relaxed">
-            Forgot your password? No worries. Just create a new one and get back
-            into your account.
+            Enter a new password to regain access to your account.
           </p>
           <ul className="list-disc list-inside text-gray-400 space-y-3 text-base">
             <li>Password must be at least 8 characters long</li>
@@ -84,18 +103,17 @@ export default function ResetPasswordPage() {
           </ul>
         </div>
 
-        {/* RIGHT SIDE: Reset Form */}
+        {/* RIGHT SIDE: FORM */}
         <form
           onSubmit={handleSubmit}
           className="bg-black border border-gray-800 p-8 rounded-2xl shadow-lg"
         >
-          {/* Header */}
           <div className="flex items-center gap-2 mb-6">
             <Key className="w-6 h-6 text-[#c2831f]" />
             <h3 className="text-2xl font-semibold text-white">Reset Password</h3>
           </div>
 
-          {/* Input: New Password */}
+          {/* Password */}
           <label className="block mb-2 text-sm font-medium text-gray-300">
             New Password
           </label>
@@ -103,8 +121,7 @@ export default function ResetPasswordPage() {
             <input
               type={showPassword ? "text" : "password"}
               placeholder="Enter new password"
-              className="w-full p-3 rounded-lg bg-[#2a2a2a] border border-gray-700 text-white placeholder-gray-500 
-            focus:outline-none focus:ring-2 focus:ring-[#c2831f]"
+              className="w-full p-3 rounded-lg bg-[#2a2a2a] border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#c2831f]"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               disabled={loading}
@@ -119,7 +136,7 @@ export default function ResetPasswordPage() {
             </button>
           </div>
 
-          {/* Input: Confirm Password */}
+          {/* Confirm Password */}
           <label className="block mb-2 text-sm font-medium text-gray-300">
             Confirm Password
           </label>
@@ -127,8 +144,7 @@ export default function ResetPasswordPage() {
             <input
               type={showConfirmPassword ? "text" : "password"}
               placeholder="Confirm new password"
-              className="w-full p-3 rounded-lg bg-[#2a2a2a] border border-gray-700 text-white placeholder-gray-500 
-            focus:outline-none focus:ring-2 focus:ring-[#c2831f]"
+              className="w-full p-3 rounded-lg bg-[#2a2a2a] border border-gray-700 text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-[#c2831f]"
               value={confirmPassword}
               onChange={(e) => setConfirmPassword(e.target.value)}
               disabled={loading}
@@ -143,7 +159,6 @@ export default function ResetPasswordPage() {
             </button>
           </div>
 
-          {/* Button */}
           <button
             type="submit"
             className="w-full py-3 rounded-lg bg-[#c2831f] text-black font-medium shadow hover:bg-[#c2831f] transition disabled:opacity-50"
@@ -151,19 +166,8 @@ export default function ResetPasswordPage() {
           >
             {loading ? "Resetting..." : "Reset Password"}
           </button>
-
-          {/* Message */}
-          {message && (
-            <p
-              className={`mt-4 text-center text-sm font-medium ${status === "success" ? "text-green-400" : "text-red-400"
-                }`}
-            >
-              {message}
-            </p>
-          )}
         </form>
       </div>
     </div>
-
   );
 }
