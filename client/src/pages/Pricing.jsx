@@ -291,34 +291,46 @@ const Pricing = () => {
     return () => window.removeEventListener('paymentSuccess', handlePaymentSuccess);
   }, [addNotification]);
 
-  const handlePlanSelection = useCallback((planName, planType) => {
-    const planData = pricingPlans[billingPeriod][planType];
+ const handlePlanSelection = useCallback((planName, planType) => {
+  const planData = pricingPlans[billingPeriod][planType];
 
-    const planDetails = {
-      planName,
-      planType,
-      basePrice: planData.price,
-      billingPeriod: formatPeriod(),
-      emails: planData.emails,
-      features: planData.features,
-      slots: planData.emails,
-      selectedIntegrations: [],
-      additionalSlotsCost: 0,
-      integrationCosts: 0,
-      discount: 0,
-      subtotal: planData.price,
-      taxRate: 0.1,
-      tax: planData.price * 0.1,
-      total: planData.price * 1.1,
-    };
+  const planDetails = {
+    planName,
+    planType,
+    basePrice: planData.price,
+    billingPeriod: formatPeriod(),
+    emails: planData.emails,
+    features: planData.features,
+    slots: planData.emails,
+    selectedIntegrations: [],
+    additionalSlotsCost: 0,
+    integrationCosts: 0,
+    discount: 0,
+    subtotal: planData.price,
+    taxRate: 0.1,
+    tax: planData.price * 0.1,
+    total: planData.price * 1.1,
+  };
 
-    // Store plan temporarily
-    localStorage.setItem("pendingUpgradePlan", JSON.stringify(planDetails));
-    sessionStorage.setItem("pendingUpgradePlan", JSON.stringify(planDetails));
+  // Store plan temporarily
+  localStorage.setItem("pendingUpgradePlan", JSON.stringify(planDetails));
+  sessionStorage.setItem("pendingUpgradePlan", JSON.stringify(planDetails));
 
-    const isLoggedIn = !!localStorage.getItem("authToken");
+  const isLoggedIn = !!localStorage.getItem("authToken");
 
-    if (!isLoggedIn && planData.price > 0) {
+  if (!isLoggedIn) {
+    if (planData.price === 0) {
+      // Free plan - go to login page
+      navigate("/login", {
+        state: {
+          from: "/pricing",
+          plan: planDetails,
+          redirectTo: "/dashboard", // After login, go to dashboard
+        },
+        replace: true,
+      });
+    } else {
+      // Paid plan - go to sign-in page
       navigate("/signin", {
         state: {
           from: "/pricing",
@@ -327,13 +339,22 @@ const Pricing = () => {
         },
         replace: true,
       });
+    }
+  } else {
+    // User is logged in
+    if (planData.price === 0) {
+      // Free plan - activate and go to dashboard
+      localStorage.setItem("currentPlan", JSON.stringify(planDetails));
+      navigate("/dashboard", { replace: true });
     } else {
+      // Paid plan - go to payment
       navigate("/payment", { 
         state: { plan: planDetails }, 
         replace: true 
       });
     }
-  }, [pricingPlans, billingPeriod, formatPeriod, navigate]);
+  }
+}, [pricingPlans, billingPeriod, formatPeriod, navigate]);
 
   // Memoized email notification function
   const sendEmailNotification = useCallback((emailDetails) => {
