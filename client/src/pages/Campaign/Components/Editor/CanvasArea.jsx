@@ -255,11 +255,11 @@ export default function CanvasArea({
     const currentActivePage = activePageRef.current;
     
     if (!currentPages[currentActivePage] || !currentPages[currentActivePage].elements) {
-      setCanvasDimensions({ width: 800, height: 600 });
+      setCanvasDimensions({ width: 600, height: 650 });
       return;
     }
 
-    let maxX = 800;
+    let maxX = 600;
     let maxY = 600;
 
     currentPages[currentActivePage].elements.forEach(element => {

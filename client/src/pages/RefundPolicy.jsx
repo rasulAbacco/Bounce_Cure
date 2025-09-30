@@ -5,7 +5,7 @@ import PageLayout from "../components/PageLayout"; // Adjust path as needed
 const RefundPolicy = () => {
     return (
         <PageLayout>
-            <div className="relative bg-black text-left font-light text-sm py-8 px-10 min-h-screen max-w-[80vw] m-auto">
+            <div className="relative  text-left font-light text-sm py-8 px-10 min-h-screen max-w-[80vw] m-auto">
                 {/* Watermark */}
                 <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white text-[120px] font-bold opacity-5 select-none pointer-events-none whitespace-nowrap">
                     REFUND POLICY
