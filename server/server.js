@@ -41,11 +41,12 @@ import campaignsAutoRouter from './routes/campaignsAuto.js';
 import { router as verifiedEmailsRouter } from './routes/verifiedEmails.js';
 import verifiedEmailsRouters from "./routes/userMailVerify.js"; // if actually used
 import sendgridSendersRouter from "./routes/sendgridSenders.js";
+import { router as analyticsRouter } from './routes/analytics.js';
 
 // Services
 import { startEmailScheduler } from "./services/imapScheduler.js";
 import { initSocket } from "./services/socketService.js";
-
+ 
 // Middleware
 import { protect } from "./middleware/auth.js";
 
@@ -86,9 +87,16 @@ app.use(cors({
   },
   credentials: true
 }));
-
-// Body parsers
 app.use(express.json());
+
+app.use((req, res, next) => {
+  console.log(`📥 [${req.method}] ${req.url} | Body:`, req.body);
+  next();
+});
+
+
+app.use(express.json());
+
 app.use(express.urlencoded({ extended: true }));
 
 // ----------------------- Routes -----------------------
@@ -139,7 +147,8 @@ app.use("/api/saved-replies", protect, savedRepliesRouter);
 app.use("/api/campaigncontacts", protect, campaignContactsRoutes);
 app.use("/api/campaigns", protect, campaignsRoutes);
 app.use("/api/verified-emails", protect, verifiedEmailsRouter);
-
+app.use('/api/analytics', analyticsRouter);
+ 
 
 
 // Socket service

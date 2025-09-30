@@ -174,6 +174,7 @@ const Footer = () => {
               { label: "Contact", path: "/contact" },
               { label: "Terms&Conditions", path: "/terms-and-conditions", scrollTop: true },
               { label: "Refund Policy", path: "/refund-policy", scrollTop: true },
+              { label: "Privacy Policy", path: "/privacy-policy", scrollTop: true },
             ].map(({ label, path, scrollTop }) => (
               <button
                 key={label}

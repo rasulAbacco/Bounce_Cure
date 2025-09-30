@@ -202,7 +202,7 @@ const Navbar = () => {
     navigate('/');
   };
   return (
-    <nav className="fixed w-full z-50 bg-black/90 backdrop-blur-lg border-b border-white/10">
+    <nav className="fixed w-full z-50 bg-black/90 backdrop-blur-lg border-b border-white/10 py-3">
       <style jsx global>{`
         .nav-link { 
           position: relative; 
@@ -510,7 +510,7 @@ const Navbar = () => {
                           {item.name}
                         </a>
                       ))}
-                    </div>
+                    </div> 
                   )}
                 </div>
               );
