@@ -22,7 +22,7 @@ const Leads = () => {
   const [leads, setLeads] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  
+
   // State for new lead form
   const [showForm, setShowForm] = useState(false);
   const [newLead, setNewLead] = useState({
@@ -34,15 +34,15 @@ const Leads = () => {
     score: 50,
     last: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
   });
-  
+
   // State for edit lead form
   const [showEditForm, setShowEditForm] = useState(false);
   const [editingLead, setEditingLead] = useState(null);
-  
+
   // State for view lead modal
   const [showViewModal, setShowViewModal] = useState(false);
   const [viewingLead, setViewingLead] = useState(null);
-  
+
   // State for filters
   const [filters, setFilters] = useState({
     status: "",
@@ -50,28 +50,36 @@ const Leads = () => {
     source: "",
   });
   const [showFilters, setShowFilters] = useState(false);
-  
+
   // State for search
   const [searchTerm, setSearchTerm] = useState("");
-  
+
   // Fetch leads from API
   useEffect(() => {
     const fetchLeads = async () => {
       try {
         setLoading(true);
-        const response = await axios.get(`${API_URL}/api/leads`);
+        const token = localStorage.getItem('token'); // or however you're storing the token
+
+        const response = await axios.get(`${API_URL}/api/leads`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
         setLeads(response.data);
       } catch (err) {
         setError("Failed to fetch leads. Please try again.");
-        console.error("Error fetching leads:", err);
+        console.error("Error fetching leads:", err.response || err.message);
       } finally {
         setLoading(false);
       }
     };
-    
+
     fetchLeads();
   }, []);
-  
+
+
   // Handle form input changes for new lead
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -80,7 +88,7 @@ const Leads = () => {
       [name]: value,
     });
   };
-  
+
   // Handle form input changes for editing lead
   const handleEditInputChange = (e) => {
     const { name, value } = e.target;
@@ -89,7 +97,7 @@ const Leads = () => {
       [name]: value,
     });
   };
-  
+
   // Handle filter changes
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -98,13 +106,37 @@ const Leads = () => {
       [name]: value,
     });
   };
-  
+
   // Add new lead
   const handleAddLead = async (e) => {
     e.preventDefault();
+
     try {
-      const response = await axios.post(`${API_URL}/api/leads`, newLead);
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError("No authentication token found. Please log in again.");
+        return;
+      }
+
+      // Convert score to number before sending
+      const leadToSubmit = {
+        ...newLead,
+        score: Number(newLead.score),  // ✅ Ensure score is a number
+      };
+
+      const response = await axios.post(
+        `${API_URL}/api/leads`,
+        leadToSubmit,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
       setLeads([response.data, ...leads]);
+
+      // Reset form with default values
       setNewLead({
         name: "",
         email: "",
@@ -112,43 +144,62 @@ const Leads = () => {
         source: "Signup Form",
         status: "Opened",
         score: 50,
-        last: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        last: new Date().toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        }),
       });
+
       setShowForm(false);
     } catch (err) {
       setError("Failed to add lead. Please try again.");
-      console.error("Error adding lead:", err);
+      console.error("Error adding lead:", err.response?.data || err.message);
     }
   };
-  
+
+
+
   // Update existing lead
   const handleUpdateLead = async (e) => {
     e.preventDefault();
     try {
-      const response = await axios.put(`${API_URL}/api/leads/${editingLead.id}`, editingLead);
-      setLeads(leads.map(lead => 
+      const token = localStorage.getItem('token');
+
+      const response = await axios.put(
+        `${API_URL}/api/leads/${editingLead.id}`,
+        editingLead,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setLeads(leads.map(lead =>
         lead.id === editingLead.id ? response.data : lead
       ));
       setShowEditForm(false);
       setEditingLead(null);
     } catch (err) {
       setError("Failed to update lead. Please try again.");
-      console.error("Error updating lead:", err);
+      console.error("Error updating lead:", err.response || err.message);
     }
   };
-  
+
+
+
   // Open edit form with lead data
   const handleEditLead = (lead) => {
     setEditingLead(lead);
     setShowEditForm(true);
   };
-  
+
   // Open view modal with lead data
   const handleViewLead = (lead) => {
     setViewingLead(lead);
     setShowViewModal(true);
   };
-  
+
   // Reset filters
   const resetFilters = () => {
     setFilters({
@@ -158,37 +209,63 @@ const Leads = () => {
     });
     setSearchTerm("");
   };
-  
+
   // Delete a lead
   const handleDeleteLead = async (id) => {
     if (window.confirm("Are you sure you want to delete this lead?")) {
       try {
-        await axios.delete(`${API_URL}/api/leads/${id}`);
+        const token = localStorage.getItem('token'); // or get it from context
+
+        await axios.delete(`${API_URL}/api/leads/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
         setLeads(leads.filter(lead => lead.id !== id));
       } catch (err) {
         setError("Failed to delete lead. Please try again.");
-        console.error("Error deleting lead:", err);
+        console.error("Error deleting lead:", err.response || err.message);
       }
     }
   };
-  
+
+
   // Update lead status
   const handleUpdateStatus = async (id, newStatus) => {
     try {
       const lead = leads.find(l => l.id === id);
-      if (lead) {
-        const updatedLead = { ...lead, status: newStatus };
-        const response = await axios.put(`${API_URL}/${id}`, updatedLead);
-        setLeads(leads.map(l => 
-          l.id === id ? response.data : l
-        ));
+      if (!lead) {
+        setError("Lead not found");
+        return;
       }
+
+      const token = localStorage.getItem('token');
+      if (!token) {
+        setError("No authentication token found. Please log in.");
+        return;
+      }
+
+      const updatedLead = { ...lead, status: newStatus };
+
+      const response = await axios.put(
+        `${API_URL}/api/leads/${id}`,
+        updatedLead,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      setLeads(leads.map(l => (l.id === id ? response.data : l)));
     } catch (err) {
       setError("Failed to update status. Please try again.");
-      console.error("Error updating status:", err);
+      console.error("Error updating status:", err.response?.data || err.message);
     }
   };
-  
+
+
   // Filter leads based on filters and search term
   // Make sure leads is always an array before filtering
   const safeLeads = Array.isArray(leads) ? leads : [];
@@ -206,18 +283,18 @@ const Leads = () => {
     return matchesStatus && matchesCampaign && matchesSource && matchesSearch;
   });
 
-  
+
   // Get unique campaigns and sources for filter dropdowns
   const campaigns = [...new Set(safeLeads.map(lead => lead.campaign))];
   const sources = [...new Set(safeLeads.map(lead => lead.source))];
-  
+
   const badgeStyle = {
     Opened: "bg-green-100 dark:bg-green-900/40 text-green-600 dark:text-green-400 border border-green-300 dark:border-green-700",
     Clicked: "bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 border border-blue-300 dark:border-blue-700",
     Bounced: "bg-red-100 dark:bg-red-900/40 text-red-600 dark:text-red-400 border border-red-300 dark:border-red-700",
     Unsubscribed: "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-600 dark:text-yellow-400 border border-yellow-300 dark:border-yellow-700",
   };
-  
+
   return (
     <div className="space-y-10 px-4 py-8 sm:px-6 lg:px-8">
       {/* Header */}
@@ -229,14 +306,14 @@ const Leads = () => {
           Track and manage your email campaign leads, engagement, and campaign performance.
         </p>
       </div>
-      
+
       {/* Error Message */}
       {error && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
           {error}
         </div>
       )}
-      
+
       {/* Quick Stats */}
       {/* <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {[
@@ -265,13 +342,13 @@ const Leads = () => {
           />
         </div>
         <div className="flex gap-3">
-          <button 
+          <button
             className="flex items-center gap-2 px-3 py-2 bg-black dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg text-white dark:text-zinc-200 transition"
             onClick={() => setShowFilters(!showFilters)}
           >
             <Filter className="w-4 h-4" /> Filter
           </button>
-          <button 
+          <button
             className="flex items-center gap-2 bg-yellow-500 text-black px-4 py-2 rounded-xl font-medium hover:bg-yellow-400 transition"
             onClick={() => setShowForm(true)}
           >
@@ -279,10 +356,10 @@ const Leads = () => {
           </button>
         </div>
       </div>
-      
+
       {/* Filters Panel */}
       {showFilters && (
-        <motion.div 
+        <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: "auto" }}
           className="bg-black dark:bg-zinc-900 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800"
@@ -332,7 +409,7 @@ const Leads = () => {
               </select>
             </div>
             <div className="flex items-end">
-              <button 
+              <button
                 onClick={resetFilters}
                 className="px-4 py-2 bg-white dark:bg-zinc-700 text-black dark:text-zinc-200 rounded-lg text-sm hover:bg-zinc-300 dark:hover:bg-zinc-600 transition"
               >
@@ -342,7 +419,7 @@ const Leads = () => {
           </div>
         </motion.div>
       )}
-      
+
       {/* Leads Table */}
       <div className="overflow-x-auto border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
         {loading ? (
@@ -392,21 +469,21 @@ const Leads = () => {
                     </td>
                     <td className="px-4 py-3 text-zinc-500">{lead.last}</td>
                     <td className="px-4 py-3 flex gap-2">
-                      <button 
+                      <button
                         onClick={() => handleViewLead(lead)}
                         className="text-blue-500 hover:text-blue-700"
                         title="View"
                       >
                         <Eye className="w-4 h-4" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleEditLead(lead)}
                         className="text-green-500 hover:text-green-700"
                         title="Edit"
                       >
                         <Edit className="w-4 h-4" />
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleDeleteLead(lead.id)}
                         className="text-red-500 hover:text-red-700"
                         title="Delete"
@@ -427,7 +504,7 @@ const Leads = () => {
           </table>
         )}
       </div>
-      
+
       {/* Campaign Insights Chart Placeholder */}
       <div className="bg-black dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800">
         <h2 className="text-xl font-semibold text-yellow-500 mb-4 flex items-center gap-2">
@@ -441,18 +518,18 @@ const Leads = () => {
           📊 Chart Placeholder
         </div>
       </div>
-      
+
       {/* New Lead Form Modal */}
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
-          <div 
+          <div
             className="fixed inset-0 bg-black bg-opacity-70"
             onClick={() => setShowForm(false)}
           />
-          
+
           {/* Modal Content */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="relative bg-white dark:bg-zinc-900 rounded-xl shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto z-10"
@@ -460,14 +537,14 @@ const Leads = () => {
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-yellow-500">Add New Lead</h2>
-                <button 
+                <button
                   onClick={() => setShowForm(false)}
                   className="p-1 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800"
                 >
                   <X className="w-5 h-5 text-zinc-500" />
                 </button>
               </div>
-              
+
               <form onSubmit={handleAddLead} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Name *</label>
@@ -480,7 +557,7 @@ const Leads = () => {
                     className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Email *</label>
                   <input
@@ -492,7 +569,7 @@ const Leads = () => {
                     className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Campaign</label>
                   <select
@@ -507,7 +584,7 @@ const Leads = () => {
                     <option value="Discount Promo">Discount Promo</option>
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Source</label>
                   <select
@@ -522,7 +599,7 @@ const Leads = () => {
                     <option value="Referral">Referral</option>
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Status</label>
                   <select
@@ -537,7 +614,7 @@ const Leads = () => {
                     <option value="Unsubscribed">Unsubscribed</option>
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Engagement Score</label>
                   <input
@@ -555,7 +632,7 @@ const Leads = () => {
                     <span>100</span>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-end gap-3 pt-2">
                   <button
                     type="button"
@@ -576,18 +653,18 @@ const Leads = () => {
           </motion.div>
         </div>
       )}
-      
+
       {/* Edit Lead Form Modal */}
       {showEditForm && editingLead && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
-          <div 
+          <div
             className="fixed inset-0 bg-black bg-opacity-70"
             onClick={() => setShowEditForm(false)}
           />
-          
+
           {/* Modal Content */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="relative bg-white dark:bg-zinc-900 rounded-xl shadow-lg w-full max-w-md max-h-[90vh] overflow-y-auto z-10"
@@ -595,14 +672,14 @@ const Leads = () => {
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-yellow-500">Edit Lead</h2>
-                <button 
+                <button
                   onClick={() => setShowEditForm(false)}
                   className="p-1 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800"
                 >
                   <X className="w-5 h-5 text-zinc-500" />
                 </button>
               </div>
-              
+
               <form onSubmit={handleUpdateLead} className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Name *</label>
@@ -615,7 +692,7 @@ const Leads = () => {
                     className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Email *</label>
                   <input
@@ -627,7 +704,7 @@ const Leads = () => {
                     className="w-full px-3 py-2 bg-white dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg"
                   />
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Campaign</label>
                   <select
@@ -642,7 +719,7 @@ const Leads = () => {
                     <option value="Discount Promo">Discount Promo</option>
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Source</label>
                   <select
@@ -657,7 +734,7 @@ const Leads = () => {
                     <option value="Referral">Referral</option>
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Status</label>
                   <select
@@ -672,7 +749,7 @@ const Leads = () => {
                     <option value="Unsubscribed">Unsubscribed</option>
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium text-zinc-700 dark:text-zinc-300 mb-1">Engagement Score</label>
                   <input
@@ -690,7 +767,7 @@ const Leads = () => {
                     <span>100</span>
                   </div>
                 </div>
-                
+
                 <div className="flex justify-end gap-3 pt-2">
                   <button
                     type="button"
@@ -711,18 +788,18 @@ const Leads = () => {
           </motion.div>
         </div>
       )}
-      
+
       {/* View Lead Modal */}
       {showViewModal && viewingLead && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           {/* Backdrop */}
-          <div 
+          <div
             className="fixed inset-0 bg-black bg-opacity-70"
             onClick={() => setShowViewModal(false)}
           />
-          
+
           {/* Modal Content */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             className="relative bg-white dark:bg-zinc-900 rounded-xl shadow-lg w-full max-w-md z-10"
@@ -730,42 +807,42 @@ const Leads = () => {
             <div className="p-6">
               <div className="flex justify-between items-center mb-4">
                 <h2 className="text-xl font-bold text-yellow-500">Lead Details</h2>
-                <button 
+                <button
                   onClick={() => setShowViewModal(false)}
                   className="p-1 rounded-full hover:bg-zinc-200 dark:hover:bg-zinc-800"
                 >
                   <X className="w-5 h-5 text-zinc-500" />
                 </button>
               </div>
-              
+
               <div className="space-y-4">
                 <div>
                   <h3 className="text-sm font-medium text-zinc-500">Name</h3>
                   <p className="text-lg">{viewingLead.name}</p>
                 </div>
-                
+
                 <div>
                   <h3 className="text-sm font-medium text-zinc-500">Email</h3>
                   <p className="text-lg">{viewingLead.email}</p>
                 </div>
-                
+
                 <div>
                   <h3 className="text-sm font-medium text-zinc-500">Campaign</h3>
                   <p className="text-lg">{viewingLead.campaign}</p>
                 </div>
-                
+
                 <div>
                   <h3 className="text-sm font-medium text-zinc-500">Source</h3>
                   <p className="text-lg">{viewingLead.source}</p>
                 </div>
-                
+
                 <div>
                   <h3 className="text-sm font-medium text-zinc-500">Status</h3>
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${badgeStyle[viewingLead.status]}`}>
                     {viewingLead.status}
                   </span>
                 </div>
-                
+
                 <div>
                   <h3 className="text-sm font-medium text-zinc-500">Engagement Score</h3>
                   <div className="flex items-center gap-2">
@@ -773,13 +850,13 @@ const Leads = () => {
                     <span className="text-lg">{viewingLead.score}%</span>
                   </div>
                 </div>
-                
+
                 <div>
                   <h3 className="text-sm font-medium text-zinc-500">Last Contacted</h3>
                   <p className="text-lg">{viewingLead.last}</p>
                 </div>
               </div>
-              
+
               <div className="flex justify-end gap-3 pt-6">
                 <button
                   onClick={() => {
