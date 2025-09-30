@@ -1249,6 +1249,7 @@ export default function CanvasArea({
             {preview ? <><X size={16} /> Exit Preview</> : <><Eye size={16} /> Preview</>}
             <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 opacity-0 group-hover:opacity-100 transition bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap">{preview ? "Exit Preview" : "Preview"}</span>
           </button>
+          
           <button onClick={onSendCampaign} className="relative group flex items-center gap-2 px-4 py-2 bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text:black rounded-lg text-sm font-medium transition-colors shadow-lg cursor-pointer">
             <Send size={16} /> Send
             <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 opacity-0 group-hover:opacity-100 transition bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap">Send Campaign</span>
