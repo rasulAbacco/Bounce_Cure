@@ -51,6 +51,9 @@ import { initSocket } from "./services/socketService.js";
 import { protect } from "./middleware/auth.js";
 
 
+import stripeRoutes from './routes/stripe.js';
+import razorpayRoutes from './routes/razorpay.js';
+import creditcardRoutes from './routes/creditcard.js';
 
 // ENV setup
 dotenv.config();
@@ -114,6 +117,10 @@ app.use("/api", dashboardRoutes);
 
 // Other API routes
 app.use("/api", invoiceRoutes);
+app.use('/api/stripe', stripeRoutes);
+app.use('/api/razorpay', razorpayRoutes);
+app.use('/api', creditcardRoutes);
+
 app.use("/api/verification", advancedVerificationRoute);
 app.use("/auth", forgotPasswordRoutes);
 app.use("/api/support", supportRoutes);

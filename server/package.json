@@ -25,7 +25,7 @@
     "cors": "^2.8.5",
     "csv-parser": "^3.2.0",
     "dayjs": "^1.11.18",
-    "dotenv": "^17.2.2",
+    "dotenv": "^17.2.3",
     "email-deep-validator": "^3.3.0",
     "email-reply-parser": "^2.0.1",
     "email-validator": "^2.0.4",
@@ -36,6 +36,7 @@
     "fast-csv": "^5.0.5",
     "file-type": "^21.0.0",
     "firebase-admin": "^13.4.0",
+    "get-stream": "^9.0.1",
     "googleapis": "^159.0.0",
     "imap": "^0.8.19",
     "imap-simple": "^5.1.0",
@@ -58,7 +59,9 @@
     "otp-generator": "^4.0.1",
     "p-limit": "^6.2.0",
     "papaparse": "^5.5.3",
+    "pdf-lib": "^1.17.1",
     "pdfkit": "^0.17.2",
+    "pdfmake": "^0.2.20",
     "pg": "^8.16.3",
     "qrcode": "^1.5.4",
     "qrcode.react": "^4.2.0",
@@ -82,7 +85,7 @@
   "description": "",
   "pg": "^8.16.3",
   "devDependencies": {
-    "@prisma/client": "^6.14.0",
-    "prisma": "^6.16.1"
+    "@prisma/client": "^6.16.2",
+    "prisma": "^6.16.2"
   }
 }
