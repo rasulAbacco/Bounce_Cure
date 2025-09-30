@@ -5,7 +5,7 @@ import {
 } from "lucide-react";
 import Papa from "papaparse";
 
-const API_URL = "http://localhost:5000"; // ✅ centralize API
+const API_URL = import.meta.env.VITE_VRI_URL;
 
 // --- Create Modal ---
 const CreateListModal = ({ onClose, onListCreated }) => {
@@ -21,6 +21,9 @@ const CreateListModal = ({ onClose, onListCreated }) => {
     try {
       const response = await fetch(`${API_URL}/lists`, {
         method: "POST",
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        },
         body: formData,
       });
       if (!response.ok) throw new Error("Failed to create list");
@@ -83,16 +86,45 @@ const Lists = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [viewData, setViewData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   // --- Fetch from DB ---
   const fetchLists = async () => {
     try {
       setLoading(true);
-      const res = await fetch(`${API_URL}/lists`);
+      setError(null);
+      
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error("Authentication token not found. Please log in again.");
+      }
+      
+      const res = await fetch(`${API_URL}/lists`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("Unauthorized. Please log in again.");
+        }
+        throw new Error(`Failed to fetch lists: ${res.status}`);
+      }
+      
       const data = await res.json();
-      setLists(data);
+      
+      // Ensure data is an array
+      if (!Array.isArray(data)) {
+        console.error("API response is not an array:", data);
+        setLists([]);
+      } else {
+        setLists(data);
+      }
     } catch (err) {
+      setError(err.message);
       console.error("❌ Error fetching lists:", err);
+      setLists([]); // Set to empty array to prevent filter errors
     } finally {
       setLoading(false);
     }
@@ -105,10 +137,30 @@ const Lists = () => {
   // --- Delete ---
   const handleDelete = async (id) => {
     if (!window.confirm("Delete this list?")) return;
+    
     try {
-      await fetch(`${API_URL}/lists/${id}`, { method: "DELETE" });
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error("Authentication token not found. Please log in again.");
+      }
+      
+      const res = await fetch(`${API_URL}/lists/${id}`, { 
+        method: "DELETE",
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("Unauthorized. Please log in again.");
+        }
+        throw new Error(`Failed to delete list: ${res.status}`);
+      }
+      
       fetchLists(); // ✅ refresh
     } catch (err) {
+      setError(err.message);
       console.error("❌ Error deleting:", err);
     }
   };
@@ -116,8 +168,23 @@ const Lists = () => {
   // --- View file ---
   const handleViewList = async (list) => {
     try {
-      const res = await fetch(`${API_URL}/lists/files/${list.id}`);
-      if (!res.ok) throw new Error("Failed to fetch file");
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error("Authentication token not found. Please log in again.");
+      }
+      
+      const res = await fetch(`${API_URL}/lists/files/${list.id}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (!res.ok) {
+        if (res.status === 401) {
+          throw new Error("Unauthorized. Please log in again.");
+        }
+        throw new Error(`Failed to fetch file: ${res.status}`);
+      }
 
       const blob = await res.blob();
       const text = await blob.text();
@@ -141,18 +208,20 @@ const Lists = () => {
 
       setViewData({ ...list, uploadedFile: fileData });
     } catch (err) {
+      setError(err.message);
       console.error("❌ Error fetching file:", err);
       setViewData({ ...list, uploadedFile: { type: "error" } });
     }
   };
 
-
   // --- Filter ---
-  const filtered = lists.filter((l) =>
-    [l.name, l.id, l.email, l.phone].some((f) =>
-      f?.toLowerCase().includes(search.toLowerCase())
-    )
-  );
+  const filtered = Array.isArray(lists) 
+    ? lists.filter((l) =>
+        [l.name, l.id, l.email, l.phone].some((f) =>
+          f?.toLowerCase().includes(search.toLowerCase())
+        )
+      )
+    : [];
 
   // --- Format date ---
   const formatDate = (date) => {
@@ -178,6 +247,13 @@ const Lists = () => {
           </button>
         </div>
 
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-900/20 border border-red-700 text-red-400 px-4 py-3 rounded-lg mb-6">
+            Error: {error}
+          </div>
+        )}
+
         {/* Search */}
         <input
           type="text"
@@ -189,9 +265,14 @@ const Lists = () => {
 
         {/* Table */}
         {loading ? (
-          <p>Loading...</p>
+          <div className="flex justify-center items-center h-64">
+            <div className="text-center">
+              <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500 mx-auto"></div>
+              <p className="mt-4 text-zinc-400">Loading lists...</p>
+            </div>
+          </div>
         ) : filtered.length === 0 ? (
-          <p>No lists found</p>
+          <p className="text-center py-8 text-zinc-400">No lists found</p>
         ) : (
           <table className="w-full bg-gray-900 rounded-lg">
             <thead>

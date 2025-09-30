@@ -1,3 +1,4 @@
+// client/src/pages/Automation/Automation.jsx
 import React, { useEffect, useState } from "react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { Line, Pie, Bar } from "react-chartjs-2";
@@ -6,7 +7,7 @@ import {
   Zap, Activity, CheckCircle, Play, Clock, Calendar, 
   Mail, Edit, Trash2, Pause, PlayCircle, MoreVertical,
   Filter, Search, Eye, AlertCircle, TrendingUp, Users,
-  RefreshCw, Send, XCircle, Shield, AlertTriangle, X
+  RefreshCw, Send, XCircle, Shield, X, AlertTriangle
 } from "lucide-react";
 
 const Automation = () => {
@@ -30,43 +31,49 @@ const Automation = () => {
   const [triggerMessage, setTriggerMessage] = useState("");
   const [showTriggerMessage, setShowTriggerMessage] = useState(false);
 
-  // Fetch automation data from backend
+  // Fetch automation logs
   const fetchAutomationData = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/automation/logs");
-      if (response.ok) {
-        const data = await response.json();
-        setLogs(data);
-        
-        // Calculate stats from logs
-        const stats = data.reduce((acc, log) => {
-          acc[log.status] = (acc[log.status] || 0) + 1;
-          return acc;
-        }, {});
-        
-        setCampaignStats(prev => ({
-          ...prev,
-          ...stats
-        }));
-      }
-    } catch (error) {
-      console.error("Error fetching automation data:", error);
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:5000/api/automation/logs", {
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+
+      if (!response.ok) throw new Error(`Error ${response.status}`);
+      const data = await response.json();
+      setLogs(data);
+    } catch (err) {
+      console.error("Failed to fetch automation logs:", err);
     }
   };
 
+  // Fetch scheduled campaigns
   const fetchScheduledCampaigns = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/automation/scheduled");
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:5000/api/automation/scheduled", {
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+
       if (response.ok) {
         const data = await response.json();
         setScheduledCampaigns(data);
-        
-        // Update scheduled count
-        setCampaignStats(prev => ({
-          ...prev,
-          scheduled: data.filter(c => c.status === 'scheduled').length,
-          recurring: data.filter(c => c.recurringFrequency).length
-        }));
+
+        // Compute stats dynamically
+        const sentCount = data.filter(c => c.status === 'sent').length;
+        const scheduledCount = data.filter(c => c.status === 'scheduled').length;
+        const processingCount = data.filter(c => c.status === 'processing').length;
+        const failedCount = data.filter(c => c.status === 'failed').length;
+        const recurringCount = data.filter(c => c.recurringFrequency).length;
+
+        setCampaignStats({
+          sent: sentCount,
+          scheduled: scheduledCount,
+          processing: processingCount,
+          failed: failedCount,
+          recurring: recurringCount,
+          pending: 0 // optional, if you track pending separately
+        });
       }
     } catch (error) {
       console.error("Error fetching scheduled campaigns:", error);
@@ -75,9 +82,14 @@ const Automation = () => {
     }
   };
 
+  // Check sender verification
   const checkSenderVerification = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/automation/sender/verification");
+      const token = localStorage.getItem("token");
+      const response = await fetch("http://localhost:5000/api/automation/sender/verification", {
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      });
+
       if (response.ok) {
         const data = await response.json();
         setSenderVerified(data.verified);
@@ -87,12 +99,10 @@ const Automation = () => {
     }
   };
 
+  // Handle campaign actions
   const handleCampaignAction = async (campaignId, action) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/automation/${campaignId}/${action}`, {
-        method: 'POST',
-      });
-      
+      const response = await fetch(`http://localhost:5000/api/automation/${campaignId}/${action}`, { method: 'POST' });
       if (response.ok) {
         await fetchScheduledCampaigns();
         setShowActionMenu(null);
@@ -108,14 +118,10 @@ const Automation = () => {
 
   const handleBulkAction = async (action) => {
     if (selectedCampaigns.length === 0) return;
-    
     try {
       const promises = selectedCampaigns.map(id => 
-        fetch(`http://localhost:5000/api/automation/${id}/${action}`, {
-          method: 'POST',
-        })
+        fetch(`http://localhost:5000/api/automation/${id}/${action}`, { method: 'POST' })
       );
-      
       await Promise.all(promises);
       await fetchScheduledCampaigns();
       setSelectedCampaigns([]);
@@ -125,40 +131,29 @@ const Automation = () => {
   };
 
   const toggleCampaignSelection = (campaignId) => {
-    setSelectedCampaigns(prev => 
-      prev.includes(campaignId) 
-        ? prev.filter(id => id !== campaignId)
-        : [...prev, campaignId]
-    );
+    setSelectedCampaigns(prev => prev.includes(campaignId) 
+      ? prev.filter(id => id !== campaignId)
+      : [...prev, campaignId]);
   };
 
   const handleTriggerSend = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/automation/trigger-cron", {
-        method: 'POST',
-      });
+      const response = await fetch("http://localhost:5000/api/automation/trigger-cron", { method: 'POST' });
       const data = await response.json();
-      
-      // Fetch the latest scheduled campaigns
       await fetchScheduledCampaigns();
-      
-      // Create message based on scheduled campaigns
+
       const scheduledCount = scheduledCampaigns.filter(c => c.status === 'scheduled').length;
-      
       if (scheduledCount > 0) {
         const campaignList = scheduledCampaigns
           .filter(c => c.status === 'scheduled')
           .map(c => `- ${c.campaignName}: ${new Date(c.scheduledDateTime).toLocaleString()}`)
           .join('\n');
-        
         setTriggerMessage(`Found ${scheduledCount} scheduled campaigns:\n${campaignList}`);
       } else {
         setTriggerMessage("No scheduled campaigns found.");
       }
-      
+
       setShowTriggerMessage(true);
-      
-      // Hide message after 5 seconds
       setTimeout(() => setShowTriggerMessage(false), 5000);
     } catch (error) {
       console.error("Error triggering cron job:", error);
@@ -168,13 +163,11 @@ const Automation = () => {
     }
   };
 
-  // Fetch data from backend
   useEffect(() => {
     fetchAutomationData();
     fetchScheduledCampaigns();
     checkSenderVerification();
-    
-    // Refresh data every 30 seconds
+
     const interval = setInterval(() => {
       fetchAutomationData();
       fetchScheduledCampaigns();
@@ -215,46 +208,18 @@ const Automation = () => {
   const formatDateTime = (dateTime) => {
     const date = new Date(dateTime);
     return date.toLocaleString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
+      month: 'short', day: 'numeric', year: 'numeric',
+      hour: '2-digit', minute: '2-digit'
     });
   };
 
   const overviewStats = [
-    {
-      title: "Total Scheduled",
-      value: campaignStats.scheduled || 0,
-      icon: Calendar,
-      color: "text-blue-400",
-      bgColor: "bg-blue-400/20"
-    },
-    {
-      title: "Successfully Sent",
-      value: campaignStats.sent || 0,
-      icon: CheckCircle,
-      color: "text-green-400",
-      bgColor: "bg-green-400/20"
-    },
-    {
-      title: "Currently Processing",
-      value: campaignStats.processing || 0,
-      icon: RefreshCw,
-      color: "text-purple-400",
-      bgColor: "bg-purple-400/20"
-    },
-    {
-      title: "Recurring Campaigns",
-      value: campaignStats.recurring || 0,
-      icon: RefreshCw,
-      color: "text-[#c2831f]",
-      bgColor: "bg-[#c2831f]/20"
-    }
+    { title: "Total Scheduled", value: campaignStats.scheduled || 0, icon: Calendar, color: "text-blue-400", bgColor: "bg-blue-400/20" },
+    { title: "Successfully Sent", value: campaignStats.sent || 0, icon: CheckCircle, color: "text-green-400", bgColor: "bg-green-400/20" },
+    { title: "Currently Processing", value: campaignStats.processing || 0, icon: RefreshCw, color: "text-purple-400", bgColor: "bg-purple-400/20" },
+    { title: "Recurring Campaigns", value: campaignStats.recurring || 0, icon: RefreshCw, color: "text-[#c2831f]", bgColor: "bg-[#c2831f]/20" }
   ];
 
-  // Chart data for campaign performance
   const performanceData = {
     labels: ['Scheduled', 'Sent', 'Failed', 'Processing'],
     datasets: [{
@@ -264,29 +229,13 @@ const Automation = () => {
         campaignStats.failed || 0,
         campaignStats.processing || 0
       ],
-      backgroundColor: [
-        '#3B82F6',
-        '#10B981',
-        '#EF4444',
-        '#8B5CF6'
-      ],
+      backgroundColor: ['#3B82F6', '#10B981', '#EF4444', '#8B5CF6'],
       borderWidth: 0
     }]
   };
 
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: 'bottom',
-        labels: {
-          color: '#D1D5DB',
-          padding: 20
-        }
-      }
-    }
-  };
+  const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#D1D5DB', padding: 20 } } } };
+
 
   // Add deliverability tips section
   const renderDeliverabilityTips = () => (
@@ -725,6 +674,6 @@ const Automation = () => {
       </div>
     </DashboardLayout>
   );
-};
+}; 
 
 export default Automation;

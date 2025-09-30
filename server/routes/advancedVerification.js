@@ -1,4 +1,4 @@
-//advancedVerification.js
+// advancedVerification.js
 import dns from "dns/promises";
 import disposableDomains from "./disposableDomains.js";
 import { SMTPClient } from "smtp-client";
@@ -23,8 +23,6 @@ const MAILS_SO_API_KEY = process.env.MAILS_SO_API_KEY;
 if (!MAILS_SO_API_KEY) {
   throw new Error("MAILS_SO_API_KEY environment variable is required");
 }
-
-
 
 class AdvancedVerifier {
   constructor({ dnsTimeout = 5000, smtpTimeout = 8000, retryGreylist = 1 } = {}) {
@@ -58,7 +56,6 @@ class AdvancedVerifier {
       throw new Error(`Mails.so API Error: ${error.response?.data?.message || error.message}`);
     }
   }
-
 
   // Verify single email with Mails.so
   async verifySingleWithMailsSo(email) {
@@ -137,7 +134,6 @@ class AdvancedVerifier {
     }
   }
 
-
   // Get batch status from Mails.so
   async getBatchStatusWithMailsSo(batchId) {
     const endpoint = `/batch/${batchId}`;
@@ -158,20 +154,32 @@ class AdvancedVerifier {
     }
 
     // Map through the email results and normalize output
-    return batchInfo.emails.map(item => ({
-      email: item.email,
-      syntax_valid: item.isv_format,
-      domain_valid: item.isv_domain,
-      mailbox_exists: item.isv_mx,
-      disposable: item.is_disposable,
-      role_based: !item.isv_nogeneric,
-      catch_all: !item.isv_nocatchall,
-      greylisted: false,  // API may not provide this, so defaulting false
-      score: item.score,
-      mx: item.mx_record ? [item.mx_record] : []
-    }));
-  }
+    return batchInfo.emails.map(item => {
+      const score = item.score ?? 0;
 
+      // Compute status using same rules as verify()
+      let status = "valid";
+      if (!item.isv_domain || item.isv_mx === false || score < 40) {
+        status = "invalid";
+      } else if (item.is_disposable || score < 60) {
+        status = "risky";
+      }
+
+      return {
+        email: item.email,
+        syntax_valid: item.isv_format ?? false,
+        domain_valid: item.isv_domain ?? false,
+        mailbox_exists: item.isv_mx ?? false,
+        disposable: item.is_disposable ?? false,
+        role_based: !item.isv_nogeneric,
+        catch_all: !item.isv_nocatchall,
+        greylisted: false,
+        score,
+        status,   // ✅ now correctly set
+        mx: item.mx_record ? [item.mx_record] : []
+      };
+    });
+  }
 
   // Wait for batch completion with polling
   async waitForBatchCompletion(batchId, maxAttempts = 12, interval = 5000) {
@@ -194,40 +202,11 @@ class AdvancedVerifier {
     throw new Error("Batch processing timed out");
   }
 
-  // Original syntax validation (kept for consistency)
-  validateSyntax(email) {
-    const regex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9-]+\.[a-zA-Z]{2,}$/;
-    if (!regex.test(email)) return { valid: false };
+  // Removed manual validateSyntax()
 
-    const [local, domain] = email.split("@");
-    if (!local || !domain) return { valid: false };
-    if (local.length > 64 || email.length > 254) return { valid: false };
-    if (local.startsWith('.') || local.endsWith('.') || local.includes('..')) return { valid: false };
-    if (COMMON_INVALID_PATTERNS.some(p => p.test(email))) return { valid: false };
-    if (SUSPICIOUS_DOMAINS.includes(domain)) return { valid: false };
-
-    return { valid: true };
-  }
-
-  // Main verify method updated to use Mails.so
+  // Main verify method updated to rely on Mails.so syntax validation only
   async verify(email, options = {}) {
     email = email.trim().toLowerCase();
-
-    const syntax = this.validateSyntax(email);
-    if (!syntax.valid) {
-      return {
-        email,
-        status: "invalid",
-        score: 0,
-        syntax_valid: false,
-        domain_valid: false,
-        mailbox_exists: false,
-        catch_all: false,
-        disposable: false,
-        role_based: false,
-        greylisted: false
-      };
-    }
 
     try {
       const mailsSoResult = await this.verifySingleWithMailsSo(email);
@@ -245,7 +224,7 @@ class AdvancedVerifier {
       const score = this.computeScore({ ...data, score: mailsSoResult.score });
 
       let status = "valid";
-      if (!mailsSoResult.domain_valid || mailsSoResult.mailbox_exists === false || score < 40) {
+      if (!mailsSoResult.syntax_valid || !mailsSoResult.domain_valid || mailsSoResult.mailbox_exists === false || score < 40) {
         status = "invalid";
       } else if (mailsSoResult.disposable || score < 60) {
         status = "risky";

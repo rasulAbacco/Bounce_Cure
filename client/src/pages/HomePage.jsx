@@ -12,24 +12,27 @@ import {
   TrendingUp,
   ArrowRight,
   CheckCircle,
+  Eye,
+  MousePointer,
 } from "lucide-react";
 import Footer from "../components/Footer";
 import Home from "./Home";
 import PageLayout from "../components/PageLayout";
 import LandingPage from "./LandingPage";
-
 import CountUp from "react-countup";
 import { useInView } from "react-intersection-observer";
+import { Link } from "react-router-dom";
 
 function HomePage() {
   const [activeTab, setActiveTab] = useState("email");
-
   const [count, setCount] = useState(0);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const videoRef = useRef(null);
 
   useEffect(() => {
     let start = 0;
-    const end = 200; // final value
-    const duration = 2000; // animation duration in ms
+    const end = 200;
+    const duration = 2000;
     const stepTime = Math.abs(Math.floor(duration / end));
 
     const timer = setInterval(() => {
@@ -48,14 +51,14 @@ function HomePage() {
   ];
 
   const { ref, inView } = useInView({
-    triggerOnce: true, // run only once
-    threshold: 0.2, // 20% visible before triggering
+    triggerOnce: true,
+    threshold: 0.2,
   });
 
   const tabs = [
     {
       id: "email",
-      label: "Email Validation",
+      label: "Email Verification",
       icon: Mail,
       content: {
         title: "Email Hygiene + Real-Time Email Verification",
@@ -65,731 +68,874 @@ function HomePage() {
       },
     },
     {
-      id: "phone",
-      label: "Phone Validation",
-      icon: Phone,
+      id: "campaign",
+      label: "Campaign",
+      icon: Target,
       content: {
-        title: "Phone Validation",
+        title: "Email Campaign Management",
         description:
-          "Verify if your phone numbers are mobile or landlines while eliminating unknowns, TCPA Litigators and blacklisted phones. Find out previous and current carrier information to build more accurate SMS campaigns.",
-        stats: "50+ Billion Numbers Validated",
+          "Create, customize, and send email campaigns with professional templates. Upload contacts, verify sender addresses, and manage your campaigns with ease.",
+        stats: "10+ Million Campaigns Sent",
       },
     },
     {
-      id: "activity",
-      label: "Email Activity",
+      id: "crm",
+      label: "CRM Activity",
       icon: Activity,
       content: {
-        title: "Email Activity",
+        title: "CRM & Lead Management",
         description:
-          "Identify your most active emails based on 30, 60, or 90 day engagement metrics through WEB and EMAIL based triggers. Monetize your data more effectively by targeting to those that are most recently engaged in online traffic.",
-        stats: "25+ Billion Activities Tracked",
+          "Manage your inbox, email accounts, leads, deals, tasks, and orders all in one place. Reply, forward, and track all customer interactions seamlessly.",
+        stats: "5+ Million Leads Managed",
       },
     },
     {
-      id: "enrichment",
-      label: "Data Enrichment",
-      icon: Database,
+      id: "multimedia",
+      label: "Multimedia Campaign",
+      icon: Zap,
       content: {
-        title: "Data Enrichment",
+        title: "Multi-Channel Marketing",
         description:
-          "Enhance your customer data with additional demographic, geographic, and behavioral information to create more targeted marketing campaigns and improve conversion rates.",
-        stats: "10+ Billion Records Enriched",
+          "Reach your audience across SMS, WhatsApp, Facebook, Instagram, Twitter, LinkedIn, YouTube Ads, and Google Ads. Manage all your marketing channels from one platform.",
+        stats: "50+ Million Multi-Channel Messages",
       },
     },
-    // {
-    //   id: "postal",
-    //   label: "Postal Validation",
-    //   icon: MapPin,
-    //   content: {
-    //     title: "Postal Validation",
-    //     description:
-    //       "Validate and standardize postal addresses worldwide. Ensure accurate delivery with address correction and geolocation services for improved mail deliverability.",
-    //     stats: "75+ Billion Addresses Verified",
-    //   },
-    // },
   ];
 
   const activeTabData = tabs.find((tab) => tab.id === activeTab);
 
-  const renderEmailValidation = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 ">
-      {/* Left Side - Charts and Stats */}
-      <div className="space-y-6">
-        {/* Pie Chart Section */}
-        <div className=" rounded-xl shadow-lg p-6 border border-gray-100 text-white">
-          <div className="flex items-center justify-between mb-6">
-            <div>
-              <h4 className="text-lg font-semibold text-gray-900 text-white">
-                Validation Results
-              </h4>
-              <p className="text-sm text-gray-500">23,526 Total Records</p>
-            </div>
-            <div className="text-right">
-              <div className="text-2xl font-bold text-green-600">19,648</div>
-              <div className="text-sm text-white">Valid Emails</div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-center mb-6">
-            <div className="relative w-32 h-32">
-              <svg
-                className="w-32 h-32 transform -rotate-90"
-                viewBox="0 0 36 36"
-              >
-                <path
-                  d="M18 2.0845
-                    a 15.9155 15.9155 0 0 1 0 31.831
-                    a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="#e5e7eb"
-                  strokeWidth="3"
-                />
-                <path
-                  d="M18 2.0845
-                    a 15.9155 15.9155 0 0 1 0 31.831
-                    a 15.9155 15.9155 0 0 1 0 -31.831"
-                  fill="none"
-                  stroke="#10b981"
-                  strokeWidth="3"
-                  strokeDasharray="83.5, 100"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center">
-                <span className="text-xl font-bold text-white">83.5%</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="space-y-3">
-            <div className="flex justify-between items-center">
-              <span className="flex items-center text-sm">
-                <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
-                Valid List
-              </span>
-              <span className="text-sm font-medium">19,648</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="flex items-center text-sm">
-                <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
-                Risky
-              </span>
-              <span className="text-sm font-medium">2,314</span>
-            </div>
-            <div className="flex justify-between items-center">
-              <span className="flex items-center text-sm">
-                <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
-                Invalid
-              </span>
-              <span className="text-sm font-medium">1,564</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Detailed Stats */}
-        <div className=" rounded-xl shadow-lg p-6 border border-gray-100 ">
-          <h4 className="text-lg font-semibold text-white mb-4">
-            Detailed Breakdown
+const renderEmailValidation = () => (
+  <div className="flex flex-col lg:flex-row gap-6 h-[700px]">
+    {/* Left Side - Charts, Stats and Key Features */}
+    <div className="flex-1 bg-gray-900 rounded-xl shadow-lg p-6 border border-gray-100 text-white flex flex-col">
+      <div className="flex items-center justify-between mb-4">
+        <div>
+          <h4 className="text-lg font-semibold text-gray-900 text-white">
+            Validation Results
           </h4>
-          <div className="space-y-3 text-sm text-white">
-            <div className="flex justify-between ">
-              <span className="">Syntax Valid</span>
-              <span className="font-medium">4,283 (18.2%)</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="">Domain Valid</span>
-              <span className="font-medium">4,174 (17.8%)</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="">MX Record</span>
-              <span className="font-medium">3,992 (17.0%)</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="">Disposable</span>
-              <span className="font-medium">842 (3.6%)</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="">Role Account</span>
-              <span className="font-medium">567 (2.4%)</span>
-            </div>
+          <p className="text-sm text-gray-500">23,526 Total Records</p>
+        </div>
+        <div className="text-right">
+          <div className="text-2xl font-bold text-green-600">19,648</div>
+          <div className="text-sm text-white">Valid Emails</div>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-center mb-4">
+        <div className="relative w-32 h-32">
+          <svg
+            className="w-32 h-32 transform -rotate-90"
+            viewBox="0 0 36 36"
+          >
+            <path
+              d="M18 2.0845
+                a 15.9155 15.9155 0 0 1 0 31.831
+                a 15.9155 15.9155 0 0 1 0 -31.831"
+              fill="none"
+              stroke="#e5e7eb"
+              strokeWidth="3"
+            />
+            <path
+              d="M18 2.0845
+                a 15.9155 15.9155 0 0 1 0 31.831
+                a 15.9155 15.9155 0 0 1 0 -31.831"
+              fill="none"
+              stroke="#10b981"
+              strokeWidth="3"
+              strokeDasharray="83.5, 100"
+            />
+          </svg>
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="text-xl font-bold text-white">83.5%</span>
           </div>
         </div>
       </div>
 
-      {/* Right Side - Info */}
-      <div className=" rounded-xl shadow-lg p-8 border border-gray-100 ">
-        <div className="flex items-center mb-6">
-          <Mail className="h-12 w-12 text-blue-600 mr-4 p-2 bg-blue-100 rounded-xl" />
-          <div>
-            <h3 className="text-2xl font-bold text-[#c2831f]">
-              {activeTabData.content.title}
-            </h3>
-            <p className="text-blue-600 font-semibold">
-              {activeTabData.content.stats}
-            </p>
+      <div className="space-y-2 mb-4">
+        <div className="flex justify-between items-center">
+          <span className="flex items-center text-sm">
+            <div className="w-3 h-3 bg-green-500 rounded-full mr-2"></div>
+            Valid List
+          </span>
+          <span className="text-sm font-medium">19,648</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="flex items-center text-sm">
+            <div className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></div>
+            Risky
+          </span>
+          <span className="text-sm font-medium">2,314</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="flex items-center text-sm">
+            <div className="w-3 h-3 bg-red-500 rounded-full mr-2"></div>
+            Invalid
+          </span>
+          <span className="text-sm font-medium">1,564</span>
+        </div>
+      </div>
+
+      {/* Key Features Section */}
+      <div className="mb-4 p-3 bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border border-gray-700">
+        <h4 className="font-semibold text-white mb-2 flex items-center">
+          <Shield className="h-4 w-4 mr-2 text-[#c2831f]" />
+          Key Features
+        </h4>
+        <div className="grid grid-cols-2 gap-2">
+          <div className="flex items-center p-2 bg-gray-800 rounded-lg">
+            <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+            <span className="text-xs">Real-time verification</span>
+          </div>
+          <div className="flex items-center p-2 bg-gray-800 rounded-lg">
+            <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+            <span className="text-xs">Syntax validation</span>
+          </div>
+          <div className="flex items-center p-2 bg-gray-800 rounded-lg">
+            <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+            <span className="text-xs">Spam trap detection</span>
+          </div>
+          <div className="flex items-center p-2 bg-gray-800 rounded-lg">
+            <CheckCircle className="h-4 w-4 text-green-500 mr-2 flex-shrink-0" />
+            <span className="text-xs">Deliverability scoring</span>
           </div>
         </div>
+      </div>
 
-        <p className="text-gray-600 mb-6 leading-relaxed text-white">
-          {activeTabData.content.description}
-        </p>
-
-        <div className="space-y-3 mb-6">
-          <h4 className="font-semibold text-white">Key Features:</h4>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">Real-time email verification</span>
+      <div className="mt-auto">
+        <h4 className="text-lg font-semibold text-white mb-3">
+          Detailed Breakdown
+        </h4>
+        <div className="space-y-2 text-sm text-white">
+          <div className="flex justify-between">
+            <span className="">Syntax Valid</span>
+            <span className="font-medium">4,283 (18.2%)</span>
           </div>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">Syntax and domain validation</span>
+          <div className="flex justify-between">
+            <span className="">Domain Valid</span>
+            <span className="font-medium">4,174 (17.8%)</span>
           </div>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">Spam trap detection</span>
+          <div className="flex justify-between">
+            <span className="">MX Record</span>
+            <span className="font-medium">3,992 (17.0%)</span>
           </div>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">Deliverability scoring</span>
+          <div className="flex justify-between">
+            <span className="">Disposable</span>
+            <span className="font-medium">842 (3.6%)</span>
+          </div>
+          <div className="flex justify-between">
+            <span className="">Role Account</span>
+            <span className="font-medium">567 (2.4%)</span>
           </div>
         </div>
+      </div>
+    </div>
 
-        <button className="group inline-flex items-center px-6 py-3 cursor-pointer bg-[#c2831f] text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
+    {/* Right Side - Info */}
+    <div className="flex-1 bg-gray-900 rounded-xl shadow-lg p-6 border border-gray-100 flex flex-col">
+      <div className="flex items-center mb-4">
+        <Mail className="h-12 w-12 text-blue-600 mr-4 p-2 bg-blue-100 rounded-xl" />
+        <div>
+          <h3 className="text-2xl font-bold text-[#c2831f]">
+            {activeTabData.content.title}
+          </h3>
+          <p className="text-blue-600 font-semibold">
+            {activeTabData.content.stats}
+          </p>
+        </div>
+      </div>
+
+      <p className="text-gray-600 mb-3 leading-relaxed text-white">
+        {activeTabData.content.description}
+      </p>
+
+      {/* Verification Options Section */}
+      <div className="mb-4 ">
+        <h4 className="font-semibold text-white mb-2">Verification Options:</h4>
+        <div className="grid grid-cols-2 gap-5 mt-3">
+          <button className="p-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all text-sm flex items-center justify-center">
+            <Database className="h-4 w-4 mr-1" />
+            Bulk Verification
+          </button>
+          <button className="p-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all text-sm flex items-center justify-center">
+            <Mail className="h-4 w-4 mr-1" />
+            Single Verification
+          </button>
+          <button className="p-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all text-sm flex items-center justify-center">
+            <Users className="h-4 w-4 mr-1" />
+            Manual Verification
+          </button>
+          <button className="p-2 bg-gray-800 hover:bg-gray-700 text-white rounded-lg transition-all text-sm flex items-center justify-center">
+            <Zap className="h-4 w-4 mr-1" />
+            Real-time API
+          </button>
+        </div>
+      </div>
+
+      {/* Verification Methods Description */}
+      <div className="mb-4 p-3 bg-gray-800 rounded-lg border border-gray-700 mt-8">
+        <h4 className="font-semibold text-white mb-2 text-sm">How It Works:</h4>
+        <ul className="text-xs text-gray-300 space-y-3">
+          <li className="flex items-start">
+            <CheckCircle className="h-3 w-3 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+            <span><span className="font-medium">Bulk Verification:</span> Upload CSV files with thousands of emails for batch processing</span>
+          </li>
+          <li className="flex items-start">
+            <CheckCircle className="h-3 w-3 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+            <span><span className="font-medium">Single Verification:</span> Check individual email addresses in real-time</span>
+          </li>
+          <li className="flex items-start">
+            <CheckCircle className="h-3 w-3 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+            <span><span className="font-medium">Manual Verification:</span> Review and verify emails with our detailed analysis tools</span>
+          </li>
+          <li className="flex items-start">
+            <CheckCircle className="h-3 w-3 text-green-500 mr-2 mt-0.5 flex-shrink-0" />
+            <span><span className="font-medium">Real-time API:</span> Integrate email verification directly into your applications</span>
+          </li>
+        </ul>
+      </div>
+
+      <div className="mt-auto">
+        <Link to="/login" className="group inline-flex items-center px-6 py-3 cursor-pointer bg-[#c2831f] text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105 shadow-lg w-full justify-center">
           Learn more
           <ArrowRight
             className="ml-2 h-5 text-20 group-hover:translate-x-1 transition-transform"
             strokeWidth={2}
           />
-        </button>
+        </Link>
       </div>
     </div>
-  );
+  </div>
+);
 
-  const renderPhoneValidation = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      {/* Left Side - Phone Data Table */}
-      <div className="rounded-xl shadow-lg overflow-hidden border border-gray-100">
-        <div className="p-6 ">
-          <h4 className="text-xl font-semibold text-white flex items-center">
-            <Phone className="h-6 w-6 mr-2" />
-            Phone Validation Results
-          </h4>
-          <p className="text-blue-100 text-sm mt-1">Real-time processing</p>
-        </div>
-
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Phone
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  First Name
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Result
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Score
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-200">
-              <tr className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-4 text-sm font-medium text-gray-700">
-                  571-286-7111
-                </td>
-                <td className="px-4 py-4 text-sm text-gray-700">Michael</td>
-                <td className="px-4 py-4 text-sm">
-                  <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                    Valid Mobile
-                  </span>
-                </td>
-                <td className="px-4 py-4 text-sm text-gray-700 font-medium">
-                  98
-                </td>
-              </tr>
-              <tr className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-4 text-sm font-medium text-gray-700">
-                  517-555-4444
-                </td>
-                <td className="px-4 py-4 text-sm text-gray-700">Sarah</td>
-                <td className="px-4 py-4 text-sm">
-                  <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-blue-100 text-blue-800">
-                    Valid Landline
-                  </span>
-                </td>
-                <td className="px-4 py-4 text-sm text-gray-700 font-medium">
-                  85
-                </td>
-              </tr>
-              <tr className="hover:bg-gray-50 transition-colors">
-                <td className="px-4 py-4 text-sm font-medium text-gray-700">
-                  971-808-5555
-                </td>
-                <td className="px-4 py-4 text-sm text-gray-700">David</td>
-                <td className="px-4 py-4 text-sm">
-                  <span className="inline-flex px-2 py-1 text-xs font-medium rounded-full bg-red-100 text-red-800">
-                    Disconnected
-                  </span>
-                </td>
-                <td className="px-4 py-4 text-sm text-gray-700 font-medium">
-                  0
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+const renderCampaign = () => (
+  <div className="flex flex-col lg:flex-row gap-6 h-[700px]">
+    {/* Left Side - Template Design Section */}
+    <div className="flex-1 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl shadow-xl p-6 border border-gray-700 flex flex-col">
+      <div className="flex items-center justify-between mb-4">
+        <h4 className="text-xl font-bold text-[#c2831f] flex items-center">
+          <Database className="h-6 w-6 mr-2" />
+          Template Library
+        </h4>
+        <button className="text-sm bg-[#c2831f] hover:bg-[#d4a040] text-white px-4 py-2 rounded-lg transition-all">
+          + New Template
+        </button>
       </div>
-
-      {/* Right Side - Info */}
-      <div className="rounded-xl shadow-lg p-8 border border-gray-100">
-        <div className="flex items-center mb-6">
-          <Phone className="h-12 w-12 text-blue-600 mr-4 p-2 bg-blue-100 rounded-xl" />
-          <div>
-            <h3 className="text-2xl font-bold text-[#c2831f]">
-              {activeTabData.content.title}
-            </h3>
-            <p className="text-blue-600 font-semibold">
-              {activeTabData.content.stats}
-            </p>
-          </div>
-        </div>
-
-        <p className="text-white mb-6 leading-relaxed">
-          {activeTabData.content.description}
-        </p>
-
-        <div className="space-y-3 mb-6">
-          <h4 className="font-semibold text-[#c2831f]">Key Features:</h4>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">Mobile vs landline detection</span>
-          </div>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">Carrier information lookup</span>
-          </div>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">TCPA compliance checking</span>
-          </div>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">Number portability tracking</span>
-          </div>
-        </div>
-
-        <button className="group inline-flex items-center px-6 py-3 bg-[#c2831f] text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
-          Learn More
-          <svg
-            className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
+      
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        {[
+          { name: "Welcome Series", icon: Mail, color: "blue" },
+          { name: "Promotional", icon: TrendingUp, color: "green" },
+          { name: "Newsletter", icon: Target, color: "purple" },
+          { name: "Event Invite", icon: Zap, color: "orange" },
+        ].map((template, idx) => (
+          <div 
+            key={idx}
+            className="group relative overflow-hidden rounded-xl border-2 border-gray-700 hover:border-[#c2831f] transition-all duration-300 cursor-pointer transform hover:scale-105"
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17 8l4 4m0 0l-4 4m4-4H3"
-            />
-          </svg>
-        </button>
-      </div>
-    </div>
-  );
-
-  const renderEmailActivity = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      {/* Left Side - Activity Dashboard */}
-      <div className="rounded-xl shadow-lg p-6 border border-gray-100">
-        <div className="flex items-center justify-between mb-6">
-          <h4 className="text-lg font-semibold text-[#c2831f]">
-            Email Activity Dashboard
-          </h4>
-          <span className="text-sm bg-red-100 text-red-700 px-2 py-1 rounded">
-            Processing
-          </span>
-        </div>
-
-        <div className="space-y-6">
-          {/* Activity Items */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div className="flex items-center">
-              <div className="w-12 h-12 rounded-lg flex items-center justify-center mr-4">
-                <TrendingUp className="h-6 w-6 text-blue-600" />
+            <div className="absolute inset-0 bg-gradient-to-br from-gray-900 to-gray-800 opacity-90 group-hover:opacity-100 transition-opacity"></div>
+            <div className="relative p-3 h-32 flex flex-col justify-between">
+              <div className="flex items-center">
+                <div className={`w-8 h-8 bg-${template.color}-900 rounded-lg flex items-center justify-center mr-2`}>
+                  <template.icon className={`h-4 w-4 text-${template.color}-400`} />
+                </div>
+                <h5 className="font-medium text-white text-sm">{template.name}</h5>
               </div>
-              <div>
-                <div className="font-medium text-black">13,486,797</div>
-                <div className="text-sm text-gray-500">30-day active</div>
+              <div className="text-xs text-gray-400">
+                <span className="bg-gray-800 px-2 py-1 rounded">Click to edit</span>
               </div>
-            </div>
-            <div className="text-right">
-              <div className="text-sm font-medium text-green-600">Active</div>
-              <div className="text-xs text-gray-500">High engagement</div>
             </div>
           </div>
-
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mr-4">
-                <Activity className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <div className="font-medium text-black">8,375,443</div>
-                <div className="text-sm text-gray-500">60-day active</div>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-sm font-medium text-yellow-600">Medium</div>
-              <div className="text-xs text-gray-500">Moderate engagement</div>
-            </div>
-          </div>
-
-          <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-            <div className="flex items-center">
-              <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mr-4">
-                <Users className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div>
-                <div className="font-medium text-black">2.4M</div>
-                <div className="text-sm text-gray-500">90-day active</div>
-              </div>
-            </div>
-            <div className="text-right">
-              <div className="text-sm font-medium text-red-600">Low</div>
-              <div className="text-xs text-gray-500">Minimal engagement</div>
-            </div>
-          </div>
-        </div>
+        ))}
       </div>
 
-      {/* Right Side - Info */}
-      <div className="rounded-xl shadow-lg p-8 border border-gray-100">
-        <div className="flex items-center mb-6">
-          <Activity className="h-12 w-12 text-red-600 mr-4 p-2 bg-red-100 rounded-xl" />
-          <div>
-            <h3 className="text-2xl font-bold text-[#c2831f]">
-              {activeTabData.content.title}
-            </h3>
-            <p className="text-red-600 font-semibold">
-              {activeTabData.content.stats}
-            </p>
+      <div className="mt-auto">
+        <h4 className="text-xl font-bold text-[#c2831f] flex items-center mb-3">
+          <Zap className="h-6 w-6 mr-2" />
+          Visual Editor
+        </h4>
+        
+        <div className="bg-gray-900 rounded-lg border-2 border-dashed border-gray-600 h-48 flex flex-col">
+          {/* Toolbar */}
+          <div className="flex items-center p-2 bg-gray-800 border-b border-gray-700 space-x-1">
+            {['Text', 'Image', 'Button', 'Divider', 'Social'].map((item, idx) => (
+              <button 
+                key={idx}
+                className="text-xs bg-gray-700 hover:bg-gray-600 text-white px-2 py-1 rounded transition-all"
+              >
+                {item}
+              </button>
+            ))}
+          </div>
+          
+          {/* Canvas Area */}
+          <div className="flex-1 flex items-center justify-center text-gray-500">
+            <div className="text-center">
+              <div className="w-12 h-12 mx-auto mb-2 bg-gray-800 rounded-full flex items-center justify-center">
+                <CheckCircle className="h-6 w-6 text-gray-600" />
+              </div>
+              <p className="text-gray-400 text-sm">Drag elements here to build your template</p>
+            </div>
           </div>
         </div>
-
-        <p className="text-white mb-6 leading-relaxed">
-          {activeTabData.content.description}
-        </p>
-
-        <div className="space-y-3 mb-6">
-          <h4 className="font-semibold text-[#c2831f]">Key Features:</h4>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">30/60/90 day engagement tracking</span>
-          </div>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">Web and email trigger analysis</span>
-          </div>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">Behavioral segmentation</span>
-          </div>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">Active subscriber identification</span>
-          </div>
-        </div>
-
-        <button className="group inline-flex items-center px-6 py-3 bg-[#c2831f] text-white font-semibold rounded-xl hover:from-red-700 hover:to-red-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
-          Learn More
-          <svg
-            className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17 8l4 4m0 0l-4 4m4-4H3"
-            />
-          </svg>
-        </button>
       </div>
     </div>
-  );
 
-  const renderDataEnrichment = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      {/* Left Side - Enrichment Data */}
-      <div className="rounded-xl shadow-lg p-6 border border-gray-100">
-        <h4 className="text-lg font-semibold text-[#c2831f] mb-4">
-          Data Enrichment Insights
+    {/* Right Side - Campaign Setup */}
+    <div className="flex-1 bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl shadow-xl p-6 border border-gray-700 flex flex-col">
+      <div className="flex items-center mb-4">
+        <div className="w-12 h-12 bg-gradient-to-br from-[#c2831f] to-[#f9ba55] rounded-xl flex items-center justify-center mr-4">
+          <Target className="h-6 w-6 text-white" />
+        </div>
+        <div>
+          <h3 className="text-xl font-bold text-white">
+            {activeTabData.content.title}
+          </h3>
+          <p className="text-[#c2831f] font-semibold text-sm">
+            {activeTabData.content.stats}
+          </p>
+        </div>
+      </div>
+
+      <p className="text-gray-300 mb-4 leading-relaxed text-sm">
+        {activeTabData.content.description}
+      </p>
+
+      {/* Campaign Form */}
+      <div className="space-y-4 mb-4">
+        {/* Campaign Name */}
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">
+            Campaign Name
+          </label>
+          <input
+            type="text"
+            placeholder="Summer Sale 2024"
+            className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-[#c2831f] focus:outline-none transition-all"
+          />
+        </div>
+
+        {/* Sender Information */}
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">
+            Sender Information
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <input
+              type="text"
+              placeholder="Your Name"
+              className="p-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-[#c2831f] focus:outline-none transition-all"
+            />
+            <div className="relative">
+              <input
+                type="email"
+                placeholder="sender@example.com"
+                className="w-full p-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:border-[#c2831f] focus:outline-none transition-all"
+              />
+              <button className="absolute right-1 top-1 text-xs bg-green-600 hover:bg-green-700 text-white px-2 py-1 rounded transition-all">
+                Verify
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Schedule */}
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">
+            Schedule
+          </label>
+          <div className="grid grid-cols-2 gap-2">
+            <button className="p-2 bg-[#c2831f] hover:bg-[#d4a040] text-white rounded-lg transition-all font-medium text-sm">
+              Send Now
+            </button>
+            <button className="p-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all text-sm">
+              Schedule Later
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Campaign Metrics */}
+      <div className="mb-4">
+        <label className="block text-sm font-medium text-gray-300 mb-1">
+          Campaign Metrics
+        </label>
+        <div className="grid grid-cols-2 gap-6 mt-5">
+          <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-3 rounded-lg border border-gray-700">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-gray-400 text-xs">Open Rate</p>
+              <Eye className="h-3 w-3 text-[#c2831f]" />
+            </div>
+            <p className="text-xl font-bold text-white">24.5%</p>
+            <p className="text-xs text-green-500 mt-1">↑ 3.2% from last campaign</p>
+          </div>
+          <div className="bg-gradient-to-br from-gray-800 to-gray-900 p-3 rounded-lg border border-gray-700">
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-gray-400 text-xs">Click Rate</p>
+              <MousePointer className="h-3 w-3 text-[#c2831f]" />
+            </div>
+            <p className="text-xl font-bold text-white">3.2%</p>
+            <p className="text-xs text-green-500 mt-1">↑ 0.8% from last campaign</p>
+          </div>
+        </div>
+      </div>
+
+      {/* Action Buttons */}
+      <div className="mt-auto flex space-x-2">
+        <button className="flex-1 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-all font-medium text-sm">
+          Preview Campaign
+        </button>
+        <Link to="/login" className="flex-1 py-2 bg-gradient-to-r from-[#c2831f] to-[#f9ba55] hover:from-[#d4a040] hover:to-[#f9ba55] text-white rounded-lg transition-all font-medium flex items-center justify-center text-sm">
+          Send Campaign
+          <ArrowRight className="ml-1 h-4 w-4" />
+        </Link>
+      </div>
+    </div>
+  </div>
+);
+
+const renderCRM = () => (
+  <div className="flex flex-col lg:flex-row gap-6 h-[700px]">
+    {/* Left Side - Inbox & Email Management */}
+    <div className="flex-1 bg-gray-900 rounded-xl shadow-lg p-6 border border-gray-100 flex flex-col">
+      {/* Inbox Section */}
+      <div className="mb-3">
+        <h4 className="text-lg font-semibold text-[#c2831f] mb-2 flex items-center">
+          <Mail className="h-5 w-5 mr-2" />
+          Inbox Management
         </h4>
         <div className="space-y-4">
-          <div className="flex items-center p-4 bg-gray-50 rounded-lg">
-            <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mr-4">
-              <Users className="h-6 w-6 text-purple-600" />
-            </div>
-            <div>
-              <div className="font-medium text-black">Demographics</div>
-              <div className="text-sm text-gray-400">
-                Age, gender, location analysis
+          <div className="p-2 bg-blue-900 rounded-lg border-l-4 border-blue-500 hover:bg-blue-800 cursor-pointer transition-all">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="font-medium text-gray-200 text-sm">New Lead Inquiry</p>
+                <p className="text-xs text-gray-400">john@example.com</p>
               </div>
+              <span className="text-xs bg-blue-500 text-white px-2 py-1 rounded">New</span>
             </div>
           </div>
-
-          <div className="flex items-center p-4 bg-gray-50 rounded-lg">
-            <div className="w-12 h-12 bg-indigo-100 rounded-lg flex items-center justify-center mr-4">
-              <TrendingUp className="h-6 w-6 text-indigo-600" />
-            </div>
-            <div>
-              <div className="font-medium text-black">Firmographics</div>
-              <div className="text-sm text-gray-400">
-                Company size, revenue, industry
+          <div className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 cursor-pointer transition-all">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="font-medium text-gray-200 text-sm">Follow-up Required</p>
+                <p className="text-xs text-gray-400">sarah@example.com</p>
               </div>
+              <span className="text-xs bg-yellow-500 text-white px-2 py-1 rounded">Pending</span>
             </div>
           </div>
-
-          <div className="flex items-center p-4 bg-gray-50 rounded-lg">
-            <div className="w-12 h-12 bg-pink-100 rounded-lg flex items-center justify-center mr-4">
-              <Activity className="h-6 w-6 text-pink-600" />
-            </div>
-            <div>
-              <div className="font-medium text-black">Technographics</div>
-              <div className="text-sm text-gray-400">
-                Technology usage and tools
+          <div className="p-2 bg-gray-800 rounded-lg hover:bg-gray-700 cursor-pointer transition-all">
+            <div className="flex justify-between items-start">
+              <div>
+                <p className="font-medium text-gray-200 text-sm">Meeting Request</p>
+                <p className="text-xs text-gray-400">mike@business.com</p>
               </div>
+              <span className="text-xs bg-green-500 text-white px-2 py-1 rounded">Scheduled</span>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Right Side - Info */}
-      <div className="rounded-xl shadow-lg p-8 border border-gray-100">
-        <div className="flex items-center mb-6">
-          <Users className="h-12 w-12 text-purple-600 mr-4 p-2 bg-purple-100 rounded-xl" />
-          <div>
-            <h3 className="text-2xl font-bold text-[#c2831f]">
-              {activeTabData.content.title}
-            </h3>
-            <p className="text-purple-600 font-semibold">
-              {activeTabData.content.stats}
-            </p>
+      {/* Email Account Management */}
+      <div className="mb-3">
+        <h4 className="text-lg font-semibold text-[#c2831f] mb-2">
+          Email Accounts
+        </h4>
+        <div className="space-y-6  ">
+          <div className="flex items-center justify-between p-2 bg-gray-800 rounded-lg ">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-green-900 rounded-full flex items-center justify-center mr-2">
+                <CheckCircle className="h-4 w-4 text-green-400" />
+              </div>
+              <div>
+                <p className="font-medium text-gray-200 text-sm">sales@company.com</p>
+                <p className="text-xs text-gray-400">Connected</p>
+              </div>
+            </div>
+          </div>
+          <div className="flex items-center justify-between p-2 bg-gray-800 rounded-lg">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-green-900 rounded-full flex items-center justify-center mr-2">
+                <CheckCircle className="h-4 w-4 text-green-400" />
+              </div>
+              <div>
+                <p className="font-medium text-gray-200 text-sm">support@company.com</p>
+                <p className="text-xs text-gray-400">Connected</p>
+              </div>
+            </div>
+          </div>
+          <button className="w-full p-2 border-2 border-dashed border-gray-600 rounded-lg text-gray-400 hover:border-[#c2831f] hover:text-[#c2831f] transition-all text-sm">
+            + Add Email Account
+          </button>
+        </div>
+      </div>
+
+       
+
+      {/* Reply & Forward Actions */}
+      <div className="mt-auto">
+        <h4 className="text-lg font-semibold text-[#c2831f] mb-2">
+          Quick Actions
+        </h4>
+        <div className="grid grid-cols-2 gap-4">
+          <button className="p-2 bg-blue-900 text-blue-300 rounded-lg hover:bg-blue-800 transition-all flex items-center justify-center text-sm">
+            <ArrowRight className="h-4 w-4 mr-1" />
+            Reply
+          </button>
+          <button className="p-2 bg-purple-900 text-purple-300 rounded-lg hover:bg-purple-800 transition-all flex items-center justify-center text-sm">
+            <ArrowRight className="h-4 w-4 mr-1" />
+            Forward
+          </button>
+          <button className="p-2 bg-green-900 text-green-300 rounded-lg hover:bg-green-800 transition-all flex items-center justify-center text-sm">
+            <Users className="h-4 w-4 mr-1" />
+            Add Lead
+          </button>
+          <button className="p-2 bg-orange-900 text-orange-300 rounded-lg hover:bg-orange-800 transition-all flex items-center justify-center text-sm">
+            <TrendingUp className="h-4 w-4 mr-1" />
+            New Deal
+          </button>
+        </div>
+      </div>
+    </div>
+
+    {/* Right Side - Leads, Deals, Tasks, Orders */}
+    <div className="flex-1 bg-gray-900 rounded-xl shadow-lg p-6 border border-gray-100 flex flex-col">
+      <div className="flex items-center mb-4">
+        <Activity className="h-10 w-10 text-blue-600 mr-3 p-2 bg-blue-100 rounded-xl" />
+        <div>
+          <h3 className="text-xl font-bold text-[#c2831f]">
+            {activeTabData.content.title}
+          </h3>
+          <p className="text-blue-600 font-semibold text-sm">
+            {activeTabData.content.stats}
+          </p>
+        </div>
+      </div>
+
+      <p className="text-white mb-4 leading-relaxed text-sm">
+        {activeTabData.content.description}
+      </p>
+
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        {/* Leads Information */}
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border border-gray-700 p-3">
+          <h4 className="font-semibold text-[#c2831f] mb-2 flex items-center text-sm">
+            <Users className="h-4 w-4 mr-1" />
+            Leads
+          </h4>
+          <div className="space-y-1">
+            <div className="flex justify-between items-center p-2 bg-gray-800 rounded-lg">
+              <span className="text-xs text-gray-300">New Leads</span>
+              <span className="font-bold text-blue-400">247</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-800 rounded-lg">
+              <span className="text-xs text-gray-300">Qualified Leads</span>
+              <span className="font-bold text-green-400">189</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-800 rounded-lg">
+              <span className="text-xs text-gray-300">Conversion Rate</span>
+              <span className="font-bold text-yellow-400">76.5%</span>
+            </div>
           </div>
         </div>
 
-        <p className="text-white mb-6 leading-relaxed">
-          {activeTabData.content.description}
-        </p>
-
-        <div className="space-y-3 mb-6">
-          <h4 className="font-semibold text-[#c2831f]">Key Features:</h4>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">Demographic segmentation</span>
-          </div>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">Firmographic data integration</span>
-          </div>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">Technographic insights</span>
-          </div>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">Custom enrichment rules</span>
+        {/* Deals */}
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border border-gray-700 p-3">
+          <h4 className="font-semibold text-[#c2831f] mb-2 flex items-center text-sm">
+            <TrendingUp className="h-4 w-4 mr-1" />
+            Deals
+          </h4>
+          <div className="space-y-1">
+            <div className="flex justify-between items-center p-2 bg-gray-800 rounded-lg">
+              <span className="text-xs text-gray-300">Open Deals</span>
+              <span className="font-bold text-orange-400">45</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-800 rounded-lg">
+              <span className="text-xs text-gray-300">Closed Won</span>
+              <span className="font-bold text-green-400">$125K</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-800 rounded-lg">
+              <span className="text-xs text-gray-300">Win Rate</span>
+              <span className="font-bold text-purple-400">68%</span>
+            </div>
           </div>
         </div>
 
-        <button className="group inline-flex items-center px-6 py-3 bg-[#c2831f] text-white font-semibold rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
-          Learn More
-          <svg
-            className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17 8l4 4m0 0l-4 4m4-4H3"
-            />
-          </svg>
+        {/* Tasks */}
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border border-gray-700 p-3">
+          <h4 className="font-semibold text-[#c2831f] mb-2 flex items-center text-sm">
+            <CheckCircle className="h-4 w-4 mr-1" />
+            Tasks
+          </h4>
+          <div className="space-y-1">
+            <div className="flex justify-between items-center p-2 bg-gray-800 rounded-lg">
+              <span className="text-xs text-gray-300">Pending Tasks</span>
+              <span className="font-bold text-yellow-400">32</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-800 rounded-lg">
+              <span className="text-xs text-gray-300">Completed</span>
+              <span className="font-bold text-green-400">156</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-800 rounded-lg">
+              <span className="text-xs text-gray-300">Overdue</span>
+              <span className="font-bold text-red-400">5</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Orders */}
+        <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-lg border border-gray-700 p-3">
+          <h4 className="font-semibold text-[#c2831f] mb-2 flex items-center text-sm">
+            <Database className="h-4 w-4 mr-1" />
+            Orders
+          </h4>
+          <div className="space-y-1">
+            <div className="flex justify-between items-center p-2 bg-gray-800 rounded-lg">
+              <span className="text-xs text-gray-300">New Orders</span>
+              <span className="font-bold text-blue-400">78</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-800 rounded-lg">
+              <span className="text-xs text-gray-300">Processing</span>
+              <span className="font-bold text-yellow-400">24</span>
+            </div>
+            <div className="flex justify-between items-center p-2 bg-gray-800 rounded-lg">
+              <span className="text-xs text-gray-300">Completed</span>
+              <span className="font-bold text-green-400">$42.5K</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Performance Metrics */}
+      <div className="mb-4">
+        <h4 className="font-semibold text-white mb-2 text-sm">Performance Metrics</h4>
+        <div className="grid grid-cols-3 gap-2">
+          <div className="bg-gray-800 rounded-lg p-2 text-center">
+            <p className="text-xs text-gray-400">Response Time</p>
+            <p className="text-sm font-bold text-green-400">2.4 hrs</p>
+          </div>
+          <div className="bg-gray-800 rounded-lg p-2 text-center">
+            <p className="text-xs text-gray-400">Deal Size</p>
+            <p className="text-sm font-bold text-blue-400">$2.8K</p>
+          </div>
+          <div className="bg-gray-800 rounded-lg p-2 text-center">
+            <p className="text-xs text-gray-400">Order Value</p>
+            <p className="text-sm font-bold text-purple-400">$545</p>
+          </div>
+        </div>
+      </div>
+
+      <Link to="/login" className="group inline-flex items-center px-4 py-2 w-full justify-center bg-[#c2831f] hover:bg-[#d4a040] text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg mt-auto text-sm">
+        View CRM Dashboard
+        <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+      </Link>
+    </div>
+  </div>
+);
+
+const renderMultimedia = () => (
+  <div className="flex flex-col lg:flex-row gap-6 h-[700px]">
+    {/* Left Side - SMS & WhatsApp Information */}
+    <div className="flex-1 bg-gray-900 rounded-xl shadow-lg p-6 border border-gray-100 flex flex-col">
+      <h4 className="text-lg font-semibold text-[#c2831f] mb-3 flex items-center">
+        <Phone className="h-5 w-5 mr-2" />
+        SMS Campaign Performance
+      </h4>
+      
+      <div className="p-3 bg-gray-800 rounded-lg border border-gray-700 mb-3">
+        <div className="flex justify-between items-center mb-1">
+          <span className="text-sm font-medium text-gray-300">Total Sent</span>
+          <span className="text-lg font-bold text-white">12,450</span>
+        </div>
+        <div className="flex justify-between items-center mb-1">
+          <span className="text-sm font-medium text-gray-300">Delivery Rate</span>
+          <span className="text-lg font-bold text-green-500">98.2%</span>
+        </div>
+        <div className="flex justify-between items-center">
+          <span className="text-sm font-medium text-gray-300">Response Rate</span>
+          <span className="text-lg font-bold text-blue-500">40.7%</span>
+        </div>
+      </div>
+      
+      <div className="p-3 bg-gray-800 rounded-lg border border-gray-700 mb-3">
+        <h5 className="text-sm font-medium text-gray-300 mb-1">Recent Campaigns</h5>
+        <div className="space-y-1">
+          <div className="flex justify-between text-xs">
+            <span className="text-gray-400">Summer Sale</span>
+            <span className="text-white">98.5% delivery</span>
+          </div>
+          <div className="flex justify-between text-xs">
+            <span className="text-gray-400">Flash Sale</span>
+            <span className="text-white">97.8% delivery</span>
+          </div>
+          <div className="flex justify-between text-xs">
+            <span className="text-gray-400">New Product</span>
+            <span className="text-white">98.3% delivery</span>
+          </div>
+        </div>
+      </div>
+      
+      <div className="mt-auto">
+        <h4 className="text-lg font-semibold text-[#c2831f] mb-3 flex items-center">
+          <Zap className="h-5 w-5 mr-2" />
+          WhatsApp Campaign Performance
+        </h4>
+        
+        <div className="p-3 bg-gray-800 rounded-lg border border-gray-700 mb-3">
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-sm font-medium text-gray-300">Total Sent</span>
+            <span className="text-lg font-bold text-white">8,230</span>
+          </div>
+          <div className="flex justify-between items-center mb-1">
+            <span className="text-sm font-medium text-gray-300">Open Rate</span>
+            <span className="text-lg font-bold text-green-500">87.4%</span>
+          </div>
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium text-gray-300">Click Rate</span>
+            <span className="text-lg font-bold text-blue-500">42.3%</span>
+          </div>
+        </div>
+        
+        <div className="p-3 bg-gray-800 rounded-lg border border-gray-700 mb-3">
+          <h5 className="text-sm font-medium text-gray-300 mb-1">Popular Templates</h5>
+          <div className="space-y-1">
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">Welcome Message</span>
+              <span className="text-white">92% open rate</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">Order Update</span>
+              <span className="text-white">89% open rate</span>
+            </div>
+            <div className="flex justify-between text-xs">
+              <span className="text-gray-400">Promotional Offer</span>
+              <span className="text-white">85% open rate</span>
+            </div>
+          </div>
+        </div>
+        
+        <button className="w-full p-2 bg-[#c2831f] hover:bg-[#d4a040] text-white rounded-lg transition-all text-sm">
+          View SMS Analytics
         </button>
       </div>
     </div>
-  );
 
-  const renderPostalValidation = () => (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-      {/* Left Side - Address Validation */}
-      <div className="rounded-xl shadow-lg p-6 border border-gray-100">
-        <div className="flex items-center mb-6">
-          <MapPin className="h-8 w-8 text-blue-600 mr-3" />
-          <div>
-            <h4 className="text-lg font-semibold text-[#c2831f]">
-              Postal Validation
-            </h4>
-            <p className="text-sm text-white">75+ Billion Addresses Verified</p>
-          </div>
+    {/* Right Side - Social Media Campaigns */}
+    <div className="flex-1 bg-gray-900 rounded-xl shadow-lg p-6 border border-gray-100 flex flex-col">
+      <div className="flex items-center mb-4">
+        <Zap className="h-10 w-10 text-blue-600 mr-3 p-2 bg-blue-100 rounded-xl" />
+        <div>
+          <h3 className="text-xl font-bold text-[#c2831f]">
+            {activeTabData.content.title}
+          </h3>
+          <p className="text-blue-600 font-semibold text-sm">
+            {activeTabData.content.stats}
+          </p>
         </div>
+      </div>
 
-        <div className="space-y-4 mb-6">
-          <div className="p-4 border rounded-lg">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-medium text-white">
-                Address Standardization
-              </span>
-              <span className="text-green-600 text-sm font-medium">
-                ✓ Active
-              </span>
+      <p className="text-white mb-4 leading-relaxed text-sm">
+        {activeTabData.content.description}
+      </p>
+
+      <div className="mb-4">
+        <h4 className="font-semibold text-[#c2831f] mb-3 text-sm">Social Media Campaigns:</h4>
+        
+        <div className="grid grid-cols-2 gap-6">
+          {/* Facebook */}
+          <div className="p-2 bg-gray-800 rounded-lg border border-gray-700 hover:bg-gray-700 transition-all">
+            <div className="flex items-center mb-2">
+              <div className="w-8 h-8 bg-blue-900 rounded-full flex items-center justify-center mr-2">
+                <span className="text-white font-bold text-xs">f</span>
+              </div>
+              <h5 className="font-medium text-white text-sm">Facebook</h5>
             </div>
-            <p className="text-sm text-white">
-              Formats addresses to postal standards
-            </p>
+            <p className="text-xs text-gray-400 mb-2">Targeted ads</p>
+            <button className="text-xs text-blue-400 hover:text-blue-300">Create</button>
           </div>
 
-          <div className="p-4 border rounded-lg">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-medium text-white">
-                ZIP+4 Code Validation
-              </span>
-              <span className="text-green-600 text-sm font-medium">
-                ✓ Active
-              </span>
+          {/* Instagram */}
+          <div className="p-2 bg-gray-800 rounded-lg border border-gray-700 hover:bg-gray-700 transition-all">
+            <div className="flex items-center mb-2">
+              <div className="w-8 h-8 bg-pink-900 rounded-full flex items-center justify-center mr-2">
+                <span className="text-white font-bold text-xs">IG</span>
+              </div>
+              <h5 className="font-medium text-white text-sm">Instagram</h5>
             </div>
-            <p className="text-sm text-white">
-              Validates and appends ZIP+4 codes
-            </p>
+            <p className="text-xs text-gray-400 mb-2">Visual content</p>
+            <button className="text-xs text-pink-400 hover:text-pink-300">Create</button>
           </div>
 
-          <div className="p-4 border rounded-lg">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-medium text-white">
-                International Support
-              </span>
-              <span className="text-blue-600 text-sm font-medium">
-                ✓ Global
-              </span>
+          {/* Twitter */}
+          <div className="p-2 bg-gray-800 rounded-lg border border-gray-700 hover:bg-gray-700 transition-all">
+            <div className="flex items-center mb-2">
+              <div className="w-8 h-8 bg-blue-800 rounded-full flex items-center justify-center mr-2">
+                <span className="text-white font-bold text-xs">X</span>
+              </div>
+              <h5 className="font-medium text-white text-sm">Twitter</h5>
             </div>
-            <p className="text-sm text-white">
-              Supports 240+ countries worldwide
-            </p>
+            <p className="text-xs text-gray-400 mb-2">Tweets & trends</p>
+            <button className="text-xs text-blue-400 hover:text-blue-300">Create</button>
           </div>
 
-          <div className="p-4 border rounded-lg">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-medium text-white">Geocoding Services</span>
-              <span className="text-purple-600 text-sm font-medium">
-                ✓ Enhanced
-              </span>
+          {/* LinkedIn */}
+          <div className="p-2 bg-gray-800 rounded-lg border border-gray-700 hover:bg-gray-700 transition-all">
+            <div className="flex items-center mb-2">
+              <div className="w-8 h-8 bg-blue-700 rounded-full flex items-center justify-center mr-2">
+                <span className="text-white font-bold text-xs">in</span>
+              </div>
+              <h5 className="font-medium text-white text-sm">LinkedIn</h5>
             </div>
-            <p className="text-sm text-white">
-              Provides latitude/longitude coordinates
-            </p>
+            <p className="text-xs text-gray-400 mb-2">Professionals</p>
+            <button className="text-xs text-blue-400 hover:text-blue-300">Create</button>
           </div>
 
-          <div className="p-4 border rounded-lg">
-            <div className="flex justify-between items-center mb-2">
-              <span className="font-medium text-white">
-                Delivery Point Validation
-              </span>
-              <span className="text-green-600 text-sm font-medium">
-                ✓ USPS Certified
-              </span>
+          {/* YouTube Ads */}
+          <div className="p-2 bg-gray-800 rounded-lg border border-gray-700 hover:bg-gray-700 transition-all">
+            <div className="flex items-center mb-2">
+              <div className="w-8 h-8 bg-red-900 rounded-full flex items-center justify-center mr-2">
+                <span className="text-white font-bold text-xs">YT</span>
+              </div>
+              <h5 className="font-medium text-white text-sm">YouTube</h5>
             </div>
-            <p className="text-sm text-white">
-              Confirms actual delivery points
-            </p>
+            <p className="text-xs text-gray-400 mb-2">Video ads</p>
+            <button className="text-xs text-red-400 hover:text-red-300">Create</button>
+          </div>
+
+          {/* Google Ads */}
+          <div className="p-2 bg-gray-800 rounded-lg border border-gray-700 hover:bg-gray-700 transition-all">
+            <div className="flex items-center mb-2">
+              <div className="w-8 h-8 bg-green-900 rounded-full flex items-center justify-center mr-2">
+                <span className="text-white font-bold text-xs">G</span>
+              </div>
+              <h5 className="font-medium text-white text-sm">Google</h5>
+            </div>
+            <p className="text-xs text-gray-400 mb-2">Search ads</p>
+            <button className="text-xs text-green-400 hover:text-green-300">Create</button>
           </div>
         </div>
       </div>
 
-      {/* Right Side - Info */}
-      <div className="rounded-xl shadow-lg p-8 border border-gray-100">
-        <div className="flex items-center mb-6">
-          <MapPin className="h-12 w-12 text-blue-600 mr-4 p-2 bg-blue-100 rounded-xl" />
-          <div>
-            <h3 className="text-2xl font-bold text-[#c2831f]">
-              {activeTabData.content.title}
-            </h3>
-            <p className="text-blue-600 font-semibold">
-              {activeTabData.content.stats}
-            </p>
-          </div>
-        </div>
-
-        <p className="text-white mb-6 leading-relaxed">
-          {activeTabData.content.description}
-        </p>
-
-        <div className="space-y-3 mb-6">
-          <h4 className="font-semibold text-[#c2831f]">Key Features:</h4>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">Address standardization</span>
-          </div>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">ZIP+4 code validation</span>
-          </div>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">International address support</span>
-          </div>
-          <div className="flex items-center">
-            <CheckCircle className="h-5 w-5 text-green-500 mr-3" />
-            <span className="text-white">Delivery point validation</span>
-          </div>
-        </div>
-
-        <button className="group inline-flex items-center px-6 py-3  bg-[#c2831f] text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all duration-200 transform hover:scale-105 shadow-lg">
-          Learn More
-          <svg
-            className="ml-2 h-5 w-5 group-hover:translate-x-1 transition-transform"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M17 8l4 4m0 0l-4 4m4-4H3"
-            />
-          </svg>
-        </button>
-      </div>
+      <Link to="/login" className="group inline-flex items-center px-4 py-2 w-full justify-center bg-[#c2831f] hover:bg-[#d4a040] text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg mt-auto text-sm">
+        Manage All Campaigns
+        <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
+      </Link>
     </div>
-  );
+  </div>
+);
 
   const renderTabContent = () => {
     switch (activeTab) {
       case "email":
         return renderEmailValidation();
-      case "phone":
-        return renderPhoneValidation();
-      case "activity":
-        return renderEmailActivity();
-      case "enrichment":
-        return renderDataEnrichment();
-      // case "postal":
-      //   return renderPostalValidation();
+      case "campaign":
+        return renderCampaign();
+      case "crm":
+        return renderCRM();
+      case "multimedia":
+        return renderMultimedia();
       default:
         return renderEmailValidation();
     }
   };
-
-  const videoRef = useRef(null);
-  const [isPlaying, setIsPlaying] = useState(false);
 
   const handlePlay = () => {
     if (videoRef.current) {
@@ -797,29 +943,27 @@ function HomePage() {
       setIsPlaying(true);
     }
   };
+
   return (
     <PageLayout>
       {/* Home Section */}
-
-      {/* Video Section */}
-
       <LandingPage />
 
       {/* EmailOversight */}
-      <div className="min-h-screen ">
+      <div className="min-h-screen">
         {/* Add video here so it appears below this section */}
-        <div class="bg-black min-h-screen flex items-center justify-center">
-          <div class="container mx-auto px-4 py-8 mt-12">
-            <div class="text-center mb-8">
-              <h1 class="text-4xl font-bold text-[#c2831f] mb-4">
+        <div className="bg-black min-h-screen flex items-center justify-center">
+          <div className="container mx-auto px-4 py-8 mt-12">
+            <div className="text-center mb-8">
+              <h1 className="text-4xl font-bold text-[#c2831f] mb-4">
                 How to Create Email Campaigns in Bounce Cure (Demo)
               </h1>
-              <p class="text-lg text-gray-100 max-w-3xl mx-auto leading-relaxed">
-                “Bounce Cure is your all-in-one platform for creating and
+              <p className="text-lg text-gray-100 max-w-3xl mx-auto leading-relaxed">
+                "Bounce Cure is your all-in-one platform for creating and
                 managing email campaigns. Easily design and customize your
                 campaigns, send them to your audience, and track their
                 performance. Stay connected with your clients and grow your
-                reach effortlessly.”
+                reach effortlessly."
               </p>
             </div>
             <div className="pt-10 transform transition-all duration-500 hover:-translate-y-3 hover:scale-105 cursor-pointer relative w-full flex justify-center">
@@ -831,7 +975,6 @@ function HomePage() {
                 <source src="/video/video.mp4" type="video/mp4" />
                 Your browser does not support the video tag.
               </video>
-             
 
               {!isPlaying && (
                 <button
@@ -851,19 +994,16 @@ function HomePage() {
                   <p className="text-white text-lg text-center">Click this button for Demo</p>
                 </button>
               )}
-
             </div>
           </div>
         </div>
 
-        <div className=" shadow-sm border-b">
+        <div className="shadow-sm border-b">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="text-center">
               <div className="flex items-center justify-center mb-4">
                 <Shield className="h-12 w-12 text-blue-600 mr-3" />
-                <h1 className="text-4xl font-bold text-white">
-                  EmailOversight
-                </h1>
+                <h1 className="text-4xl font-bold text-white">EmailOversight</h1>
               </div>
               <h2 className="text-3xl font-bold text-[#c2831f] mb-4">
                 {count}+ Billion Emails Verified and Counting
@@ -884,7 +1024,7 @@ function HomePage() {
         </div>
 
         {/* Navigation Tabs */}
-        <div className=" shadow-sm">
+        <div className="shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="flex overflow-x-auto scrollbar-hide ml-4 sm:ml-6 md:ml-8 lg:ml-45 gap-4">
               {tabs.map((tab) => {
@@ -900,7 +1040,7 @@ function HomePage() {
                           : "border-transparent hover:cursor-pointer"
                       }`}
                     style={{
-                      borderRadius: "8px", // optional rounded look
+                      borderRadius: "8px",
                     }}
                   >
                     <IconComponent
@@ -950,7 +1090,7 @@ function HomePage() {
                     start={0}
                     end={number}
                     duration={2.5}
-                    decimals={number % 1 !== 0 ? 1 : 0} // show decimal for 99.7
+                    decimals={number % 1 !== 0 ? 1 : 0}
                   />
                 ) : (
                   0

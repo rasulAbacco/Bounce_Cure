@@ -11,6 +11,7 @@ const VerifyEmail = () => {
     useEffect(() => {
         const query = new URLSearchParams(location.search);
         const token = query.get('token');
+        const redirect = query.get('redirect') || 'login'; // default to login
 
         if (!token) {
             setStatus('error');
@@ -19,10 +20,10 @@ const VerifyEmail = () => {
 
         const verify = async () => {
             try {
-                await authService.verifyEmailToken(token);
+                await fetch(`/api/verified-emails/verify/${token}`);
                 setStatus('success');
                 toast.success('✅ Email verified successfully!');
-                setTimeout(() => navigate('/login'), 3000); // Redirect after 3 seconds
+                setTimeout(() => navigate(`/${redirect}`), 3000); // Redirect after 3 seconds
             } catch (err) {
                 setStatus('error');
                 toast.error('❌ Verification failed or token expired');

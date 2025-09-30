@@ -1,10 +1,12 @@
 // client/src/pages/Campaign/pages/SendCampaign.jsx
 import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { 
-  CheckCircle, ChevronDown, ChevronUp, Send, Users, Settings, 
-  FileText, Palette, Check, Clock, Calendar,Shield,AlertCircle,Mail,RefreshCw 
+import {
+  CheckCircle, ChevronDown, ChevronUp, Send, Users, Settings,
+  FileText, Palette, Check, Clock, Calendar, Shield, AlertCircle, Mail, RefreshCw
 } from "lucide-react";
+import CreateSendGridSender from "../../../components/CreateSendGridSender.jsx";
+const API_URL = import.meta.env.VITE_VRI_URL;
 
 const steps = [
   {
@@ -44,7 +46,6 @@ const steps = [
     icon: Check,
   },
 ];
-
 
 // Error Boundary Component
 class ErrorBoundary extends React.Component {
@@ -167,10 +168,10 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                   (element.type === "heading"
                     ? "Heading"
                     : element.type === "subheading"
-                    ? "Subheading"
-                    : element.type === "blockquote"
-                    ? "Blockquote"
-                    : "Paragraph text")}
+                      ? "Subheading"
+                      : element.type === "blockquote"
+                        ? "Blockquote"
+                        : "Paragraph text")}
               </div>
             </div>
           );
@@ -266,15 +267,12 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                 style={{
                   width: 0,
                   height: 0,
-                  borderLeft: `${
-                    (element.width || 50) * zoomLevel
-                  }px solid transparent`,
-                  borderRight: `${
-                    (element.width || 50) * zoomLevel
-                  }px solid transparent`,
-                  borderBottom: `${
-                    (element.height || 86) * zoomLevel
-                  }px solid ${element.backgroundColor || "#FF9F43"}`,
+                  borderLeft: `${(element.width || 50) * zoomLevel
+                    }px solid transparent`,
+                  borderRight: `${(element.width || 50) * zoomLevel
+                    }px solid transparent`,
+                  borderBottom: `${(element.height || 86) * zoomLevel
+                    }px solid ${element.backgroundColor || "#FF9F43"}`,
                   backgroundColor: "transparent",
                 }}
               />
@@ -362,11 +360,10 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                   width: "100%",
                   height: `${(element.strokeWidth || 3) * zoomLevel}px`,
                   backgroundColor: element.strokeColor || "#000000",
-                  marginTop: `${
-                    (element.height * zoomLevel -
-                      (element.strokeWidth || 3) * zoomLevel) /
+                  marginTop: `${(element.height * zoomLevel -
+                    (element.strokeWidth || 3) * zoomLevel) /
                     2
-                  }px`,
+                    }px`,
                 }}
               />
             </div>
@@ -385,9 +382,8 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                     ? `${element.borderRadius * zoomLevel}px`
                     : "0",
                   border: element.borderWidth
-                    ? `${element.borderWidth * zoomLevel}px solid ${
-                        element.borderColor
-                      }`
+                    ? `${element.borderWidth * zoomLevel}px solid ${element.borderColor
+                    }`
                     : "none",
                 }}
               />
@@ -406,9 +402,8 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                     ? `${element.borderRadius * zoomLevel}px`
                     : "0",
                   border: element.borderWidth
-                    ? `${element.borderWidth * zoomLevel}px solid ${
-                        element.borderColor
-                      }`
+                    ? `${element.borderWidth * zoomLevel}px solid ${element.borderColor
+                    }`
                     : "none",
                 }}
               >
@@ -508,10 +503,9 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
                 <div
                   style={{
                     color: element.color || "#000000",
-                    fontSize: `${
-                      Math.min(element.width, element.height) * zoomLevel ||
+                    fontSize: `${Math.min(element.width, element.height) * zoomLevel ||
                       24 * zoomLevel
-                    }px`,
+                      }px`,
                     fontWeight: "bold",
                   }}
                 >
@@ -590,7 +584,7 @@ export default function CampaignBuilder() {
     sendTime: "",
     template: "basic",
     designContent: "",
-    scheduleType: "immediate", 
+    scheduleType: "immediate",
     scheduledDate: "",
     scheduledTime: "",
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -598,7 +592,7 @@ export default function CampaignBuilder() {
     recurringDays: [],
     recurringEndDate: "",
   });
-  
+
   // Your existing state continues...
   const [isSending, setIsSending] = useState(false);
   const [sendStatus, setSendStatus] = useState(null);
@@ -607,116 +601,145 @@ export default function CampaignBuilder() {
   const [canvasActivePage, setCanvasActivePage] = useState(0);
   const [canvasZoomLevel, setCanvasZoomLevel] = useState(0.6);
 
-  // ADD THESE NEW STATE VARIABLES HERE (inside the component function)
+  // NEW STATE VARIABLES
   const [emailVerificationStatus, setEmailVerificationStatus] = useState({});
   const [isVerifying, setIsVerifying] = useState(false);
   const [verificationSent, setVerificationSent] = useState(false);
   const [verifiedEmails, setVerifiedEmails] = useState([]);
+  const [verificationOption, setVerificationOption] = useState('preverified'); // 'preverified' or 'custom'
+  const [authError, setAuthError] = useState(false);
 
-  // ADD THESE FUNCTIONS HERE (inside the component function, after the state declarations)
-  
+  // Helper function to get auth token
+  const getAuthToken = () => {
+    return localStorage.getItem('token');
+  };
+
   // Check email verification status
-// Check email verification status
-const checkEmailVerification = async (email) => {
-  if (!email) return;
-  
-  try {
-    // Fixed: Changed port from 5173 to 5000 to match other API calls
-    const response = await fetch(`http://localhost:5000/api/verified-emails/check/${encodeURIComponent(email)}`);
-    
-    // Check if response is valid JSON before parsing
-    const contentType = response.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      const errorText = await response.text();
-      throw new Error(`Server returned non-JSON response: ${errorText.substring(0, 100)}...`);
-    }
-    
-    const data = await response.json();
-    
-    setEmailVerificationStatus(prev => ({
-      ...prev,
-      [email]: {
-        isVerified: data.isVerified || false,
-        verifiedAt: data.verifiedAt,
-        fromName: data.fromName
-      }
-    }));
-  } catch (error) {
-    console.error("Error checking email verification:", error);
-    setEmailVerificationStatus(prev => ({
-      ...prev,
-      [email]: { isVerified: false }
-    }));
-  }
-};
+  const checkEmailVerification = async (email) => {
+    if (!email) return;
 
-// Send verification email
-const sendVerificationEmail = async (email, fromName) => {
-  setIsVerifying(true);
-  try {
-    const response = await fetch("http://localhost:5000/api/verified-emails/send-verification", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ email, fromName })
-    });
-
-    // Handle connection errors specifically
-    if (!response) {
-      throw new Error("Unable to connect to the server. Please check if the backend is running.");
-    }
-
-    const contentType = response.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      const errorText = await response.text();
-      throw new Error(`Server returned non-JSON response: ${errorText.substring(0, 100)}...`);
-    }
-
-    const data = await response.json();
-    
-    if (response.ok) {
-      setVerificationSent(true);
-      alert(`Verification email sent to ${email}. Please check your inbox and click the verification link.`);
-      setTimeout(() => checkEmailVerification(email), 2000);
-    } else {
-      alert(data.error || "Failed to send verification email");
-    }
-  } catch (error) {
-    console.error("Error sending verification email:", error);
-    // Provide specific feedback for connection errors
-    if (error.message.includes("Failed to fetch") || error.message.includes("Unable to connect")) {
-      alert("Unable to connect to the server. Please ensure the backend is running on port 5000.");
-    } else {
-      alert(`Error: ${error.message}`);
-    }
-  } finally {
-    setIsVerifying(false);
-  }
-};
-
-// Fetch verified emails on component mount
-useEffect(() => {
-  const fetchVerifiedEmails = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/verified-emails");
-      
-      // Check if response is valid JSON before parsing
+
+      const response = await fetch(`${API_URL}/api/senders/check/${encodeURIComponent(email)}`);
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         const errorText = await response.text();
         throw new Error(`Server returned non-JSON response: ${errorText.substring(0, 100)}...`);
       }
-      
-      if (response.ok) {
-        const data = await response.json();
-        setVerifiedEmails(data);
-      }
+
+      const data = await response.json();
+      console.log("Check verification response:", data);
+
+      setEmailVerificationStatus(prev => ({
+        ...prev,
+        [email]: {
+          isVerified: data.isVerified || false,
+          verifiedAt: data.record?.verifiedAt,   // include if backend adds it
+          fromName: data.record?.fromName        // include if backend adds it
+        }
+      }));
     } catch (error) {
-      console.error("Error fetching verified emails:", error);
+      console.error("Error checking email verification:", error);
+      setEmailVerificationStatus(prev => ({
+        ...prev,
+        [email]: { isVerified: false }
+      }));
     }
   };
-  
-  fetchVerifiedEmails();
-}, []);
+
+
+  // Send verification email
+  const sendVerificationEmail = async (email, fromName) => {
+    setIsVerifying(true);
+    try {
+      const token = getAuthToken();
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_URL}/api/senders/create`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify({ email, name: fromName })
+      });
+
+      if (!response) {
+        throw new Error("Unable to connect to the server. Please check if the backend is running.");
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const errorText = await response.text();
+        throw new Error(`Server returned non-JSON response: ${errorText.substring(0, 100)}...`);
+      }
+
+      const data = await response.json();
+
+     if (response.ok) {
+  setVerificationSent(true);
+  alert(
+    `Verification email sent to ${email}. Please check your inbox and click the verification link.`
+  );
+  setTimeout(() => checkEmailVerification(email), 2000);
+
+  // ✅ Auto-select the email after verification
+  setFromEmail(email);
+  setSelectedSenderOption("custom");
+} else {
+  // Instead of raw error, check if it's duplicate sender
+  if (data.errors && data.errors[0]?.message.includes("same nickname")) {
+    alert("This sender email is already registered. Please check your verified senders.");
+    // Optionally trigger a status re-check
+        setTimeout(() => checkEmailVerification(email), 2000);
+      } else {
+        alert(data.error || "Failed to send verification email");
+      }
+    }
+
+    } finally {
+      setIsVerifying(false);
+    }
+  };
+
+  // Fetch verified emails on component mount
+  useEffect(() => {
+    const fetchVerifiedEmails = async () => {
+      try {
+        const response = await fetch(`${API_URL}/api/senders/verified`);
+        const contentType = response.headers.get("content-type");
+        if (!contentType || !contentType.includes("application/json")) {
+          const errorText = await response.text();
+          throw new Error(`Server returned non-JSON response: ${errorText.substring(0, 100)}...`);
+        }
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log("Fetched verified emails:", data);
+          setVerifiedEmails(data);
+          // If there are no pre-verified emails, switch to custom option
+          if (data.length === 0) {
+            setVerificationOption('custom');
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching verified emails:", error);
+        setVerificationOption('custom');
+      }
+    };
+
+    fetchVerifiedEmails();
+  }, []);
+
+  // Check verification when email changes (only for custom option)
+  useEffect(() => {
+    if (formData.fromEmail && verificationOption === 'custom') {
+      checkEmailVerification(formData.fromEmail);
+    }
+  }, [formData.fromEmail, verificationOption]);
 
   // Your existing useEffect hooks...
   useEffect(() => {
@@ -734,38 +757,34 @@ useEffect(() => {
     fetchContacts();
   }, []);
 
-  // ADD THESE NEW useEffect HOOKS HERE
-  
-  // Fetch verified emails on component mount
-  useEffect(() => {
-    const fetchVerifiedEmails = async () => {
-      try {
-        const response = await fetch("http://localhost:5000/api/verified-emails");
-        if (response.ok) {
-          const data = await response.json();
-          setVerifiedEmails(data);
-        }
-      } catch (error) {
-        console.error("Error fetching verified emails:", error);
-      }
-    };
-    
-    fetchVerifiedEmails();
-  }, []);
-
-  // Check verification when email changes
-  useEffect(() => {
-    if (formData.fromEmail) {
-      checkEmailVerification(formData.fromEmail);
-    }
-  }, [formData.fromEmail]);
-
   // Function to fetch contacts from API
   const fetchContacts = async () => {
     try {
-      const response = await fetch(
-        "http://localhost:5000/api/campaigncontacts"
-      );
+      const token = getAuthToken();
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+
+      const response = await fetch(`${API_URL}/api/campaigncontacts`, {
+        headers
+      });
+      
+      if (response.status === 401) {
+        setAuthError(true);
+        console.error("Authentication error: Please log in again");
+        return;
+      }
+
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const errorText = await response.text();
+        throw new Error(`Server returned non-JSON response: ${errorText.substring(0, 100)}...`);
+      }
+
       if (response.ok) {
         const data = await response.json();
         setContacts(data);
@@ -791,7 +810,7 @@ useEffect(() => {
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
-  
+
   const handleFileUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -828,162 +847,179 @@ useEffect(() => {
     }
   };
 
-const handleSendCampaign = async () => {
-  setIsSending(true);
-  try {
-    // Fetch latest contacts
-    const contactsResponse = await fetch("http://localhost:5000/api/campaigncontacts");
-    if (!contactsResponse.ok) throw new Error("Failed to fetch contacts");
-    const contactsData = await contactsResponse.json();
+  const handleSendCampaign = async () => {
+    setIsSending(true);
+    try {
+      // Fetch latest contacts
+      const token = getAuthToken();
+      const headers = {
+        'Content-Type': 'application/json',
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
 
-    // Build recipients list
-    let recipientsList = [];
-    if (formData.recipients === "all-subscribers") {
-      recipientsList = contactsData;
-    } else if (formData.recipients === "new-customers") {
-      recipientsList = contactsData.filter(c => c.type === "new-customer");
-    } else if (formData.recipients === "vip-clients") {
-      recipientsList = contactsData.filter(c => c.type === "vip-client");
-    } else if (formData.recipients === "manual") {
-      recipientsList = (formData.manualEmails || "")
-        .split(/[\n,]+/)
-        .map(email => ({ email: email.trim() }))
-        .filter(c => c.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)); // Validate emails
-    } else if (formData.recipients === "file") {
-      recipientsList = (formData.bulkFileEmails || [])
-        .map(email => ({ email }))
-        .filter(c => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)); // Validate emails
-    }
+      const contactsResponse = await fetch(`${API_URL}/api/campaigncontacts`, {
+        headers
+      });
+      
+      if (contactsResponse.status === 401) {
+        setAuthError(true);
+        setIsSending(false);
+        console.error("Authentication error: Please log in again");
+        return;
+      }
 
-    // Check for spam trigger words in subject
-    const spamTriggers = [
-      'free', 'urgent', 'act now', 'limited time', 'click here', 'make money', 
-      'guaranteed', 'no cost', 'risk free', 'winner', 'congratulations'
-    ];
-    const subjectLower = formData.subject.toLowerCase();
-    const hasSpamTriggers = spamTriggers.some(trigger => subjectLower.includes(trigger));
-    
-    if (hasSpamTriggers) {
-      const confirmation = window.confirm(
-        "Your subject line contains words that might trigger spam filters. This could affect delivery rates. Do you want to continue?"
-      );
-      if (!confirmation) {
+      if (!contactsResponse.ok) throw new Error("Failed to fetch contacts");
+      const contactsData = await contactsResponse.json();
+
+      // Build recipients list
+      let recipientsList = [];
+      if (formData.recipients === "all-subscribers") {
+        recipientsList = contactsData;
+      } else if (formData.recipients === "new-customers") {
+        recipientsList = contactsData.filter(c => c.type === "new-customer");
+      } else if (formData.recipients === "vip-clients") {
+        recipientsList = contactsData.filter(c => c.type === "vip-client");
+      } else if (formData.recipients === "manual") {
+        recipientsList = (formData.manualEmails || "")
+          .split(/[\n,]+/)
+          .map(email => ({ email: email.trim() }))
+          .filter(c => c.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)); // Validate emails
+      } else if (formData.recipients === "file") {
+        recipientsList = (formData.bulkFileEmails || [])
+          .map(email => ({ email }))
+          .filter(c => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)); // Validate emails
+      }
+
+      // Check for spam trigger words in subject
+      const spamTriggers = [
+        'free', 'urgent', 'act now', 'limited time', 'click here', 'make money',
+        'guaranteed', 'no cost', 'risk free', 'winner', 'congratulations'
+      ];
+      const subjectLower = formData.subject.toLowerCase();
+      const hasSpamTriggers = spamTriggers.some(trigger => subjectLower.includes(trigger));
+
+      if (hasSpamTriggers) {
+        const confirmation = window.confirm(
+          "Your subject line contains words that might trigger spam filters. This could affect delivery rates. Do you want to continue?"
+        );
+        if (!confirmation) {
+          setIsSending(false);
+          return;
+        }
+      }
+
+      // Limit to 1000 recipients for better deliverability
+      if (recipientsList.length > 1000) {
+        recipientsList = recipientsList.slice(0, 1000);
+        setSendStatus({
+          success: false,
+          message: "⚠️ Limited to 1000 emails for better deliverability. Consider sending to smaller, more engaged audiences.",
+        });
+      }
+
+      if (recipientsList.length === 0) {
+        setSendStatus({ success: false, message: "No valid email addresses found for the selected audience." });
         setIsSending(false);
         return;
       }
-    }
 
-    // Limit to 1000 recipients for better deliverability
-    if (recipientsList.length > 1000) {
-      recipientsList = recipientsList.slice(0, 1000);
-      setSendStatus({
-        success: false,
-        message: "⚠️ Limited to 1000 emails for better deliverability. Consider sending to smaller, more engaged audiences.",
-      });
-    }
+      // Build payload for backend
+      const payload = {
+        campaignName: formData.subject,
+        subject: formData.subject,
+        fromEmail: formData.fromEmail,
+        fromName: formData.fromName,
+        recipients: recipientsList,
+        canvasData: canvasPages[0].elements,
+        scheduleType: formData.scheduleType,
+        scheduledDate: formData.scheduledDate,
+        scheduledTime: formData.scheduledTime,
+        timezone: formData.timezone,
+        recurringFrequency: formData.recurringFrequency,
+        recurringDays: formData.recurringDays,
+        recurringEndDate: formData.recurringEndDate || null,
+      };
 
-    if (recipientsList.length === 0) {
-      setSendStatus({ success: false, message: "No valid email addresses found for the selected audience." });
-      setIsSending(false);
-      return;
-    }
+      // Determine which API endpoint to use based on schedule type
+      const url = formData.scheduleType === 'immediate'
+        ? `${API_URL}/api/campaigns/send`
+        : `${API_URL}/api/automation/send`;
 
-    // Build payload for backend
-    const payload = {
-      campaignName: formData.subject,
-      subject: formData.subject,
-      fromEmail: formData.fromEmail,
-      fromName: formData.fromName,
-      recipients: recipientsList,
-      canvasData: canvasPages[0].elements,
-      scheduleType: formData.scheduleType,
-      scheduledDate: formData.scheduledDate,
-      scheduledTime: formData.scheduledTime,
-      timezone: formData.timezone,
-      recurringFrequency: formData.recurringFrequency,
-      recurringDays: formData.recurringDays,
-      recurringEndDate: formData.recurringEndDate || null,
-    };
-
-    // Determine which API endpoint to use based on schedule type
-    const url = formData.scheduleType === 'immediate' 
-      ? "http://localhost:5000/api/campaigns/send"
-      : "http://localhost:5000/api/automation/send";
-
-    // Send request
-    const response = await fetch(url, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload),
-    });
-
-    // Ensure JSON response
-    const contentType = response.headers.get("content-type");
-    if (!contentType || !contentType.includes("application/json")) {
-      const errorText = await response.text();
-      throw new Error(`Server returned non-JSON response: ${errorText.substring(0, 100)}...`);
-    }
-
-    const data = await response.json();
-
-    if (response.ok) {
-      // Enhanced success message with deliverability info
-      let successMessage = data.message;
-      
-      if (data.results) {
-        const successRate = (data.results.success.length / recipientsList.length * 100).toFixed(1);
-        successMessage += ` (${successRate}% delivery rate)`;
-      }
-
-      setSendStatus({
-        success: true,
-        message: successMessage,
-        results: formData.scheduleType === 'immediate' ? (data.results || null) : null,
-        deliverabilityTips: data.deliverabilityTips || null,
+      // Send request
+      const response = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
       });
 
-      // Navigate based on schedule type
-      if (formData.scheduleType === 'immediate') {
-        navigate("/analytics", { state: { fromEmail: formData.fromEmail } });
-      } else {
-        navigate("/automation");
+      // Ensure JSON response
+      const contentType = response.headers.get("content-type");
+      if (!contentType || !contentType.includes("application/json")) {
+        const errorText = await response.text();
+        throw new Error(`Server returned non-JSON response: ${errorText.substring(0, 100)}...`);
       }
-    } else {
-      // Check if it's a sender verification error
-      if (data.senderVerificationRequired) {
+
+      const data = await response.json();
+
+      if (response.ok) {
+        // Enhanced success message with deliverability info
+        let successMessage = data.message;
+
+        if (data.results) {
+          const successRate = (data.results.success.length / recipientsList.length * 100).toFixed(1);
+          successMessage += ` (${successRate}% delivery rate)`;
+        }
+
         setSendStatus({
-          success: false,
-          message: `${data.error} Please verify this email address in SendGrid and set up domain authentication for better delivery.`,
-          senderVerificationRequired: true,
-          deliverabilityTips: data.deliverabilityTips || [
-            "Verify your sender email in SendGrid",
-            "Set up SPF, DKIM, and DMARC records",
-            "Use a professional domain email",
-            "Avoid spam trigger words",
-            "Send to engaged subscribers only"
-          ]
-        });
-      } else {
-        setSendStatus({
-          success: false,
-          message: data.error || "Failed to send campaign",
-          results: data.results || null,
+          success: true,
+          message: successMessage,
+          results: formData.scheduleType === 'immediate' ? (data.results || null) : null,
           deliverabilityTips: data.deliverabilityTips || null,
         });
+
+        // Navigate based on schedule type
+        if (formData.scheduleType === 'immediate') {
+          navigate("/analytics", { state: { fromEmail: formData.fromEmail } });
+        } else {
+          navigate("/automation");
+        }
+      } else {
+        // Check if it's a sender verification error
+        if (data.senderVerificationRequired) {
+          setSendStatus({
+            success: false,
+            message: `${data.error} Please verify this email address in SendGrid and set up domain authentication for better delivery.`,
+            senderVerificationRequired: true,
+            deliverabilityTips: data.deliverabilityTips || [
+              "Verify your sender email in SendGrid",
+              "Set up SPF, DKIM, and DMARC records",
+              "Use a professional domain email",
+              "Avoid spam trigger words",
+              "Send to engaged subscribers only"
+            ]
+          });
+        } else {
+          setSendStatus({
+            success: false,
+            message: data.error || "Failed to send campaign",
+            results: data.results || null,
+            deliverabilityTips: data.deliverabilityTips || null,
+          });
+        }
       }
+    } catch (error) {
+      console.error("Error sending campaign:", error);
+      setSendStatus({
+        success: false,
+        message: `Error: ${error.message || "Network error. Please try again."}`,
+      });
+    } finally {
+      setIsSending(false);
     }
-  } catch (error) {
-    console.error("Error sending campaign:", error);
-    setSendStatus({
-      success: false,
-      message: `Error: ${error.message || "Network error. Please try again."}`,
-    });
-  } finally {
-    setIsSending(false);
-  }
-};
-
-
+  };
 
   // Get minimum date for scheduling (current date + 5 minutes)
   const getMinDateTime = () => {
@@ -996,6 +1032,26 @@ const handleSendCampaign = async () => {
     const today = new Date();
     return today.toISOString().slice(0, 10);
   };
+
+  // Handle authentication error
+  if (authError) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen bg-black text-white p-6">
+        <div className="max-w-md w-full bg-gray-900 rounded-lg p-8 border border-gray-800">
+          <h2 className="text-2xl font-bold text-red-500 mb-4">Authentication Error</h2>
+          <p className="text-gray-300 mb-6">
+            You need to be logged in to access this feature. Please log in again.
+          </p>
+          <button
+            onClick={() => navigate('/login')}
+            className="w-full py-3 bg-[#c2831f] hover:bg-[#d09025] text-white rounded-md font-medium"
+          >
+            Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-black text-white">
@@ -1017,7 +1073,7 @@ const handleSendCampaign = async () => {
             >
               Choose Templates
             </button>
-            
+
             <button
               onClick={handleSendCampaign}
               disabled={
@@ -1027,21 +1083,20 @@ const handleSendCampaign = async () => {
                 !completedSteps.includes("schedule") ||
                 isSending
               }
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-white ${
-                !completedSteps.includes("recipients") ||
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-white ${!completedSteps.includes("recipients") ||
                 !completedSteps.includes("setup") ||
                 !completedSteps.includes("template") ||
                 !completedSteps.includes("schedule") ||
                 isSending
-                  ? "bg-gray-800 cursor-not-allowed"
-                  : "bg-[#c2831f] hover:bg-[#d09025]"
-              }`}
+                ? "bg-gray-800 cursor-not-allowed"
+                : "bg-[#c2831f] hover:bg-[#d09025]"
+                }`}
             >
               {formData.scheduleType === 'immediate' ? <Send size={16} /> : <Calendar size={16} />}
-              {isSending 
-                ? "Processing..." 
-                : formData.scheduleType === 'immediate' 
-                  ? "Send Now" 
+              {isSending
+                ? "Processing..."
+                : formData.scheduleType === 'immediate'
+                  ? "Send Now"
                   : "Schedule Campaign"
               }
             </button>
@@ -1068,9 +1123,8 @@ const handleSendCampaign = async () => {
                   <div key={id} className="relative flex items-start">
                     {/* Step circle */}
                     <div
-                      className={`relative z-10 flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full ${
-                        isCompleted ? "bg-[#c2831f]" : "bg-gray-800"
-                      }`}
+                      className={`relative z-10 flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full ${isCompleted ? "bg-[#c2831f]" : "bg-gray-800"
+                        }`}
                     >
                       {isCompleted ? (
                         <CheckCircle size={20} className="text-white" />
@@ -1082,9 +1136,8 @@ const handleSendCampaign = async () => {
                     <div className="ml-4 pt-1">
                       <button
                         onClick={() => toggleExpand(id)}
-                        className={`text-left ${
-                          isExpanded ? "text-[#c2831f]" : "hover:text-gray-300"
-                        }`}
+                        className={`text-left ${isExpanded ? "text-[#c2831f]" : "hover:text-gray-300"
+                          }`}
                       >
                         <div className="font-medium">{title}</div>
                         <div className="text-xs text-gray-400 mt-1">
@@ -1114,9 +1167,8 @@ const handleSendCampaign = async () => {
               return (
                 <div
                   key={id}
-                  className={`mb-8 border border-gray-800 rounded-lg overflow-hidden transition-all ${
-                    isExpanded ? "shadow-lg" : ""
-                  }`}
+                  className={`mb-8 border border-gray-800 rounded-lg overflow-hidden transition-all ${isExpanded ? "shadow-lg" : ""
+                    }`}
                 >
                   <button
                     onClick={() => toggleExpand(id)}
@@ -1124,11 +1176,10 @@ const handleSendCampaign = async () => {
                   >
                     <div className="flex items-center">
                       <div
-                        className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${
-                          isCompleted
-                            ? "bg-[#c2831f]/20 text-[#c2831f]"
-                            : "bg-gray-800 text-gray-400"
-                        }`}
+                        className={`flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full ${isCompleted
+                          ? "bg-[#c2831f]/20 text-[#c2831f]"
+                          : "bg-gray-800 text-gray-400"
+                          }`}
                       >
                         {isCompleted ? (
                           <CheckCircle size={16} />
@@ -1217,20 +1268,20 @@ const handleSendCampaign = async () => {
 
                             {/* Warnings for 600 limit */}
                             {formData.recipients === "manual" &&
-                            ((formData.manualEmails || "")
+                              ((formData.manualEmails || "")
                                 .split(/[\n,]+/)
                                 .filter((e) => e.trim()).length > 6000) && (
                                 <p className="text-yellow-400 mt-2">
-                                ⚠️ You pasted more than 6000 emails. Only the first 6000 will be used.
+                                  ⚠️ You pasted more than 6000 emails. Only the first 6000 will be used.
                                 </p>
-                            )}
+                              )}
 
                             {formData.recipients === "file" &&
-                            ((formData.bulkFileEmails || []).length > 6000) && (
+                              ((formData.bulkFileEmails || []).length > 6000) && (
                                 <p className="text-yellow-400 mt-2">
-                                ⚠️ Your file contains more than 6000 emails. Only the first 6000 will be used.
+                                  ⚠️ Your file contains more than 6000 emails. Only the first 6000 will be used.
                                 </p>
-                            )}
+                              )}
 
                           </div>
                           <div className="bg-gray-800 p-4 rounded-md">
@@ -1266,195 +1317,231 @@ const handleSendCampaign = async () => {
                           <button
                             onClick={() => markComplete(id)}
                             disabled={!formData.recipients}
-                            className={`mt-2 px-4 py-2 rounded-md ${
-                              !formData.recipients
-                                ? "bg-gray-700 cursor-not-allowed"
-                                : "bg-[#c2831f] hover:bg-[#d09025] text-white"
-                            }`}
+                            className={`mt-2 px-4 py-2 rounded-md ${!formData.recipients
+                              ? "bg-gray-700 cursor-not-allowed"
+                              : "bg-[#c2831f] hover:bg-[#d09025] text-white"
+                              }`}
                           >
                             Save and Continue
                           </button>
                         </div>
                       )}
-                     {id === "setup" && (
-  <div className="space-y-4">
-    <div>
-      <label className="block text-sm font-medium text-gray-300 mb-1">
-        From name
-      </label>
-      <input
-        name="fromName"
-        type="text"
-        className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
-        value={formData.fromName}
-        onChange={handleChange}
-        placeholder="Enter sender name"
-      />
-    </div>
-    
-    <div>
-      <label className="block text-sm font-medium text-gray-300 mb-1">
-        From email address
-      </label>
-      <div className="space-y-2">
-        {/* Email Input */}
-        <div className="relative">
-          <input
-            name="fromEmail"
-            type="email"
-            className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
-            value={formData.fromEmail}
-            onChange={handleChange}
-            placeholder="Enter sender email"
-          />
-          {formData.fromEmail && emailVerificationStatus[formData.fromEmail] && (
-            <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-              {emailVerificationStatus[formData.fromEmail].isVerified ? (
-                <Shield className="w-5 h-5 text-green-500" />
-              ) : (
-                <AlertCircle className="w-5 h-5 text-yellow-500" />
-              )}
-            </div>
-          )}
-        </div>
+                      {id === "setup" && (
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">
+                              From name
+                            </label>
+                            <input
+                              name="fromName"
+                              type="text"
+                              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
+                              value={formData.fromName}
+                              onChange={handleChange}
+                              placeholder="Enter sender name"
+                              disabled={verificationOption === 'preverified'}
+                            />
+                          </div>
 
-        {/* Verification Status */}
-        {formData.fromEmail && emailVerificationStatus[formData.fromEmail] && (
-          <div className={`p-3 rounded-md border ${
-            emailVerificationStatus[formData.fromEmail].isVerified 
-              ? "bg-green-900/30 border-green-600 text-green-400"
-              : "bg-yellow-900/30 border-yellow-600 text-yellow-400"
-          }`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
-                {emailVerificationStatus[formData.fromEmail].isVerified ? (
-                  <Shield className="w-4 h-4" />
-                ) : (
-                  <AlertCircle className="w-4 h-4" />
-                )}
-                <span className="text-sm font-medium">
-                  {emailVerificationStatus[formData.fromEmail].isVerified 
-                    ? "Email Verified" 
-                    : "Email Not Verified"
-                  }
-                </span>
-              </div>
-              
-              {!emailVerificationStatus[formData.fromEmail].isVerified && (
-                <button
-                  onClick={() => sendVerificationEmail(formData.fromEmail, formData.fromName)}
-                  disabled={!formData.fromName || isVerifying}
-                  className="flex items-center space-x-1 px-3 py-1 bg-[#c2831f] hover:bg-[#d09025] text-white text-sm rounded-md disabled:bg-gray-600 disabled:cursor-not-allowed"
-                >
-                  {isVerifying ? (
-                    <>
-                      <RefreshCw className="w-3 h-3 animate-spin" />
-                      <span>Sending...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Mail className="w-3 h-3" />
-                      <span>Verify</span>
-                    </>
-                  )}
-                </button>
-              )}
-            </div>
-            
-            <p className="text-xs mt-2">
-              {emailVerificationStatus[formData.fromEmail].isVerified 
-                ? `Verified on ${new Date(emailVerificationStatus[formData.fromEmail].verifiedAt).toLocaleDateString()}`
-                : "You must verify this email before sending campaigns. Click 'Verify' to receive a verification email."
-              }
-            </p>
-          </div>
-        )}
+                          <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">
+                              From email address
+                            </label>
 
-        {/* Verified Emails Dropdown */}
-        {verifiedEmails.length > 0 && (
-          <div>
-            <label className="block text-sm text-gray-400 mb-1">
-              Or choose from verified emails:
-            </label>
-            <select
-              className="w-full bg-gray-700 border border-gray-600 rounded-md px-3 py-2 text-white text-sm"
-              onChange={(e) => {
-                if (e.target.value) {
-                  const selectedEmail = verifiedEmails.find(email => email.email === e.target.value);
-                  setFormData(prev => ({
-                    ...prev,
-                    fromEmail: selectedEmail.email,
-                    fromName: selectedEmail.fromName
-                  }));
-                }
-              }}
-              value=""
-            >
-              <option value="">Select verified email...</option>
-              {verifiedEmails.map(email => (
-                <option key={email.id} value={email.email}>
-                  {email.fromName} &lt;{email.email}&gt;
-                </option>
-              ))}
-            </select>
-          </div>
-        )}
+                            {/* Verification Options */}
+                            <div className="flex space-x-4 mb-3">
+                              <label className="flex items-center">
+                                <input
+                                  type="radio"
+                                  name="verificationOption"
+                                  value="preverified"
+                                  checked={verificationOption === 'preverified'}
+                                  onChange={() => setVerificationOption('preverified')}
+                                  className="mr-2 accent-[#c2831f]"
+                                />
+                                <span className="text-white">Use pre-verified email</span>
+                              </label>
+                              <label className="flex items-center">
+                                <input
+                                  type="radio"
+                                  name="verificationOption"
+                                  value="custom"
+                                  checked={verificationOption === 'custom'}
+                                  onChange={() => setVerificationOption('custom')}
+                                  className="mr-2 accent-[#c2831f]"
+                                />
+                                <span className="text-white">Use custom email</span>
+                              </label>
+                            </div>
 
-        {/* Verification Instructions */}
-        {!formData.fromEmail && (
-          <div className="bg-blue-900/30 border border-blue-600 rounded-md p-3">
-            <div className="flex items-start space-x-2">
-              <Shield className="w-4 h-4 text-blue-400 mt-0.5" />
-              <div>
-                <p className="text-blue-400 text-sm font-medium">Email Verification Required</p>
-                <p className="text-blue-300 text-xs mt-1">
-                  All sender emails must be verified before sending campaigns. Enter your email and name above, then click 'Verify' to receive a verification link.
-                </p>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-    </div>
+                            {/* Option 1: Pre-verified dropdown */}
+                            {verificationOption === 'preverified' && (
+                              <div>
+                                <select
+                                  className="w-full bg-black"
+                                  value={formData.fromEmail}
+                                  onChange={async (e) => {
+                                    const selectedEmail = verifiedEmails.find(
+                                      (email) => email.email === e.target.value
+                                    );
+                                    if (selectedEmail) {
+                                      setFormData((prev) => ({
+                                        ...prev,
+                                        fromEmail: selectedEmail.email,
+                                        fromName: selectedEmail.fromName,
+                                      }));
 
-    <div>
-      <label className="block text-sm font-medium text-gray-300 mb-1">
-        Email subject
-      </label>
-      <input
-        name="subject"
-        className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
-        value={formData.subject}
-        onChange={handleChange}
-        placeholder="Enter subject"
-      />
-    </div>
-    
-    <button
-      onClick={() => markComplete(id)}
-      disabled={
-        !formData.fromName || 
-        !formData.fromEmail || 
-        !formData.subject || 
-        !emailVerificationStatus[formData.fromEmail]?.isVerified
-      }
-      className={`mt-2 px-4 py-2 rounded-md ${
-        !formData.fromName || 
-        !formData.fromEmail || 
-        !formData.subject || 
-        !emailVerificationStatus[formData.fromEmail]?.isVerified
-          ? "bg-gray-700 cursor-not-allowed"
-          : "bg-[#c2831f] hover:bg-[#d09025] text-white"
-      }`}
-    >
-      {!emailVerificationStatus[formData.fromEmail]?.isVerified && formData.fromEmail
-        ? "Email verification required"
-        : "Save and Continue"
-      }
-    </button>
-  </div>
-)}
+                                      // 🔍 Call backend to check latest verification status
+                                      await checkEmailVerification(selectedEmail.email);
 
+                                    }
+                                  }}
+                                >
+                                  <option value="">Select a pre-verified email</option>
+                                  {verifiedEmails.map((email) => (
+                                    <option key={email.id} value={email.email}>
+                                      {email.fromName} &lt;{email.email}&gt;
+                                    </option>
+                                  ))}
+                                </select>
+
+                                {verifiedEmails.length === 0 && (
+                                  <div className="mt-2 text-yellow-400 text-sm">
+                                    No pre-verified emails available. Please verify a custom email.
+                                  </div>
+                                )}
+                              </div>
+                            )}
+
+
+                            {/* Option 2: Custom email input and verification */}
+                            {verificationOption === 'custom' && (
+                              <div className="space-y-2">
+                                <div className="relative">
+                                  <input
+                                    name="fromEmail"
+                                    type="email"
+                                    className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
+                                    value={formData.fromEmail}
+                                    onChange={handleChange}
+                                    placeholder="Enter sender email"
+                                  />
+                                  {formData.fromEmail && emailVerificationStatus[formData.fromEmail] && (
+                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                      {emailVerificationStatus[formData.fromEmail].isVerified ? (
+                                        <Shield className="w-5 h-5 text-green-500" />
+                                      ) : (
+                                        <AlertCircle className="w-5 h-5 text-yellow-500" />
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Verification status and button for custom email */}
+                                {/* Sender Verification Status Box */}
+                                {formData.fromEmail && emailVerificationStatus[formData.fromEmail] && (
+                                  <div className={`p-3 rounded-md border ${emailVerificationStatus[formData.fromEmail].isVerified
+                                    ? "bg-green-900/30 border-green-600 text-green-400"
+                                    : "bg-yellow-900/30 border-yellow-600 text-yellow-400"
+                                    }`}>
+                                    <div className="flex items-center justify-between">
+                                      <div className="flex items-center space-x-2">
+                                        {emailVerificationStatus[formData.fromEmail].isVerified ? (
+                                          <Shield className="w-4 h-4" />
+                                        ) : (
+                                          <AlertCircle className="w-4 h-4" />
+                                        )}
+                                        <span className="text-sm font-medium">
+                                          {emailVerificationStatus[formData.fromEmail].isVerified
+                                            ? "Email Verified"
+                                            : "Email Not Verified"}
+                                        </span>
+                                      </div>
+
+                                      {!emailVerificationStatus[formData.fromEmail].isVerified && (
+                                        <button
+                                          onClick={() => sendVerificationEmail(formData.fromEmail, formData.fromName)}
+                                          disabled={!formData.fromName || isVerifying}
+                                          className="flex items-center space-x-1 px-3 py-1 bg-[#c2831f] hover:bg-[#d09025] text-white text-sm rounded-md disabled:bg-gray-600 disabled:cursor-not-allowed"
+                                        >
+                                          {isVerifying ? (
+                                            <>
+                                              <RefreshCw className="w-3 h-3 animate-spin" />
+                                              <span>Sending...</span>
+                                            </>
+                                          ) : (
+                                            <>
+                                              <Mail className="w-3 h-3" />
+                                              <span>Verify</span>
+                                            </>
+                                          )}
+                                        </button>
+                                      )}
+                                    </div>
+
+                                    <p className="text-xs mt-2">
+                                      {emailVerificationStatus[formData.fromEmail].isVerified
+                                        ? `Verified on ${new Date(emailVerificationStatus[formData.fromEmail].verifiedAt).toLocaleDateString()}`
+                                        : "You must verify this email before sending campaigns. Click 'Verify' to receive a verification email."}
+                                    </p>
+                                  </div>
+                                )}
+
+
+                                {/* Verification instructions for custom email */}
+                                {!formData.fromEmail && (
+                                  <div className="bg-blue-900/30 border border-blue-600 rounded-md p-3">
+                                    <div className="flex items-start space-x-2">
+                                      <Shield className="w-4 h-4 text-blue-400 mt-0.5" />
+                                      <div>
+                                        <p className="text-blue-400 text-sm font-medium">Email Verification Required</p>
+                                        <p className="text-blue-300 text-xs mt-1">
+                                          All sender emails must be verified before sending campaigns. Enter your email and name above, then click 'Verify' to receive a verification link.
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">
+                              Email subject
+                            </label>
+                            <input
+                              name="subject"
+                              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
+                              value={formData.subject}
+                              onChange={handleChange}
+                              placeholder="Enter subject"
+                            />
+                          </div>
+
+                          <button
+                            onClick={() => markComplete(id)}
+                            disabled={
+                              !formData.fromName ||
+                              !formData.fromEmail ||
+                              !formData.subject ||
+                              (verificationOption === 'custom' && !emailVerificationStatus[formData.fromEmail]?.isVerified)
+                            }
+                            className={`mt-2 px-4 py-2 rounded-md ${!formData.fromName ||
+                              !formData.fromEmail ||
+                              !formData.subject ||
+                              (verificationOption === 'custom' && !emailVerificationStatus[formData.fromEmail]?.isVerified)
+                              ? "bg-gray-700 cursor-not-allowed"
+                              : "bg-[#c2831f] hover:bg-[#d09025] text-white"
+                              }`}
+                          >
+                            {(verificationOption === 'custom' && !emailVerificationStatus[formData.fromEmail]?.isVerified && formData.fromEmail)
+                              ? "Email verification required"
+                              : "Save and Continue"
+                            }
+                          </button>
+                        </div>
+                      )}
                       {id === "template" && (
                         <div className="space-y-4">
                           <label className="block text-sm font-medium text-gray-300 mb-3">
@@ -1466,11 +1553,10 @@ const handleSendCampaign = async () => {
                                 <div
                                   key={template}
                                   onClick={() => handleTemplateSelect(template)}
-                                  className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${
-                                    formData.template === template
-                                      ? "border-[#c2831f] bg-[#c2831f]/10"
-                                      : "border-gray-700 hover:border-gray-600"
-                                  }`}
+                                  className={`border-2 rounded-lg p-4 cursor-pointer transition-all ${formData.template === template
+                                    ? "border-[#c2831f] bg-[#c2831f]/10"
+                                    : "border-gray-700 hover:border-gray-600"
+                                    }`}
                                 >
                                   <div className="h-32 bg-gray-800 rounded mb-2 flex items-center justify-center">
                                     <span className="text-sm text-gray-400">
@@ -1705,18 +1791,17 @@ const handleSendCampaign = async () => {
                               (formData.scheduleType === "scheduled" && (!formData.scheduledDate || !formData.scheduledTime)) ||
                               (formData.scheduleType === "recurring" && (!formData.scheduledDate || !formData.scheduledTime || (formData.recurringFrequency === "weekly" && formData.recurringDays.length === 0)))
                             }
-                            className={`mt-2 px-4 py-2 rounded-md ${
-                              (formData.scheduleType === "scheduled" && (!formData.scheduledDate || !formData.scheduledTime)) ||
+                            className={`mt-2 px-4 py-2 rounded-md ${(formData.scheduleType === "scheduled" && (!formData.scheduledDate || !formData.scheduledTime)) ||
                               (formData.scheduleType === "recurring" && (!formData.scheduledDate || !formData.scheduledTime || (formData.recurringFrequency === "weekly" && formData.recurringDays.length === 0)))
-                                ? "bg-gray-700 cursor-not-allowed"
-                                : "bg-[#c2831f] hover:bg-[#d09025] text-white"
-                            }`}
+                              ? "bg-gray-700 cursor-not-allowed"
+                              : "bg-[#c2831f] hover:bg-[#d09025] text-white"
+                              }`}
                           >
                             Save and Continue
                           </button>
                         </div>
                       )}
-                     {id === "confirm" && (
+                      {id === "confirm" && (
                         <div className="space-y-6">
                           <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
                             <h3 className="font-medium text-white mb-3">
@@ -1740,12 +1825,10 @@ const handleSendCampaign = async () => {
                                   {formData.recipients === "all-subscribers" &&
                                     `All Subscribers (${contacts.length} contacts)`}
                                   {formData.recipients === "new-customers" &&
-                                    `New Customers (${
-                                      contacts.filter((c) => c.type === "new-customer").length
+                                    `New Customers (${contacts.filter((c) => c.type === "new-customer").length
                                     } contacts)`}
                                   {formData.recipients === "vip-clients" &&
-                                    `VIP Clients (${
-                                      contacts.filter((c) => c.type === "vip-client").length
+                                    `VIP Clients (${contacts.filter((c) => c.type === "vip-client").length
                                     } contacts)`}
                                   {!formData.recipients && "Not selected"}
                                 </span>
@@ -1787,32 +1870,31 @@ const handleSendCampaign = async () => {
                                   {formData.scheduleType === "scheduled" &&
                                     `${formData.scheduledDate} at ${formData.scheduledTime}`}
                                   {formData.scheduleType === "recurring" &&
-                                    `${formData.recurringFrequency} ${
-                                      formData.recurringFrequency === "weekly"
-                                        ? `(${formData.recurringDays.join(", ")})`
-                                        : ""
+                                    `${formData.recurringFrequency} ${formData.recurringFrequency === "weekly"
+                                      ? `(${formData.recurringDays.join(", ")})`
+                                      : ""
                                     } starting ${formData.scheduledDate}`}
                                 </span>
                               </div>
                             </div>
                           </div>
 
-                             {sendStatus && (
-                              <div className={`p-4 rounded-md space-y-2 ${sendStatus.success ? "bg-[#c2831f]/20 text-[#c2831f]" : "bg-red-900/30 text-red-400"}`}>
-                                <div className="font-medium">{sendStatus.message}</div>
-                                
-                                {sendStatus.deliverabilityTips && (
-                                  <div className="text-sm mt-3">
-                                    <div className="font-medium mb-2">💡 To improve inbox delivery:</div>
-                                    <ul className="list-disc list-inside space-y-1">
-                                      {sendStatus.deliverabilityTips.map((tip, i) => (
-                                        <li key={i}>{tip}</li>
-                                      ))}
-                                    </ul>
-                                  </div>
-                                )}
-                              </div>
-                            )}
+                          {sendStatus && (
+                            <div className={`p-4 rounded-md space-y-2 ${sendStatus.success ? "bg-[#c2831f]/20 text-[#c2831f]" : "bg-red-900/30 text-red-400"}`}>
+                              <div className="font-medium">{sendStatus.message}</div>
+
+                              {sendStatus.deliverabilityTips && (
+                                <div className="text-sm mt-3">
+                                  <div className="font-medium mb-2">💡 To improve inbox delivery:</div>
+                                  <ul className="list-disc list-inside space-y-1">
+                                    {sendStatus.deliverabilityTips.map((tip, i) => (
+                                      <li key={i}>{tip}</li>
+                                    ))}
+                                  </ul>
+                                </div>
+                              )}
+                            </div>
+                          )}
                         </div>
                       )}
 
@@ -1850,21 +1932,20 @@ const handleSendCampaign = async () => {
                 !completedSteps.includes("schedule") ||
                 isSending
               }
-              className={`w-full flex items-center justify-center gap-2 py-3 rounded-md text-white ${
-                !completedSteps.includes("recipients") ||
+              className={`w-full flex items-center justify-center gap-2 py-3 rounded-md text-white ${!completedSteps.includes("recipients") ||
                 !completedSteps.includes("setup") ||
                 !completedSteps.includes("template") ||
                 !completedSteps.includes("schedule") ||
                 isSending
-                  ? "bg-gray-800 cursor-not-allowed"
-                  : "bg-[#c2831f] hover:bg-[#d09025]"
-              }`}
+                ? "bg-gray-800 cursor-not-allowed"
+                : "bg-[#c2831f] hover:bg-[#d09025]"
+                }`}
             >
               {formData.scheduleType === 'immediate' ? <Send size={16} /> : <Calendar size={16} />}
-              {isSending 
-                ? "Processing..." 
-                : formData.scheduleType === 'immediate' 
-                  ? "Send Now" 
+              {isSending
+                ? "Processing..."
+                : formData.scheduleType === 'immediate'
+                  ? "Send Now"
                   : "Schedule Campaign"
               }
             </button>

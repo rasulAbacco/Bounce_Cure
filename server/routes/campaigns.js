@@ -6,10 +6,10 @@ import { prisma } from "../prisma/prismaClient.js";
 const router = express.Router();
 
 const validateEmailConfig = () => {
-  if (!process.env.SENDGRID_CMP_API_KEY) {
-    throw new Error("Missing SENDGRID_CMP_API_KEY in environment variables");
+  if (!process.env.SENDGRID_USER_API_KEY) {
+    throw new Error("Missing SENDGRID_USER_API_KEY in environment variables");
   }
-  sgMail.setApiKey(process.env.SENDGRID_CMP_API_KEY);
+  sgMail.setApiKey(process.env.SENDGRID_USER_API_KEY);
 };
 
 const generateHtmlFromCanvas = (canvasData, subject, fromName, fromEmail) => {
@@ -176,12 +176,45 @@ router.post("/send", async (req, res) => {
       return res.status(400).json({ error: "Sender name is required" });
     }
 
+    // ✅ Check sender in DB before proceeding
+    const sender = await prisma.verifiedSender.findUnique({
+      where: { email: fromEmail.toLowerCase() },
+    });
+
+    if (sender && sender.verified) {
+      // Already verified → safe to send
+      console.log("Sender already verified:", fromEmail);
+    } else if (sender && !sender.verified) {
+      // Exists but not verified
+      return res.status(400).json({
+        error: "Sender exists but is not verified yet",
+        senderVerificationRequired: true,
+      });
+    } else {
+      // No record in DB at all
+      return res.status(400).json({
+        error: "Sender email not verified",
+        senderVerificationRequired: true,
+      });
+    }
+
+    // 🔑 Now safe to send campaign
     validateEmailConfig();
 
-    const htmlContent = generateHtmlFromCanvas(canvasData, subject, fromName, fromEmail);
-    const plainTextContent = generatePlainTextFromCanvas(canvasData, subject, fromName, fromEmail);
+    const htmlContent = generateHtmlFromCanvas(
+      canvasData,
+      subject,
+      fromName,
+      fromEmail
+    );
+    const plainTextContent = generatePlainTextFromCanvas(
+      canvasData,
+      subject,
+      fromName,
+      fromEmail
+    );
 
-    // Save campaign to DB
+    // Save campaign
     const campaign = await prisma.campaign.create({
       data: {
         name: subject,
@@ -198,36 +231,33 @@ router.post("/send", async (req, res) => {
     for (const recipient of recipients) {
       const msg = {
         to: recipient.email,
-        from: {
-          name: fromName,
-          email: fromEmail, // must be a verified domain email in SendGrid
-        },
-        replyTo: {
-          email: fromEmail,
-          name: fromName,
-        },
-        subject: subject,
+        from: { name: fromName, email: fromEmail },
+        replyTo: { email: fromEmail, name: fromName },
+        subject,
         text: plainTextContent,
         html: htmlContent,
         trackingSettings: {
           clickTracking: { enable: false },
           openTracking: { enable: false },
-          subscriptionTracking: { enable: false }
+          subscriptionTracking: { enable: false },
         },
         mailSettings: {
-          bypassListManagement: { enable: true }, // don’t get blocked by suppression lists
-          footer: { enable: false },              // no SendGrid footer
-          sandboxMode: { enable: false }
+          bypassListManagement: { enable: true },
+          footer: { enable: false },
+          sandboxMode: { enable: false },
         },
-        // Add headers to improve inboxing
         headers: {
-          "List-Unsubscribe": `<mailto:unsubscribe@yourdomain.com>, <https://yourdomain.com/unsubscribe>`,
-        }
+          "List-Unsubscribe":
+            `<mailto:unsubscribe@yourdomain.com>, <https://yourdomain.com/unsubscribe>`,
+        },
       };
 
       try {
         await sgMail.send(msg);
-        results.success.push({ email: recipient.email, timestamp: new Date().toISOString() });
+        results.success.push({
+          email: recipient.email,
+          timestamp: new Date().toISOString(),
+        });
 
         await prisma.campaignEvent.create({
           data: {
@@ -237,17 +267,24 @@ router.post("/send", async (req, res) => {
           },
         });
       } catch (err) {
-        let errorMessage = "Unknown error";
-        if (err.response?.body?.errors) {
-          errorMessage = err.response.body.errors[0]?.message || err.message;
+        console.error(
+          "SendGrid error for recipient:",
+          recipient.email,
+          err.response?.body || err.message
+        );
 
-          if (errorMessage.includes("verified Sender Identity")) {
-            return res.status(400).json({
-              error: "Sender email not verified",
-              message: "Please verify your sender email in SendGrid before sending campaigns.",
-              senderVerificationRequired: true
-            });
-          }
+        let errorMessage = err.message || "Unknown error";
+        if (err.response?.body?.errors?.length) {
+          errorMessage = err.response.body.errors[0]?.message || errorMessage;
+        }
+
+        if (errorMessage.includes("verified Sender Identity")) {
+          return res.status(400).json({
+            error: "Sender email not verified",
+            message:
+              "Please verify your sender email in SendGrid before sending campaigns.",
+            senderVerificationRequired: true,
+          });
         }
 
         results.failed.push({
@@ -265,26 +302,26 @@ router.post("/send", async (req, res) => {
         });
       }
 
-      // Small delay to avoid rate limiting
-      await new Promise(resolve => setTimeout(resolve, 200));
+      // prevent SendGrid rate limiting
+      await new Promise((resolve) => setTimeout(resolve, 200));
     }
 
-
-    const statusMessage = `Sent: ${results.success.length}, Failed: ${results.failed.length}`;
-
-    res.status(200).json({
-      message: statusMessage,
+    return res.status(200).json({
+      message: `Sent: ${results.success.length}, Failed: ${results.failed.length}`,
       campaignId: campaign.id,
       recipientsCount: recipients.length,
-      results
+      results,
     });
   } catch (error) {
-    res.status(500).json({ 
+    console.error("Campaign send error:", error);
+    return res.status(500).json({
       error: "Failed to send campaign",
-      details: error.message 
+      details: error.message,
     });
   }
 });
+
+
 
 router.get("/", async (req, res) => {
   try {
@@ -327,5 +364,7 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ error: "Failed to delete campaign" });
   }
 });
+
+
 
 export { router };

@@ -12,13 +12,13 @@ router.get("/sender/verification", async (req, res) => {
   try {
     // This is a placeholder - in a real implementation, you would check SendGrid API
     const verified = true; // Replace with actual verification logic
-    
+
     res.json({ verified });
   } catch (error) {
     console.error("Error checking sender verification:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to check sender verification",
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -26,12 +26,12 @@ router.get("/sender/verification", async (req, res) => {
 // Add sender verification middleware
 const verifySender = async (req, res, next) => {
   const { fromEmail } = req.body;
-  
+
   try {
     const isVerified = true; // Replace with actual verification
-    
+
     if (!isVerified) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Sender domain not verified",
         message: "Please verify your sender domain in SendGrid and set up SPF, DKIM, and DMARC records.",
         deliverabilityTips: [
@@ -43,7 +43,7 @@ const verifySender = async (req, res, next) => {
         ]
       });
     }
-    
+
     next();
   } catch (error) {
     res.status(500).json({ error: "Error verifying sender" });
@@ -54,7 +54,7 @@ const verifySender = async (req, res, next) => {
 cron.schedule("* * * * *", async () => {
   try {
     const now = new Date();
-    
+
     // Get campaigns that are due
     const dueCampaigns = await prisma.scheduledCampaign.findMany({
       where: {
@@ -62,26 +62,26 @@ cron.schedule("* * * * *", async () => {
         scheduledDateTime: { lte: now },
       },
     });
-    
+
     if (dueCampaigns.length === 0) {
       return;
     }
-    
+
     for (const campaign of dueCampaigns) {
       try {
         await sendEmail(campaign);
-        
+
         await prisma.scheduledCampaign.update({
           where: { id: campaign.id },
           data: { status: "sent" },
         });
-        
+
         console.log(`✅ Campaign "${campaign.campaignName}" sent successfully`);
       } catch (err) {
         console.error("❌ Failed to send campaign:", err);
         await prisma.scheduledCampaign.update({
           where: { id: campaign.id },
-          data: { 
+          data: {
             status: "failed",
             error: err.message || "Unknown error"
           },
@@ -97,7 +97,7 @@ cron.schedule("* * * * *", async () => {
 router.post("/trigger-cron", async (req, res) => {
   try {
     const now = new Date();
-    
+
     // Get campaigns that are due
     const dueCampaigns = await prisma.scheduledCampaign.findMany({
       where: {
@@ -105,7 +105,7 @@ router.post("/trigger-cron", async (req, res) => {
         scheduledDateTime: { lte: now },
       },
     });
-    
+
     if (dueCampaigns.length === 0) {
       // Get all scheduled campaigns for the response
       const scheduledCampaigns = await prisma.scheduledCampaign.findMany({
@@ -113,8 +113,8 @@ router.post("/trigger-cron", async (req, res) => {
           status: "scheduled",
         },
       });
-      
-      return res.json({ 
+
+      return res.json({
         message: "No campaigns are due at this time",
         scheduledCount: scheduledCampaigns.length,
         scheduledCampaigns: scheduledCampaigns.map(c => ({
@@ -124,23 +124,23 @@ router.post("/trigger-cron", async (req, res) => {
         }))
       });
     }
-    
+
     const results = [];
-    
+
     for (const campaign of dueCampaigns) {
       try {
         await sendEmail(campaign);
-        
+
         await prisma.scheduledCampaign.update({
           where: { id: campaign.id },
           data: { status: "sent" },
         });
-        
+
         results.push({ id: campaign.id, status: "sent" });
       } catch (err) {
         await prisma.scheduledCampaign.update({
           where: { id: campaign.id },
-          data: { 
+          data: {
             status: "failed",
             error: err.message || "Unknown error"
           },
@@ -148,15 +148,15 @@ router.post("/trigger-cron", async (req, res) => {
         results.push({ id: campaign.id, status: "failed", error: err.message });
       }
     }
-    
+
     // Get remaining scheduled campaigns
     const remainingScheduled = await prisma.scheduledCampaign.findMany({
       where: {
         status: "scheduled",
       },
     });
-    
-    res.json({ 
+
+    res.json({
       message: "Cron job triggered successfully",
       processedCount: dueCampaigns.length,
       results,
@@ -206,7 +206,7 @@ router.post("/send", verifySender, async (req, res) => {
 
     // Validate required fields
     if (!campaignName || !subject || !fromName || !fromEmail || !recipients?.length) {
-      return res.status(400).json({ 
+      return res.status(400).json({
         error: "Missing required campaign fields",
         deliverabilityTips: [
           "All fields are required",
@@ -218,12 +218,12 @@ router.post("/send", verifySender, async (req, res) => {
 
     // Check for spam trigger words in subject
     const spamTriggers = [
-      'free', 'urgent', 'act now', 'limited time', 'click here', 'make money', 
+      'free', 'urgent', 'act now', 'limited time', 'click here', 'make money',
       'guaranteed', 'no cost', 'risk free', 'winner', 'congratulations'
     ];
     const subjectLower = subject.toLowerCase();
     const hasSpamTriggers = spamTriggers.some(trigger => subjectLower.includes(trigger));
-    
+
     if (hasSpamTriggers) {
       return res.status(400).json({
         error: "Subject contains spam trigger words",
@@ -240,7 +240,7 @@ router.post("/send", verifySender, async (req, res) => {
     let scheduledDateTime = null;
     if (scheduleType === "scheduled" || scheduleType === "recurring") {
       if (!scheduledDate || !scheduledTime) {
-        return res.status(400).json({ 
+        return res.status(400).json({
           error: "Scheduled campaigns require date and time",
           deliverabilityTips: [
             "Provide both date and time for scheduled campaigns",
@@ -248,10 +248,10 @@ router.post("/send", verifySender, async (req, res) => {
           ]
         });
       }
-      
+
       // Create a Date object in the specified timezone
       scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}:00`);
-      
+
       // If timezone is provided, adjust for it
       if (timezone && timezone !== Intl.DateTimeFormat().resolvedOptions().timeZone) {
         // This is a simplified approach - in production, use a library like moment-timezone
@@ -295,14 +295,14 @@ router.post("/send", verifySender, async (req, res) => {
         };
 
         const result = await sendEmail(enhancedCampaign);
-        
+
         await prisma.scheduledCampaign.update({
           where: { id: newCampaign.id },
           data: { status: "sent" },
         });
-        
-        return res.json({ 
-          message: `Campaign sent successfully using ${result.template} template`, 
+
+        return res.json({
+          message: `Campaign sent successfully using ${result.template} template`,
           campaign: newCampaign,
           result: result,
           deliverabilityTips: [
@@ -315,12 +315,12 @@ router.post("/send", verifySender, async (req, res) => {
         console.error("Failed to send immediate campaign:", err);
         await prisma.scheduledCampaign.update({
           where: { id: newCampaign.id },
-          data: { 
+          data: {
             status: "failed",
             error: err.message || "Unknown error"
           },
         });
-        return res.status(500).json({ 
+        return res.status(500).json({
           error: "Failed to send immediate campaign",
           details: err.message,
           deliverabilityTips: [
@@ -332,8 +332,8 @@ router.post("/send", verifySender, async (req, res) => {
       }
     }
 
-    res.json({ 
-      message: `Campaign scheduled successfully with ${template} template`, 
+    res.json({
+      message: `Campaign scheduled successfully with ${template} template`,
       campaign: newCampaign,
       deliverabilityTips: [
         "Monitor your campaign before it sends",
@@ -343,9 +343,9 @@ router.post("/send", verifySender, async (req, res) => {
     });
   } catch (error) {
     console.error("Error scheduling campaign:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to schedule campaign",
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -375,9 +375,9 @@ router.get("/scheduled", async (req, res) => {
     res.json(campaignsWithCount);
   } catch (error) {
     console.error("Error fetching scheduled campaigns:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to fetch scheduled campaigns",
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -404,9 +404,9 @@ router.get("/logs", async (req, res) => {
     res.json(logs);
   } catch (error) {
     console.error("Error fetching logs:", error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to fetch logs",
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -434,7 +434,7 @@ function getLogMessage(status, campaignName, template) {
 router.post("/:id/pause", async (req, res) => {
   try {
     const campaignId = parseInt(req.params.id);
-    
+
     if (isNaN(campaignId)) {
       return res.status(400).json({ error: "Invalid campaign ID" });
     }
@@ -459,9 +459,9 @@ router.post("/:id/pause", async (req, res) => {
     if (error.code === 'P2025') {
       return res.status(404).json({ error: "Campaign not found" });
     }
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to pause campaign",
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -470,7 +470,7 @@ router.post("/:id/pause", async (req, res) => {
 router.post("/:id/resume", async (req, res) => {
   try {
     const campaignId = parseInt(req.params.id);
-    
+
     if (isNaN(campaignId)) {
       return res.status(400).json({ error: "Invalid campaign ID" });
     }
@@ -495,9 +495,9 @@ router.post("/:id/resume", async (req, res) => {
     if (error.code === 'P2025') {
       return res.status(404).json({ error: "Campaign not found" });
     }
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to resume campaign",
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -506,7 +506,7 @@ router.post("/:id/resume", async (req, res) => {
 router.delete("/:id/delete", async (req, res) => {
   try {
     const campaignId = parseInt(req.params.id);
-    
+
     if (isNaN(campaignId)) {
       return res.status(400).json({ error: "Invalid campaign ID" });
     }
@@ -535,9 +535,9 @@ router.delete("/:id/delete", async (req, res) => {
     if (error.code === 'P2025') {
       return res.status(404).json({ error: "Campaign not found" });
     }
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to delete campaign",
-      details: error.message 
+      details: error.message
     });
   }
 });
@@ -546,7 +546,7 @@ router.delete("/:id/delete", async (req, res) => {
 router.post("/:id/delete", async (req, res) => {
   try {
     const campaignId = parseInt(req.params.id);
-    
+
     if (isNaN(campaignId)) {
       return res.status(400).json({ error: "Invalid campaign ID" });
     }
@@ -575,9 +575,9 @@ router.post("/:id/delete", async (req, res) => {
     if (error.code === 'P2025') {
       return res.status(404).json({ error: "Campaign not found" });
     }
-    res.status(500).json({ 
+    res.status(500).json({
       error: "Failed to delete campaign",
-      details: error.message 
+      details: error.message
     });
   }
 });
