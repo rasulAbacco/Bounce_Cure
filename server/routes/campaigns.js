@@ -1,4 +1,4 @@
-//campaigns.js
+// server/routes/campaigns.js
 import express from "express";
 import sgMail from "@sendgrid/mail";
 import { prisma } from "../prisma/prismaClient.js";
@@ -320,8 +320,6 @@ router.post("/send", async (req, res) => {
     });
   }
 });
-
-
 
 router.get("/", async (req, res) => {
   try {
