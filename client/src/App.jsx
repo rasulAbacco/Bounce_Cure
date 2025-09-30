@@ -23,7 +23,7 @@ import Verification from './pages/Verification/Verification';
 import Analytics from './pages/Analytics/Analytics';
 import Support from './pages/Support/Support';
 import PricingDash from './pages/Pricing/PricingDash';
-import PaymentPage from './pages/Pricing/PaymentPage';
+import PaymentPage from './pages/Pricing/components/Checkout';
 import { UserProvider } from "./components/UserContext";
 import NewCampaignWindow from './pages/Campaign/Components/NewCampaignWindow';
 import CreateCampaign from './pages/Campaign/pages/CreateCampaign';
@@ -53,6 +53,10 @@ import TermsConditions from './pages/Terms&Conditions';
 import RefundPolicy from './pages/RefundPolicy';
 import Signin from './pages/Pricing/Signin';
 import VerifydEmail from './pages/Campaign/pages/VerifydEmail';
+import StripeWrapper from './pages/Pricing/components/StripeWrapper';
+import Razorpay from './pages/Pricing/components/Razorpay'
+import Paypal from './pages/Pricing/components/Paypal'
+import CreditCardWrapper from './pages/Pricing/components/CreditCardWrapper' // Optional
 
 function App() {
   return (
@@ -129,6 +133,10 @@ function App() {
             <Route path="/MultimediaCampaign" element={<MultimediaCampaign />} />
             <Route path="/whatsapp" element={<WhatsappCampaign />} />
             <Route path="/sms" element={<SMScampaign />} />
+            <Route path="/stripe" element={<StripeWrapper />} />
+            <Route path="/razorpay" element={<Razorpay />} />
+            <Route path="/paypal" element={<Paypal />} />
+            <Route path="/creditcard" element={<StripeWrapper />} />
 
           </Routes>
 
