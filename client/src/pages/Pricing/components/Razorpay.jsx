@@ -2,7 +2,7 @@
 import React, { useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
-
+const API_URL = import.meta.env.VITE_VRI_URL;
 export default function Razorpay() {
     const location = useLocation();
     const navigate = useNavigate();
@@ -37,7 +37,7 @@ export default function Razorpay() {
                 const userId = 1; // Replace with actual user ID
                 const email = "testuser@example.com"; // Replace or collect from user
 
-                const { data: order } = await axios.post('http://localhost:5000/api/razorpay/create-order', {
+                const { data: order } = await axios.post(`${API_URL}/api/razorpay/create-order`, {
                     amount,
                     userId,
                     planName: plan.planName,
@@ -67,7 +67,7 @@ export default function Razorpay() {
                             amount,
                         };
 
-                        await axios.post("http://localhost:5000/api/razorpay/save-payment", paymentData);
+                        await axios.post(`${API_URL}/api/razorpay/save-payment`, paymentData);
 
                         alert("✅ Payment successful!");
                         navigate('/dashboard');

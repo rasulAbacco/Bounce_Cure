@@ -3,7 +3,7 @@ import { useStripe, useElements, CardElement } from '@stripe/react-stripe-js';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Shield, Lock, CheckCircle, AlertCircle, MapPin } from 'lucide-react';
-
+const API_URL = import.meta.env.VITE_VRI_URL;
 function Stripe() {
     const stripe = useStripe();
     const elements = useElements();
@@ -46,7 +46,7 @@ function Stripe() {
         const userId = 1;
 
         try {
-            const { data } = await axios.post('http://localhost:5000/api/stripe/create-payment-intent', {
+            const { data } = await axios.post(`${API_URL}/api/stripe/create-payment-intent`, {
                 amount,
                 email,
                 userId,
@@ -79,7 +79,7 @@ function Stripe() {
 
                 const paymentIntent = result.paymentIntent;
 
-                await axios.post('http://localhost:5000/api/stripe/save-payment', {
+                await axios.post(`${API_URL}/api/stripe/save-payment`, {
                     userId,
                     email,
                     name,  // Added here
