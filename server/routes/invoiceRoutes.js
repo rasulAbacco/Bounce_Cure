@@ -5,13 +5,8 @@ import PDFDocument from "pdfkit";
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
-import cron from "node-cron";
 import dotenv from "dotenv";
-import { PrismaClient } from '@prisma/client';
-import cors from 'cors';
-import jwt from 'jsonwebtoken';
-import bcrypt from 'bcryptjs';
-import Stripe from 'stripe';
+import Stripe from "stripe";
 
 dotenv.config();
 
@@ -32,129 +27,8 @@ fs.readdirSync(tempDir).forEach(file => {
   }
 });
 
-const prisma = new PrismaClient();
-
-// Test database connection
-prisma.$connect()
-  .then(() => console.log('Database connected successfully'))
-  .catch(err => {
-    console.error('Database connection error:', err);
-    process.exit(1);
-  });
-
-// Create payment for user function
-async function createPaymentForUser(userEmail) {
-  const user = await prisma.user.findUnique({ where: { email: userEmail } });
-
-  if (!user) throw new Error("User not found. Cannot create payment.");
-
-  const payment = await prisma.payment.create({
-    data: {
-      userId: user.id,
-      email: user.email,
-      transactionId: "pi_3ABC123XYZ456", // Stripe Payment Intent ID
-      planName: "Pro Plan",
-      planType: "monthly",
-      provider: "Stripe",
-      contacts: 2500,
-      amount: 103.13,
-      currency: "USD",
-      paymentMethod: "Stripe ending in 4242",
-      cardLast4: "4242",
-      paymentDate: new Date("2025-09-22T18:30:00.000Z"),
-      nextPaymentDate: new Date("2025-10-22T18:30:00.000Z"),
-      status: "success",
-      stripePaymentIntentId: "pi_3ABC123XYZ456" // Store Stripe Payment Intent ID
-    },
-  });
-
-  return payment;
-}
-
-// Authentication middleware
-const authenticateToken = (req, res, next) => {
-  console.log("=== BACKEND AUTH DEBUG ===");
-  
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  
-  console.log("Auth header:", authHeader ? "Present" : "Missing");
-  console.log("Token:", token ? "Present" : "Missing");
-  
-  if (!token) {
-    console.log("ERROR: No token provided");
-    return res.status(401).json({ 
-      success: false, 
-      message: 'Authentication token required',
-      debug: {
-        authHeader: authHeader,
-        token: token
-      }
-    });
-  }
-  
-  console.log("JWT Secret:", process.env.JWT_SECRET ? "Present" : "Missing");
-  
-  jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key', (err, user) => {
-    if (err) {
-      console.log("ERROR: Token verification failed:", err.message);
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Invalid or expired token',
-        debug: {
-          error: err.message,
-          token: token.substring(0, 20) + "..."
-        }
-      });
-    }
-    
-    console.log("SUCCESS: Token verified");
-    console.log("User payload:", user);
-    req.user = user;
-    next();
-  });
-};
-
-// Test authentication endpoint
-router.get("/test-auth", authenticateToken, (req, res) => {
-  console.log("Test auth endpoint called");
-  console.log("User from token:", req.user);
-  
-  res.json({ 
-    success: true, 
-    message: "Authentication is working",
-    user: req.user,
-    debug: {
-      headers: req.headers,
-      token: req.headers.authorization ? req.headers.authorization.substring(0, 20) + "..." : "Missing"
-    }
-  });
-});
-
-// Create a test token endpoint (for development only)
-router.get("/test-token", (req, res) => {
-  const testUser = {
-    userId: 1,
-    email: "test@example.com",
-    firstName: "Test",
-    lastName: "User"
-  };
-  
-  const token = jwt.sign(
-    testUser,
-    process.env.JWT_SECRET || 'your-secret-key',
-    { expiresIn: '1h' }
-  );
-  
-  res.json({ 
-    success: true, 
-    token,
-    user: testUser
-  });
-});
-
 // Test Stripe configuration endpoint
-router.get("/test-stripe", authenticateToken, async (req, res) => {
+router.get("/test-stripe", async (req, res) => {
   try {
     console.log("=== STRIPE CONFIGURATION TEST ===");
     
@@ -177,8 +51,7 @@ router.get("/test-stripe", authenticateToken, async (req, res) => {
       currency: "usd",
       description: "Test payment intent for configuration verification",
       metadata: {
-        test: true,
-        userId: req.user.userId || req.user.id
+        test: true
       }
     });
     
@@ -228,7 +101,7 @@ router.get("/test-stripe", authenticateToken, async (req, res) => {
 });
 
 // Create payment intent endpoint - UPDATED FOR INDIAN REGULATIONS
-router.post("/create-payment-intent", authenticateToken, async (req, res) => {
+router.post("/create-payment-intent", async (req, res) => {
   try {
     console.log("=== CREATE PAYMENT INTENT DEBUG ===");
     console.log("Stripe key available:", !!process.env.STRIPE_SECRET_KEY);
@@ -302,7 +175,6 @@ router.post("/create-payment-intent", authenticateToken, async (req, res) => {
           planName: planName || "Unknown Plan",
           planType: planType || "monthly",
           contacts: contacts || 0,
-          userId: req.user.userId || req.user.id,
           customer_email: customer_email || email
         },
         // Add statement descriptor for better clarity on statements
@@ -382,37 +254,6 @@ router.post("/create-payment-intent", authenticateToken, async (req, res) => {
     res.status(500).json({ 
       success: false, 
       message: error.message || "Failed to create payment intent",
-      debug: {
-        error: error.message,
-        stack: error.stack
-      }
-    });
-  }
-});
-
-// Create payment for user endpoint
-router.post("/create-payment", authenticateToken, async (req, res) => {
-  try {
-    console.log("=== CREATE PAYMENT DEBUG ===");
-    console.log("User from token:", req.user);
-    
-    const userEmail = req.user.email;
-    console.log("Creating payment for user:", userEmail);
-    
-    const payment = await createPaymentForUser(userEmail);
-    
-    console.log("Payment created successfully:", payment);
-    
-    res.json({ 
-      success: true, 
-      message: "Payment created successfully",
-      payment
-    });
-  } catch (error) {
-    console.error("Error creating payment:", error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message || "Failed to create payment",
       debug: {
         error: error.message,
         stack: error.stack
@@ -637,56 +478,9 @@ async function createInvoice(data) {
   });
 }
 
-// Login route
-router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    return res.status(400).json({ success: false, message: "Email and password are required" });
-  }
-
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(email)) {
-    return res.status(400).json({ success: false, message: "Invalid email format" });
-  }
-
-  try {
-    const user = await prisma.user.findUnique({ where: { email } });
-    if (!user) {
-      console.log("User not found:", email);
-      return res.status(400).json({ success: false, message: "Invalid email or password" });
-    }
-
-    console.log("Password from request:", password);
-    console.log("Password from DB:", user.password);
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    console.log("Passwords match?", isMatch);
-
-    if (!isMatch) {
-      console.log("Incorrect password for:", email);
-      return res.status(400).json({ success: false, message: "Invalid email or password" });
-    }
-
-    const token = jwt.sign(
-      { userId: user.id, email: user.email, firstName: user.firstName, lastName: user.lastName },
-      process.env.JWT_SECRET || 'your-secret-key',
-      { expiresIn: '24h' }
-    );
-
-    console.log("Login successful:", email);
-    return res.json({ success: true, token, user: { id: user.id, email: user.email } });
-
-  } catch (err) {
-    console.error("Login error:", err);
-    return res.status(500).json({ success: false, message: "Server error", debug: err.message });
-  }
-});
-
 // Send invoice endpoint
-router.post("/send-invoice", authenticateToken, async (req, res) => {
+router.post("/send-invoice", async (req, res) => {
   console.log("=== SEND INVOICE DEBUG ===");
-  console.log("User from token:", req.user);
   
   const data = req.body;
   console.log("Received invoice data:", data);
@@ -822,225 +616,6 @@ router.post("/send-invoice", authenticateToken, async (req, res) => {
       }
     });
   }
-});
-
-// Save payment data endpoint
-router.post("/save-payment", authenticateToken, async (req, res) => {
-  console.log("=== SAVE PAYMENT DEBUG ===");
-  console.log("User from token:", req.user);
-  console.log('Payment data received:', JSON.stringify(req.body, null, 2));
-  
-  const { 
-    email, 
-    transactionId, 
-    planName, 
-    paymentDate, 
-    nextPaymentDate, 
-    amount, 
-    planType, 
-    provider, 
-    contacts, 
-    currency, 
-    paymentMethod, 
-    cardLast4, 
-    status,
-    stripePaymentIntentId
-  } = req.body;
-  
-  try {
-    // Check if we're in testing mode and stripePaymentIntentId is missing
-    if (!stripePaymentIntentId && process.env.NODE_ENV === 'test') {
-      console.log("TESTING MODE: Using mock stripePaymentIntentId");
-      // Use a mock ID for testing
-      const mockStripePaymentIntentId = "pi_test_" + Date.now();
-      
-      // Create payment with mock data
-      const payment = await prisma.payment.create({
-        data: {
-          userId: req.user.userId || req.user.id,
-          email: email || req.user.email,
-          transactionId: transactionId || mockStripePaymentIntentId,
-          planName: planName || "Test Plan",
-          planType: planType || "monthly",
-          provider: "Stripe",
-          contacts: contacts ? parseInt(contacts) : 0,
-          amount: amount ? parseFloat(amount) : 100.00,
-          currency: currency || "USD",
-          paymentMethod: paymentMethod || "Stripe Test",
-          cardLast4: cardLast4 || "4242",
-          paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
-          nextPaymentDate: nextPaymentDate ? new Date(nextPaymentDate) : null,
-          status: status || "success",
-          stripePaymentIntentId: mockStripePaymentIntentId
-        }
-      });
-      
-      console.log('Payment saved successfully (testing mode):', payment);
-      return res.json({ 
-        success: true, 
-        message: "Payment data saved (testing mode)", 
-        payment,
-        testing: true
-      });
-    }
-    
-    // Validate required fields with detailed error reporting
-    const requiredFields = {
-      email,
-      transactionId,
-      planName,
-      amount,
-      stripePaymentIntentId
-    };
-    
-    const missingFields = Object.entries(requiredFields)
-      .filter(([_, value]) => !value)
-      .map(([key, _]) => key);
-    
-    if (missingFields.length > 0) {
-      console.error("Missing required fields:", missingFields);
-      return res.status(400).json({ 
-        success: false, 
-        message: `Missing required fields: ${missingFields.join(", ")}`,
-        debug: {
-          missingFields,
-          receivedData: req.body
-        }
-      });
-    }
-    
-    // Validate provider is Stripe
-    if (provider && provider.toLowerCase() !== 'stripe') {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Only Stripe payments are supported",
-        debug: {
-          provider: provider
-        }
-      });
-    }
-    
-    // Use userId from token (fallback to id if present)
-    const finalUserId = req.user.userId || req.user.id;
-    
-    if (!finalUserId) {
-      return res.status(400).json({
-        success: false,
-        message: "User ID missing from token. Cannot save payment.",
-        debug: {
-          tokenPayload: req.user
-        }
-      });
-    }
-    
-    console.log("Using user ID from token:", finalUserId);
-    
-    // Verify the payment intent exists in Stripe
-    try {
-      console.log("Verifying payment intent with Stripe:", stripePaymentIntentId);
-      const paymentIntent = await stripe.paymentIntents.retrieve(stripePaymentIntentId);
-      console.log("Payment intent verified:", paymentIntent.id, "Status:", paymentIntent.status);
-      
-      // Use the payment intent data to fill in any missing fields
-      const finalPaymentData = {
-        userId: finalUserId,
-        email: email || paymentIntent.receipt_email,
-        transactionId: transactionId || paymentIntent.id,
-        planName: planName || paymentIntent.metadata.planName || "Unknown Plan",
-        planType: planType || paymentIntent.metadata.planType || "monthly",
-        provider: "Stripe",
-        contacts: contacts ? parseInt(contacts) : (paymentIntent.metadata.contacts ? parseInt(paymentIntent.metadata.contacts) : 0),
-        amount: amount ? parseFloat(amount) : (paymentIntent.amount / 100), // Convert from cents
-        currency: currency || paymentIntent.currency.toUpperCase(),
-        paymentMethod: paymentMethod || "Stripe",
-        cardLast4: cardLast4 || null,
-        paymentDate: paymentDate ? new Date(paymentDate) : new Date(),
-        nextPaymentDate: nextPaymentDate ? new Date(nextPaymentDate) : null,
-        status: status || (paymentIntent.status === 'succeeded' ? 'success' : paymentIntent.status),
-        stripePaymentIntentId: stripePaymentIntentId
-      };
-      
-      console.log("Final payment data to be saved:", finalPaymentData);
-      
-      // Create payment with all required fields
-      const payment = await prisma.payment.create({
-        data: finalPaymentData
-      });
-      
-      console.log('Payment saved successfully:', payment);
-      return res.json({ success: true, message: "Payment data saved", payment });
-      
-    } catch (stripeError) {
-      console.error("Error verifying payment intent with Stripe:", stripeError);
-      return res.status(400).json({ 
-        success: false, 
-        message: "Invalid payment intent ID",
-        debug: {
-          stripeError: stripeError.message,
-          stripePaymentIntentId: stripePaymentIntentId
-        }
-      });
-    }
-    
-  } catch (err) {
-    console.error('Error saving payment:', err);
-    return res.status(500).json({ 
-      success: false, 
-      message: err.message,
-      debug: {
-        error: err.message,
-        stack: err.stack
-      }
-    });
-  }
-});
-
-// Stripe webhook endpoint
-router.post("/stripe-webhook", async (req, res) => {
-  const sig = req.headers['stripe-signature'];
-  let event;
-
-  try {
-    event = stripe.webhooks.constructEvent(req.body, sig, process.env.STRIPE_WEBHOOK_SECRET);
-  } catch (err) {
-    console.log(`Webhook Error: ${err.message}`);
-    return res.status(400).send(`Webhook Error: ${err.message}`);
-  }
-
-  // Handle the event
-  switch (event.type) {
-    case 'payment_intent.succeeded':
-      const paymentIntent = event.data.object;
-      console.log('PaymentIntent was successful!', paymentIntent.id);
-      // Update payment status in your database
-      try {
-        await prisma.payment.updateMany({
-          where: { stripePaymentIntentId: paymentIntent.id },
-          data: { status: 'success' }
-        });
-      } catch (dbError) {
-        console.error('Error updating payment status:', dbError);
-      }
-      break;
-    case 'payment_intent.payment_failed':
-      const failedPayment = event.data.object;
-      console.log('PaymentIntent failed!', failedPayment.id);
-      // Update payment status in your database
-      try {
-        await prisma.payment.updateMany({
-          where: { stripePaymentIntentId: failedPayment.id },
-          data: { status: 'failed' }
-        });
-      } catch (dbError) {
-        console.error('Error updating payment status:', dbError);
-      }
-      break;
-    default:
-      console.log(`Unhandled event type ${event.type}`);
-  }
-
-  // Return a 200 response to acknowledge receipt of the event
-  res.json({received: true});
 });
 
 // Global error handler

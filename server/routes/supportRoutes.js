@@ -1,7 +1,7 @@
 import express from "express";
 import multer from "multer";
 import { prisma } from "../prisma/prismaClient.js";
-import { sendEmail } from "../utils/emailService.js";
+import  sendEmail  from "../utils/emailService.js";
 import { protect } from "../middleware/authMiddleware.js";
 import supportMiddleware from "../middleware/supportMiddleware.js";
 import jwt from "jsonwebtoken";

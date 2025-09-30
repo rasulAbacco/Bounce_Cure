@@ -82,9 +82,14 @@ app.use(cors({
   },
   credentials: true
 }));
+app.use(express.json());
+
+app.use((req, res, next) => {
+  console.log(`📥 [${req.method}] ${req.url} | Body:`, req.body);
+  next();
+});
 
 // ✅ Use only express body parsers
-app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // Routes
