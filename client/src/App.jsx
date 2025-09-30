@@ -54,6 +54,9 @@ import RefundPolicy from './pages/RefundPolicy';
 import Signin from './pages/Pricing/Signin';
 import VerifydEmail from './pages/Campaign/pages/VerifydEmail';
 import ProtectedRoute from "./components/ProtectedRoute";
+import CampaignTextEditor from './pages/Campaign/Components/Editor/CampaignTextEditor';
+import PrivacyPolicy from './pages/PrivacyPolicy';
+
 
 function App() {
   return (
@@ -98,6 +101,7 @@ function App() {
             <Route path="/signin" element={<Signin />} />
             <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
             <Route path="/faq" element={<FaqSection />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
@@ -131,6 +135,8 @@ function App() {
             <Route path="/MultimediaCampaign" element={<ProtectedRoute><MultimediaCampaign /></ProtectedRoute>} />
             <Route path="/whatsapp" element={<ProtectedRoute><WhatsappCampaign /></ProtectedRoute>} />
             <Route path="/sms" element={<ProtectedRoute><SMScampaign /></ProtectedRoute>} />
+            <Route path="/texteditor" element={<ProtectedRoute><CampaignTextEditor /></ProtectedRoute>} />
+
 
           </Routes>
 
