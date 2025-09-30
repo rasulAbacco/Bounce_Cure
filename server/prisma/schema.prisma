@@ -425,6 +425,7 @@ model SentEmail {
   campaign   ScheduledCampaign @relation(fields: [campaignId], references: [id])
 }
 
+// Your existing models stay the same:
 model Campaign {
   id              Int      @id @default(autoincrement())
   name            String
