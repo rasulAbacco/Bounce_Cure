@@ -1296,7 +1296,14 @@ const Toolbox = ({
         >
           Exit
         </button>
+        <button
+              onClick={() => navigate("/texteditor")}
+              className="px-5 py-4 rounded-md bg-green-500 text-white hover:bg-green-600 text-sm"
+            >
+              Text Editor Page
+        </button>
       </div>
+      
 
       {/* Exit Modal */}
       {showExitModal && (
