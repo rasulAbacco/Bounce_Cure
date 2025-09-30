@@ -12,7 +12,7 @@ import {
 import { PipelineChart, ConversionChart } from "../../../components/DealCharts";
 import { FaEdit } from "react-icons/fa";
 import { AiFillDelete } from "react-icons/ai";
-const VITE_VRI_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_VRI_URL;
 
 function Deals() {
   const [deals, setDeals] = useState([
@@ -77,7 +77,7 @@ function Deals() {
     try {
       if (editingId) {
         // Update existing deal
-        const res = await fetch(`${VITE_VRI_URL}/deals/${editingId}`, {
+        const res = await fetch(`${API_URL}/deals/${editingId}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(newDeal),
@@ -91,7 +91,7 @@ function Deals() {
         setEditingId(null);
       } else {
         // Add new deal
-        const res = await fetch("http://localhost:5000/deals", {
+        const res = await fetch(`${API_URL}/deals`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -131,7 +131,7 @@ function Deals() {
   //   if (!newDeal.name.trim() || !newDeal.client.trim()) return;
 
   //   try {
-  //     const res = await fetch("http://localhost:5000/deals", {
+  //     const res = await fetch(`${API_URL}/deals`, {
   //       method: "POST",
   //       headers: {
   //         "Content-Type": "application/json",
@@ -163,7 +163,7 @@ function Deals() {
     if (!window.confirm("Are you sure you want to delete this deal?")) return;
 
     try {
-      await fetch(`http://localhost:5000/deals/${id}`, {
+      await fetch(`${API_URL}/deals/${id}`, {
         method: "DELETE",
       });
 
@@ -191,7 +191,7 @@ function Deals() {
 
   useEffect(() => {
     const fetchDeals = async () => {
-      const res = await fetch("http://localhost:5000/deals");
+      const res = await fetch(`${API_URL}/deals`);
       const data = await res.json();
       setDeals(data);
     };

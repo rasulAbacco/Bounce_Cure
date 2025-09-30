@@ -1,7 +1,7 @@
 // authRoutes.js
 import express from 'express';
 import { signup, login } from '../controllers/authController.js';
-import { protect, authMiddleware } from "../middleware/authMiddleware.js";
+import { protect, verifyToken, logoutSession } from "../middleware/authMiddleware.js";
 import {
     sendVerificationEmail,
     verifyEmail,

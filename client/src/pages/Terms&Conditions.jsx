@@ -5,7 +5,7 @@ import PageLayout from "../components/PageLayout"; // Adjust path as needed
 const TermsConditions = () => {
   return (
     <PageLayout>
-      <div className="relative bg-black text-middle font-light text-sm py-8 px-10 leading-relaxed min-h-screen max-w-[80vw] m-auto">
+      <div className="relative text-middle font-light text-sm py-8 px-10 leading-relaxed min-h-screen max-w-[80vw] m-auto">
         {/* Watermark */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 text-white text-[120px] font-bold opacity-5 select-none pointer-events-none whitespace-nowrap">
           TERMS & CONDITIONS

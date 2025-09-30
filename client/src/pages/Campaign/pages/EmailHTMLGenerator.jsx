@@ -13,7 +13,6 @@ const EmailHTMLGenerator = ({ elements, canvasBackgroundColor, formData }) => {
       zIndex: element.zIndex || 0,
       boxSizing: 'border-box',
     };
-
     const commonTextStyles = {
       fontFamily: element.fontFamily || 'Arial, sans-serif',
       fontSize: `${element.fontSize || 16}px`,
@@ -25,12 +24,11 @@ const EmailHTMLGenerator = ({ elements, canvasBackgroundColor, formData }) => {
       lineHeight: '1.4',
       wordWrap: 'break-word',
     };
-
     switch (element.type) {
       case "heading":
       case "subheading":
       case "paragraph":
-      case "blockquote":
+      case "blockquote": {
         const headingStyles = {
           ...commonStyles,
           ...commonTextStyles,
@@ -38,7 +36,7 @@ const EmailHTMLGenerator = ({ elements, canvasBackgroundColor, formData }) => {
           padding: '8px',
           ...(element.type === "heading" && { fontWeight: 'bold' }),
           ...(element.type === "subheading" && { fontWeight: '600' }),
-          ...(element.type === "blockquote" && { 
+          ...(element.type === "blockquote" && {
             fontStyle: 'italic',
             paddingLeft: '16px',
             borderLeft: '4px solid #ccc'
@@ -46,11 +44,11 @@ const EmailHTMLGenerator = ({ elements, canvasBackgroundColor, formData }) => {
         };
         return `<div style="${styleToString(headingStyles)}">${element.content || (
           element.type === "heading" ? "Heading" :
-          element.type === "subheading" ? "Subheading" :
-          element.type === "blockquote" ? "Blockquote" : "Paragraph text"
+            element.type === "subheading" ? "Subheading" :
+              element.type === "blockquote" ? "Blockquote" : "Paragraph text"
         )}</div>`;
-
-      case "button":
+      }
+      case "button": {
         const buttonStyles = {
           ...commonStyles,
           backgroundColor: element.backgroundColor || "#007bff",
@@ -70,7 +68,8 @@ const EmailHTMLGenerator = ({ elements, canvasBackgroundColor, formData }) => {
         };
         return `<a href="${element.link || '#'}" target="_blank" style="${styleToString(buttonStyles)}">${element.content || "Click Me"}</a>`;
 
-      case "card":
+      }
+      case "card": {
         const cardStyles = {
           ...commonStyles,
           backgroundColor: element.backgroundColor || "#FFFFFF",
@@ -94,7 +93,8 @@ const EmailHTMLGenerator = ({ elements, canvasBackgroundColor, formData }) => {
         };
         return `<div style="${styleToString(cardStyles)}">${element.content || "Card content goes here"}</div>`;
 
-      case "rectangle":
+      }
+      case "rectangle": {
         const rectStyles = {
           ...commonStyles,
           backgroundColor: element.backgroundColor || "#4ECDC4",
@@ -103,7 +103,8 @@ const EmailHTMLGenerator = ({ elements, canvasBackgroundColor, formData }) => {
         };
         return `<div style="${styleToString(rectStyles)}"></div>`;
 
-      case "circle":
+      }
+      case "circle": {
         const circleStyles = {
           ...commonStyles,
           backgroundColor: element.backgroundColor || "#FF6B6B",
@@ -111,7 +112,8 @@ const EmailHTMLGenerator = ({ elements, canvasBackgroundColor, formData }) => {
           borderRadius: '50%',
         };
         return `<div style="${styleToString(circleStyles)}"></div>`;
-
+      }
+        
       case "triangle":
         return `<div style="${styleToString({
           ...commonStyles,

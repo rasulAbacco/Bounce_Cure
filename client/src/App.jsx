@@ -52,7 +52,10 @@ import TermsConditions from './pages/Terms&conditions';
 import RefundPolicy from './pages/RefundPolicy';
 import Signin from './pages/Pricing/Signin';
 import VerifydEmail from './pages/Campaign/pages/VerifydEmail';
-import StripeInfoPage from './pages/Pricing/StripeInfoPage';
+
+
+import ProtectedRoute from "./components/ProtectedRoute";
+
 
 function App() {
   return (
@@ -92,45 +95,52 @@ function App() {
             <Route path="/features" element={<Features />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/pricing" element={<Pricing />} />
-            <Route path="/payment" element={<PaymentPage />} />
-            <Route path="/services/bulk-verification" element={<BulkVerification />} />
-            <Route path="/faq" element={<FaqSection />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/contacts" element={<Contacts />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/email-campaign" element={<Campaign />} />
-            <Route path="/automation" element={<Automation />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/auth" element={<UserAuthentication />} />
-            <Route path="/verification" element={<Verification />} />
-            <Route path="/support" element={<Support />} />
-            <Route path='/phoneValidation' element={<PhoneValidation/>}/>
-            <Route path='/pricingdash' element={<PricingDash />} />
-            <Route path='/new-campaign' element={<NewCampaignWindow />} />
-            <Route path="/create" element={<CreateCampaign />} />
-            <Route path="/editor" element={<EditorPage />} />
-            <Route path="/leads" element={<Leads />} />
-            <Route path="/contactsPage" element={<ContactsPage />} />
-            <Route path="/deals" element={<Deals />} />
-            <Route path="/tasks" element={<Tasks />} />
-            <Route path="/templetes" element={<Templets />} />
-            <Route path="/canva" element={<CanvasArea />} />
-            <Route path="/send-campaign" element={<SendCampaign />} />
-            <Route path="/verifydemail" element={<VerifydEmail />} /> // Old route for backward compatibility
-            <Route path="/all-templates" element={<AllTemplates />} />
-            <Route path="/verify-email" element={<VerifyEmail />} />
-            <Route path="/WatsupCampaign" element={<WatsupCampaign />} />
-            <Route path="/smscampaign" element={<SMSCampaign />} />
-            <Route path="/terms-and-conditions" element={<TermsConditions />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />
-            <Route path="/signin" element={<Signin />} />
             <Route path="/signupd" element={<Signupd />} />
+
             <Route path="/reset-password" element={<ResetPasswordPage />} />
 
             <Route path="/MultimediaCampaign" element={<MultimediaCampaign />} />
             <Route path="/whatsapp" element={<WhatsappCampaign />} />
             <Route path="/sms" element={<SMScampaign />} />
-            <Route path="/stripe" element={<StripeInfoPage />} />
+ 
+            <Route path="/signin" element={<Signin />} />
+            <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
+            <Route path="/faq" element={<FaqSection />} />
+            
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
+            <Route path="/services/bulk-verification" element={<ProtectedRoute><BulkVerification /></ProtectedRoute>} />
+            <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+            <Route path="/email-campaign" element={<ProtectedRoute><Campaign /></ProtectedRoute>} />
+            <Route path="/automation" element={<ProtectedRoute><Automation /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
+            <Route path="/auth" element={<ProtectedRoute><UserAuthentication /></ProtectedRoute>} />
+            <Route path="/verification" element={<ProtectedRoute><Verification /></ProtectedRoute>} />
+            <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
+            <Route path='/phoneValidation' element={<ProtectedRoute><PhoneValidation/></ProtectedRoute>}/>
+            <Route path='/pricingdash' element={<ProtectedRoute><PricingDash /></ProtectedRoute>} />
+            <Route path='/new-campaign' element={<ProtectedRoute><NewCampaignWindow /></ProtectedRoute>} />
+            <Route path="/create" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
+            <Route path="/editor" element={<ProtectedRoute><EditorPage /></ProtectedRoute>} />
+            <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
+            <Route path="/contactsPage" element={<ProtectedRoute><ContactsPage /></ProtectedRoute>} />
+            <Route path="/deals" element={<ProtectedRoute><Deals /></ProtectedRoute>} />
+            <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
+            <Route path="/templetes" element={<ProtectedRoute><Templets /></ProtectedRoute>} />
+            <Route path="/canva" element={<ProtectedRoute><CanvasArea /></ProtectedRoute>} />
+            <Route path="/send-campaign" element={<ProtectedRoute><SendCampaign /></ProtectedRoute>} />
+            <Route path="/verifydemail" element={<ProtectedRoute><VerifydEmail /></ProtectedRoute>} /> // Old route for backward compatibility
+            <Route path="/all-templates" element={<ProtectedRoute><AllTemplates /></ProtectedRoute>} />
+            <Route path="/verify-email" element={<ProtectedRoute><VerifyEmail /></ProtectedRoute>} />
+            <Route path="/WatsupCampaign" element={<ProtectedRoute><WatsupCampaign /></ProtectedRoute>} />
+            <Route path="/smscampaign" element={<ProtectedRoute><SMSCampaign /></ProtectedRoute>} />
+            <Route path="/terms-and-conditions" element={<TermsConditions />} />
+            <Route path="/MultimediaCampaign" element={<ProtectedRoute><MultimediaCampaign /></ProtectedRoute>} />
+            <Route path="/whatsapp" element={<ProtectedRoute><WhatsappCampaign /></ProtectedRoute>} />
+            <Route path="/sms" element={<ProtectedRoute><SMScampaign /></ProtectedRoute>} />
+
 
           </Routes>
 

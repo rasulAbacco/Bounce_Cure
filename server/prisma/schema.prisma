@@ -193,10 +193,10 @@ model Deal {
 
 model EmailAccount {
   id       Int     @id @default(autoincrement())
-  userId   Int
+  userId   Int? // optional foreign key
   email    String  @unique
   provider String?
-  authType String // "password" or "oauth"
+  authType String
   imapHost String
   imapPort Int
   imapUser String
@@ -213,10 +213,8 @@ model EmailAccount {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relation to User
-  user User @relation(fields: [userId], references: [id])
-
-  // Relation to Emails
+  // Optional relation to User
+  user   User?   @relation(fields: [userId], references: [id])
   emails Email[]
 }
 
@@ -356,28 +354,6 @@ model Verification {
   @@index([email])
 }
 
-model Conversation {
-  id        Int       @id @default(autoincrement())
-  subject   String?
-  snippet   String? // 👈 add this
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  messages  Message[]
-}
-
-model Message {
-  id             Int           @id @default(autoincrement())
-  conversationId Int?
-  conversation   Conversation? @relation(fields: [conversationId], references: [id])
-  body           String
-  from           String
-  to             String
-  fromName       String?
-  fromEmail      String?
-  direction      String
-  sentAt         DateTime      @default(now())
-}
-
 model MmsCampaign {
   id         Int            @id @default(autoincrement())
   name       String
@@ -448,6 +424,7 @@ model SentEmail {
   campaign   ScheduledCampaign @relation(fields: [campaignId], references: [id])
 }
 
+// Your existing models stay the same:
 model Campaign {
   id              Int      @id @default(autoincrement())
   name            String
@@ -487,4 +464,18 @@ model CampaignVerifiedEmail {
   updatedAt         DateTime  @updatedAt
 
   @@map("campaign_verified_emails")
+}
+
+model VerifiedSender {
+  id               Int       @id @default(autoincrement())
+  email            String    @unique
+  fromName         String?
+  verified         Boolean   @default(false)
+  verifiedAt       DateTime?
+  sendgridSenderId Int? // <-- store SendGrid sender identity id
+  sendgridStatus   String? // <-- store SendGrid status (for debugging)
+  token            String?
+  tokenExpiresAt   DateTime?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
 }

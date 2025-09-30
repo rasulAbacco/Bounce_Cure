@@ -3,7 +3,7 @@ import DashboardLayout from "../../components/DashboardLayout";
 import { useNotificationContext } from "../../components/NotificationContext";
 import Select from "react-select";
 import { Toaster, toast } from "react-hot-toast";
-
+const API_URL = import.meta.env.VITE_VRI_URL;
 // Rotating SVG wrapper
 const RotatingSvg = ({ className = "", children, ...props }) => (
   <svg
@@ -333,7 +333,7 @@ function DangerSection() {
 
       await toast.promise(
         (async () => {
-          const res = await fetch("http://localhost:5000/api/settings/delete-account", {
+          const res = await fetch(`${API_URL}/api/settings/delete-account`, {
             method: "DELETE",
             headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
             credentials: "include",

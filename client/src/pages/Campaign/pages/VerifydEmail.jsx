@@ -13,7 +13,7 @@ function VerifyEmail() {
   const [manualToken, setManualToken] = useState('');
 
   // ✅ API should point to backend
-  const API_URL = 'http://localhost:5000/api';
+  const API_URL = import.meta.env.VITE_VRI_URL;
 
   useEffect(() => {
     if (token) {

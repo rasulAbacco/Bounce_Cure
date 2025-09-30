@@ -1,5 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
-const API_URL = "http://localhost:5000/orders"; // Your Express API
+const API_URL1 = import.meta.env.VITE_VRI_URL;
+const API_URL = `${API_URL1}/orders`; // Your Express API
+
 const Orders = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
