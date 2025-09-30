@@ -30,8 +30,8 @@ import CreateCampaign from './pages/Campaign/pages/CreateCampaign';
 import EditorPage from './pages/Campaign/pages/EditorPage';
 import PhoneValidation from './pages/PhoneValidation/PhoneValidation';
 import { Toaster } from 'react-hot-toast';
-import { NotificationProvider } from "./components/NotificationContext"; 
-import ContactsPage from'./pages/ContactManagement/pages/ContactsPage';
+import { NotificationProvider } from "./components/NotificationContext";
+import ContactsPage from './pages/ContactManagement/pages/ContactsPage';
 import Leads from './pages/ContactManagement/pages/Leads';
 import Deals from './pages/ContactManagement/pages/Deals';
 import Tasks from './pages/ContactManagement/pages/Tasks';
@@ -48,8 +48,8 @@ import Signupd from './pages/Pricing/Signupd';
 
 import MultimediaCampaign from './pages/Multimedia/MultimediCampaign';
 import WhatsappCampaign from './pages/Multimedia/WhatsappCampaign';
-import SMScampaign from './pages/Multimedia/SMScampaign';
-import TermsConditions from './pages/Terms&conditions';
+import SMScampaign from './pages/Multimedia/SMSCampaign';
+import TermsConditions from './pages/Terms&Conditions';
 import RefundPolicy from './pages/RefundPolicy';
 import Signin from './pages/Pricing/Signin';
 import VerifydEmail from './pages/Campaign/pages/VerifydEmail';
@@ -110,7 +110,7 @@ function App() {
             <Route path="/signin" element={<Signin />} />
             <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
             <Route path="/faq" element={<FaqSection />} />
-            
+
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
             <Route path="/services/bulk-verification" element={<ProtectedRoute><BulkVerification /></ProtectedRoute>} />
@@ -122,7 +122,7 @@ function App() {
             <Route path="/auth" element={<ProtectedRoute><UserAuthentication /></ProtectedRoute>} />
             <Route path="/verification" element={<ProtectedRoute><Verification /></ProtectedRoute>} />
             <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
-            <Route path='/phoneValidation' element={<ProtectedRoute><PhoneValidation/></ProtectedRoute>}/>
+            <Route path='/phoneValidation' element={<ProtectedRoute><PhoneValidation /></ProtectedRoute>} />
             <Route path='/pricingdash' element={<ProtectedRoute><PricingDash /></ProtectedRoute>} />
             <Route path='/new-campaign' element={<ProtectedRoute><NewCampaignWindow /></ProtectedRoute>} />
             <Route path="/create" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
