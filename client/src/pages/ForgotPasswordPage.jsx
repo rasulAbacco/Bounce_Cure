@@ -1,21 +1,31 @@
 import React, { useState } from 'react';
 import { Mail, ArrowRight, Shield, Clock, CheckCircle, ArrowLeft, RefreshCw, Lock } from 'lucide-react';
-import PageLayout from '../components/PageLayout'; // Make sure this exists
-
+import PageLayout from '../components/PageLayout';
 import toast from "react-hot-toast";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const ModernForgotPassword = () => {
     const [email, setEmail] = useState('');
-    const [step, setStep] = useState('request'); // 'request' or 'sent'
+    const [step, setStep] = useState('request');
     const [focusedField, setFocusedField] = useState('');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState('');
 
-    // ✅ Submit forgot password request
+    const validateEmail = (email) => {
+        const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        return re.test(email);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        
+        if (!validateEmail(email)) {
+            setError("Please enter a valid email address");
+            toast.error("Please enter a valid email address");
+            return;
+        }
+        
         setIsLoading(true);
         setError('');
 
@@ -24,27 +34,26 @@ const ModernForgotPassword = () => {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ email }),
-                
-                
             });
 
             const data = await res.json();
 
             if (res.ok) {
                 setStep('sent');
+                toast.success("If your email is registered, you will receive a reset link shortly.");
             } else {
                 setError(data.message || 'Something went wrong.');
-                toast.error('Something went wrong.')
+                toast.error(data.message || 'Something went wrong.');
             }
         } catch (err) {
+            console.error("Request error:", err);
             setError('Server error. Please try again later.');
-            toast.error('Server error. Please try again later.')
+            toast.error('Server error. Please try again later.');
         } finally {
             setIsLoading(false);
         }
     };
 
-    // ✅ Resend reset link
     const handleResend = async () => {
         setIsLoading(true);
         setError('');
@@ -58,11 +67,16 @@ const ModernForgotPassword = () => {
 
             const data = await res.json();
 
-            if (!res.ok) {
+            if (res.ok) {
+                toast.success("Reset link resent. Please check your inbox.");
+            } else {
                 setError(data.message || 'Something went wrong.');
+                toast.error(data.message || 'Something went wrong.');
             }
         } catch (err) {
+            console.error("Resend error:", err);
             setError('Server error. Please try again later.');
+            toast.error('Server error. Please try again later.');
         } finally {
             setIsLoading(false);
         }
@@ -189,12 +203,16 @@ const ModernForgotPassword = () => {
                                         />
                                     </div>
 
-                                    {error && <p className="text-red-400 text-sm">{error}</p>}
+                                    {error && (
+                                        <div className="text-red-400 text-sm bg-red-900/20 p-3 rounded-lg">
+                                            {error}
+                                        </div>
+                                    )}
 
                                     <button
                                         type="submit"
                                         disabled={!email || isLoading}
-                                        className="w-full bg-white text-black font-bold py-2.5 sm:py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                        className="w-full bg-white text-black font-bold py-2.5 sm:py-3 px-4 rounded-xl transition-all flex items-center justify-center gap-2 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         {isLoading ? (
                                             <>
@@ -211,13 +229,24 @@ const ModernForgotPassword = () => {
                                 </form>
                             ) : (
                                 <div className="text-center">
-                                    <CheckCircle className="w-10 h-10 text-white mx-auto mb-4" />
-                                    <h2 className="text-2xl font-bold text-white">Check Your Email</h2>
-                                    <p className="text-gray-300">We’ve sent a password reset link to <b>{email}</b></p>
+                                    <div className="inline-flex items-center justify-center w-16 h-16 bg-green-500/20 rounded-full mb-4">
+                                        <CheckCircle className="w-8 h-8 text-green-400" />
+                                    </div>
+                                    <h2 className="text-2xl sm:text-3xl font-bold text-white mb-2">Check Your Email</h2>
+                                    <p className="text-gray-300 mb-6">
+                                        We've sent a password reset link to <span className="text-white font-semibold">{email}</span>
+                                    </p>
+                                    
+                                    {error && (
+                                        <div className="text-red-400 text-sm bg-red-900/20 p-3 rounded-lg mb-4">
+                                            {error}
+                                        </div>
+                                    )}
+                                    
                                     <button
                                         onClick={handleResend}
                                         disabled={isLoading}
-                                        className="mt-6 w-full bg-white/10 rounded-xl py-2 px-4 text-white font-medium flex items-center justify-center gap-2"
+                                        className="w-full bg-white/10 rounded-xl py-2.5 px-4 text-white font-medium flex items-center justify-center gap-2 hover:bg-white/20 transition-all disabled:opacity-50"
                                     >
                                         {isLoading ? (
                                             <>
@@ -235,7 +264,7 @@ const ModernForgotPassword = () => {
                             )}
 
                             <div className="mt-6 text-center">
-                                <a href="/login" className="inline-flex items-center gap-2 text-gray-400 hover:text-white">
+                                <a href="/login" className="inline-flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
                                     <ArrowLeft className="w-4 h-4" /> Back to Sign In
                                 </a>
                             </div>

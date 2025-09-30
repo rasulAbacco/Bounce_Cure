@@ -31,7 +31,7 @@ import EditorPage from './pages/Campaign/pages/EditorPage';
 import PhoneValidation from './pages/PhoneValidation/PhoneValidation';
 import { Toaster } from 'react-hot-toast';
 import { NotificationProvider } from "./components/NotificationContext"; 
-import ContactsPage from'./pages/ContactManagement/pages/ContactsPage';
+import ContactsPage from './pages/ContactManagement/pages/ContactsPage';
 import Leads from './pages/ContactManagement/pages/Leads';
 import Deals from './pages/ContactManagement/pages/Deals';
 import Tasks from './pages/ContactManagement/pages/Tasks';
@@ -39,7 +39,6 @@ import ResetPasswordPage from './pages/ResetPasswordPage';
 import VerifyEmail from "./pages/VerifyEmail";
 import Templets from './pages/Campaign/pages/Templets';
 import CanvasArea from './pages/Campaign/Components/Editor/CanvasArea';
-import { useNavigate } from "react-router-dom";
 import SendCampaign from './pages/Campaign/pages/SendCampaign';
 import AllTemplates from './pages/Campaign/pages/AllTemplats';
 import WatsupCampaign from './pages/WatsupCampaign';
@@ -53,9 +52,12 @@ import TermsConditions from './pages/Terms&conditions';
 import RefundPolicy from './pages/RefundPolicy';
 import Signin from './pages/Pricing/Signin';
 import VerifydEmail from './pages/Campaign/pages/VerifydEmail';
+
+
 import ProtectedRoute from "./components/ProtectedRoute";
 import CampaignTextEditor from './pages/Campaign/Components/Editor/CampaignTextEditor';
 import PrivacyPolicy from './pages/PrivacyPolicy';
+
 
 
 function App() {
@@ -98,6 +100,13 @@ function App() {
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />
             <Route path="/signupd" element={<Signupd />} />
+
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+
+            <Route path="/MultimediaCampaign" element={<MultimediaCampaign />} />
+            <Route path="/whatsapp" element={<WhatsappCampaign />} />
+            <Route path="/sms" element={<SMScampaign />} />
+ 
             <Route path="/signin" element={<Signin />} />
             <Route path="/reset-password/:token" element={<ResetPasswordPage />} />
             <Route path="/faq" element={<FaqSection />} />
@@ -136,6 +145,7 @@ function App() {
             <Route path="/whatsapp" element={<ProtectedRoute><WhatsappCampaign /></ProtectedRoute>} />
             <Route path="/sms" element={<ProtectedRoute><SMScampaign /></ProtectedRoute>} />
             <Route path="/texteditor" element={<ProtectedRoute><CampaignTextEditor /></ProtectedRoute>} />
+
 
 
           </Routes>
