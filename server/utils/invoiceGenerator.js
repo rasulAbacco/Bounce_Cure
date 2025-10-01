@@ -12,11 +12,15 @@ const fonts = {
 const printer = new PdfPrinter(fonts);
 
 export const generateInvoice = async (payment) => {
-    const subtotal = Number(payment.amount || 0);
-    const discount = Number(payment.discount || 0);
-    const planPrice = Number(payment.planPrice || subtotal);
-    const tax = subtotal * 0.1;
-    const total = subtotal - discount + tax;
+    const planPrice = Number(payment.amount || 0);      // Plan price before discount
+    const discount = Number(payment.discount || 0);    // Discount amount (in $)
+    const subtotal = planPrice + discount;             // Price after discount
+    const tax = planPrice * 0.1;                        // 10% tax on amount after discount
+    const total = planPrice;
+    const billingAddressLines = payment.billingAddress
+        ? payment.billingAddress.split(',')
+        : [];
+    console.log("Subtotal:", subtotal, "Discount:", discount, "Plan Price:", planPrice, "Tax:", tax, "Total:", total);
 
     const docDefinition = {
         background: [
@@ -133,35 +137,25 @@ export const generateInvoice = async (payment) => {
                                 margin: [0, 0, 0, 5]
                             },
                             {
-                                text: payment.name || "undefined.undefined",
+                                text: payment.name || "Customer Name",
                                 fontSize: 11,
                                 color: "#FFFFFF",
                                 bold: true,
                                 margin: [0, 0, 0, 4]
                             },
                             {
-                                text: payment.email || "ratnalakcode3@gmail.com",
+                                text: payment.email || "customer@email.com",
                                 fontSize: 9,
                                 color: "#ffffff",
                                 margin: [0, 0, 0, 4]
                             },
-                            {
-                                text: "HMT layout vidyaranyapura Vidyaranyapura Bangalore,",
+                            ...billingAddressLines.map(line => ({
+                                text: line.trim(),
                                 fontSize: 9,
                                 color: "#ffffff",
                                 margin: [0, 0, 0, 4]
-                            },
-                            {
-                                text: "KA 560094",
-                                fontSize: 9,
-                                color: "#ffffff",
-                                margin: [0, 0, 0, 4]
-                            },
-                            {
-                                text: "Place of Supply: KARNATAKA (29) India",
-                                fontSize: 9,
-                                color: "#ffffff"
-                            },
+                            }))
+
                         ],
                         width: "48%",
                     },
@@ -244,8 +238,23 @@ export const generateInvoice = async (payment) => {
                                             { text: String(payment.contacts || 5000), fontSize: 9, color: "#FFFFFF", alignment: "left", border: [true, false, true, true], borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"] }
                                         ],
                                         [
-                                            { text: "Discount", fontSize: 9, color: "#C4A052", border: [true, false, true, true], borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"] },
-                                            { text: discount > 0 ? `50% off for 12 months - $${discount.toFixed(2)}` : "No discount", fontSize: 9, color: "#FFFFFF", alignment: "left", border: [true, false, true, true], borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"] }
+                                            {
+                                                text: "Discount",
+                                                fontSize: 9,
+                                                color: "#C4A052",
+                                                border: [true, false, true, true],
+                                                borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"]
+                                            },
+                                            {
+                                                text: discount > 0
+                                                    ? `50% off for 12 months - $${discount.toFixed(2)}`
+                                                    : "No discount",
+                                                fontSize: 9,
+                                                color: "#FFFFFF",
+                                                alignment: "left",
+                                                border: [true, false, true, true],
+                                                borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"]
+                                            }
                                         ],
                                     ],
                                 },
@@ -284,37 +293,23 @@ export const generateInvoice = async (payment) => {
                                                 fontSize: 9,
                                                 color: "#C4A052",
                                                 border: [true, false, true, true],
-                                                borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"]
+                                                borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"],
                                             },
                                             {
-                                                text: (() => {
-                                                    function addOneMonth(date) {
-                                                        const result = new Date(date);
-                                                        result.setMonth(result.getMonth() + 1);
-                                                        if (result.getDate() < date.getDate()) {
-                                                            result.setDate(0); // fallback to last day of previous month
-                                                        }
-                                                        return result;
-                                                    }
-
-                                                    const paymentDate = new Date(payment.paymentDate);
-                                                    return addOneMonth(paymentDate).toLocaleDateString('en-US', {
-                                                        month: 'long',
-                                                        day: 'numeric',
-                                                        year: 'numeric'
-                                                    });
-                                                })(),
+                                                text: payment.nextPaymentDate
+                                                    ? new Date(payment.nextPaymentDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+                                                    : "N/A",
                                                 fontSize: 9,
                                                 color: "#FFFFFF",
                                                 alignment: "left",
                                                 border: [true, false, true, true],
-                                                borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"]
-                                            }
+                                                borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"],
+                                            },
                                         ],
                                     ],
                                 },
                                 layout: {
-                                    fillColor: () => "#0a0a0a",
+                                    fillColor: (rowIndex) => "#0a0a0a",
                                     paddingLeft: () => 8,
                                     paddingRight: () => 8,
                                     paddingTop: () => 6,
@@ -322,9 +317,8 @@ export const generateInvoice = async (payment) => {
                                 },
                             },
                         ],
-                        width: "48%",
+                        width: "56%",
                     },
-                    { text: "", width: "4%" },
 
                     // Payment Summary
                     {
@@ -338,19 +332,34 @@ export const generateInvoice = async (payment) => {
                             },
                             {
                                 table: {
-                                    widths: [100, "*"],
+                                    widths: [120, "*"],
                                     body: [
                                         [
                                             { text: "Plan Price", fontSize: 9, color: "#C4A052", border: [true, true, true, true], borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"] },
-                                            { text: `$${planPrice.toFixed(2)}`, fontSize: 9, color: "#FFFFFF", alignment: "right", border: [true, true, true, true], borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"] }
+                                            { text: `$${(subtotal - tax).toFixed(2)}`, fontSize: 9, color: "#FFFFFF", alignment: "right", border: [true, true, true, true], borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"] }
                                         ],
                                         [
                                             { text: "Subtotal", fontSize: 9, color: "#C4A052", border: [true, false, true, true], borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"] },
-                                            { text: `$${subtotal.toFixed(2)}`, fontSize: 9, color: "#FFFFFF", alignment: "right", border: [true, false, true, true], borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"] }
+                                            { text: `$${(planPrice).toFixed(2)}`, fontSize: 9, color: "#FFFFFF", alignment: "right", border: [true, false, true, true], borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"] }
                                         ],
                                         [
-                                            { text: "Discount", fontSize: 9, color: "#C4A052", border: [true, false, true, true], borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"] },
-                                            { text: `-$${discount.toFixed(2)}`, fontSize: 9, color: "#FF6B6B", alignment: "right", border: [true, false, true, true], borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"] }
+                                            {
+                                                text: "Discount",
+                                                fontSize: 9,
+                                                color: "#C4A052",
+                                                border: [true, false, true, true],
+                                                borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"]
+                                            },
+                                            {
+                                                text: discount > 0
+                                                    ? `- $${discount.toFixed(2)}`
+                                                    : "No discount",
+                                                fontSize: 9,
+                                                color: "#FFFFFF",
+                                                alignment: "left",
+                                                border: [true, false, true, true],
+                                                borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"]
+                                            }
                                         ],
                                         [
                                             { text: "Tax (10%)", fontSize: 9, color: "#C4A052", border: [true, false, true, true], borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"] },
@@ -359,67 +368,52 @@ export const generateInvoice = async (payment) => {
                                     ],
                                 },
                                 layout: {
-                                    fillColor: () => "#0a0a0a",
+                                    fillColor: (rowIndex) => "#0a0a0a",
                                     paddingLeft: () => 8,
                                     paddingRight: () => 8,
                                     paddingTop: () => 6,
                                     paddingBottom: () => 6,
                                 },
                             },
-
-                            // Total Box
                             {
-                                table: {
-                                    widths: [100, "*"],
-                                    body: [
-                                        [
-                                            { text: "TOTAL:", fontSize: 11, bold: true, color: "#C4A052", border: [true, true, true, true], borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"] },
-                                            { text: `$${total.toFixed(2)}`, fontSize: 16, bold: true, color: "#FFD700", alignment: "right", border: [true, true, true, true], borderColor: ["#C4A052", "#C4A052", "#C4A052", "#C4A052"] }
-                                        ]
-                                    ],
-                                },
-                                layout: {
-                                    fillColor: () => "#1a1200",
-                                    paddingLeft: () => 10,
-                                    paddingRight: () => 10,
-                                    paddingTop: () => 10,
-                                    paddingBottom: () => 10,
-                                },
-                                margin: [0, 12, 0, 0],
+                                canvas: [
+                                    {
+                                        type: "line",
+                                        x1: 0,
+                                        y1: 0,
+                                        x2: 515,
+                                        y2: 0,
+                                        lineWidth: 1,
+                                        lineColor: "#C4A052",
+                                    },
+                                ],
+                                margin: [0, 8, 0, 8],
+                            },
+                            {
+                                columns: [
+                                    {
+                                        text: "Total",
+                                        fontSize: 11,
+                                        bold: true,
+                                        color: "#FFFFFF",
+                                    },
+                                    {
+                                        text: `$${total.toFixed(2)}`,
+                                        fontSize: 11,
+                                        bold: true,
+                                        color: "#FFFFFF",
+                                        alignment: "right",
+                                    },
+                                ],
                             },
                         ],
-                        width: "48%",
+                        width: "44%",
                     },
                 ],
-            },
-
-            // Bottom Border Line
-            {
-                canvas: [
-                    {
-                        type: "line",
-                        x1: 0,
-                        y1: 0,
-                        x2: 515,
-                        y2: 0,
-                        lineWidth: 1,
-                        lineColor: "#C4A052",
-                    },
-                ],
-                margin: [0, 80, 0, 15],
-            },
-
-            // Footer
-            {
-                text: "Abacco Technology",
-                fontSize: 11,
-                color: "#C4A052",
-                alignment: "center",
             },
         ],
         defaultStyle: {
             font: "Helvetica",
-            color: "#FFFFFF",
         },
     };
 
@@ -428,7 +422,7 @@ export const generateInvoice = async (payment) => {
     return new Promise((resolve, reject) => {
         pdfDoc.on("data", (chunk) => chunks.push(chunk));
         pdfDoc.on("end", () => resolve(Buffer.concat(chunks)));
-        pdfDoc.on("error", reject);
+        pdfDoc.on("error", (err) => reject(err));
         pdfDoc.end();
     });
 };

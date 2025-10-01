@@ -10,11 +10,8 @@ const PricingDash = () => {
   // Contacts options
   const contactOptions = [500, 1000, 2500, 5000, 10000];
 
-  // Promo state
+  // Promo state (this is fine, it's not in a loop)
   const [promoContacts, setPromoContacts] = useState(500);
-
-  // Card state
-  const [cardContacts, setCardContacts] = useState(500);
 
   // Plans
   const plans = [
@@ -45,41 +42,48 @@ const PricingDash = () => {
     },
   ];
 
+  // --- FIX: State for contacts is now managed outside the map ---
+  // Initialize state for each plan's contact count
+  const [selectedContactsPerPlan, setSelectedContactsPerPlan] = useState(() => {
+    const initialContacts = {};
+    plans.forEach(plan => {
+      initialContacts[plan.name] = 500; // Default to 500 for each plan
+    });
+    return initialContacts;
+  });
+
   // Price calculators
   const calculatePrice = (basePrice, contacts) => {
-    // Calculate price based on base price for 500 contacts
     const baseContacts = 500;
     const pricePerContact = basePrice / baseContacts;
     return (pricePerContact * contacts).toFixed(2);
   };
 
   // Get Pro plan for promo calculations
-  const proPlan = plans.find(plan => plan.name === "Pro");
+  const proPlan = plans.find((plan) => plan.name === "Pro");
   const promoBasePrice = proPlan ? proPlan.basePrice * 0.5 : 37.5; // 50% off Pro plan
   const promoPrice = calculatePrice(promoBasePrice, promoContacts);
 
-  const calculatedPrices = plans.reduce((acc, plan) => {
-    acc[plan.name] = calculatePrice(plan.basePrice, cardContacts);
-    return acc;
-  }, {});
-
-  // Build plan object
   const buildPlanObject = ({
     planName,
-    basePrice,
+    originalBasePrice,
     totalCost,
     slots,
     billingPeriod,
     baseContacts,
     pricingModel,
+    discountApplied = 0,
+    basePrice, // ✅ NEW
   }) => {
     return {
       planName,
-      basePrice,
+      originalBasePrice,
+      basePrice, // ✅ NEW
       totalCost,
       slots,
       selectedIntegrations: [],
-      additionalSlotsCost: totalCost - basePrice,
+      discountApplied,
+      discountAmount: originalBasePrice - totalCost,
       integrationCosts: 0,
       billingPeriod,
       isFromPricingDash: true,
@@ -88,20 +92,29 @@ const PricingDash = () => {
     };
   };
 
+
   // Handle Buy Now
-  const handleBuyNow = (plan, contacts, price) => {
-    // Calculate base price for selected contacts
-    const basePriceForContacts = parseFloat(calculatePrice(plan.basePrice, contacts));
-    
-    const selectedPlan = buildPlanObject({
+  const handleBuyNow = (plan, contacts, _ignoredPrice) => {
+    const discountApplied = 0.5; // ✅ Flat 50% discount for all plans
+    const originalBasePrice = parseFloat(calculatePrice(plan.basePrice, contacts));
+    const finalCost = +(originalBasePrice * (1 - discountApplied)).toFixed(2);
+    const discountAmount = +(originalBasePrice - finalCost).toFixed(2);
+
+    const selectedPlan = {
       planName: plan.name,
-      basePrice: basePriceForContacts, // Use calculated base price
-      totalCost: parseFloat(price),
+      originalBasePrice,
+      basePrice: originalBasePrice,
+      totalCost: finalCost,
       slots: contacts,
+      selectedIntegrations: [],
+      discountApplied,
+      discountAmount,
+      integrationCosts: 0,
       billingPeriod: "month",
-      baseContacts: contacts, // Update baseContacts to selected contacts
+      isFromPricingDash: true,
+      baseContacts: contacts,
       pricingModel: "multiplier",
-    });
+    };
 
     localStorage.setItem("pendingUpgradePlan", JSON.stringify(selectedPlan));
 
@@ -120,6 +133,9 @@ const PricingDash = () => {
       });
     }
   };
+
+
+
 
   return (
     <DashboardLayout>
@@ -176,20 +192,16 @@ const PricingDash = () => {
               </select>
               <div className="mt-4 text-xl font-bold">${promoPrice}</div>
               <p className="text-xs text-gray-500">
-                Then ${calculatePrice(proPlan ? proPlan.basePrice : 2299.99, promoContacts)} after 12 months
+                Then $                 {calculatePrice(proPlan ? proPlan.basePrice : 2299.99, promoContacts)}{" "}
+                after 12 months
               </p>
               <button
                 onClick={() =>
                   handleBuyNow(
-                    {
-                      name: "Pro Plan",
-                      basePrice: promoBasePrice,
-                      users: 5,
-                      emails: "10,000",
-                      support: "Priority Support",
-                    },
+                    proPlan, // Pass the full proPlan object directly
                     promoContacts,
-                    promoPrice
+                    promoPrice,
+                    0.5 // 50% discount
                   )
                 }
                 className="mt-4 w-full bg-[#c2831f] text-black font-semibold py-2 rounded hover:bg-[#dba743] cursor-pointer"
@@ -205,75 +217,84 @@ const PricingDash = () => {
               <h2 className="text-2xl font-bold text-[#c2831f] mb-4 md:mb-0">
                 Choose Plans
               </h2>
-              <div className="flex items-center">
-                <label className="text-sm font-medium text-gray-300 mr-3">
-                  Select contact:
-                </label>
-                <select
-                  className="bg-[#1e1e1e] text-white border border-gray-600 rounded px-3 py-1 text-sm"
-                  value={cardContacts}
-                  onChange={(e) => setCardContacts(Number(e.target.value))}
-                >
-                  {contactOptions.map((count) => (
-                    <option key={count} value={count}>
-                      {count}
-                    </option>
-                  ))}
-                </select>
-              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {plans.map((plan) => (
-                <div
-                  key={plan.name}
-                  className={`bg-[#111] rounded-xl p-6 border border-gray-700 relative shadow transition ${
-                    plan.highlight ? "border-yellow-500 -mt-10 z-10" : ""
-                  }`}
-                >
-                  {plan.highlight && (
-                    <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-yellow-500 text-black text-xs font-bold px-3 py-1 rounded-full">
-                      Best value
-                    </div>
-                  )}
-                  <h3 className="text-xl font-semibold mb-1">{plan.name}</h3>
-                  <p className="text-gray-400 text-sm mb-4">
-                    Billed monthly • ${calculatedPrices[plan.name]}
-                  </p>
-                  <ul className="text-sm text-gray-300 mb-4 space-y-2 text-left">
-                    <li className="flex items-center gap-2">
-                      <User size={16} /> Users: {plan.users}
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Mail size={16} /> Emails: {plan.emails}
-                    </li>
-                    <li className="flex items-center gap-2">
-                      <Headphones size={16} /> Support: {plan.support}
-                    </li>
-                  </ul>
-                  <div className="mb-3 text-sm text-left">
-                    <p className="text-gray-400 font-semibold mb-1">Features:</p>
-                    <ul className="pl-1 space-y-1">
-                      {plan.features.map((f, i) => (
-                        <li
-                          key={i}
-                          className="flex items-center gap-2 text-gray-300"
-                        >
-                          <CircleDot size={14} className="text-[#c2831f]" /> {f}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                  <button
-                    onClick={() =>
-                      handleBuyNow(plan, cardContacts, calculatedPrices[plan.name])
-                    }
-                    className="mt-5 w-full bg-[#c2831f] text-black font-semibold py-2 rounded hover:bg-[#dba743] cursor-pointer"
+              {plans.map((plan) => {
+                // --- FIX: Get state from the object, not a local useState ---
+                const selectedContacts = selectedContactsPerPlan[plan.name];
+                const price = calculatePrice(plan.basePrice, selectedContacts);
+
+                const handleContactChange = (e) => {
+                  setSelectedContactsPerPlan(prev => ({
+                    ...prev,
+                    [plan.name]: Number(e.target.value)
+                  }));
+                };
+
+                return (
+                  <div
+                    key={plan.name}
+                    className={`bg-[#111] rounded-xl p-6 border border-gray-700 relative shadow transition ${plan.highlight ? "border-yellow-500 -mt-10 z-10" : ""
+                      }`}
                   >
-                    Buy Now
-                  </button>
-                </div>
-              ))}
+                    {plan.highlight && (
+                      <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-yellow-500 text-black text-xs font-bold px-3 py-1 rounded-full">
+                        Best value
+                      </div>
+                    )}
+                    <h3 className="text-xl font-semibold mb-1">{plan.name}</h3>
+                    <p className="text-gray-400 text-sm mb-4">
+                      Billed monthly • ${price}
+                    </p>
+
+                    <label className="block text-sm font-medium text-gray-300 mb-2">
+                      Contacts
+                    </label>
+                    <select
+                      className="w-full bg-[#1e1e1e] text-white border border-gray-600 rounded px-3 py-2 text-sm mb-4"
+                      value={selectedContacts}
+                      onChange={handleContactChange}
+                    >
+                      {contactOptions.map((count) => (
+                        <option key={count} value={count}>
+                          {count}
+                        </option>
+                      ))}
+                    </select>
+
+                    <ul className="text-sm text-gray-300 mb-4 space-y-2 text-left">
+                      <li className="flex items-center gap-2">
+                        <User size={16} /> Users: {plan.users}
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Mail size={16} /> Emails: {plan.emails}
+                      </li>
+                      <li className="flex items-center gap-2">
+                        <Headphones size={16} /> Support: {plan.support}
+                      </li>
+                    </ul>
+                    <div className="mb-3 text-sm text-left">
+                      <p className="text-gray-400 font-semibold mb-1">Features:</p>
+                      <ul className="pl-1 space-y-1">
+                        {plan.features.map((f, i) => (
+                          <li key={i} className="flex items-center gap-2 text-gray-300">
+                            <CircleDot size={14} className="text-[#c2831f]" /> {f}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                    <button
+                      onClick={() =>
+                        handleBuyNow(plan, selectedContacts, price)
+                      }
+                      className="mt-5 w-full bg-[#c2831f] text-black font-semibold py-2 rounded hover:bg-[#dba743] cursor-pointer"
+                    >
+                      Buy Now
+                    </button>
+                  </div>
+                );
+              })}
             </div>
           </div>
 
