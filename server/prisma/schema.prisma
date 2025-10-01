@@ -371,26 +371,29 @@ model MmsRecipient {
 }
 
 model Payment {
-  id              Int       @id @default(autoincrement())
+  id              Int      @id @default(autoincrement())
   userId          Int
   email           String
   name            String
-  transactionId   String    @unique
+  transactionId   String   @unique
   planName        String
   planType        String
   provider        String
   contacts        Int
   amount          Float
   currency        String
+  planPrice       Float
+  discount        Float?
   paymentMethod   String
   cardLast4       String?
+  billingAddress  String?
   paymentDate     DateTime
-  nextPaymentDate DateTime?
+  nextPaymentDate DateTime
   status          String
-  notified        Boolean   @default(false)
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  User            User      @relation(fields: [userId], references: [id])
+  notified        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  User            User     @relation(fields: [userId], references: [id])
 }
 
 model ScheduledCampaign {
