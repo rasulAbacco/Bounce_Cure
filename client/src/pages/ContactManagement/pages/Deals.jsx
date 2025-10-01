@@ -72,16 +72,43 @@ function Deals() {
 
   const handleAddOrUpdateDeal = async (e) => {
     e.preventDefault();
-    if (!newDeal.name.trim() || !newDeal.client.trim()) return;
+
+    // Validate required fields
+    if (!newDeal.name.trim() || !newDeal.client.trim()) {
+      alert("Please fill in both name and client fields.");
+      return;
+    }
+
+    // Get token from localStorage
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("You are not authenticated. Please log in.");
+      return;
+    }
+
+    // Prepare headers with token
+    const headers = {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    };
 
     try {
+      let res;
       if (editingId) {
         // Update existing deal
-        const res = await fetch(`${API_URL}/deals/${editingId}`, {
+        res = await fetch(`${API_URL}/deals/${editingId}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(newDeal),
+          headers,
+          body: JSON.stringify({
+            ...newDeal,
+            name: newDeal.name.trim(),
+            client: newDeal.client.trim(),
+          }),
         });
+
+        if (!res.ok) {
+          throw new Error(`Failed to update deal: ${res.status} ${res.statusText}`);
+        }
 
         const updated = await res.json();
 
@@ -91,18 +118,25 @@ function Deals() {
         setEditingId(null);
       } else {
         // Add new deal
-        const res = await fetch(`${API_URL}/deals`, {
+        res = await fetch(`${API_URL}/deals`, {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(newDeal),
+          headers,
+          body: JSON.stringify({
+            ...newDeal,
+            name: newDeal.name.trim(),
+            client: newDeal.client.trim(),
+          }),
         });
+
+        if (!res.ok) {
+          throw new Error(`Failed to create deal: ${res.status} ${res.statusText}`);
+        }
 
         const created = await res.json();
         setDeals((prev) => [...prev, created]);
       }
 
+      // Reset form
       setNewDeal({
         name: "",
         client: "",
@@ -114,9 +148,11 @@ function Deals() {
       setShowForm(false);
     } catch (err) {
       console.error("Error saving deal:", err);
-      alert("Failed to save deal. Check backend.");
+      alert(`Failed to save deal. ${err.message || "Check backend or authentication."}`);
     }
   };
+
+
 
 
 
@@ -163,9 +199,18 @@ function Deals() {
     if (!window.confirm("Are you sure you want to delete this deal?")) return;
 
     try {
-      await fetch(`${API_URL}/deals/${id}`, {
+      const token = localStorage.getItem("token");
+
+      const res = await fetch(`${API_URL}/deals/${id}`, {
         method: "DELETE",
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
       });
+
+      if (!res.ok) {
+        throw new Error(`Failed to delete deal: ${res.status}`);
+      }
 
       setDeals((prev) => prev.filter((d) => d.id !== id));
       if (editingId === id) {
@@ -174,9 +219,10 @@ function Deals() {
       }
     } catch (err) {
       console.error("Error deleting deal:", err);
-      alert("Failed to delete deal.");
+      alert("Failed to delete deal. Check backend or authentication.");
     }
   };
+
 
   const handleEdit = (deal) => {
     setNewDeal({
@@ -191,13 +237,37 @@ function Deals() {
 
   useEffect(() => {
     const fetchDeals = async () => {
-      const res = await fetch(`${API_URL}/deals`);
-      const data = await res.json();
-      setDeals(data);
+      try {
+        const token = localStorage.getItem("token");
+
+        if (!token) {
+          alert("No authentication token found. Please log in.");
+          return;
+        }
+
+        const res = await fetch(`${API_URL}/deals`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to fetch deals: ${res.status}`);
+        }
+
+        const data = await res.json();
+        setDeals(data);
+      } catch (err) {
+        console.error("Error fetching deals:", err);
+        alert("Failed to load deals. Check backend or authentication.");
+      }
     };
 
     fetchDeals();
   }, []);
+
+
+
   // Filter deals
   const filteredDeals = deals
     .filter(
