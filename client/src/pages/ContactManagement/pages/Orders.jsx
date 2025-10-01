@@ -41,7 +41,16 @@ const Orders = () => {
   async function fetchOrders() {
     try {
       setLoading(true);
-      const res = await fetch(API_URL);
+
+      const token = localStorage.getItem("token"); // or sessionStorage if that's what you're using
+
+      const res = await fetch(API_URL, {
+        method: "GET",
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+      });
 
       if (!res.ok) {
         throw new Error(`Server responded with ${res.status}: ${res.statusText}`);
@@ -57,6 +66,7 @@ const Orders = () => {
       setLoading(false);
     }
   }
+
 
   const calculateRevenue = () => {
     return orders.reduce((sum, order) => {
@@ -88,11 +98,16 @@ const Orders = () => {
   };
 
   async function handleSave() {
+    const token = localStorage.getItem("token");
+
     try {
       if (modalMode === "create") {
         const res = await fetch(API_URL, {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
           body: JSON.stringify(currentOrder),
         });
 
@@ -105,7 +120,10 @@ const Orders = () => {
       } else {
         const res = await fetch(`${API_URL}/${currentOrder.id}`, {
           method: "PUT",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
           body: JSON.stringify(currentOrder),
         });
 
@@ -119,39 +137,47 @@ const Orders = () => {
       setIsModalOpen(false);
     } catch (err) {
       console.error("Failed to save order:", err);
+
       // Fallback to local state update
       if (modalMode === "create") {
         const newOrder = {
           ...currentOrder,
-          id: `ORD-${1000 + orders.length + 1}`
+          id: `ORD-${1000 + orders.length + 1}`,
         };
         setOrders([newOrder, ...orders]);
       } else {
         setOrders(orders.map(o => (o.id === currentOrder.id ? currentOrder : o)));
       }
+
       setIsModalOpen(false);
     }
   }
 
-  // Delete function
+  // ✅ Updated delete function with token
   const handleDelete = async (order) => {
+    const token = localStorage.getItem("token");
+
     if (window.confirm(`Are you sure you want to delete order ${order.id}?`)) {
       try {
-        const res = await fetch(`${API_URL}/${order.id}`, { method: "DELETE" });
+        const res = await fetch(`${API_URL}/${order.id}`, {
+          method: "DELETE",
+          headers: {
+            ...(token && { Authorization: `Bearer ${token}` }),
+          },
+        });
 
         if (!res.ok) {
           throw new Error(`Server responded with ${res.status}: ${res.statusText}`);
         }
 
-        // Remove from orders list
         setOrders(orders.filter(o => o.id !== order.id));
       } catch (err) {
         console.error("Failed to delete order:", err);
-        // Fallback to local state update
-        setOrders(orders.filter(o => o.id !== order.id));
+        setOrders(orders.filter(o => o.id !== order.id)); // Fallback
       }
     }
   };
+
 
   const filteredOrders = useMemo(() => {
     let result = orders;
