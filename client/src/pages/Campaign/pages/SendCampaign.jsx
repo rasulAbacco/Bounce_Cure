@@ -147,33 +147,33 @@ function EmailPreview({ pages, activePage, zoomLevel = 0.6, formData }) {
         case "paragraph":
         case "blockquote":
           return (
-            <div key={element.id} style={style}>
-              <div
-                style={{
-                  ...commonStyle,
-                  fontSize: `${(element.fontSize || 16) * zoomLevel}px`,
-                  lineHeight: "1.4",
-                  wordWrap: "break-word",
-                  padding: "8px",
-                  ...(element.type === "heading" && { fontWeight: "bold" }),
-                  ...(element.type === "subheading" && { fontWeight: "600" }),
-                  ...(element.type === "blockquote" && {
-                    fontStyle: "italic",
-                    paddingLeft: "16px",
-                    borderLeft: "4px solid #ccc",
-                  }),
-                }}
-              >
-                {element.content ||
+           <div
+              style={{
+                ...commonStyle,
+                fontSize: `${(element.fontSize || 16) * zoomLevel}px`,
+                lineHeight: "1.4",
+                wordWrap: "break-word",
+                padding: "8px",
+                ...(element.type === "heading" && { fontWeight: "bold" }),
+                ...(element.type === "subheading" && { fontWeight: "600" }),
+                ...(element.type === "blockquote" && {
+                  fontStyle: "italic",
+                  paddingLeft: "16px",
+                  borderLeft: "4px solid #ccc",
+                }),
+              }}
+              dangerouslySetInnerHTML={{
+                __html:
+                  element.content ||
                   (element.type === "heading"
                     ? "Heading"
                     : element.type === "subheading"
-                      ? "Subheading"
-                      : element.type === "blockquote"
-                        ? "Blockquote"
-                        : "Paragraph text")}
-              </div>
-            </div>
+                    ? "Subheading"
+                    : element.type === "blockquote"
+                    ? "Blockquote"
+                    : "Paragraph text"),
+              }}
+            />
           );
 
         case "button":
@@ -846,180 +846,129 @@ export default function CampaignBuilder() {
       });
     }
   };
+const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
 
-  const handleSendCampaign = async () => {
-    setIsSending(true);
-    try {
-      // Fetch latest contacts
-      const token = getAuthToken();
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
+ // Utility: split array into chunks
+const chunkArray = (arr, size) => {
+  const result = [];
+  for (let i = 0; i < arr.length; i += size) {
+    result.push(arr.slice(i, i + size));
+  }
+  return result;
+};
 
-      const contactsResponse = await fetch(`${API_URL}/api/campaigncontacts`, {
-        headers
+const handleSendCampaign = async () => {
+  setIsSending(true);
+  try {
+    // --- fetch contacts and build recipientsList (same as before) ---
+    const token = getAuthToken();
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    const contactsResponse = await fetch(`${API_URL}/api/campaigncontacts`, { headers });
+    if (!contactsResponse.ok) throw new Error("Failed to fetch contacts");
+    const contactsData = await contactsResponse.json();
+
+    let recipientsList = [];
+    if (formData.recipients === "all-subscribers") {
+      recipientsList = contactsData;
+    } else if (formData.recipients === "new-customers") {
+      recipientsList = contactsData.filter(c => c.type === "new-customer");
+    } else if (formData.recipients === "vip-clients") {
+      recipientsList = contactsData.filter(c => c.type === "vip-client");
+    } else if (formData.recipients === "manual") {
+      recipientsList = (formData.manualEmails || "")
+        .split(/[\n,]+/)
+        .map(email => ({ email: email.trim() }))
+        .filter(c => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email));
+    } else if (formData.recipients === "file") {
+      recipientsList = (formData.bulkFileEmails || [])
+        .map(email => ({ email }))
+        .filter(c => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email));
+    }
+
+    if (recipientsList.length === 0) {
+      setSendStatus({ success: false, message: "No valid recipients found." });
+      setIsSending(false);
+      return;
+    }
+
+    // ✅ Split into batches of 1000
+    const batches = chunkArray(recipientsList, 1000);
+    let allResults = { success: [], failed: [] };
+
+    for (let i = 0; i < batches.length; i++) {
+      // Show progress while sending
+      setSendStatus({
+        success: null,
+        message: `📤 Sending batch ${i + 1} of ${batches.length}...`
       });
-      
-      if (contactsResponse.status === 401) {
-        setAuthError(true);
-        setIsSending(false);
-        console.error("Authentication error: Please log in again");
-        return;
-      }
 
-      if (!contactsResponse.ok) throw new Error("Failed to fetch contacts");
-      const contactsData = await contactsResponse.json();
-
-      // Build recipients list
-      let recipientsList = [];
-      if (formData.recipients === "all-subscribers") {
-        recipientsList = contactsData;
-      } else if (formData.recipients === "new-customers") {
-        recipientsList = contactsData.filter(c => c.type === "new-customer");
-      } else if (formData.recipients === "vip-clients") {
-        recipientsList = contactsData.filter(c => c.type === "vip-client");
-      } else if (formData.recipients === "manual") {
-        recipientsList = (formData.manualEmails || "")
-          .split(/[\n,]+/)
-          .map(email => ({ email: email.trim() }))
-          .filter(c => c.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)); // Validate emails
-      } else if (formData.recipients === "file") {
-        recipientsList = (formData.bulkFileEmails || [])
-          .map(email => ({ email }))
-          .filter(c => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email)); // Validate emails
-      }
-
-      // Check for spam trigger words in subject
-      const spamTriggers = [
-        'free', 'urgent', 'act now', 'limited time', 'click here', 'make money',
-        'guaranteed', 'no cost', 'risk free', 'winner', 'congratulations'
-      ];
-      const subjectLower = formData.subject.toLowerCase();
-      const hasSpamTriggers = spamTriggers.some(trigger => subjectLower.includes(trigger));
-
-      if (hasSpamTriggers) {
-        const confirmation = window.confirm(
-          "Your subject line contains words that might trigger spam filters. This could affect delivery rates. Do you want to continue?"
-        );
-        if (!confirmation) {
-          setIsSending(false);
-          return;
-        }
-      }
-
-      // Limit to 1000 recipients for better deliverability
-      if (recipientsList.length > 1000) {
-        recipientsList = recipientsList.slice(0, 1000);
-        setSendStatus({
-          success: false,
-          message: "⚠️ Limited to 1000 emails for better deliverability. Consider sending to smaller, more engaged audiences.",
-        });
-      }
-
-      if (recipientsList.length === 0) {
-        setSendStatus({ success: false, message: "No valid email addresses found for the selected audience." });
-        setIsSending(false);
-        return;
-      }
-
-      // Build payload for backend
       const payload = {
-        campaignName: formData.subject,
-        subject: formData.subject,
-        fromEmail: formData.fromEmail,
-        fromName: formData.fromName,
-        recipients: recipientsList,
-        canvasData: canvasPages[0].elements,
-        scheduleType: formData.scheduleType,
-        scheduledDate: formData.scheduledDate,
-        scheduledTime: formData.scheduledTime,
-        timezone: formData.timezone,
-        recurringFrequency: formData.recurringFrequency,
-        recurringDays: formData.recurringDays,
-        recurringEndDate: formData.recurringEndDate || null,
-      };
+      campaignName: formData.subject,
+      subject: formData.subject,
+      fromEmail: formData.fromEmail,
+      fromName: formData.fromName,
+      recipients: batches[i],
+      canvasData: canvasPages[0].elements,
+      scheduleType: formData.scheduleType,
+      scheduledDate: formData.scheduledDate,
+      scheduledTime: formData.scheduledTime,
+      timezone: formData.timezone,
+      recurringFrequency: formData.recurringFrequency,
+      recurringDays: formData.recurringDays,
+      recurringEndDate: formData.recurringEndDate || null,
+    };
 
-      // Determine which API endpoint to use based on schedule type
-      const url = formData.scheduleType === 'immediate'
-        ? `${API_URL}/api/campaigns/send`
-        : `${API_URL}/api/automation/send`;
 
-      // Send request
+      // 👇 Decide endpoint based on scheduleType
+      const url =
+        formData.scheduleType === "immediate"
+          ? `${API_URL}/api/campaigns/send`
+          : `${API_URL}/api/automation/send`;
+
       const response = await fetch(url, {
         method: "POST",
         headers,
         body: JSON.stringify(payload),
       });
 
-      // Ensure JSON response
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const errorText = await response.text();
-        throw new Error(`Server returned non-JSON response: ${errorText.substring(0, 100)}...`);
-      }
 
       const data = await response.json();
-
       if (response.ok) {
-        // Enhanced success message with deliverability info
-        let successMessage = data.message;
-
-        if (data.results) {
-          const successRate = (data.results.success.length / recipientsList.length * 100).toFixed(1);
-          successMessage += ` (${successRate}% delivery rate)`;
-        }
-
-        setSendStatus({
-          success: true,
-          message: successMessage,
-          results: formData.scheduleType === 'immediate' ? (data.results || null) : null,
-          deliverabilityTips: data.deliverabilityTips || null,
-        });
-
-        // Navigate based on schedule type
-        if (formData.scheduleType === 'immediate') {
-          navigate("/analytics", { state: { fromEmail: formData.fromEmail } });
-        } else {
-          navigate("/automation");
-        }
+        allResults.success.push(...(data.results?.success || []));
+        allResults.failed.push(...(data.results?.failed || []));
       } else {
-        // Check if it's a sender verification error
-        if (data.senderVerificationRequired) {
-          setSendStatus({
-            success: false,
-            message: `${data.error} Please verify this email address in SendGrid and set up domain authentication for better delivery.`,
-            senderVerificationRequired: true,
-            deliverabilityTips: data.deliverabilityTips || [
-              "Verify your sender email in SendGrid",
-              "Set up SPF, DKIM, and DMARC records",
-              "Use a professional domain email",
-              "Avoid spam trigger words",
-              "Send to engaged subscribers only"
-            ]
-          });
-        } else {
-          setSendStatus({
-            success: false,
-            message: data.error || "Failed to send campaign",
-            results: data.results || null,
-            deliverabilityTips: data.deliverabilityTips || null,
-          });
-        }
+        allResults.failed.push(...(data.results?.failed || []));
       }
-    } catch (error) {
-      console.error("Error sending campaign:", error);
-      setSendStatus({
-        success: false,
-        message: `Error: ${error.message || "Network error. Please try again."}`,
-      });
-    } finally {
-      setIsSending(false);
+
+      // Small pause to avoid hitting SendGrid limits
+      await new Promise(r => setTimeout(r, 2000));
     }
-  };
+
+    // ✅ Final combined result
+    // Final summary
+    setSendStatus({
+      success: allResults.failed.length === 0,
+      message: `✅ Campaign finished. Sent: ${allResults.success.length}, Failed: ${allResults.failed.length}`,
+      results: allResults,
+    });
+
+    // 👇 Add this navigation logic
+    if (formData.scheduleType === 'immediate') {
+      navigate("/analytics", { state: { fromEmail: formData.fromEmail } });
+    } else {
+      navigate("/automation");
+    }
+
+
+  } catch (err) {
+    setSendStatus({ success: false, message: `Error: ${err.message}` });
+  } finally {
+    setIsSending(false);
+  }
+};
+
 
   // Get minimum date for scheduling (current date + 5 minutes)
   const getMinDateTime = () => {
@@ -1880,21 +1829,25 @@ export default function CampaignBuilder() {
                           </div>
 
                           {sendStatus && (
-                            <div className={`p-4 rounded-md space-y-2 ${sendStatus.success ? "bg-[#c2831f]/20 text-[#c2831f]" : "bg-red-900/30 text-red-400"}`}>
-                              <div className="font-medium">{sendStatus.message}</div>
+                              <div className={`mt-4 p-3 rounded ${sendStatus.success ? "bg-green-900/30 text-green-400" : "bg-yellow-900/30 text-yellow-400"}`}>
+                                {sendStatus.message}
+                              </div>
+                            )}
 
-                              {sendStatus.deliverabilityTips && (
-                                <div className="text-sm mt-3">
-                                  <div className="font-medium mb-2">💡 To improve inbox delivery:</div>
-                                  <ul className="list-disc list-inside space-y-1">
-                                    {sendStatus.deliverabilityTips.map((tip, i) => (
-                                      <li key={i}>{tip}</li>
-                                    ))}
-                                  </ul>
+                            {batchProgress.total > 0 && (
+                              <div className="mt-2">
+                                <div className="w-full bg-gray-700 rounded-full h-2">
+                                  <div
+                                    className="bg-[#c2831f] h-2 rounded-full transition-all"
+                                    style={{ width: `${(batchProgress.current / batchProgress.total) * 100}%` }}
+                                  />
                                 </div>
-                              )}
-                            </div>
-                          )}
+                                <p className="text-xs text-gray-400 mt-1">
+                                  Batch {batchProgress.current} of {batchProgress.total}
+                                </p>
+                              </div>
+                            )}
+
                         </div>
                       )}
 
