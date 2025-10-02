@@ -48,7 +48,7 @@ import Signupd from './pages/Pricing/Signupd';
 
 import MultimediaCampaign from './pages/Multimedia/MultimediCampaign';
 import WhatsappCampaign from './pages/Multimedia/WhatsappCampaign';
-import SMScampaign from './pages/Multimedia/SMSCampaign';
+import SMScampaign from './pages/Multimedia/SMScampaign';
 import TermsConditions from './pages/Terms&Conditions';
 import RefundPolicy from './pages/RefundPolicy';
 import Signin from './pages/Pricing/Signin';
@@ -112,7 +112,7 @@ function App() {
             <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route path="/faq" element={<FaqSection />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-            
+
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
             <Route path="/services/bulk-verification" element={<ProtectedRoute><BulkVerification /></ProtectedRoute>} />

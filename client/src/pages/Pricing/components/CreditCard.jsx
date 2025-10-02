@@ -8,7 +8,7 @@ import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { CreditCard as CreditCardIcon, Lock, AlertCircle } from 'lucide-react';
-
+const API_URL = import.meta.env.VITE_VRI_URL;
 export default function CreditCard() {
     const stripe = useStripe();
     const elements = useElements();
@@ -41,7 +41,7 @@ export default function CreditCard() {
                 return;
             }
 
-            const { data } = await axios.post('http://localhost:5000/api/creditcard/charge', {
+            const { data } = await axios.post(`${API_URL}/api/creditcard/charge`, {
                 amount: parsedAmount,
                 email,
             });
@@ -63,7 +63,7 @@ export default function CreditCard() {
 
                 const paymentIntent = result.paymentIntent;
 
-                await axios.post('http://localhost:5000/api/creditcard/save', {
+                await axios.post(`${API_URL}/api/creditcard/save`, {
                     userId: 1,
                     email,
                     transactionId: paymentIntent.id,

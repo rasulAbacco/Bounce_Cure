@@ -6,9 +6,7 @@ export const invoiceEmailTemplate = ({ transactionId, planName, total }) => `
 
     <!-- Header -->
     <div style="background: #111; padding: 25px; text-align: center; border-bottom: 2px solid #FFD700;">
-      <img src="https://yourdomain.com/templates/logo.png" alt="BounceCure" 
-           style="height: 50px; margin-bottom: 10px;" />
-      <h2 style="margin: 0; color: #FFD700;">BounceCure</h2>
+      <h1 style="margin: 0; color: #FFD700;">BounceCure</h1>
       <p style="margin: 5px 0 0; font-size: 14px; color: #ccc;">Invoice Notification</p>
     </div>
 
