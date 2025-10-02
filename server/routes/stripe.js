@@ -11,6 +11,20 @@ const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const prisma = new PrismaClient();
 
+
+// At the top of stripe.js
+export const getNextPaymentDate = (currentDate, planType) => {
+    const date = new Date(currentDate);
+    if (planType === 'month') {
+        date.setMonth(date.getMonth() + 1);
+    } else if (planType === 'year') {
+        date.setFullYear(date.getFullYear() + 1);
+    }
+    return date.toISOString();
+};
+
+
+
 router.post('/create-payment-intent', async (req, res) => {
     const {
         amount, // in dollars
@@ -46,17 +60,44 @@ router.post('/create-payment-intent', async (req, res) => {
 
 
 
+// routes/payment.js
+
 router.post("/save-payment", async (req, res) => {
     try {
+   
+        const {
+            amount,
+            discount = amount,
+            planPrice = amount,
+            paymentDate,
+            billingAddress = "",
+            ...rest
+        } = req.body;
+
+        console.log("Discount:", discount);
+        const paymentDateObj = new Date(paymentDate || new Date());
+
+        const nextPaymentDate = new Date(paymentDateObj);
+        nextPaymentDate.setMonth(nextPaymentDate.getMonth() + 1);
+        console.log("nextPaymentDate being saved:", nextPaymentDate.toISOString());
+        console.log(req.discoutnt);
+
+        const paymentData = {
+            ...rest,
+            amount: Number(amount),
+            discount: Number(discount),
+            planPrice: Number(planPrice),
+            billingAddress,
+            paymentDate: paymentDateObj,
+            nextPaymentDate: nextPaymentDate.toISOString(),
+        };
+
         const payment = await prisma.payment.create({
-            data: {
-                ...req.body,
-                paymentDate: new Date(req.body.paymentDate),
-                nextPaymentDate: req.body.nextPaymentDate ? new Date(req.body.nextPaymentDate) : null,
-            },
+            data: paymentData,
         });
 
         const pdfBuffer = await generateInvoice(payment);
+
         if (!pdfBuffer) {
             throw new Error("Invoice PDF generation failed");
         }
@@ -77,9 +118,15 @@ router.post("/save-payment", async (req, res) => {
 
         res.json(payment);
     } catch (err) {
-        console.error(err);
+        console.error("Error saving payment:", err);
         res.status(500).json({ error: err.message });
     }
 });
 
+
 export default router;
+
+
+
+
+

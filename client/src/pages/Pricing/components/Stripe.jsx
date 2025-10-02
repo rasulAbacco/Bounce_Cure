@@ -4,6 +4,8 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { Shield, Lock, CheckCircle, AlertCircle, MapPin } from 'lucide-react';
 
+const API_URL = import.meta.env.VITE_VRI_URL;
+
 function Stripe() {
     const stripe = useStripe();
     const elements = useElements();
@@ -17,6 +19,7 @@ function Stripe() {
     const [postalCode, setPostalCode] = useState('');
     const [status, setStatus] = useState('');
     const [plan, setPlan] = useState(null);
+    const [loading, setLoading] = useState(false);  // <-- loading state added
 
     useEffect(() => {
         const incomingPlan = location.state?.plan;
@@ -42,11 +45,22 @@ function Stripe() {
 
         if (!plan) return;
 
+        setLoading(true);
+
         const amount = parseFloat((plan.totalCost * 1.10).toFixed(2));
         const userId = 1;
 
+        // Format billing address
+        const billingAddress = `${line1}, ${city}, ${postalCode}`;
+        const discount =
+            plan?.discountAmount ??
+            (plan?.originalBasePrice != null && plan?.totalCost != null
+                ? plan.originalBasePrice - plan.totalCost
+                : 0);
+
         try {
-            const { data } = await axios.post('http://localhost:5000/api/stripe/create-payment-intent', {
+            // Step 1: Create payment intent
+            const { data } = await axios.post(`${API_URL}/api/stripe/create-payment-intent`, {
                 amount,
                 email,
                 userId,
@@ -56,6 +70,7 @@ function Stripe() {
                 contacts: plan.slots,
             });
 
+            // Step 2: Confirm payment with card
             const result = await stripe.confirmCardPayment(data.clientSecret, {
                 payment_method: {
                     card: elements.getElement(CardElement),
@@ -72,6 +87,7 @@ function Stripe() {
                 },
             });
 
+            // Step 3: Handle success or error
             if (result.error) {
                 setStatus(`❌ ${result.error.message}`);
             } else if (result.paymentIntent.status === 'succeeded') {
@@ -79,10 +95,11 @@ function Stripe() {
 
                 const paymentIntent = result.paymentIntent;
 
-                await axios.post('http://localhost:5000/api/stripe/save-payment', {
+                // Step 4: Save payment to backend
+                await axios.post(`${API_URL}/api/stripe/save-payment`, {
                     userId,
                     email,
-                    name,  // Added here
+                    name,
                     transactionId: paymentIntent.id,
                     planName: plan.planName,
                     planType: plan.billingPeriod,
@@ -95,13 +112,19 @@ function Stripe() {
                     paymentDate: new Date().toISOString(),
                     nextPaymentDate: null,
                     status: paymentIntent.status,
+                    discount, // ✅ send discount
+                    planPrice: amount - discount, // ✅ for consistency
+                    billingAddress, // ✅ send formatted address
                 });
             }
         } catch (error) {
             console.error(error);
             setStatus('❌ Something went wrong. Please try again.');
+        } finally {
+            setLoading(false);
         }
     };
+
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex justify-center items-center p-4 relative overflow-hidden">
@@ -230,14 +253,39 @@ function Stripe() {
                     </div>
                 </div>
 
-                {/* Submit Button */}
+                {/* Submit Button with loader */}
                 <button
                     type="submit"
-                    disabled={!stripe || !plan}
+                    disabled={!stripe || !plan || loading}
                     className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold py-4 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/50 hover:shadow-xl hover:shadow-blue-500/50 hover:scale-105 flex items-center justify-center gap-2"
                 >
-                    <Lock size={20} />
-                    {plan ? `Pay ${(plan.totalCost * 1.10).toFixed(2)}` : "Loading..."}
+                    {loading ? (
+                        <svg
+                            className="animate-spin h-6 w-6 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                            ></circle>
+                            <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 010 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"
+                            ></path>
+                        </svg>
+                    ) : (
+                        <>
+                            <Lock size={20} />
+                            {plan ? `Pay ${(plan.totalCost * 1.10).toFixed(2)}` : "Loading..."}
+                        </>
+                    )}
                 </button>
 
                 {/* Status Message */}
