@@ -60,69 +60,6 @@ const TextStylePanel = ({ selectedElement, onUpdateElementStyle, onClose, zoomLe
 
   if (!selectedElement || !['heading', 'paragraph', 'subheading', 'blockquote'].includes(selectedElement.type)) return null;
 
-  return (
-    <div className="absolute top-4 right-4 w-80 bg-gray-800 border border-gray-600 rounded-lg shadow-xl z-50 p-4">
-      <div className="flex justify-between items-center mb-4">
-        <h3 className="text-white font-medium flex items-center gap-2"><Type size={16} /> Text Styles</h3>
-        <button onClick={onClose} className="text-gray-400 hover:text-white text-xl leading-none">×</button>
-      </div>
-      <div className="space-y-4 max-h-96 overflow-y-auto">
-        <div>
-          <label className="block text-sm text-gray-300 mb-1">Font Family</label>
-          <select value={fontFamily} onChange={(e) => handleStyleChange('fontFamily', e.target.value)} className="w-full p-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-            {fontFamilies.map(font => <option key={font} value={font}>{font}</option>)}
-          </select>
-        </div>
-        <div>
-          <label className="block text-sm text-gray-300 mb-1">Font Size: {fontSize}px</label>
-          <div className="flex items-center gap-2">
-            <button onClick={() => handleStyleChange('fontSize', Math.max(8, fontSize - 2))} className="p-1 bg-gray-700 hover:bg-gray-600 rounded text-white"><Minus size={14} /></button>
-            <input type="range" min="8" max="72" value={fontSize} onChange={(e) => handleStyleChange('fontSize', parseInt(e.target.value))} className="flex-1" />
-            <button onClick={() => handleStyleChange('fontSize', Math.min(72, fontSize + 2))} className="p-1 bg-gray-700 hover:bg-gray-600 rounded text-white"><Plus size={14} /></button>
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm text-gray-300 mb-2">Format</label>
-          <div className="flex gap-2">
-            <button onClick={toggleBold} className={`p-2 rounded text-white ${fontWeight === 'bold' ? 'bg-blue-600' : 'bg-gray-700'} hover:bg-blue-500`}><Bold size={16} /></button>
-            <button onClick={toggleItalic} className={`p-2 rounded text-white ${fontStyle === 'italic' ? 'bg-blue-600' : 'bg-gray-700'} hover:bg-blue-500`}><Italic size={16} /></button>
-            <button onClick={toggleUnderline} className={`p-2 rounded text-white ${textDecoration === 'underline' ? 'bg-blue-600' : 'bg-gray-700'} hover:bg-blue-500`}><Underline size={16} /></button>
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm text-gray-300 mb-2">Alignment</label>
-          <div className="flex gap-2">
-            <button onClick={() => handleStyleChange('textAlign', 'left')} className={`p-2 rounded text-white ${textAlign === 'left' ? 'bg-blue-600' : 'bg-gray-700'} hover:bg-blue-500`}><AlignLeft size={16} /></button>
-            <button onClick={() => handleStyleChange('textAlign', 'center')} className={`p-2 rounded text-white ${textAlign === 'center' ? 'bg-blue-600' : 'bg-gray-700'} hover:bg-blue-500`}><AlignCenter size={16} /></button>
-            <button onClick={() => handleStyleChange('textAlign', 'right')} className={`p-2 rounded text-white ${textAlign === 'right' ? 'bg-blue-600' : 'bg-gray-700'} hover:bg-blue-500`}><AlignRight size={16} /></button>
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm text-gray-300 mb-1">Line Height: {lineHeight}</label>
-          <input type="range" min="1" max="3" step="0.1" value={lineHeight} onChange={(e) => handleStyleChange('lineHeight', parseFloat(e.target.value))} className="w-full" />
-        </div>
-        <div>
-          <label className="block text-sm text-gray-300 mb-2">Text Color</label>
-          <div className="flex items-center gap-2 mb-2">
-            <input type="color" value={color} onChange={(e) => handleStyleChange('color', e.target.value)} className="w-12 h-8 border border-gray-600 rounded cursor-pointer" />
-            <input type="text" value={color} onChange={(e) => handleStyleChange('color', e.target.value)} className="flex-1 p-1 bg-gray-700 border border-gray-600 rounded text-white text-xs" />
-          </div>
-          <div className="grid grid-cols-6 gap-1">
-            {colorPalette.map((paletteColor, index) => (
-              <button key={index} onClick={() => handleStyleChange('color', paletteColor)} className="w-8 h-8 rounded border border-gray-600 hover:border-white" style={{ backgroundColor: paletteColor }} />
-            ))}
-          </div>
-        </div>
-        <div>
-          <label className="block text-sm text-gray-300 mb-2">Background Color</label>
-          <div className="flex items-center gap-2 mb-2">
-            <input type="color" value={backgroundColor === 'transparent' ? '#ffffff' : backgroundColor} onChange={(e) => handleStyleChange('backgroundColor', e.target.value)} className="w-12 h-8 border border-gray-600 rounded cursor-pointer" />
-            <button onClick={() => handleStyleChange('backgroundColor', 'transparent')} className={`px-3 py-1 text-xs rounded text-white ${backgroundColor === 'transparent' ? 'bg-blue-600' : 'bg-gray-700'} hover:bg-blue-500`}>Transparent</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
 };
 
 const EditableTextElement = ({ 
@@ -192,7 +129,7 @@ const EditableTextElement = ({
       ref={contentEditableRef}
       contentEditable={isSelected}
       suppressContentEditableWarning
-      className={`w-full h-full p-2 outline-none ${
+      className={`w-full h-full p-2 outline-none overflow-hidden ${
         element.type === "heading" ? "font-bold" :
         element.type === "subheading" ? "font-semibold" :
         element.type === "blockquote" ? "italic pl-4 border-l-4 border-gray-300" : ""
@@ -744,12 +681,7 @@ export default function CanvasArea({
         position={{ x: element.x * zoomLevel, y: element.y * zoomLevel }}
         size={{ width: (element.width || defaultWidth) * zoomLevel, height: (element.height || defaultHeight) * zoomLevel }}
         bounds="parent"
-        enableResizing={isTextElement ? {
-          top: true, right: false, bottom: true, left: false,
-          topRight: false, bottomRight: false, bottomLeft: false, topLeft: false
-        } : undefined}
-        minWidth={isTextElement ? (element.width || defaultWidth) * zoomLevel : undefined}
-        maxWidth={isTextElement ? (element.width || defaultWidth) * zoomLevel : undefined}
+        enableResizing={true}
         minHeight={isTextElement ? 30 * zoomLevel : undefined}
         onDragStop={(e, d) => {
           const newX = d.x / zoomLevel;
@@ -775,8 +707,10 @@ export default function CanvasArea({
         }}
         onResizeStop={(e, dir, ref, delta, pos) => {
           if (isTextElement) {
+            const newWidth = parseInt(ref.style.width) / zoomLevel;
             const newHeight = parseInt(ref.style.height) / zoomLevel;
             handleElementUpdate(element.id, {
+              width: newWidth,
               height: newHeight,
               x: pos.x / zoomLevel,
               y: pos.y / zoomLevel,
@@ -1005,6 +939,12 @@ export default function CanvasArea({
                 <>
                   <div className="absolute -top-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-n-resize shadow-lg"></div>
                   <div className="absolute -bottom-2 left-1/2 transform -translate-x-1/2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-s-resize shadow-lg"></div>
+                  <div className="absolute -left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-w-resize shadow-lg"></div>
+                  <div className="absolute -right-2 top-1/2 transform -translate-y-1/2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-e-resize shadow-lg"></div>
+                  <div className="absolute -top-2 -left-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-nw-resize shadow-lg"></div>
+                  <div className="absolute -top-2 -right-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-ne-resize shadow-lg"></div>
+                  <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-sw-resize shadow-lg"></div>
+                  <div className="absolute -bottom-2 -right-2 w-4 h-4 bg-blue-500 border-2 border-white rounded-full cursor-se-resize shadow-lg"></div>
                 </>
               ) : (
                 <>
@@ -1218,14 +1158,14 @@ export default function CanvasArea({
           </div>
           <div className="flex items-center gap-2 text-sm text-gray-300"><Layers size={16} /><span>{pages[activePage].elements.length} elements</span></div>
           <div className="w-px h-6 bg-gray-600"></div>
-          <button onClick={handleClear} className="relative group flex items-center gap-2 px-4 py-2 bg-black border border-[#c2831f] hover:bg-[#c2831f] hover:text:black text-white rounded-lg text-sm font-medium transition-colors shadow-lg cursor-pointer">
+          <button onClick={handleClear} className="relative group flex items-center gap-2 px-4 py-2 bg-red-700 border border-[#c2831f] hover:bg-red-800 hover:text:black text-white rounded-lg text-sm font-medium transition-colors shadow-lg cursor-pointer">
             <Eraser size={16} />
             <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 opacity-0 group-hover:opacity-100 transition bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap">Clear</span>
           </button>
-          <button onClick={handleSave} disabled={saveStatus === "saving"} className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors group shadow-lg ${saveStatus === "saving" ? "bg-yellow-600 text-white cursor-not-allowed" : "bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text:black cursor-pointer"}`}>
+          {/* <button onClick={handleSave} disabled={saveStatus === "saving"} className={`relative flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors group shadow-lg ${saveStatus === "saving" ? "bg-yellow-600 text-white cursor-not-allowed" : "bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text:black cursor-pointer"}`}>
             <Save size={16} />
             <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 opacity-0 group-hover:opacity-100 transition bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap">{isEditingTemplate ? "Update Template" : "Save"}</span>
-          </button>
+          </button> */}
           <button onClick={() => { setTemplateName(''); setShowSaveTemplateModal(true); }} className="relative group flex items-center gap-2 px-4 py-2 bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text:black rounded-lg text-sm font-medium transition-colors shadow-lg cursor-pointer">
             <FileText size={16} /> Save as New Template
             <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 opacity-0 group-hover:opacity-100 transition bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap">Save as New Template</span>
@@ -1241,10 +1181,7 @@ export default function CanvasArea({
               <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 opacity-0 group-hover:opacity-100 transition bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap">Update Current Template</span>
             </button>
           )}
-          <button className="relative group flex items-center gap-2 px-4 py-2 bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text:black rounded-lg text-sm font-medium transition-colors shadow-lg cursor-pointer">
-            <Play size={16} />
-            <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 opacity-0 group-hover:opacity-100 transition bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap">Play</span>
-          </button>
+           
           <button onClick={() => setPreview(!preview)} className="relative group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-colors shadow-lg bg-black border border-[#c2831f] text-white hover:bg-[#c2831f] hover:text:black cursor-pointer">
             {preview ? <><X size={16} /> Exit Preview</> : <><Eye size={16} /> Preview</>}
             <span className="absolute left-1/2 -translate-x-1/2 top-full mt-2 opacity-0 group-hover:opacity-100 transition bg-black text-white text-xs rounded px-2 py-1 whitespace-nowrap">{preview ? "Exit Preview" : "Preview"}</span>
@@ -1292,7 +1229,7 @@ export default function CanvasArea({
           </div>
         </div>
       </div>
-      {showTextStylePanel && selectedElement && (
+      {TextStylePanel && selectedElement && (
         <TextStylePanel
           selectedElement={pages[activePage].elements.find(el => el.id === selectedElement)}
           onUpdateElementStyle={handleElementUpdateWithStyle}
@@ -1302,17 +1239,17 @@ export default function CanvasArea({
       )}
       {showSaveTemplateModal && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+          <div className="bg-black rounded-2xl shadow-2xl max-w-md w-full p-6">
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">{isEditingTemplate ? "Save Template" : "Save as New Template"}</h2>
+              <h2 className="text-2xl font-bold text-gray-200">{isEditingTemplate ? "Save Template" : "Save as New Template"}</h2>
               <button onClick={() => { setShowSaveTemplateModal(false); setTemplateName(''); }} className="text-gray-500 hover:text-gray-700"><X size={24} /></button>
             </div>
             <div className="mb-6">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Template Name</label>
+              <label className="block text-sm font-medium text-gray-200 mb-2">Template Name</label>
               <input type="text" value={templateName} onChange={(e) => setTemplateName(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500" placeholder="Enter template name" />
             </div>
             <div className="flex justify-end space-x-3">
-              <button onClick={() => { setShowSaveTemplateModal(false); setTemplateName(''); }} className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-100">Cancel</button>
+              <button onClick={() => { setShowSaveTemplateModal(false); setTemplateName(''); }} className="px-4 py-2 border border-gray-300 text-gray-200 rounded-lg hover:bg-gray-900">Cancel</button>
               {isEditingTemplate && (
                 <button onClick={handleSaveAsNewTemplate} className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Save as New Template</button>
               )}

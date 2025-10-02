@@ -1297,41 +1297,37 @@ const Toolbox = ({
           Exit
         </button>
         <button
-              onClick={() => navigate("/texteditor")}
-              className="px-5 py-4 rounded-md bg-green-500 text-white hover:bg-green-600 text-sm"
-            >
-              Text Editor Page
+          onClick={() => navigate("/texteditor")}
+          className="px-5 py-4 rounded-md bg-green-500 text-white hover:bg-green-600 text-sm"
+        >
+          Text Editor Page
         </button>
       </div>
-      
 
       {/* Exit Modal */}
       {showExitModal && (
         <div className="fixed inset-0 flex items-center justify-center bg-black/60 z-50">
           <div className="bg-gray-900 p-6 rounded-lg shadow-lg w-80 text-center">
             <h3 className="text-lg font-medium text-white mb-4">
-              Do you want to save before exiting?
+              Do you want to exit?
             </h3>
             <div className="flex justify-center gap-4">
-              <button
-                onClick={handleSaveAndExit}
-                className="px-4 py-2 rounded-md bg-[#c2831f] text-white hover:bg-[#d09025]"
-              >
-                Save & Exit
-              </button>
+              {/* ❌ Exit Without Saving */}
               <button
                 onClick={handleExitWithoutSave}
+                className="px-4 py-2 rounded-md bg-red-600 text-white hover:bg-red-700"
+              >
+                Exit
+              </button>
+
+              {/* 🔙 Cancel */}
+              <button
+                onClick={() => setShowExitModal(false)}
                 className="px-4 py-2 rounded-md bg-gray-700 text-white hover:bg-gray-600"
               >
-                Don’t Save
+                Don’t Exit
               </button>
             </div>
-            <button
-              onClick={() => setShowExitModal(false)}
-              className="mt-4 text-gray-400 hover:text-gray-200 text-sm"
-            >
-              Cancel
-            </button>
           </div>
         </div>
       )}
