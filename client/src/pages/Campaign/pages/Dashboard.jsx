@@ -78,17 +78,14 @@ const Dashboard = () => {
   const fetchAnalyticsData = async () => {
     try {
       const token = localStorage.getItem("token") || "demo-token";
-
       // Fetch SendGrid summary
       const summaryRes = await fetch(`${API_URL}/api/analytics/sendgrid/summary`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (summaryRes.ok) {
         const summaryData = await summaryRes.json();
         setSgSummary(summaryData);
       }
-
       // Fetch campaigns with analytics
       const campaignsRes = await fetch(`${API_URL}/api/analytics/sendgrid/campaigns`, {
         headers: {
@@ -96,7 +93,6 @@ const Dashboard = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-
       if (campaignsRes.ok) {
         const campaignsData = await campaignsRes.json();
         setCampaigns(campaignsData);
@@ -111,42 +107,34 @@ const Dashboard = () => {
   const fetchAutomationData = async () => {
     try {
       const token = localStorage.getItem("token") || "demo-token";
-
       // Fetch automation stats
       const statsRes = await fetch(`${API_URL}/api/automation/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setAutomationStats(statsData);
       }
-
       // Fetch scheduled campaigns
       const scheduledRes = await fetch(`${API_URL}/api/automation/scheduled`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (scheduledRes.ok) {
         const scheduledData = await scheduledRes.json();
         setScheduledCampaigns(scheduledData);
       }
-
       // Fetch automation logs
       const logsRes = await fetch(`${API_URL}/api/automation/logs`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (logsRes.ok) {
         const logsData = await logsRes.json();
         setAutomationLogs(logsData);
       }
-
       // Check sender verification
       const verificationRes = await fetch(`${API_URL}/api/automation/sender/verification`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (verificationRes.ok) {
         const verificationData = await verificationRes.json();
         setSenderVerified(verificationData.verified);
@@ -551,7 +539,6 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
-
 
 
             {/* Recent Activity */}

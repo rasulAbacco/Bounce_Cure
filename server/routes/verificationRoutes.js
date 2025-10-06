@@ -1,4 +1,3 @@
-
 //verificationRoutes.js
 import express from "express";
 import AdvancedVerifier from "./advancedVerification.js";
@@ -116,6 +115,7 @@ router.post("/verify-bulk", async (req, res) => {
     for (let i = 0; i < emails.length; i += chunkSize) {
       emailChunks.push(emails.slice(i, i + chunkSize));
     }
+    console.log(`[/verify-bulk] Split into ${emailChunks.length} chunk(s)`);
 
     const allResults = [];
     let totalSummary = {
@@ -200,7 +200,6 @@ router.post("/verify-bulk", async (req, res) => {
 
 
 
-
 // ------ Manual paste verify ------
 
 router.post("/verify-manual", async (req, res) => {
@@ -221,7 +220,6 @@ router.post("/verify-manual", async (req, res) => {
 
     const unique = [...new Set(emails)].filter(Boolean);
     const filtered = unique.filter(e => !isExampleOrFakeEmail(e));
-
     if (!filtered.length) {
       return res.status(400).json({ error: "No valid (non-fake) emails found." });
     }
@@ -279,7 +277,6 @@ router.post("/verify-manual", async (req, res) => {
             } else if (typeof mxValue !== 'string' && mxValue !== null) {
               mxValue = null;
             }
-
             return {
               email: r.email,
               status: r.status || "unknown",
@@ -364,7 +361,6 @@ router.get("/batches/:id/results", async (req, res) => {
       where: { batchId },
       orderBy: { createdAt: "asc" }
     });
-
     return res.json({ results });
   } catch (err) {
     console.error("[/batches/:id/results] ERROR", err);

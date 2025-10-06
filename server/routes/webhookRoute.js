@@ -7,7 +7,6 @@ const router = express.Router();
 router.post("/sendgrid-events", express.json(), async (req, res) => {
   try {
     const events = req.body;
-
     if (!Array.isArray(events)) {
       return res.status(400).json({ error: "Invalid webhook payload" });
     }

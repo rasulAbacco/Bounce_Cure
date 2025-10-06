@@ -265,7 +265,6 @@ const Verification = () => {
     }
   };
 
-
   // ---------------- Utilities ----------------
   const downloadResults = (results = [], format = "csv", filename = "results") => {
     if (!results || results.length === 0) return alert("No results to download");

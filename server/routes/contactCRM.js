@@ -125,7 +125,6 @@ router.put('/:id', async (req, res) => {
         where: { id },
         data: { priority },
     });
-
     res.json(updated);
 });
 

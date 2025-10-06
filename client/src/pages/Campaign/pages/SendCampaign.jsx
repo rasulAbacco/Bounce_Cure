@@ -728,7 +728,6 @@ export default function CampaignBuilder() {
           const data = await response.json();
           console.log("Fetched verified emails:", data);
           setVerifiedEmails(data);
-
           // If there are no pre-verified emails, switch to custom option
           if (data.length === 0) {
             setVerificationOption('custom');

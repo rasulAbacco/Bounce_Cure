@@ -46,7 +46,6 @@ router.get('/', (req, res) => {
 router.post('/', (req, res) => {
   const userId = req.user.id;
   const { name, email, type } = req.body;
-
   if (!name || !email || !type) {
     return res.status(400).json({ error: 'Name, email, and type are required' });
   }

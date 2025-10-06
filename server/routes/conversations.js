@@ -273,7 +273,6 @@ router.delete("/", async (req, res) => {
       });
       totalDeletedCount += deleteResult.count;
     }
-
     res.json({
       message: "Conversations deleted successfully",
       deletedCount: totalDeletedCount,
