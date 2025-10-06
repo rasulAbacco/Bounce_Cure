@@ -112,7 +112,7 @@ app.use("/api/auth", passwordRoutes); // Optional, combine with authRoutes if de
 
 // Dashboard & verification
 app.use("/dashboard", dashboardCRM);
-app.use("/verification", verificationRoutes);
+app.use("/verification", protect, verificationRoutes);
 app.use("/api", dashboardRoutes);
 
 // Other API routes
@@ -147,7 +147,7 @@ app.use("/api/saved-replies", protect, savedRepliesRouter);
 app.use("/api/campaigncontacts", protect, campaignContactsRoutes);
 app.use("/api/campaigns", protect, campaignsRoutes);
 app.use("/api/verified-emails", protect, verifiedEmailsRouter);
-app.use('/api/analytics', analyticsRouter);
+app.use('/api/analytics', protect, analyticsRouter);
  
 
 

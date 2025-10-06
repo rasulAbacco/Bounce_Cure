@@ -1,3 +1,4 @@
+
 // server/routes/verifiedEmails.js
 import express from 'express';
 import { PrismaClient } from '@prisma/client';

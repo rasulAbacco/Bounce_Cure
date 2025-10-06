@@ -265,6 +265,7 @@ router.post("/send", verifySender, async (req, res) => {
     // Create campaign with JSON data including template and canvas data
     const newCampaign = await prisma.scheduledCampaign.create({
       data: {
+        userId: req.user.id,  
         campaignName,
         subject,
         fromName,
@@ -276,7 +277,10 @@ router.post("/send", verifySender, async (req, res) => {
         scheduledDateTime,
         timezone,
         recurringFrequency,
-        recurringDays: recurringDays,
+       recurringDays: Array.isArray(recurringDays) && recurringDays.length > 0
+  ? recurringDays.join(",")
+  : null,
+
         recurringEndDate: recurringEndDate ? new Date(recurringEndDate) : null,
         status: scheduleType === "immediate" ? "processing" : "scheduled",
       },
@@ -362,6 +366,7 @@ function getTimezoneOffset(timeZone) {
 router.get("/scheduled", async (req, res) => {
   try {
     const campaigns = await prisma.scheduledCampaign.findMany({
+      where: { userId: req.user.id },
       orderBy: { createdAt: "desc" },
     });
 
@@ -440,7 +445,7 @@ router.post("/:id/pause", async (req, res) => {
     }
 
     const campaign = await prisma.scheduledCampaign.update({
-      where: { id: campaignId },
+      where: { id: campaignId, userId: req.user.id },
       data: { status: "paused" },
     });
 

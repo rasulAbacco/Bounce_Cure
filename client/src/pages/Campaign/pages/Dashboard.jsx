@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom"; 
+import { useNavigate } from "react-router-dom";
 import {
   ResponsiveContainer,
   BarChart,
@@ -10,8 +10,8 @@ import {
   Tooltip,
   Legend,
 } from "recharts";
-import { 
-  Mail, Send, Calendar, Activity, TrendingUp, 
+import {
+  Mail, Send, Calendar, Activity, TrendingUp,
   MousePointer, BarChart3, RefreshCw, AlertTriangle,
   LayoutDashboard, FileText, Clock, Users, CheckCircle,
   Zap, Filter, Search, Eye, Pause, PlayCircle, MoreVertical,
@@ -22,7 +22,7 @@ import Templets from "./Templets";
 const API_URL = "http://localhost:5000";
 
 const Dashboard = () => {
-  const navigate = useNavigate(); 
+  const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState([]);
   const [allCampaigns, setAllCampaigns] = useState([]); // New state for all campaigns
   const [scheduledCampaigns, setScheduledCampaigns] = useState([]);
@@ -54,13 +54,13 @@ const Dashboard = () => {
       const response = await fetch(`${API_URL}/api/campaigns`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
-      
+
       // Ensure data is an array
       if (Array.isArray(data)) {
         setAllCampaigns(data);
@@ -78,17 +78,17 @@ const Dashboard = () => {
   const fetchAnalyticsData = async () => {
     try {
       const token = localStorage.getItem("token") || "demo-token";
-      
+
       // Fetch SendGrid summary
       const summaryRes = await fetch(`${API_URL}/api/analytics/sendgrid/summary`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (summaryRes.ok) {
         const summaryData = await summaryRes.json();
         setSgSummary(summaryData);
       }
-      
+
       // Fetch campaigns with analytics
       const campaignsRes = await fetch(`${API_URL}/api/analytics/sendgrid/campaigns`, {
         headers: {
@@ -96,7 +96,7 @@ const Dashboard = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-      
+
       if (campaignsRes.ok) {
         const campaignsData = await campaignsRes.json();
         setCampaigns(campaignsData);
@@ -111,42 +111,42 @@ const Dashboard = () => {
   const fetchAutomationData = async () => {
     try {
       const token = localStorage.getItem("token") || "demo-token";
-      
+
       // Fetch automation stats
       const statsRes = await fetch(`${API_URL}/api/automation/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setAutomationStats(statsData);
       }
-      
+
       // Fetch scheduled campaigns
       const scheduledRes = await fetch(`${API_URL}/api/automation/scheduled`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (scheduledRes.ok) {
         const scheduledData = await scheduledRes.json();
         setScheduledCampaigns(scheduledData);
       }
-      
+
       // Fetch automation logs
       const logsRes = await fetch(`${API_URL}/api/automation/logs`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (logsRes.ok) {
         const logsData = await logsRes.json();
         setAutomationLogs(logsData);
       }
-      
+
       // Check sender verification
       const verificationRes = await fetch(`${API_URL}/api/automation/sender/verification`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      
+
       if (verificationRes.ok) {
         const verificationData = await verificationRes.json();
         setSenderVerified(verificationData.verified);
@@ -161,11 +161,11 @@ const Dashboard = () => {
   const handleCampaignAction = async (campaignId, action) => {
     try {
       const token = localStorage.getItem("token") || "demo-token";
-      const response = await fetch(`${API_URL}/api/campaigns/${campaignId}/${action}`, { 
+      const response = await fetch(`${API_URL}/api/campaigns/${campaignId}/${action}`, {
         method: 'POST',
         headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (response.ok) {
         // Refresh both all campaigns and scheduled campaigns
         await Promise.all([fetchAllCampaigns(), fetchAutomationData()]);
@@ -180,60 +180,6 @@ const Dashboard = () => {
     }
   };
 
-  const handleBulkAction = async (action) => {
-    if (selectedCampaigns.length === 0) return;
-    try {
-      const token = localStorage.getItem("token") || "demo-token";
-      const promises = selectedCampaigns.map(id => 
-        fetch(`${API_URL}/api/campaigns/${id}/${action}`, { 
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` }
-        })
-      );
-      await Promise.all(promises);
-      await Promise.all([fetchAllCampaigns(), fetchAutomationData()]);
-      setSelectedCampaigns([]);
-    } catch (error) {
-      console.error(`Error performing bulk ${action}:`, error);
-    }
-  };
-
-  const toggleCampaignSelection = (campaignId) => {
-    setSelectedCampaigns(prev => prev.includes(campaignId) 
-      ? prev.filter(id => id !== campaignId)
-      : [...prev, campaignId]);
-  };
-
-  const handleTriggerSend = async () => {
-    try {
-      const token = localStorage.getItem("token") || "demo-token";
-      const response = await fetch(`${API_URL}/api/automation/trigger-cron`, { 
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-      await fetchAutomationData();
-
-      const scheduledCount = scheduledCampaigns.filter(c => c.status === 'scheduled').length;
-      if (scheduledCount > 0) {
-        const campaignList = scheduledCampaigns
-          .filter(c => c.status === 'scheduled')
-          .map(c => `- ${c.campaignName}: ${new Date(c.scheduledDateTime).toLocaleString()}`)
-          .join('\n');
-        setTriggerMessage(`Found ${scheduledCount} scheduled campaigns:\n${campaignList}`);
-      } else {
-        setTriggerMessage("No scheduled campaigns found.");
-      }
-
-      setShowTriggerMessage(true);
-      setTimeout(() => setShowTriggerMessage(false), 5000);
-    } catch (error) {
-      console.error("Error triggering cron job:", error);
-      setTriggerMessage("Failed to trigger cron job");
-      setShowTriggerMessage(true);
-      setTimeout(() => setShowTriggerMessage(false), 5000);
-    }
-  };
 
   // Initialize data
   useEffect(() => {
@@ -253,27 +199,29 @@ const Dashboard = () => {
         setLoading(false);
       }
     };
-    
+
     fetchData();
-    
+
     // Set up periodic refresh
     const interval = setInterval(() => {
       fetchAnalyticsData();
       fetchAutomationData();
       fetchAllCampaigns(); // Add this to refresh all campaigns
     }, 30000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
+  const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
+
   // Calculate metrics from real data
-  const totalSent = sgSummary?.processed || campaigns.reduce((sum, c) => sum + (c.sentCount || 0), 0);
-  const totalOpens = sgSummary?.opens || campaigns.reduce((sum, c) => sum + (c.openCount || 0), 0);
-  const totalClicks = sgSummary?.clicks || campaigns.reduce((sum, c) => sum + (c.clickCount || 0), 0);
-  const totalConversions = sgSummary?.conversions || campaigns.reduce((sum, c) => sum + (c.conversionCount || 0), 0);
+  const totalSent = sgSummary?.processed ?? safeCampaigns.reduce((sum, c) => sum + (c.sentCount || 0), 0);
+  const totalOpens = sgSummary?.opens ?? safeCampaigns.reduce((sum, c) => sum + (c.openCount || 0), 0);
+  const totalClicks = sgSummary?.clicks ?? safeCampaigns.reduce((sum, c) => sum + (c.clickCount || 0), 0);
+  const totalConversions = sgSummary?.conversions ?? safeCampaigns.reduce((sum, c) => sum + (c.conversionCount || 0), 0);
 
   // Top performers chart data
-  const topPerformersData = [...campaigns]
+  const topPerformersData = [...safeCampaigns]
     .sort((a, b) => (b.openRate || 0) - (a.openRate || 0))
     .slice(0, 5)
     .map(c => ({
@@ -284,9 +232,10 @@ const Dashboard = () => {
     }));
 
   // Recent campaigns
-  const recentCampaigns = [...campaigns]
+  const recentCampaigns = [...safeCampaigns]
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     .slice(0, 5);
+
 
   // Filter all campaigns (not just scheduled) - FIXED VERSION
   const filteredCampaigns = allCampaigns.filter(campaign => {
@@ -294,9 +243,9 @@ const Dashboard = () => {
     const campaignName = campaign?.campaignName || campaign?.name || '';
     const subject = campaign?.subject || '';
     const status = campaign?.status || '';
-    
+
     const matchesSearch = campaignName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         subject.toLowerCase().includes(searchTerm.toLowerCase());
+      subject.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesFilter = filterStatus === "all" || status === filterStatus;
     return matchesSearch && matchesFilter;
   });
@@ -329,9 +278,9 @@ const Dashboard = () => {
     if (!dateTime) return 'N/A';
     const date = new Date(dateTime);
     if (isNaN(date.getTime())) return 'Invalid date';
-    
+
     return date.toLocaleString('en-US', {
-      month: 'short', day: 'numeric', 
+      month: 'short', day: 'numeric',
       hour: '2-digit', minute: '2-digit'
     });
   };
@@ -445,33 +394,30 @@ const Dashboard = () => {
         <div className="flex gap-1">
           <button
             onClick={() => setActiveTab("dashboard")}
-            className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
-              activeTab === "dashboard" 
-                ? "bg-[#c2831f] text-black rounded-t-lg" 
+            className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${activeTab === "dashboard"
+                ? "bg-[#c2831f] text-black rounded-t-lg"
                 : "text-gray-400 hover:text-white"
-            }`}
+              }`}
           >
             <LayoutDashboard size={18} />
             Dashboard
           </button>
           <button
             onClick={() => setActiveTab("campaigns")}
-            className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
-              activeTab === "campaigns" 
-                ? "bg-[#c2831f] text-black rounded-t-lg" 
+            className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${activeTab === "campaigns"
+                ? "bg-[#c2831f] text-black rounded-t-lg"
                 : "text-gray-400 hover:text-white"
-            }`}
+              }`}
           >
             <Send size={18} />
             Campaigns
           </button>
           <button
             onClick={() => setActiveTab("templates")}
-            className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
-              activeTab === "templates" 
-                ? "bg-[#c2831f] text-black rounded-t-lg" 
+            className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${activeTab === "templates"
+                ? "bg-[#c2831f] text-black rounded-t-lg"
                 : "text-gray-400 hover:text-white"
-            }`}
+              }`}
           >
             <FileText size={18} />
             Templates
@@ -491,31 +437,31 @@ const Dashboard = () => {
             {/* Stats Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                { 
-                  title: "Total Sent", 
-                  value: totalSent.toLocaleString(), 
-                  icon: <Send size={20} />, 
+                {
+                  title: "Total Sent",
+                  value: totalSent.toLocaleString(),
+                  icon: <Send size={20} />,
                   color: "bg-blue-500",
                   change: totalSent > 0 ? "↑ 8% vs last month" : "No data"
                 },
-                { 
-                  title: "Opens", 
-                  value: totalOpens.toLocaleString(), 
-                  icon: <BarChart3 size={20} />, 
+                {
+                  title: "Opens",
+                  value: totalOpens.toLocaleString(),
+                  icon: <BarChart3 size={20} />,
                   color: "bg-[#c2831f]",
                   change: totalOpens > 0 ? "↑ 3% vs last month" : "No data"
                 },
-                { 
-                  title: "Clicks", 
-                  value: totalClicks.toLocaleString(), 
-                  icon: <MousePointer size={20} />, 
+                {
+                  title: "Clicks",
+                  value: totalClicks.toLocaleString(),
+                  icon: <MousePointer size={20} />,
                   color: "bg-[#60a5fa]",
                   change: totalClicks > 0 ? "↓ 2% vs last month" : "No data"
                 },
-                { 
-                  title: "Conversions", 
-                  value: totalConversions.toLocaleString(), 
-                  icon: <TrendingUp size={20} />, 
+                {
+                  title: "Conversions",
+                  value: totalConversions.toLocaleString(),
+                  icon: <TrendingUp size={20} />,
                   color: "bg-[#8b5cf6]",
                   change: totalConversions > 0 ? "↑ 5% vs last month" : "No data"
                 },
@@ -546,7 +492,7 @@ const Dashboard = () => {
                       <CartesianGrid strokeDasharray="3 3" stroke="#444" />
                       <XAxis dataKey="name" stroke="#888" angle={-15} textAnchor="end" height={80} />
                       <YAxis stroke="#888" />
-                      <Tooltip 
+                      <Tooltip
                         contentStyle={{ backgroundColor: "#1a1a1a", border: "1px solid #444", color: "#fff" }}
                         labelStyle={{ color: "#c2831f" }}
                         formatter={(value) => [`${value}%`, '']}
@@ -603,7 +549,7 @@ const Dashboard = () => {
               </div>
             </div>
 
-            
+
 
             {/* Recent Activity */}
             <div className="bg-[#0a0a0a] border border-gray-800 p-6 rounded-2xl shadow-lg">
@@ -690,9 +636,9 @@ const Dashboard = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-                         
+
                         <div className="relative">
-                          
+
                           {showActionMenu === campaign.id && (
                             <div className="absolute right-0 top-full mt-1 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
                               <div className="py-1">
