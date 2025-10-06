@@ -687,8 +687,6 @@ export default function CampaignBuilder() {
   setTimeout(() => checkEmailVerification(email), 2000);
 
   // ✅ Auto-select the email after verification
-  setFromEmail(email);
-  setSelectedSenderOption("custom");
 } else {
   // Instead of raw error, check if it's duplicate sender
   if (data.errors && data.errors[0]?.message.includes("same nickname")) {
@@ -709,7 +707,17 @@ export default function CampaignBuilder() {
   useEffect(() => {
     const fetchVerifiedEmails = async () => {
       try {
-        const response = await fetch(`${API_URL}/api/senders/verified`);
+        const token = getAuthToken(); // 👈 Make sure this returns your token (e.g., from localStorage)
+
+        const response = await fetch(`${API_URL}/api/senders/verified`, {
+          method: "GET",
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`, // 👈 Add token here
+          },
+          credentials: 'include' // 👈 Optional: needed if using cookies for auth
+        });
+
         const contentType = response.headers.get("content-type");
         if (!contentType || !contentType.includes("application/json")) {
           const errorText = await response.text();
@@ -720,18 +728,22 @@ export default function CampaignBuilder() {
           const data = await response.json();
           console.log("Fetched verified emails:", data);
           setVerifiedEmails(data);
+
           // If there are no pre-verified emails, switch to custom option
           if (data.length === 0) {
             setVerificationOption('custom');
           }
+        } else {
+          const errorData = await response.json();
+          console.error("Failed to fetch verified emails:", errorData);
         }
       } catch (error) {
         console.error("Error fetching verified emails:", error);
         setVerificationOption('custom');
       }
     };
-
     fetchVerifiedEmails();
+
   }, []);
 
   // Check verification when email changes (only for custom option)
