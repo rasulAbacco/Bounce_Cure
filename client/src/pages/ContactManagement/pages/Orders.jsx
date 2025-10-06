@@ -101,57 +101,68 @@ const Orders = () => {
     const token = localStorage.getItem("token");
 
     try {
+      // Clean and validate amount: remove non-numeric except decimal point
+      const cleanAmountStr = currentOrder.amount
+        .toString()
+        .replace(/[^0-9.]/g, '');
+
+      const amountNum = parseFloat(cleanAmountStr);
+
+      if (isNaN(amountNum) || amountNum <= 0) {
+        alert("Amount must be a positive number");
+        return; // Stop saving if invalid amount
+      }
+
+      // Construct payload with cleaned amount string and date
+      const payload = {
+        ...currentOrder,
+        amount: cleanAmountStr, // always a positive numeric string
+        date: currentOrder.date,
+      };
+
+      let res;
+
       if (modalMode === "create") {
-        const res = await fetch(API_URL, {
+        res = await fetch(API_URL, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` }),
           },
-          body: JSON.stringify(currentOrder),
+          body: JSON.stringify(payload),
         });
-
-        if (!res.ok) {
-          throw new Error(`Server responded with ${res.status}: ${res.statusText}`);
-        }
-
-        const newOrder = await res.json();
-        setOrders([newOrder, ...orders]);
       } else {
-        const res = await fetch(`${API_URL}/${currentOrder.id}`, {
+        res = await fetch(`${API_URL}/${currentOrder.id}`, {
           method: "PUT",
           headers: {
             "Content-Type": "application/json",
             ...(token && { Authorization: `Bearer ${token}` }),
           },
-          body: JSON.stringify(currentOrder),
+          body: JSON.stringify(payload),
         });
-
-        if (!res.ok) {
-          throw new Error(`Server responded with ${res.status}: ${res.statusText}`);
-        }
-
-        const updatedOrder = await res.json();
-        setOrders(orders.map(o => (o.id === updatedOrder.id ? updatedOrder : o)));
       }
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        console.error(`Server responded with ${res.status}: ${errorText}`);
+        throw new Error(errorText);
+      }
+
+      const savedOrder = await res.json();
+
+      if (modalMode === "create") {
+        setOrders([savedOrder, ...orders]);
+      } else {
+        setOrders(orders.map(o => (o.id === savedOrder.id ? savedOrder : o)));
+      }
+
       setIsModalOpen(false);
     } catch (err) {
       console.error("Failed to save order:", err);
-
-      // Fallback to local state update
-      if (modalMode === "create") {
-        const newOrder = {
-          ...currentOrder,
-          id: `ORD-${1000 + orders.length + 1}`,
-        };
-        setOrders([newOrder, ...orders]);
-      } else {
-        setOrders(orders.map(o => (o.id === currentOrder.id ? currentOrder : o)));
-      }
-
-      setIsModalOpen(false);
+      // Optional: fallback local state update
     }
   }
+
 
   // ✅ Updated delete function with token
   const handleDelete = async (order) => {

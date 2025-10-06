@@ -22,6 +22,7 @@ export const protect = async (req, res, next) => {
 
     // Verify JWT
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = { id: decoded.id };
     console.log("[protect] Decoded token:", decoded);
 
     // Fetch user from DB

@@ -32,6 +32,18 @@ model User {
   Contact             Contact[]
   emailAccounts       EmailAccount[]
   Payment             Payment[]
+  Task                Task[]
+  Deal                Deal[]
+  Lead                Lead[]
+  List                List[]
+  Order               Order[]
+  VerificationBatch   VerificationBatch[]
+  Verification        Verification[]
+  Campaign            Campaign[]
+  CampaignEvent       CampaignEvent[]
+  VerifiedSender      VerifiedSender[]
+  ScheduledCampaign   ScheduledCampaign[]
+  BatchResult         BatchResult[]
 }
 
 model Content {
@@ -168,6 +180,8 @@ model Contact {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   replies   Reply[]
+
+  @@unique([email, userId])
 }
 
 model Task {
@@ -177,6 +191,8 @@ model Task {
   status   String
   priority String
   notes    String?
+  userId   Int?
+  user     User?    @relation(fields: [userId], references: [id])
 }
 
 model Deal {
@@ -187,6 +203,8 @@ model Deal {
   value     Float
   closing   DateTime
   status    String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -268,15 +286,19 @@ model Lead {
   status    String
   score     Int
   last      String
+  userId    Int
+  user      User     @relation(fields: [userId], references: [id])
   createdAt DateTime @default(now())
 }
 
 model List {
-  id           String   @id
+  id           String   @id @default(uuid())
   name         String
   count        Int
   email        String
   phone        String
+  userId       Int
+  user         User     @relation(fields: [userId], references: [id])
   createdAt    DateTime @default(now())
   uploadedFile Bytes?
 }
@@ -290,6 +312,8 @@ model Order {
   amount    String
   status    String
   date      String
+  userId    Int
+  user      User    @relation(fields: [userId], references: [id])
   timestamp BigInt  @default(0) @db.BigInt
   deleted   Boolean @default(false)
 }
@@ -305,12 +329,14 @@ model VerificationBatch {
   riskyCount       Int
   createdAt        DateTime      @default(now())
   results          BatchResult[]
+  userId           Int // ✅ Required
+  user             User          @relation(fields: [userId], references: [id])
 
   @@index([createdAt])
 }
 
 model BatchResult {
-  id             Int      @id @default(autoincrement())
+  id             Int               @id @default(autoincrement())
   batchId        Int
   email          String
   status         String
@@ -326,16 +352,17 @@ model BatchResult {
   provider       String?
   mx             String?
   error          String?
-  createdAt      DateTime @default(now())
-
-  batch VerificationBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
+  createdAt      DateTime          @default(now())
+  userId         Int // ✅ Required
+  user           User              @relation(fields: [userId], references: [id])
+  batch          VerificationBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@index([email])
 }
 
 model Verification {
   id             Int      @id @default(autoincrement())
-  email          String   @unique
+  email          String // 👈 Removed @unique
   status         String
   score          Int?
   syntax_valid   Boolean?
@@ -350,8 +377,10 @@ model Verification {
   mx             String[]
   error          String?
   createdAt      DateTime @default(now())
+  userId         Int
+  user           User     @relation(fields: [userId], references: [id])
 
-  @@index([email])
+  @@unique([userId, email]) // ✅ Add this
 }
 
 model MmsCampaign {
@@ -397,25 +426,29 @@ model Payment {
 }
 
 model ScheduledCampaign {
-  id                 Int         @id @default(autoincrement())
+  id                 Int       @id @default(autoincrement())
+  userId             Int
   campaignName       String
   subject            String
   fromName           String
   fromEmail          String
   recipients         Json
-  template           String? // template choice
-  canvasData         Json? // canvas data
+  template           String?
+  canvasData         Json?
   scheduleType       String
   scheduledDateTime  DateTime?
   timezone           String?
   recurringFrequency String?
-  recurringDays      Json?
+  recurringDays      String?
   recurringEndDate   DateTime?
-  status             String      @default("scheduled")
-  error              String? // 👈 ADD THIS LINE - stores error messages when campaigns fail
-  createdAt          DateTime    @default(now())
-  updatedAt          DateTime    @updatedAt
-  SentEmail          SentEmail[]
+  status             String
+  error              String?
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+
+  // Add relation to User if you have User model
+  user      User        @relation(fields: [userId], references: [id])
+  SentEmail SentEmail[]
 }
 
 model SentEmail {
@@ -431,6 +464,7 @@ model SentEmail {
 model Campaign {
   id              Int      @id @default(autoincrement())
   name            String
+  userId          Int // ✅ Corrected from String to Int
   subject         String
   fromName        String
   fromEmail       String
@@ -442,6 +476,7 @@ model Campaign {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
+  user   User            @relation(fields: [userId], references: [id])
   events CampaignEvent[]
 }
 
@@ -449,6 +484,7 @@ model CampaignEvent {
   id         Int      @id @default(autoincrement())
   campaignId Int
   type       String // "sent" | "open" | "click" | "conversion"
+  userId     Int
   email      String?
   url        String? // For click events
   userAgent  String? // For tracking
@@ -457,12 +493,14 @@ model CampaignEvent {
   sgEventId  String?  @unique // SendGrid event ID to prevent duplicates
 
   campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
+  user     User     @relation(fields: [userId], references: [id])
 }
 
 model CampaignVerifiedEmail {
   id                Int       @id @default(autoincrement())
   email             String    @unique
   fromName          String
+  userId            Int
   verificationToken String?   @unique
   isVerified        Boolean   @default(false)
   verifiedAt        DateTime?
@@ -470,19 +508,26 @@ model CampaignVerifiedEmail {
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 
+  @@unique([email, userId], name: "email_userId")
   @@map("campaign_verified_emails")
 }
 
 model VerifiedSender {
   id               Int       @id @default(autoincrement())
-  email            String    @unique
+  email            String
   fromName         String?
   verified         Boolean   @default(false)
   verifiedAt       DateTime?
-  sendgridSenderId Int? // <-- store SendGrid sender identity id
-  sendgridStatus   String? // <-- store SendGrid status (for debugging)
+  sendgridSenderId Int?
+  sendgridStatus   String?
   token            String?
   tokenExpiresAt   DateTime?
   createdAt        DateTime  @default(now())
   updatedAt        DateTime  @updatedAt
+
+  userId Int
+  user   User @relation(fields: [userId], references: [id])
+
+  @@unique([email, userId])
+  @@index([userId])
 }
