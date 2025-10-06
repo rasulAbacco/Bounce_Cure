@@ -43,10 +43,10 @@ export default function Analytics() {
         setLoading(false);
         return;
       }
-      
+
       try {
         setLoading(true);
-        
+
         // Use the new integrated endpoint
         const res = await fetch(`${API_URL}/api/analytics/sendgrid/campaigns`, {
           headers: {
@@ -54,23 +54,23 @@ export default function Analytics() {
             Authorization: `Bearer ${token}`,
           },
         });
-        
+
         if (res.status === 401) {
           setError("Unauthorized. Please log in again.");
           setLoading(false);
           return;
         }
-        
+
         if (!res.ok) throw new Error(`Request failed with status ${res.status}`);
-        
+
         const data = await res.json();
-        console.log("Fetched enriched campaigns:", data);
-        
-        if (Array.isArray(data)) {
-          setCampaigns(data);
+
+        if (Array.isArray(data.campaigns)) {
+          setCampaigns(data.campaigns);
         } else {
           setCampaigns([]);
         }
+
       } catch (err) {
         console.error("Error fetching campaigns:", err);
         setError("Failed to fetch campaigns.");
@@ -79,7 +79,7 @@ export default function Analytics() {
         setLoading(false);
       }
     };
-    
+
     fetchCampaigns();
   }, []);
 
@@ -125,7 +125,8 @@ export default function Analytics() {
       conversionRate: c.conversionRate || 0,
     }));
 
-  // Campaign table data - now uses enriched campaign data
+  // Campaign table data - now uses enriched campaign data.
+
   const campaignTable = campaigns.map((c) => ({
     id: c.id,
     name: c.name || "Untitled",
@@ -138,6 +139,7 @@ export default function Analytics() {
     clickRate: c.clickRate || 0,
     conversionRate: c.conversionRate || 0,
   }));
+  console.log("📋 campaignTable:", campaignTable);
 
   // Delete campaign
   const handleDelete = async (id) => {
@@ -274,7 +276,7 @@ export default function Analytics() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#444" />
                 <XAxis dataKey="date" stroke="#888" />
                 <YAxis stroke="#888" />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: "#1a1a1a", border: "1px solid #444", color: "#fff" }}
                   labelStyle={{ color: "#c2831f" }}
                 />
@@ -302,7 +304,7 @@ export default function Analytics() {
                 <CartesianGrid strokeDasharray="3 3" stroke="#444" />
                 <XAxis dataKey="date" stroke="#888" />
                 <YAxis stroke="#888" label={{ value: '%', angle: -90, position: 'insideLeft', fill: '#888' }} />
-                <Tooltip 
+                <Tooltip
                   contentStyle={{ backgroundColor: "#1a1a1a", border: "1px solid #444", color: "#fff" }}
                   labelStyle={{ color: "#c2831f" }}
                   formatter={(value) => `${value}%`}

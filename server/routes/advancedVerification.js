@@ -1,4 +1,4 @@
-// advancedVerification.js
+//server/routes/advancedVerification.js
 import dns from "dns/promises";
 import disposableDomains from "./disposableDomains.js";
 import { SMTPClient } from "smtp-client";

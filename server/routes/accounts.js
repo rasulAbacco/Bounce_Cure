@@ -12,7 +12,7 @@ const router = express.Router();
 const safeRun = (fn) => {
   Promise.resolve()
     .then(fn)
-    .catch((err) => console.error("❌ Async error:", err));
+    .catch((err) => console.error("[accounts] ❌ Async error:", err));
 };
 
 // Send email via SMTP using account's SMTP settings
@@ -314,7 +314,6 @@ router.post("/send", async (req, res) => {
 // Create an account
 router.post("/", async (req, res) => {
   const {
-    userId,
     email,
     provider,
     imapHost,
@@ -528,7 +527,7 @@ router.put("/:id", async (req, res) => {
       },
     });
 
-    console.log(`✅ Account updated: ${updatedAccount.email}, starting sync...`);
+    console.log(`[accounts] ✅ Account updated: ${updatedAccount.email}, starting sync...`);
     safeRun(() => syncEmailsForAccount(prisma, updatedAccount));
 
     res.status(200).json(updatedAccount);
@@ -549,7 +548,12 @@ router.delete("/:id", async (req, res) => {
     await prisma.emailAccount.delete({ where: { id: accountId } });
     res.status(200).json({ message: "Account and emails deleted" });
   } catch (err) {
-    console.error("❌ Error deleting account:", err);
+    console.error("[accounts] ❌ Error deleting account:", err);
+
+    if (err.code === "P2025") {
+      return res.status(404).json({ error: "Account not found" });
+    }
+
     res.status(500).json({ error: "Failed to delete account" });
   }
 });

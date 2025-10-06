@@ -1,3 +1,4 @@
+// server/config/sendgrid.js
 import sgMail from "@sendgrid/mail";
 
 sgMail.setApiKey(process.env.SENDGRID_CMP_API_KEY);

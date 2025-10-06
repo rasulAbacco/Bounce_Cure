@@ -36,6 +36,8 @@ import Lists from "./pages/Lists";
 import Orders from "./pages/Orders";
 import Inboxs from "./pages/Inbox";
 const API_URL = import.meta.env.VITE_VRI_URL;
+const token = localStorage.getItem("token"); // or sessionStorage
+
 
 /**
  * NOTE:
@@ -149,36 +151,7 @@ const Modal = ({ open, onClose, title, children, footer }) => {
   );
 };
 
-// === Seed Data ===
-const seedActivities = [
-  { id: 1, text: "John Doe added a new contact", when: "Just now" },
-  { id: 2, text: 'Jane Smith updated Deal status to "Proposal Sent"', when: "2h ago" },
-  { id: 3, text: "Call scheduled with Client X", when: "Today 4:00 PM" },
-];
-const seedTasks = [
-  { id: 1, title: "Follow-up Email with Jane", due: "Aug 20", status: "Pending" },
-  { id: 2, title: "Product Demo for XYZ", due: "Aug 21", status: "Scheduled" },
-];
-const seedLeads = [
-  { id: 1, name: "John Doe", company: "Acme Inc.", status: "New", last: "Aug 18" },
-  { id: 2, name: "Jane Smith", company: "XYZ Corp", status: "Contacted", last: "Aug 17" },
-  { id: 3, name: "Sam Brown", company: "Freelance", status: "Qualified", last: "Aug 19" },
-];
-const pipelinePercents = [
-  { label: "Stage 1: Prospecting", value: 40 },
-  { label: "Stage 2: Qualified", value: 25 },
-  { label: "Stage 3: Proposal", value: 15 },
-  { label: "Stage 4: Closed Won", value: 10 },
-  { label: "Stage 5: Closed Lost", value: 10 },
-];
-const chartData = [
-  { month: "Apr", leads: 80, deals: 24 },
-  { month: "May", leads: 110, deals: 28 },
-  { month: "Jun", leads: 95, deals: 31 },
-  { month: "Jul", leads: 130, deals: 33 },
-  { month: "Aug", leads: 124, deals: 34 },
-];
-// === Main Component ===
+//=== Main Component ===
 export default function ContactManagement() {
   // data states
   const [leads, setLeads] = useState([]);
@@ -221,21 +194,29 @@ export default function ContactManagement() {
   const baseURL = import.meta.env.VITE_VRI_URL;
 
   // Helper: try multiple endpoints for a resource and return first successful result
-  const fetchWithFallback = async (paths = []) => {
+  const fetchWithFallback = async (paths = [], options = {}) => {
+    const token = localStorage.getItem("token"); // Replace with your method
+
     for (const p of paths) {
       try {
         const url = p.startsWith("http") ? p : `${baseURL}${p}`;
-        const res = await axios.get(url);
+        const res = await axios.get(url, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            ...options.headers,
+          },
+        });
         if (res && res.status >= 200 && res.status < 300) {
           return res.data;
         }
       } catch (err) {
-        // keep trying other fallbacks
-        // console.debug(`fetch failed for ${p}:`, err?.response?.status || err.message);
+        // continue trying others
       }
     }
+
     return [];
   };
+
 
   useEffect(() => {
     const loadAll = async () => {
@@ -246,7 +227,7 @@ export default function ContactManagement() {
           // tasks: your server mounts tasks at "/tasks"
           fetchWithFallback(["/tasks", "/api/tasks"]),
           // contacts: prefer /api/contacts (you have app.use("/api/contacts", ...))
-          fetchWithFallback(["/api/contacts", "/contact", "/contact/"]),
+          fetchWithFallback(["/contact", "/contact", "/contact/"]),
           // deals: mounted at "/deals"
           fetchWithFallback(["/deals", "/api/deals"]),
           // orders: mounted at "/orders"
@@ -292,7 +273,12 @@ export default function ContactManagement() {
   useEffect(() => {
     const fetchDashboardStats = async () => {
       try {
-        const res = await axios.get(`${baseURL}/stats`);
+        const token = localStorage.getItem("token"); // Or from context/session
+        const res = await axios.get(`${baseURL}/stats`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
         setPipelinePercents(res.data.pipelinePercents || []);
         setChartData(res.data.chartData || []);
       } catch (err) {
@@ -303,18 +289,29 @@ export default function ContactManagement() {
     fetchDashboardStats();
   }, []);
 
+
   // Add lead: try preferred /api/leads then fallback to /leads
   const addLead = async (e) => {
     e.preventDefault();
+    const token = localStorage.getItem("token");
+
     try {
       let res;
       try {
-        res = await axios.post(`${baseURL}/api/leads`, newLead);
+        res = await axios.post(`${baseURL}/api/leads`, newLead, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
       } catch (err) {
-        // fallback
-        res = await axios.post(`${baseURL}/leads`, newLead);
+        res = await axios.post(`${baseURL}/leads`, newLead, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
       }
-      if (res && res.data) {
+
+      if (res?.data) {
         setLeads((prev) => [res.data, ...prev]);
         setLeadModal(false);
         setNewLead({ name: "", company: "", status: "New", last: new Date().toISOString() });
@@ -324,17 +321,29 @@ export default function ContactManagement() {
     }
   };
 
+
   // Add task: try /tasks then /api/tasks
   const addTask = async (e) => {
     e.preventDefault();
+    const token = localStorage.getItem("token");
+
     try {
       let res;
       try {
-        res = await axios.post(`${baseURL}/tasks`, newTask);
+        res = await axios.post(`${baseURL}/tasks`, newTask, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
       } catch (err) {
-        res = await axios.post(`${baseURL}/api/tasks`, newTask);
+        res = await axios.post(`${baseURL}/api/tasks`, newTask, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
       }
-      if (res && res.data) {
+
+      if (res?.data) {
         setTasks((prev) => [res.data, ...prev]);
         setTaskModal(false);
         setNewTask({ title: "", due: "", status: "Pending" });
@@ -343,6 +352,7 @@ export default function ContactManagement() {
       console.error("Error adding task:", err);
     }
   };
+
 
 
 
