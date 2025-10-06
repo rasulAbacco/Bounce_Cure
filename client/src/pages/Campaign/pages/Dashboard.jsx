@@ -180,60 +180,6 @@ const Dashboard = () => {
     }
   };
 
-  const handleBulkAction = async (action) => {
-    if (selectedCampaigns.length === 0) return;
-    try {
-      const token = localStorage.getItem("token") || "demo-token";
-      const promises = selectedCampaigns.map(id =>
-        fetch(`${API_URL}/api/campaigns/${id}/${action}`, {
-          method: 'POST',
-          headers: { Authorization: `Bearer ${token}` }
-        })
-      );
-      await Promise.all(promises);
-      await Promise.all([fetchAllCampaigns(), fetchAutomationData()]);
-      setSelectedCampaigns([]);
-    } catch (error) {
-      console.error(`Error performing bulk ${action}:`, error);
-    }
-  };
-
-  const toggleCampaignSelection = (campaignId) => {
-    setSelectedCampaigns(prev => prev.includes(campaignId)
-      ? prev.filter(id => id !== campaignId)
-      : [...prev, campaignId]);
-  };
-
-  const handleTriggerSend = async () => {
-    try {
-      const token = localStorage.getItem("token") || "demo-token";
-      const response = await fetch(`${API_URL}/api/automation/trigger-cron`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      const data = await response.json();
-      await fetchAutomationData();
-
-      const scheduledCount = scheduledCampaigns.filter(c => c.status === 'scheduled').length;
-      if (scheduledCount > 0) {
-        const campaignList = scheduledCampaigns
-          .filter(c => c.status === 'scheduled')
-          .map(c => `- ${c.campaignName}: ${new Date(c.scheduledDateTime).toLocaleString()}`)
-          .join('\n');
-        setTriggerMessage(`Found ${scheduledCount} scheduled campaigns:\n${campaignList}`);
-      } else {
-        setTriggerMessage("No scheduled campaigns found.");
-      }
-
-      setShowTriggerMessage(true);
-      setTimeout(() => setShowTriggerMessage(false), 5000);
-    } catch (error) {
-      console.error("Error triggering cron job:", error);
-      setTriggerMessage("Failed to trigger cron job");
-      setShowTriggerMessage(true);
-      setTimeout(() => setShowTriggerMessage(false), 5000);
-    }
-  };
 
   // Initialize data
   useEffect(() => {
