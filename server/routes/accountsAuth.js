@@ -5,8 +5,8 @@ import { google } from "googleapis";
 
 const router = express.Router();
 
-const CLIENT_ID = "109767680809-o3344kgv8f9lcsbt2eakveqt2cpkjcuk.apps.googleusercontent.com";
-const CLIENT_SECRET = "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";
+const CLIENT_ID = "";
+const CLIENT_SECRET = "";
 const REDIRECT_URI = "https://www.bouncecure.com/";
 const SCOPES = [
   "https://mail.google.com/",
