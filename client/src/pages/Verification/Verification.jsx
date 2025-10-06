@@ -68,35 +68,54 @@ const Verification = () => {
 
   // Load history on mount
   useEffect(() => {
+    const token = localStorage.getItem("token");
+
     const loadBulk = async () => {
       try {
-        const res = await axios.get(`${VRI_URL}/verification/batches?source=bulk`);
+        const res = await axios.get(`${VRI_URL}/verification/batches?source=bulk`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log("Bulk batches response:", res.data);
         setBulkHistory(res.data.batches || []);
         if ((res.data.batches || []).length > 0) setViewingBulkId(res.data.batches[0].id);
       } catch (e) {
         console.warn("Could not fetch bulk history", e?.message || e);
       }
     };
+
     const loadManual = async () => {
       try {
-        const res = await axios.get(`${VRI_URL}/verification/batches?source=manual`);
+        const res = await axios.get(`${VRI_URL}/verification/batches?source=manual`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        console.log("Manual batches response:", res.data);
         setManualHistory(res.data.batches || []);
         if ((res.data.batches || []).length > 0) setViewingManualId(res.data.batches[0].id);
       } catch (e) {
         console.warn("Could not fetch manual history", e?.message || e);
       }
     };
+
+
     loadBulk();
     loadManual();
   }, []);
 
   // ---------------- Single verify ----------------
   const verifySingle = async () => {
+    const token = localStorage.getItem("token");
+
     if (!singleEmail?.trim()) return alert("Please enter an email");
     setLoadingSingle(true);
     try {
-      const res = await axios.post(`${VRI_URL}/verification/verify-single`, { email: singleEmail.trim() });
-      // backend returns saved verification object (or raw result) — accept either
+      const res = await axios.post(
+        `${VRI_URL}/verification/verify-single`,
+        { email: singleEmail.trim() },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+
       const result = res.data?.email ? res.data : res.data?.result || res.data;
       setSingleResult(result);
       setSingleHistory((p) => [result, ...p]);
@@ -111,6 +130,7 @@ const Verification = () => {
 
   // ---------------- Bulk Upload ----------------
   const handleBulkUpload = async (e) => {
+    const token = localStorage.getItem("token");
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -123,9 +143,9 @@ const Verification = () => {
         const content = event.target.result;
         const emails = content
           .split(/\r?\n/)
-          .map(line => line.trim())
-          .filter(line => line) // Remove empty lines only
-          .slice(0, 1000); // Limit to prevent excessive requests
+          .map((line) => line.trim())
+          .filter((line) => line)
+          .slice(0, 1000);
 
         if (emails.length === 0) {
           alert("No valid emails found in the file.");
@@ -134,22 +154,32 @@ const Verification = () => {
         }
 
         try {
-          const res = await axios.post(`${VRI_URL}/verification/verify-bulk`, { emails }, {
-            headers: { "Content-Type": "application/json" },
-          });
+          const res = await axios.post(
+            `${VRI_URL}/verification/verify-bulk`,
+            { emails },
+            {
+              headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+              },
+            }
+          );
 
           const data = res.data;
 
-          // Normalize summary keys (backend uses valid/invalid/risky)
           const newBatch = {
             id: data.batchId,
             name: `Bulk Upload ${new Date().toLocaleString()}`,
             timestamp: new Date().toLocaleString(),
             results: data.results || [],
-            summary: data.summary || { total: emails.length, validCount: 0, invalidCount: 0, riskyCount: 0 }
+            summary: data.summary || {
+              total: emails.length,
+              validCount: 0,
+              invalidCount: 0,
+              riskyCount: 0,
+            },
           };
 
-          // Save in state
           setBulkHistory((prev) => [newBatch, ...prev]);
           setViewingBulkId(newBatch.id);
         } catch (err) {
@@ -168,19 +198,25 @@ const Verification = () => {
     }
   };
 
-
   // ---------------- Manual verify ----------------
   const verifyManual = async () => {
+    const token = localStorage.getItem("token");
+
     if (!pasteText?.trim()) return alert("Paste emails or text first");
     setLoadingManual(true);
     try {
-      const res = await axios.post(`${VRI_URL}/verification/verify-manual`, {
-        text: pasteText,
-        includeOnlyValid,
-        name: `manual_${Date.now()}`,
-      });
+      const res = await axios.post(
+        `${VRI_URL}/verification/verify-manual`,
+        {
+          text: pasteText,
+          includeOnlyValid,
+          name: `manual_${Date.now()}`,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
 
-      // similar shape handling to bulk
       let newBatch = null;
       if (res.data?.batchId) {
         newBatch = {
@@ -228,6 +264,7 @@ const Verification = () => {
       setLoadingManual(false);
     }
   };
+
 
   // ---------------- Utilities ----------------
   const downloadResults = (results = [], format = "csv", filename = "results") => {
@@ -545,26 +582,56 @@ const Verification = () => {
                         <div className="font-semibold text-yellow-300">{b.name || "Batch"}</div>
                         <div className="text-xs text-gray-400">{b.timestamp}</div>
                         <div className="text-xs text-gray-500">
-                          {formatNumber(b.summary?.total)} emails • {formatNumber(b.summary?.validCount)} valid • {formatNumber(b.summary?.invalidCount)} invalid
+                          {formatNumber(b.total)} emails • {formatNumber(b.validCount)} valid • {formatNumber(b.invalidCount)} invalid
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        <button title="View" onClick={(e) => { e.stopPropagation(); setViewingBulkId(b.id); }} className="text-yellow-400"><FaEye /></button>
+                        {/* View */}
+                        <button
+                          title="View"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setViewingBulkId(b.id);
+                          }}
+                          className="text-yellow-400"
+                        >
+                          <FaEye />
+                        </button>
+
+                        {/* Download */}
                         <button
                           title="Download CSV"
-                          onClick={(e) => { e.stopPropagation(); downloadResults(b.results || [], "csv", `bulk_${b.id}`); }}
+                          onClick={async (e) => {
+                            e.stopPropagation();
+                            try {
+                              const res = await axios.get(`${VRI_URL}/verification/batches/${b.id}/results`, {
+                                headers: { Authorization: `Bearer ${token}` },
+                              });
+                              const results = res.data.results || [];
+                              downloadResults(results, "csv", `bulk_${b.id}`);
+                            } catch (err) {
+                              console.error("Failed to download results", err.message || err);
+                            }
+                          }}
                           className="text-green-400"
                         >
                           <HiOutlineDownload />
                         </button>
+
+                        {/* Delete */}
                         <button
                           title="Delete"
-                          onClick={(e) => { e.stopPropagation(); setBulkHistory((p) => p.filter((x) => x.id !== b.id)); }}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            // Optionally call a DELETE endpoint here too
+                            setBulkHistory((prev) => prev.filter((x) => x.id !== b.id));
+                          }}
                           className="text-red-400"
                         >
                           <FaTrash />
                         </button>
                       </div>
+
                     </div>
                   ))}
                 </div>

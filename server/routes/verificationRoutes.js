@@ -1,3 +1,4 @@
+
 //verificationRoutes.js
 import express from "express";
 import AdvancedVerifier from "./advancedVerification.js";
@@ -33,20 +34,24 @@ router.post("/verify-single", async (req, res) => {
   const { email } = req.body || {};
   const smtpCheck = (req.body?.smtpCheck ?? req.query?.smtpCheck ?? false) === true;
 
-  console.log(`[/verify-single] Email=${email}, smtpCheck=${smtpCheck}`);
-
   if (!email) return res.status(400).json({ error: "Email is required" });
+
+  const userId = req.user?.id; // 👈 Get user ID from token
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
   try {
     const result = await verifier.verify(email, { smtpCheck: Boolean(smtpCheck) });
-    console.log(`[/verify-single] Result:`, result);
 
-    // Add detailed logging for debugging
-    console.log("[DEBUG] Full result details:", JSON.stringify(result, null, 2));
+    console.log("[/verify-single] Verification result:", JSON.stringify(result, null, 2)); // ✅ Log full result
 
     try {
       await prisma.verification.upsert({
-        where: { email: result.email },
+        where: {
+          userId_email: {
+            userId: req.user.id,
+            email: result.email
+          }
+        },
         update: {
           status: result.status,
           score: result.score ?? 0,
@@ -57,8 +62,9 @@ router.post("/verify-single", async (req, res) => {
           disposable: result.disposable ?? false,
           role_based: result.role_based ?? false,
           greylisted: result.greylisted ?? false,
-          mx: result.mx || [],
-          error: result.error || null
+          mx: Array.isArray(result.mx) ? result.mx : [result.mx],
+          error: result.error || null,
+          userId
         },
         create: {
           email: result.email,
@@ -71,8 +77,9 @@ router.post("/verify-single", async (req, res) => {
           disposable: result.disposable ?? false,
           role_based: result.role_based ?? false,
           greylisted: result.greylisted ?? false,
-          mx: result.mx || [],
-          error: result.error || null
+          mx: Array.isArray(result.mx) ? result.mx : [result.mx],
+          error: result.error || null,
+          userId
         }
       });
     } catch (dbErr) {
@@ -84,7 +91,9 @@ router.post("/verify-single", async (req, res) => {
     console.error("[/verify-single] ERROR:", err);
     return res.status(500).json({ error: "Verification error", details: err.message });
   }
+
 });
+
 
 // ------ Bulk verify ------
 
@@ -92,21 +101,21 @@ router.post("/verify-bulk", async (req, res) => {
   const { emails } = req.body || {};
   const smtpCheck = (req.body?.smtpCheck ?? req.query?.smtpCheck ?? false) === true;
 
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
   console.log(`[/verify-bulk] Received ${emails?.length || 0} emails, smtpCheck=${smtpCheck}`);
 
   if (!emails || !Array.isArray(emails) || emails.length === 0) {
-    console.log("[/verify-bulk] Invalid emails input");
     return res.status(400).json({ error: "Emails array is required" });
   }
 
   try {
-    // Split emails into chunks of 500 max (mails.so limit)
     const chunkSize = 500;
     const emailChunks = [];
     for (let i = 0; i < emails.length; i += chunkSize) {
       emailChunks.push(emails.slice(i, i + chunkSize));
     }
-    console.log(`[/verify-bulk] Split into ${emailChunks.length} chunk(s)`);
 
     const allResults = [];
     let totalSummary = {
@@ -121,14 +130,8 @@ router.post("/verify-bulk", async (req, res) => {
     };
 
     for (let i = 0; i < emailChunks.length; i++) {
-      console.log(`[/verify-bulk] Processing chunk ${i + 1}/${emailChunks.length} with ${emailChunks[i].length} emails`);
-
-      const startTime = Date.now();
       const batchId = await verifier.createBatchWithMailsSo(emailChunks[i]);
-      console.log(`[/verify-bulk] Created batch ${batchId} for chunk ${i + 1}`);
-
       const batchResults = await verifier.waitForBatchCompletion(batchId);
-      console.log(`[/verify-bulk] Batch ${batchId} completed in ${(Date.now() - startTime) / 1000}s with ${batchResults.length} results`);
 
       batchResults.forEach((r) => {
         allResults.push(r);
@@ -144,14 +147,13 @@ router.post("/verify-bulk", async (req, res) => {
       });
     }
 
-    console.log(`[/verify-bulk] Total emails processed: ${allResults.length}`);
-
-    // Save batch in DB
+    // ✅ Save batch in DB with userId
     const batch = await prisma.verificationBatch.create({
       data: {
         source: "bulk",
         name: "Manual Bulk Upload",
         includeOnlyValid: false,
+        userId, // ✅ associate batch with user
         total: totalSummary.total,
         validCount: totalSummary.validCount,
         invalidCount: totalSummary.invalidCount,
@@ -181,14 +183,13 @@ router.post("/verify-bulk", async (req, res) => {
               provider: r.provider ?? null,
               mx: mxValue,
               error: r.error || null,
+              userId, // ✅ associate each result with user
             };
           }),
         },
       },
       include: { results: false },
     });
-
-    console.log(`[/verify-bulk] Batch saved with id: ${batch.id}`);
 
     return res.json({ batchId: batch.id, summary: totalSummary, results: allResults });
   } catch (err) {
@@ -199,10 +200,15 @@ router.post("/verify-bulk", async (req, res) => {
 
 
 
+
 // ------ Manual paste verify ------
 
 router.post("/verify-manual", async (req, res) => {
   const { text, includeOnlyValid = false, maxRich = false, name = "manual_paste" } = req.body || {};
+  const userId = req.user?.id;
+
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
   if (!text || typeof text !== "string") {
     return res.status(400).json({ error: "Text is required" });
   }
@@ -215,6 +221,7 @@ router.post("/verify-manual", async (req, res) => {
 
     const unique = [...new Set(emails)].filter(Boolean);
     const filtered = unique.filter(e => !isExampleOrFakeEmail(e));
+
     if (!filtered.length) {
       return res.status(400).json({ error: "No valid (non-fake) emails found." });
     }
@@ -223,7 +230,6 @@ router.post("/verify-manual", async (req, res) => {
     const CONCURRENCY_LIMIT = 40;
     const limit = pLimit(CONCURRENCY_LIMIT);
 
-    // Chunk emails
     const chunks = [];
     for (let i = 0; i < filtered.length; i += CHUNK_SIZE) {
       chunks.push(filtered.slice(i, i + CHUNK_SIZE));
@@ -232,7 +238,6 @@ router.post("/verify-manual", async (req, res) => {
     let results = [];
     let summary = { total: filtered.length, valid: 0, invalid: 0, risky: 0 };
 
-    // Function to verify a single email with concurrency limit
     const verifyEmail = (email) =>
       limit(async () => {
         try {
@@ -245,20 +250,17 @@ router.post("/verify-manual", async (req, res) => {
         }
       });
 
-    // Process each chunk sequentially (to avoid overwhelming), emails inside chunk in parallel
     for (const chunk of chunks) {
       const chunkResults = await Promise.all(chunk.map(email => verifyEmail(email)));
-      // Filter out nulls (emails excluded due to includeOnlyValid)
       const filteredResults = chunkResults.filter(r => r !== null);
 
-      // Aggregate results
       filteredResults.forEach(r => {
         results.push(r);
         summary[r.status] = (summary[r.status] || 0) + 1;
       });
     }
 
-    // Save batch
+    // ✅ Save the batch with userId
     const batch = await prisma.verificationBatch.create({
       data: {
         source: "manual",
@@ -268,6 +270,7 @@ router.post("/verify-manual", async (req, res) => {
         validCount: summary.valid,
         invalidCount: summary.invalid,
         riskyCount: summary.risky,
+        userId, // ✅ Attach userId here
         results: {
           create: results.map(r => {
             let mxValue = r.mx;
@@ -276,6 +279,7 @@ router.post("/verify-manual", async (req, res) => {
             } else if (typeof mxValue !== 'string' && mxValue !== null) {
               mxValue = null;
             }
+
             return {
               email: r.email,
               status: r.status || "unknown",
@@ -289,6 +293,7 @@ router.post("/verify-manual", async (req, res) => {
               greylisted: r.greylisted ?? false,
               mx: mxValue,
               error: r.error || null,
+              userId // ✅ Also associate each result with user
             };
           }),
         },
@@ -313,16 +318,22 @@ router.post("/verify-manual", async (req, res) => {
 });
 
 
+
 // Get recent batches
 router.get("/batches", async (req, res) => {
+  const userId = req.user?.id;
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
   const { source } = req.query;
+
+  const where = source ? { source, userId } : { userId };
+
   try {
-    const where = source ? { source } : {};
     const batches = await prisma.verificationBatch.findMany({
       where,
       orderBy: { createdAt: "desc" },
       take: 20,
-      include: { results: true }
+      include: { results: false } // or true, depending on your UI
     });
     return res.json({ batches });
   } catch (err) {
@@ -331,19 +342,35 @@ router.get("/batches", async (req, res) => {
   }
 });
 
+
 // Get results for a specific batch
 router.get("/batches/:id/results", async (req, res) => {
+  const userId = req.user?.id;
   const batchId = parseInt(req.params.id, 10);
+
+  if (!userId) return res.status(401).json({ error: "Unauthorized" });
+
   try {
+    // ✅ First, check that batch belongs to the current user
+    const batch = await prisma.verificationBatch.findFirst({
+      where: { id: batchId, userId },
+    });
+
+    if (!batch) {
+      return res.status(403).json({ error: "You do not have access to this batch" });
+    }
+
     const results = await prisma.batchResult.findMany({
       where: { batchId },
       orderBy: { createdAt: "asc" }
     });
+
     return res.json({ results });
   } catch (err) {
     console.error("[/batches/:id/results] ERROR", err);
     return res.status(500).json({ error: "Failed to load results" });
   }
 });
+
 
 export default router;
