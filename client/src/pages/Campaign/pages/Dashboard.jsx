@@ -78,17 +78,14 @@ const Dashboard = () => {
   const fetchAnalyticsData = async () => {
     try {
       const token = localStorage.getItem("token") || "demo-token";
-
       // Fetch SendGrid summary
       const summaryRes = await fetch(`${API_URL}/api/analytics/sendgrid/summary`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (summaryRes.ok) {
         const summaryData = await summaryRes.json();
         setSgSummary(summaryData);
       }
-
       // Fetch campaigns with analytics
       const campaignsRes = await fetch(`${API_URL}/api/analytics/sendgrid/campaigns`, {
         headers: {
@@ -96,7 +93,6 @@ const Dashboard = () => {
           Authorization: `Bearer ${token}`,
         },
       });
-
       if (campaignsRes.ok) {
         const campaignsData = await campaignsRes.json();
         setCampaigns(campaignsData);
@@ -111,42 +107,34 @@ const Dashboard = () => {
   const fetchAutomationData = async () => {
     try {
       const token = localStorage.getItem("token") || "demo-token";
-
       // Fetch automation stats
       const statsRes = await fetch(`${API_URL}/api/automation/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setAutomationStats(statsData);
       }
-
       // Fetch scheduled campaigns
       const scheduledRes = await fetch(`${API_URL}/api/automation/scheduled`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (scheduledRes.ok) {
         const scheduledData = await scheduledRes.json();
         setScheduledCampaigns(scheduledData);
       }
-
       // Fetch automation logs
       const logsRes = await fetch(`${API_URL}/api/automation/logs`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (logsRes.ok) {
         const logsData = await logsRes.json();
         setAutomationLogs(logsData);
       }
-
       // Check sender verification
       const verificationRes = await fetch(`${API_URL}/api/automation/sender/verification`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       if (verificationRes.ok) {
         const verificationData = await verificationRes.json();
         setSenderVerified(verificationData.verified);
@@ -288,7 +276,7 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-screen bg-black">
-        <RefreshCw className="animate-spin text-[#c2831f]" size={32} />
+        <RefreshCw className="animate-spin text-[#e2971f]" size={32} />
       </div>
     );
   }
@@ -309,7 +297,7 @@ const Dashboard = () => {
           <div className="flex space-x-3 cursor-pointer z-50">
             <button
               onClick={() => window.location.reload()}
-              className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-500 text-[#c2831f] hover:text-white hover:border-yellow-500 transition"
+              className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-500 text-[#e2971f] hover:text-white hover:border-yellow-500 transition"
             >
               <RefreshCw className="w-6 h-6" />
             </button>
@@ -394,8 +382,9 @@ const Dashboard = () => {
         <div className="flex gap-1">
           <button
             onClick={() => setActiveTab("dashboard")}
-            className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${activeTab === "dashboard"
-                ? "bg-[#c2831f] text-black rounded-t-lg"
+            className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
+              activeTab === "dashboard" 
+                ? "bg-[#e2971f] text-black rounded-t-lg" 
                 : "text-gray-400 hover:text-white"
               }`}
           >
@@ -404,8 +393,9 @@ const Dashboard = () => {
           </button>
           <button
             onClick={() => setActiveTab("campaigns")}
-            className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${activeTab === "campaigns"
-                ? "bg-[#c2831f] text-black rounded-t-lg"
+            className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
+              activeTab === "campaigns" 
+                ? "bg-[#e2971f] text-black rounded-t-lg" 
                 : "text-gray-400 hover:text-white"
               }`}
           >
@@ -414,8 +404,9 @@ const Dashboard = () => {
           </button>
           <button
             onClick={() => setActiveTab("templates")}
-            className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${activeTab === "templates"
-                ? "bg-[#c2831f] text-black rounded-t-lg"
+            className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
+              activeTab === "templates" 
+                ? "bg-[#e2971f] text-black rounded-t-lg" 
                 : "text-gray-400 hover:text-white"
               }`}
           >
@@ -444,11 +435,11 @@ const Dashboard = () => {
                   color: "bg-blue-500",
                   change: totalSent > 0 ? "↑ 8% vs last month" : "No data"
                 },
-                {
-                  title: "Opens",
-                  value: totalOpens.toLocaleString(),
-                  icon: <BarChart3 size={20} />,
-                  color: "bg-[#c2831f]",
+                { 
+                  title: "Opens", 
+                  value: totalOpens.toLocaleString(), 
+                  icon: <BarChart3 size={20} />, 
+                  color: "bg-[#e2971f]",
                   change: totalOpens > 0 ? "↑ 3% vs last month" : "No data"
                 },
                 {
@@ -494,11 +485,11 @@ const Dashboard = () => {
                       <YAxis stroke="#888" />
                       <Tooltip
                         contentStyle={{ backgroundColor: "#1a1a1a", border: "1px solid #444", color: "#fff" }}
-                        labelStyle={{ color: "#c2831f" }}
+                        labelStyle={{ color: "#e2971f" }}
                         formatter={(value) => [`${value}%`, '']}
                       />
                       <Legend />
-                      <Bar dataKey="openRate" fill="#c2831f" name="Open Rate %" radius={[8, 8, 0, 0]} />
+                      <Bar dataKey="openRate" fill="#e2971f" name="Open Rate %" radius={[8, 8, 0, 0]} />
                       <Bar dataKey="clickRate" fill="#60a5fa" name="Click Rate %" radius={[8, 8, 0, 0]} />
                       <Bar dataKey="conversionRate" fill="#8b5cf6" name="Conversion Rate %" radius={[8, 8, 0, 0]} />
                     </BarChart>
@@ -512,7 +503,7 @@ const Dashboard = () => {
               <div className="bg-[#0a0a0a] border border-gray-800 p-6 rounded-2xl shadow-lg">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-white">Recent Campaigns</h3>
-                  <Activity className="text-[#c2831f]" size={20} />
+                  <Activity className="text-[#e2971f]" size={20} />
                 </div>
                 <div className="space-y-3 max-h-80 overflow-y-auto">
                   {recentCampaigns.length > 0 ? (
@@ -525,12 +516,12 @@ const Dashboard = () => {
                               {campaign.createdAt ? formatDateTime(campaign.createdAt) : 'N/A'}
                             </p>
                           </div>
-                          <Mail className="text-[#c2831f]" size={18} />
+                          <Mail className="text-[#e2971f]" size={18} />
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex gap-4">
                             <span className="text-gray-400">
-                              Opens: <span className="text-[#c2831f] font-semibold">{campaign.openRate || 0}%</span>
+                              Opens: <span className="text-[#e2971f] font-semibold">{campaign.openRate || 0}%</span>
                             </span>
                             <span className="text-gray-400">
                               Clicks: <span className="text-blue-400 font-semibold">{campaign.clickRate || 0}%</span>
@@ -548,7 +539,6 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
-
 
 
             {/* Recent Activity */}
@@ -591,7 +581,7 @@ const Dashboard = () => {
                   <input
                     type="text"
                     placeholder="Search campaigns..."
-                    className="pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#c2831f]"
+                    className="pl-10 pr-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#e2971f]"
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                   />
@@ -599,7 +589,7 @@ const Dashboard = () => {
                 <select
                   value={filterStatus}
                   onChange={(e) => setFilterStatus(e.target.value)}
-                  className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#c2831f]"
+                  className="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-[#e2971f]"
                 >
                   <option value="all">All Status</option>
                   <option value="draft">Draft</option>
@@ -689,7 +679,7 @@ const Dashboard = () => {
                   <p className="text-gray-500 mb-4">Create your first campaign to see it here</p>
                   <button
                     onClick={() => window.location.href = '/send-campaign'}
-                    className="px-4 py-2 bg-[#c2831f] text-white rounded-lg hover:bg-[#d09025]"
+                    className="px-4 py-2 bg-[#e2971f] text-white rounded-lg hover:bg-[#d09025]"
                   >
                     Create Campaign
                   </button>
