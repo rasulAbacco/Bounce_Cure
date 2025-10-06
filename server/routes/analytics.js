@@ -46,63 +46,57 @@ router.get("/sendgrid/summary", protect, async (req, res) => {
   const endDate = req.query.endDate || new Date().toISOString().split("T")[0];
 
   try {
-    // Optional: fetch SendGrid data globally (no user filter possible)
-    const url = `https://api.sendgrid.com/v3/stats?start_date=${startDate}&end_date=${endDate}&aggregated_by=day`;
-    const data = await fetchWithCache(url, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${SENDGRID_API_KEY}`,
-        "Content-Type": "application/json",
+    // Skip global SendGrid data since it's not user-specific.
+    // If needed, you can still log or debug with the external API here.
+
+    // Instead, always return user-specific summary from the DB
+    const campaigns = await prisma.campaign.findMany({
+      where: {
+        userId: req.user.id, // ✅ Filter by logged-in user
+        createdAt: {
+          gte: new Date(startDate),
+          lte: new Date(endDate),
+        },
       },
     });
 
-    // If you want to return SendGrid stats, be aware this is global across all users
-    // You can choose to return this or skip this block
+    let processed = 0;
+    let delivered = 0;
+    let opens = 0;
+    let clicks = 0;
+    let conversions = 0;
+
+    for (const c of campaigns) {
+      const sent = c.sentCount || 0;
+      const open = c.openCount || 0;
+      const click = c.clickCount || 0;
+      const conversion = c.conversionCount || 0;
+
+      processed += sent;
+      delivered += sent;
+      opens += open;
+      clicks += click;
+      conversions += conversion;
+    }
+
+    const openRate = delivered > 0 ? Math.round((opens / delivered) * 100) : 0;
+    const clickRate = delivered > 0 ? Math.round((clicks / delivered) * 100) : 0;
+    const conversionRate = delivered > 0 ? Math.round((conversions / delivered) * 100) : 0;
 
     return res.json({
-      source: "sendgrid",
-      // parse and sum metrics here (like you had)
-      // but this is not user filtered
+      source: "db",
+      processed,
+      delivered,
+      opens,
+      clicks,
+      conversions,
+      openRate,
+      clickRate,
+      conversionRate,
     });
-  } catch (err) {
-    console.error("SendGrid fetch failed or skipped, falling back to DB:", err);
-
-    try {
-      const campaigns = await prisma.campaign.findMany({
-        where: {
-          userId: req.user.id,  // **Filter by logged-in user**
-        },
-      });
-
-      let processed = 0;
-      let delivered = 0;
-      let opens = 0;
-      let clicks = 0;
-      let conversions = 0;
-
-      campaigns.forEach((c) => {
-        processed += c.sentCount || 0;
-        delivered += c.sentCount || 0;
-        opens += c.openCount || 0;
-        clicks += c.clickCount || 0;
-        conversions += c.conversionCount || 0;
-      });
-
-      return res.json({
-        source: "db",
-        processed,
-        delivered,
-        opens,
-        clicks,
-        conversions,
-        openRate: delivered > 0 ? Math.round((opens / delivered) * 100) : 0,
-        clickRate: delivered > 0 ? Math.round((clicks / delivered) * 100) : 0,
-        conversionRate: delivered > 0 ? Math.round((conversions / delivered) * 100) : 0,
-      });
-    } catch (dbErr) {
-      console.error("DB fallback failed:", dbErr);
-      return res.status(500).json({ error: "Analytics unavailable" });
-    }
+  } catch (error) {
+    console.error("Error fetching summary:", error);
+    return res.status(500).json({ error: "Analytics unavailable" });
   }
 });
 
