@@ -206,11 +206,12 @@ async function fetchAccessToken(url, params) {
 
 async function getZohoAccessToken(clientId, clientSecret, refreshToken) {
   return fetchAccessToken("https://accounts.zoho.com/oauth/v2/token", {
-    client_id: clientId,
-    client_secret: clientSecret,
-    refresh_token: refreshToken,
-    grant_type: "refresh_token",
-  });
+  client_id: clientId,
+  client_secret: clientSecret,
+  refresh_token: refreshToken,
+  grant_type: "refresh_token",
+});
+
 }
 
 async function getRediffAccessToken(clientId, clientSecret, refreshToken) {
@@ -294,7 +295,7 @@ async function syncGmailAPI(prisma, account) {
     }
   }
 }
-
+ 
 // Outlook API sync
 async function syncOutlookAPI(prisma, account) {
   const accessToken = await getOutlookAccessToken(account.oauthClientId, account.oauthClientSecret);
@@ -371,7 +372,27 @@ async function syncImap(prisma, account) {
     throw new Error("No valid authentication method available");
   }
 
-  const client = new ImapFlow({
+let client;
+
+if (account.authType === 'password') {
+  // Standard IMAP login with app password
+  client = new ImapFlow({
+    host: account.imapHost,
+    port: account.imapPort,
+    secure: true,
+    auth: {
+      user: account.imapUser,
+      pass: account.encryptedPass, // ✅ direct app password
+    },
+    tls: {
+      rejectUnauthorized: false, // helps for Zoho/Outlook SSL handshake edge cases
+    },
+    socketTimeout: 120000,
+    authTimeout: 30000,
+  });
+} else if (account.authType === 'oauth') {
+  // OAuth flow (for Gmail, Zoho OAuth, etc.)
+  client = new ImapFlow({
     host: account.imapHost,
     port: account.imapPort,
     secure: true,
@@ -379,6 +400,8 @@ async function syncImap(prisma, account) {
     socketTimeout: 120000,
     authTimeout: 30000,
   });
+}
+
 
   client.on("error", (err) => console.error(`❌ IMAP socket error [${account.imapUser}]:`, err.message));
 

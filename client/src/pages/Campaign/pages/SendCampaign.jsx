@@ -1168,12 +1168,12 @@ const handleSendCampaign = async () => {
                               onChange={handleChange}
                             >
                               <option value="">Select an option</option>
-                              <option value="all-subscribers">
+                              {/* <option value="all-subscribers">
                                 All Subscribers
                               </option>
                               <option value="new-customers">
                                 New Customers
-                              </option>
+                              </option> */}
                               <option value="manual">
                                 Manual (paste emails)
                               </option>

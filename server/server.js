@@ -50,7 +50,7 @@ import { initSocket } from "./services/socketService.js";
 // Middleware
 import { protect } from "./middleware/auth.js";
 
-
+import accountsAuthRoutes from "./routes/accountsAuth.js";
 import stripeRoutes from './routes/stripe.js';
 import razorpayRoutes from './routes/razorpay.js';
 import creditcardRoutes from './routes/creditcard.js';
@@ -142,6 +142,7 @@ app.use("/orders", protect, orderRoutes);
 app.use("/stats", protect, crmDashRoutes);
 app.use("/api/emails", protect, emailsRouter);
 app.use("/api/accounts", protect, accountsRouter);
+app.use("/api/auth", accountsAuthRoutes);
 app.use("/api/conversations", protect, convRouter);
 app.use("/api/saved-replies", protect, savedRepliesRouter);
 app.use("/api/campaigncontacts", protect, campaignContactsRoutes);

@@ -167,7 +167,7 @@ export default function Analytics() {
           <h1 className="text-2xl font-bold text-[#c2831f]">Analytics Dashboard</h1>
           <div className="flex items-center gap-2 relative">
             {/* Date Picker */}
-            <div className="relative">
+            {/* <div className="relative">
               <button
                 onClick={() => setShowDatePicker(!showDatePicker)}
                 className="flex items-center gap-1 px-3 py-2 border border-gray-700 rounded-lg bg-black hover:bg-gray-900"
@@ -204,7 +204,7 @@ export default function Analytics() {
                   </div>
                 </div>
               )}
-            </div>
+            </div> */}
 
             {/* Filter Dropdown */}
             <div className="relative">

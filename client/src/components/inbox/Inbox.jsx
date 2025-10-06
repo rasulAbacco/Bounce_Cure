@@ -1,3 +1,4 @@
+// client/src/components/inbox/Inbox.jsx
 import React, { useEffect, useState } from "react";
 import { api } from "../../api";
 import Sidebar from "./Sidebar";

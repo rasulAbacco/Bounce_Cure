@@ -103,6 +103,8 @@ function App() {
             <Route path="/pricing" element={<Pricing />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />
             <Route path="/signupd" element={<Signupd />} />
+             <Route path="/WatsupCampaign" element={ <WatsupCampaign /> } />
+            <Route path="/smscampaign" element={ <SMSCampaign /> } />
 
             <Route path="/stripe" element={<StripeWrapper />} />
             <Route path="/razorpay" element={<Razorpay />} />
@@ -139,8 +141,7 @@ function App() {
             <Route path="/verifydemail" element={<ProtectedRoute><VerifydEmail /></ProtectedRoute>} /> // Old route for backward compatibility
             <Route path="/all-templates" element={<ProtectedRoute><AllTemplates /></ProtectedRoute>} />
             <Route path="/verify-email" element={<ProtectedRoute><VerifyEmail /></ProtectedRoute>} />
-            <Route path="/WatsupCampaign" element={<ProtectedRoute><WatsupCampaign /></ProtectedRoute>} />
-            <Route path="/smscampaign" element={<ProtectedRoute><SMSCampaign /></ProtectedRoute>} />
+           
             <Route path="/terms-and-conditions" element={<TermsConditions />} />
             <Route path="/MultimediaCampaign" element={<ProtectedRoute><MultimediaCampaign /></ProtectedRoute>} />
             <Route path="/whatsapp" element={<ProtectedRoute><WhatsappCampaign /></ProtectedRoute>} />

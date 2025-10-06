@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect,useMemo  } from "react";
 import {
   LineChart,
   Line,
@@ -29,7 +29,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import DashboardLayout from "../../components/DashboardLayout";
-
+import { Link } from "react-router-dom";
 const API_URL = import.meta.env.VITE_VRI_URL;
 
 const rateTrendData = [
@@ -48,7 +48,17 @@ const Dashboard = () => {
   const [sgSummary, setSgSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [metrics, setMetrics] = useState({
+    totalSent: 0,
+    delivered: 0,
+    totalOpens: 0,
+    totalClicks: 0,
+    totalConversions: 0,
+    openRate: 0,
+    clickRate: 0,
+  });
 
+  // ======== Helper Functions ========
   const fetchWithAuth = async (url) => {
     const token = localStorage.getItem("token");
     const response = await fetch(url, {
@@ -67,26 +77,28 @@ const Dashboard = () => {
     return response.json();
   };
 
-  // Fetch SendGrid summary for stats
-  useEffect(() => {
-    const fetchSendGridSummary = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) return;
+  const calculateMetrics = (campaignsData, summaryData) => {
+    const totalSent =
+      summaryData?.processed ||
+      campaignsData.reduce((sum, c) => sum + (c.sentCount || 0), 0);
+    const delivered =
+      summaryData?.delivered || totalSent;
+    const totalOpens =
+      summaryData?.opens ||
+      campaignsData.reduce((sum, c) => sum + (c.openCount || 0), 0);
+    const totalClicks =
+      summaryData?.clicks ||
+      campaignsData.reduce((sum, c) => sum + (c.clickCount || 0), 0);
+    const totalConversions =
+      summaryData?.conversions ||
+      campaignsData.reduce((sum, c) => sum + (c.conversionCount || 0), 0);
 
-        const data = await fetchWithAuth(
-          `${API_URL}/api/analytics/sendgrid/summary`
-        );
-        console.log("SendGrid summary:", data);
-        setSgSummary(data);
-      } catch (err) {
-        console.error("Error fetching SendGrid summary:", err);
-      }
-    };
-    fetchSendGridSummary();
-  }, []);
+    return { totalSent, delivered, totalOpens, totalClicks, totalConversions };
+  };
 
-  // Fetch campaigns with SendGrid integration
+ 
+
+  // ======== Fetch Data ========
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -100,21 +112,17 @@ const Dashboard = () => {
           return;
         }
 
-        // Use the enriched campaigns endpoint like Analytics page
-        const [campaignsData, scheduledData] = await Promise.all([
-          fetchWithAuth(`${API_URL}/api/analytics/sendgrid/campaigns`).catch(
-            () => []
-          ),
+        const [campaignsData, scheduledData, summaryData] = await Promise.all([
+          fetchWithAuth(`${API_URL}/api/analytics/sendgrid/campaigns`).catch(() => []),
           fetchWithAuth(`${API_URL}/api/automation/scheduled`).catch(() => []),
+          fetchWithAuth(`${API_URL}/api/analytics/sendgrid/summary`).catch(() => null),
         ]);
 
-        console.log("Fetched enriched campaigns:", campaignsData);
         setCampaigns(Array.isArray(campaignsData) ? campaignsData : []);
-        setScheduledCampaigns(
-          Array.isArray(scheduledData) ? scheduledData : []
-        );
+        setScheduledCampaigns(Array.isArray(scheduledData) ? scheduledData : []);
+        setSgSummary(summaryData);
       } catch (err) {
-        console.error("Error fetching campaigns:", err);
+        console.error(err);
         setError(err.message);
       } finally {
         setLoading(false);
@@ -123,48 +131,56 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
+  // ======== Merge Campaigns ========
   useEffect(() => {
     const campaignMap = new Map();
-    if (Array.isArray(campaigns)) {
-      campaigns.forEach((c) =>
-        campaignMap.set(c.id, { ...c, source: "campaigns" })
-      );
-    }
-    if (Array.isArray(scheduledCampaigns)) {
-      scheduledCampaigns.forEach((s) => {
-        if (campaignMap.has(s.id)) {
-          campaignMap.set(s.id, {
-            ...campaignMap.get(s.id),
-            ...s,
-            source: "both",
-          });
-        } else {
-          campaignMap.set(s.id, {
-            ...s,
-            name: s.campaignName,
-            source: "scheduled",
-          });
-        }
-      });
-    }
+    campaigns.forEach((c) => campaignMap.set(c.id, { ...c, source: "campaigns" }));
+    scheduledCampaigns.forEach((s) => {
+      if (campaignMap.has(s.id)) {
+        campaignMap.set(s.id, { ...campaignMap.get(s.id), ...s, source: "both" });
+      } else {
+        campaignMap.set(s.id, { ...s, name: s.campaignName, source: "scheduled" });
+      }
+    });
     setAllCampaigns(Array.from(campaignMap.values()));
   }, [campaigns, scheduledCampaigns]);
 
-  // Calculate metrics using SendGrid summary data
-  const totalSent =
-    sgSummary?.processed ||
-    campaigns.reduce((sum, c) => sum + (c.sentCount || 0), 0);
-  const totalOpens =
-    sgSummary?.opens ||
-    campaigns.reduce((sum, c) => sum + (c.openCount || 0), 0);
-  const totalClicks =
-    sgSummary?.clicks ||
-    campaigns.reduce((sum, c) => sum + (c.clickCount || 0), 0);
+  // ======== Metrics ========
+  useEffect(() => {
+    const calculatedMetrics = calculateMetrics(allCampaigns, sgSummary);
+    setMetrics(calculatedMetrics);
+  }, [allCampaigns, sgSummary]);
 
-  const openRate =
-    totalSent > 0 ? ((totalOpens / totalSent) * 100).toFixed(1) : "0.0";
-  const clickRate =
-    totalSent > 0 ? ((totalClicks / totalSent) * 100).toFixed(1) : "0.0";
+  // ======== Performance Data for Chart ========
+  const performanceData = useMemo(() => {
+    const map = new Map();
+
+    allCampaigns.forEach((c) => {
+      const dateKey = c.createdAt
+        ? new Date(c.createdAt).toISOString().split("T")[0]
+        : c.scheduledDateTime
+        ? new Date(c.scheduledDateTime).toISOString().split("T")[0]
+        : null;
+      if (!dateKey) return;
+
+      if (!map.has(dateKey)) {
+        map.set(dateKey, { date: dateKey, sent: 0, opens: 0, clicks: 0 });
+      }
+
+      const entry = map.get(dateKey);
+      entry.sent += c.sentCount || 0;
+      entry.opens += c.openCount || 0;
+      entry.clicks += c.clickCount || 0;
+    });
+
+    return Array.from(map.values())
+      .map((d) => ({
+        ...d,
+        openRate: d.sent > 0 ? ((d.opens / d.sent) * 100).toFixed(1) : 0,
+        clickRate: d.sent > 0 ? ((d.clicks / d.sent) * 100).toFixed(1) : 0,
+      }))
+      .sort((a, b) => new Date(a.date) - new Date(b.date));
+  }, [allCampaigns]);
 
   const today = new Date();
   today.setHours(0, 0, 0, 0);
@@ -294,6 +310,9 @@ const Dashboard = () => {
       </div>
     );
   }
+  
+
+ 
 
   return (
     <DashboardLayout>
@@ -318,7 +337,7 @@ const Dashboard = () => {
                     Total Sent Mails
                   </p>
                   <p className="text-3xl font-bold text-white mt-1">
-                    {totalSents}
+                    {metrics.totalSent.toLocaleString()}
                   </p>
                 </div>
                 <div className="p-3 bg-gray-800 rounded-2xl group-hover:bg-gray-700 transition-all">
@@ -376,67 +395,73 @@ const Dashboard = () => {
               </div>
                
             </div>
-
             {/* Average Open Rate Card */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:bg-gray-800 transition-all">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm text-gray-400">Average Open Rate</h3>
+                <h3 className="text-sm text-gray-400">Total Opens</h3>
                 <span className="px-2 py-1 text-xs rounded-lg bg-[#c2831f]/10 text-[#c2831f]">
-                  %
+                  Opens
                 </span>
               </div>
-              <p className="text-3xl font-bold text-white mb-2">{openRate}%</p>
-              <div className="h-12">
+              <p className="text-3xl font-bold text-white mb-2">
+                  {metrics.totalOpens.toLocaleString()}
+              </p>
+              <div className="h-20">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={rateTrendData}>
                     <Line
                       type="monotone"
-                      dataKey="sentMails"
+                      dataKey="campaigns"
                       stroke="#c2831f"
                       strokeWidth={2}
                       dot={{ stroke: '#c2831f', strokeWidth: 2, r: 3 }}
                       activeDot={{ r: 5, stroke: '#a66f1a' }}
                     />
-                    
+                   
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             </div>
 
-            {/* Click-through Rate Card */}
+            {/* Click-through Count Card */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:bg-gray-800 transition-all">
               <div className="flex items-center justify-between mb-2">
-                <h3 className="text-sm text-gray-400">Click-through Rate</h3>
+                <h3 className="text-sm text-gray-400">Total Clicks</h3>
                 <span className="px-2 py-1 text-xs rounded-lg bg-[#c2831f]/10 text-[#c2831f]">
-                  CTR
+                  Clicks
                 </span>
               </div>
-              <p className="text-3xl font-bold text-white mb-2">{clickRate}%</p>
-              <div className="h-12">
+              <p className="text-3xl font-bold text-white mb-2">
+                  {metrics.totalClicks.toLocaleString()}
+              </p>
+              <div className="h-20">
                 <ResponsiveContainer width="100%" height="100%">
                   <LineChart data={rateTrendData}>
                     <Line
                       type="monotone"
-                      dataKey="sentMails"
+                      dataKey="campaigns"
                       stroke="#c2831f"
                       strokeWidth={2}
                       dot={{ stroke: '#c2831f', strokeWidth: 2, r: 3 }}
                       activeDot={{ r: 5, stroke: '#a66f1a' }}
                     />
-                    
+                   
                   </LineChart>
                 </ResponsiveContainer>
               </div>
             </div>
+
           </div>
 
           {/* Performance Chart */}
+        <div className="max-w-7xl mx-auto p-6 space-y-8">
+          {/* Performance Over Time Chart */}
           <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl hover:bg-gray-800 transition-all">
             <h2 className="text-lg font-semibold text-white mb-4">
               Performance Over Time
             </h2>
             <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={rateTrendData}>
+              <AreaChart data={performanceData}>
                 <defs>
                   <linearGradient id="colorOpen" x1="0" y1="0" x2="0" y2="1">
                     <stop offset="5%" stopColor="#c2831f" stopOpacity={0.8} />
@@ -475,6 +500,7 @@ const Dashboard = () => {
               </AreaChart>
             </ResponsiveContainer>
           </div>
+        </div>
 
           {/* Campaign Table */}
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:bg-gray-800 transition-all">
@@ -711,29 +737,29 @@ const Dashboard = () => {
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:bg-gray-800 transition-all">
             <h3 className="text-xl font-bold text-white mb-6">Quick Actions</h3>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <button className="w-full bg-[#c2831f] text-white font-semibold py-4 px-6 rounded-xl hover:bg-[#a66f1a] flex items-center justify-center gap-3 group">
+              <Link to="/email-campaign" className="w-full bg-[#c2831f] text-white font-semibold py-4 px-6 rounded-xl hover:bg-[#a66f1a] flex items-center justify-center gap-3 group">
                 <Plus className="w-5 h-5 group-hover:scale-110 transition-transform" />
                 Create New Campaign
-              </button>
-              <button className="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl border border-gray-700 hover:border-gray-600 flex items-center justify-center gap-3 group">
+              </Link>
+              <Link to="/automation" className="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl border border-gray-700 hover:border-gray-600 flex items-center justify-center gap-3 group">
                 <Upload className="w-5 h-5 group-hover:scale-110 transition-transform text-[#c2831f]" />
                 Automations
-              </button>
-              <button className="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl border border-gray-700 hover:border-gray-600 flex items-center justify-center gap-3 group">
+              </Link>
+              <Link to="/analytics" className="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl border border-gray-700 hover:border-gray-600 flex items-center justify-center gap-3 group">
                 <BarChart3 className="w-5 h-5 group-hover:scale-110 transition-transform text-[#c2831f]" />
                 Analytics
-              </button>
-              <button className="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl border border-gray-700 hover:border-gray-600 flex items-center justify-center gap-3 group">
+              </Link>
+              <Link to="/verification" className="w-full bg-gray-800 hover:bg-gray-700 text-white font-semibold py-4 px-6 rounded-xl border border-gray-700 hover:border-gray-600 flex items-center justify-center gap-3 group">
                 <Database className="w-5 h-5 group-hover:scale-110 transition-transform text-[#c2831f]" />
                 Email Validation
-              </button>
+              </Link>
             </div>
             <div className="mt-6 pt-6 border-t border-gray-800">
               <h4 className="text-white font-medium mb-4">Settings</h4>
-              <button className="p-3 bg-gray-800 hover:bg-gray-700 rounded-xl text-white flex items-center gap-2 w-fit">
+              <Link to="/settings" className="p-3 bg-gray-800 hover:bg-gray-700 rounded-xl text-white flex items-center gap-2 w-fit">
                 <Settings className="w-4 h-4 text-[#c2831f]" />
                 <span className="text-sm">Settings</span>
-              </button>
+              </Link>
             </div>
           </div>
         </div>
