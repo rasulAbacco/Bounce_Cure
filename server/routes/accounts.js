@@ -4,6 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import { runSync, sendEmailWithSendGrid, syncEmailsForAccount } from "../services/imapSync.js";
 import nodemailer from "nodemailer";
 import { getOAuth2AccessToken, getZohoAccessToken, getRediffAccessToken, getOutlookAccessToken } from "./accountsAuth.js";
+import { protect } from "../middleware/authMiddleware.js"; // example auth middleware
 
 const prisma = new PrismaClient();
 const router = express.Router();
@@ -28,6 +29,64 @@ router.post("/send-via-smtp", async (req, res) => {
       error: "accountId is required",
       received: req.body,
     });
+
+// Basic ownership authorization middleware
+async function authorizeAccountAccess(req, res, next) {
+  const accountId = Number(req.params.id || req.query.accountId);
+  if (isNaN(accountId)) return res.status(400).json({ error: "Invalid account ID" });
+
+  try {
+    const account = await prisma.emailAccount.findUnique({ where: { id: accountId } });
+    if (!account) return res.status(404).json({ error: "Account not found" });
+
+    // Check ownership
+    if (req.user.id !== account.userId) {
+      return res.status(403).json({ error: "Forbidden: You don't own this account" });
+    }
+
+    // Attach account for later use if needed
+    req.account = account;
+    next();
+  } catch (err) {
+    console.error("[accounts] ❌ Authorization error:", err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+}
+
+/**
+ * Add a new email account
+ */
+router.post("/", protect, async (req, res) => {
+  const {
+    email,
+    provider,
+    imapHost,
+    imapPort,
+    imapUser,
+    smtpHost,
+    smtpPort,
+    smtpUser,
+    encryptedPass,
+    oauthClientId,
+    oauthClientSecret,
+    refreshToken,
+    authType,
+  } = req.body;
+
+  const userId = req.user.id; // use authenticated userId
+
+  if (
+    !userId ||
+    !email ||
+    !provider ||
+    !imapHost ||
+    !imapPort ||
+    !imapUser ||
+    !smtpHost ||
+    !smtpPort ||
+    !smtpUser
+  ) {
+    return res.status(400).json({ error: "All connection fields are required" });
   }
 
   if (!to) {
@@ -239,12 +298,13 @@ router.post("/send-via-smtp", async (req, res) => {
 router.get("/", async (_req, res) => {
   try {
     const accounts = await prisma.emailAccount.findMany({
+      where: { userId: req.user.id }, // only own accounts
       orderBy: { createdAt: "desc" },
       include: { user: true },
     });
     res.json(accounts);
   } catch (err) {
-    console.error("❌ Error fetching accounts:", err);
+    console.error("[accounts] ❌ Error fetching accounts:", err);
     res.status(500).json({ error: "Failed to fetch accounts" });
   }
 });
@@ -258,10 +318,12 @@ router.get("/emails", async (req, res) => {
     const emails = await prisma.email.findMany({
       where: { accountId },
       orderBy: { date: "desc" },
+      take: limit,
+      skip: offset,
     });
     res.json(emails);
   } catch (err) {
-    console.error("❌ Error fetching emails:", err);
+    console.error("[accounts] ❌ Error fetching emails:", err);
     res.status(500).json({ error: "Failed to fetch emails" });
   }
 });
@@ -273,12 +335,13 @@ router.post("/sync/:id", async (req, res) => {
     const account = await prisma.emailAccount.findUnique({ where: { id: accountId } });
     if (!account) return res.status(404).json({ error: "Account not found" });
 
-    console.log(`🔄 Manual sync requested for ${account.email}`);
+  try {
+    console.log(`[accounts] 🔄 Manual sync requested for ${account.email}`);
     safeRun(() => syncEmailsForAccount(prisma, account));
 
     res.status(200).json({ message: "Sync started" });
   } catch (err) {
-    console.error("❌ Error triggering sync:", err);
+    console.error("[accounts] ❌ Error triggering sync:", err);
     res.status(500).json({ error: "Failed to trigger sync" });
   }
 });
@@ -286,11 +349,11 @@ router.post("/sync/:id", async (req, res) => {
 // Trigger sync for all accounts
 router.post("/sync", async (_req, res) => {
   try {
-    console.log("🔄 Manual sync requested for ALL accounts");
-    safeRun(() => runSync(prisma));
+    console.log(`[accounts] 🔄 Manual sync requested for ALL accounts of user ${req.user.id}`);
+    safeRun(() => runSync(prisma, { userId: req.user.id }));
     res.status(200).json({ message: "Sync started for all accounts" });
   } catch (err) {
-    console.error("❌ Error triggering sync:", err);
+    console.error("[accounts] ❌ Error triggering sync:", err);
     res.status(500).json({ error: "Failed to trigger sync" });
   }
 });
@@ -306,7 +369,7 @@ router.post("/send", async (req, res) => {
     const sent = await sendEmailWithSendGrid({ to, subject, text, html });
     res.status(sent ? 200 : 500).json({ message: sent ? "Email sent via SendGrid" : "Failed to send email" });
   } catch (err) {
-    console.error("❌ SendGrid error:", err);
+    console.error("[accounts] ❌ SendGrid error:", err);
     res.status(500).json({ error: "Failed to send email via SendGrid" });
   }
 });
