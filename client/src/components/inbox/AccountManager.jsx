@@ -162,12 +162,12 @@ export default function AccountManager({ onAccountSelected, onAccountAdded, curr
         newForm.smtpHost = "smtp.office365.com"; newForm.smtpPort = 587;
         break;
       case "zoho":
-        newForm.imapHost = "imap.zoho.com"; newForm.imapPort = 993;
-        newForm.smtpHost = "smtp.zoho.com"; newForm.smtpPort = 587;
+        newForm.imapHost = "imappro.zoho.in"; newForm.imapPort = 993;
+        newForm.smtpHost = "smtppro.zoho.in"; newForm.smtpPort = 587;
         break;
       case "rediff":
-        newForm.imapHost = "imap.rediffmail.com"; newForm.imapPort = 993;
-        newForm.smtpHost = "smtp.rediffmail.com"; newForm.smtpPort = 465;
+        newForm.imapHost = "imap.rediffmailpro.com"; newForm.imapPort = 993;
+        newForm.smtpHost = "smtp.rediffmailpro.com"; newForm.smtpPort = 465;
         break;
       case "amazon":
         newForm.imapHost = "imap.mail.us-east-1.awsapps.com"; newForm.imapPort = 993;
@@ -221,8 +221,8 @@ export default function AccountManager({ onAccountSelected, onAccountAdded, curr
         {/* Provider */}
         <div>
           <label>Provider</label>
-          <select value={form.provider} onChange={handleProviderChange} className="w-full p-2 border rounded text-black">
-            <option value="gmail">Gmail</option>
+          <select value={form.provider} onChange={handleProviderChange} className="w-full p-2 border rounded text-white bg-gray-700 ">
+            <option value="gmail" className="bg-gray-500">Gmail</option>
             <option value="gsuite">G Suite</option>
             <option value="outlook">Outlook (Office 365)</option>
             <option value="zoho">Zoho</option>
@@ -237,7 +237,7 @@ export default function AccountManager({ onAccountSelected, onAccountAdded, curr
         <div>
           <label>Authentication</label>
           <select value={form.authType} onChange={(e) => setForm({ ...form, authType: e.target.value })}
-                  className="w-full p-2 border rounded text-black">
+            className="w-full p-2 border rounded text-white bg-gray-700 ">
             <option value="password">App Password</option>
             <option value="oauth">OAuth2</option>
           </select>
@@ -245,29 +245,29 @@ export default function AccountManager({ onAccountSelected, onAccountAdded, curr
 
         {/* Common fields */}
         <input type="email" placeholder="Email Address" value={form.email} onChange={handleEmailChange}
-               className="w-full p-2 border rounded text-black" required />
+          className="w-full p-2 border rounded text-white" required />
 
         {/* IMAP/SMTP */}
         <input type="text" placeholder="IMAP Host" value={form.imapHost}
-               onChange={(e) => setForm({ ...form, imapHost: e.target.value })} className="w-full p-2 border rounded text-black" required />
+          onChange={(e) => setForm({ ...form, imapHost: e.target.value })} className="w-full p-2 border rounded text-white" required />
         <input type="number" placeholder="IMAP Port" value={form.imapPort}
-               onChange={(e) => setForm({ ...form, imapPort: parseInt(e.target.value) })} className="w-full p-2 border rounded text-black" required />
+          onChange={(e) => setForm({ ...form, imapPort: parseInt(e.target.value) })} className="w-full p-2 border rounded text-white" required />
         <input type="text" placeholder="IMAP Username" value={form.imapUser}
-               onChange={(e) => setForm({ ...form, imapUser: e.target.value })} className="w-full p-2 border rounded text-black" required />
+          onChange={(e) => setForm({ ...form, imapUser: e.target.value })} className="w-full p-2 border rounded text-white" required />
 
         <input type="text" placeholder="SMTP Host" value={form.smtpHost}
-               onChange={(e) => setForm({ ...form, smtpHost: e.target.value })} className="w-full p-2 border rounded text-black" required />
+          onChange={(e) => setForm({ ...form, smtpHost: e.target.value })} className="w-full p-2 border rounded text-white" required />
         <input type="number" placeholder="SMTP Port" value={form.smtpPort}
-               onChange={(e) => setForm({ ...form, smtpPort: parseInt(e.target.value) })} className="w-full p-2 border rounded text-black" required />
+          onChange={(e) => setForm({ ...form, smtpPort: parseInt(e.target.value) })} className="w-full p-2 border rounded text-white" required />
         <input type="text" placeholder="SMTP Username" value={form.smtpUser}
-               onChange={(e) => setForm({ ...form, smtpUser: e.target.value })} className="w-full p-2 border rounded text-black" required />
+          onChange={(e) => setForm({ ...form, smtpUser: e.target.value })} className="w-full p-2 border rounded text-white" required />
 
         {/* Auth-specific fields */}
         {form.authType === "password" ? (
           <div>
             <label>App Password</label>
             <input type="password" placeholder="App Password" value={form.encryptedPass}
-                   onChange={(e) => setForm({ ...form, encryptedPass: e.target.value })} className="w-full p-2 border rounded text-black" required />
+              onChange={(e) => setForm({ ...form, encryptedPass: e.target.value })} className="w-full p-2 border rounded text-white" required />
             <p className="text-sm text-gray-400 mt-1">
               Use an app password from your email provider's security settings.
             </p>
@@ -275,12 +275,12 @@ export default function AccountManager({ onAccountSelected, onAccountAdded, curr
         ) : (
           <>
             <input type="text" placeholder="OAuth Client ID" value={form.oauthClientId}
-                   onChange={(e) => setForm({ ...form, oauthClientId: e.target.value })} className="w-full p-2 border rounded text-black" required />
+                onChange={(e) => setForm({ ...form, oauthClientId: e.target.value })} className="w-full p-2 border rounded text-white" required />
             <input type="text" placeholder="OAuth Client Secret" value={form.oauthClientSecret}
-                   onChange={(e) => setForm({ ...form, oauthClientSecret: e.target.value })} className="w-full p-2 border rounded text-black" required />
+                onChange={(e) => setForm({ ...form, oauthClientSecret: e.target.value })} className="w-full p-2 border rounded text-white" required />
             {form.provider !== "outlook" && (
               <input type="text" placeholder="OAuth Refresh Token" value={form.refreshToken}
-                     onChange={(e) => setForm({ ...form, refreshToken: e.target.value })} className="w-full p-2 border rounded text-black" required />
+                  onChange={(e) => setForm({ ...form, refreshToken: e.target.value })} className="w-full p-2 border rounded text-white" required />
             )}
           </>
         )}

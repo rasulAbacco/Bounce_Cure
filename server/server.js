@@ -4,7 +4,7 @@ import dotenv from 'dotenv';
 import express from 'express';
 import cors from 'cors';
 import http from "http";
-import { Server as IOServer } from "socket.io";
+import { Server} from "socket.io";
 import { PrismaClient } from "@prisma/client";
 
 // Routes
@@ -72,8 +72,19 @@ const allowedOrigins = [
 
 // HTTP server and socket
 const server = http.createServer(app);
-const io = new IOServer(server, {
-  cors: { origin: "https://www.bouncecure.com", credentials: true },
+
+// Step 2: Pass CORS options to Socket.IO
+const io = new Server(server, {
+  cors: {
+    origin: ['http://localhost:5173', 'https://www.bouncecure.com'],
+    methods: ['GET', 'POST'],
+    credentials: true
+  }
+});
+
+io.on('connection', (socket) => {
+  console.log('a user connected');
+  // your socket logic here
 });
 
 // CORS
