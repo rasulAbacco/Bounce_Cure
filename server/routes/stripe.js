@@ -1,4 +1,3 @@
-
 // server/routes/stripe.js
 import express from "express";
 import Stripe from "stripe";
@@ -12,122 +11,150 @@ const router = express.Router();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const prisma = new PrismaClient();
 
+// Check Stripe secret key validity on server start
+stripe.customers.list({ limit: 1 })
+  .then(() => console.log('✅ Stripe SECRET key is valid'))
+  .catch(err => console.error('❌ Stripe SECRET key error:', err.message));
+
 /**
  * Utility: Get next payment date from plan type
  */
 export const getNextPaymentDate = (currentDate, planType) => {
-    const date = new Date(currentDate);
-    if (planType === "month") {
-        date.setMonth(date.getMonth() + 1);
-    } else if (planType === "year") {
-        date.setFullYear(date.getFullYear() + 1);
-    }
-    return date.toISOString();
+  const date = new Date(currentDate);
+  if (planType === "month") {
+    date.setMonth(date.getMonth() + 1);
+  } else if (planType === "year") {
+    date.setFullYear(date.getFullYear() + 1);
+  }
+  return date.toISOString();
 };
 
 /**
  * Create Stripe Payment Intent
  */
 router.post("/create-payment-intent", async (req, res) => {
-    const { amount, email, planName, planType, currency = "usd" } = req.body;
+  const { amount, email, planName, planType, currency = "usd" } = req.body;
 
-    if (!amount || !email) {
-        return res.status(400).json({ error: "Amount and email are required" });
-    }
+  if (!amount || !email) {
+    return res.status(400).json({ error: "Amount and email are required" });
+  }
 
-    try {
-        const paymentIntent = await stripe.paymentIntents.create({
-            amount: Math.round(amount * 100), // Stripe requires cents
-            currency,
-            receipt_email: email,
-            description: `${planName || "Subscription"} for ${email}`,
-            payment_method_types: ["card"], // Explicitly allow card
-        });
+  try {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: Math.round(amount * 100), // Stripe expects cents
+      currency,
+      receipt_email: email,
+      description: `${planName || "Subscription"} for ${email}`,
+      payment_method_types: ["card"],
+    });
 
-        res.json({
-            clientSecret: paymentIntent.client_secret,
-            transactionId: paymentIntent.id,
-        });
-    } catch (err) {
-        console.error("Stripe error:", err);
-        res.status(500).json({ error: err.message });
-    }
+    res.json({
+      clientSecret: paymentIntent.client_secret,
+      transactionId: paymentIntent.id,
+    });
+  } catch (err) {
+    console.error("Stripe error:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 /**
  * Save Payment + Generate & Email Invoice
  */
 router.post("/save-payment", async (req, res) => {
-    try {
-        const {
-            amount,
-            discount,
-            planPrice,
-            paymentDate,
-            billingAddress = "",
-            planName,
-            planType,
-            email,
-            transactionId,
-            userId,
-            provider,
-            contacts,
-        } = req.body;
+  try {
+    const {
+    name,
+    amount,
+    discount,
+    planPrice,
+    paymentDate,
+    billingAddress,
+    planName,
+    planType,
+    email,
+    transactionId,
+    userId,
+    provider,
+    contacts,
+    currency,
+    paymentMethod,
+    cardLast4,
+    status,
+   
+    } = req.body;
 
-        if (!amount || !planName || !email || !transactionId) {
-            return res.status(400).json({ error: "Missing required fields" });
-        }
 
-        const paymentDateObj = new Date(paymentDate || new Date());
-        const nextPaymentDate = getNextPaymentDate(paymentDateObj, planType);
-
-        const paymentData = {
-            amount: Number(amount),
-            discount: Number(discount ?? amount),
-            planPrice: Number(planPrice ?? amount),
-            billingAddress,
-            planName,
-            planType,
-            email,
-            transactionId,
-            userId,
-            provider,
-            contacts,
-            paymentDate: paymentDateObj,
-            nextPaymentDate,
-        };
-
-        // Save payment in DB
-        const payment = await prisma.payment.create({ data: paymentData });
-
-        // Generate invoice PDF
-        const pdfBuffer = await generateInvoice(payment);
-        if (!pdfBuffer) throw new Error("Invoice PDF generation failed");
-
-        // Prepare HTML email
-        const html = invoiceEmailTemplate({
-            transactionId: payment.transactionId,
-            planName: payment.planName,
-            total: payment.amount,
-        });
-
-        // Send invoice email
-        await sendInvoiceEmail({
-            to: payment.email,
-            subject: `Invoice ${payment.transactionId} - ${payment.planName}`,
-            html,
-            pdfBuffer,
-            fileName: `invoice-${payment.transactionId}.pdf`,
-        });
-
-        res.json(payment);
-    } catch (err) {
-        console.error("Error saving payment:", err);
-        res.status(500).json({ error: err.message });
+    // Validate required fields
+    if (!name || !amount || !planName || !email || !transactionId) {
+      return res.status(400).json({ error: "Missing required fields" });
     }
+
+    // Safe defaults
+    const paymentDateObj = new Date(paymentDate || new Date());
+    const nextPaymentDate = getNextPaymentDate(paymentDateObj, planType);
+    const safeContacts = contacts ?? 0; // default 0 if undefined
+    const safeDiscount = discount ?? 0;
+    const safePlanPrice = planPrice ?? amount;
+
+const paymentData = {
+  userId,
+  name,
+  email,
+  transactionId,
+  planName,
+  planType,
+  provider,
+  contacts: Number(contacts ?? 0),
+  amount: Number(amount),
+  currency: currency || 'usd',
+  planPrice: Number(planPrice ?? amount),
+  discount: Number(discount ?? 0),
+  paymentMethod: paymentMethod || 'card',
+  cardLast4: cardLast4 || '',
+  billingAddress: billingAddress || '',
+  paymentDate: new Date(paymentDate),
+  nextPaymentDate: nextPaymentDate
+    ? new Date(nextPaymentDate)
+    : new Date(getNextPaymentDate(paymentDate, planType)),
+  status: status || 'succeeded',
+};
+
+
+
+    // Save payment in database
+    const payment = await prisma.payment.create({ data: paymentData });
+
+    // Generate invoice PDF
+    const pdfBuffer = await generateInvoice(payment);
+    if (!pdfBuffer) throw new Error("Invoice PDF generation failed");
+
+    // Prepare HTML email
+    const html = invoiceEmailTemplate({
+      transactionId: payment.transactionId,
+      planName: payment.planName,
+      total: payment.amount,
+    });
+
+    // Send invoice email
+    await sendInvoiceEmail({
+      to: payment.email,
+      subject: `Invoice ${payment.transactionId} - ${payment.planName}`,
+      html,
+      pdfBuffer,
+      fileName: `invoice-${payment.transactionId}.pdf`,
+    });
+
+    res.json(payment);
+
+  } catch (err) {
+    console.error("Error saving payment:", err);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 export default router;
+
 
 
 // // server/routes/stripe.js

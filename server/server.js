@@ -49,11 +49,14 @@ import { initSocket } from "./services/socketService.js";
  
 // Middleware
 import { protect } from "./middleware/auth.js";
+import webhookRoutes from "./routes/webhooks.js";
 
 import accountsAuthRoutes from "./routes/accountsAuth.js";
 import stripeRoutes from './routes/stripe.js';
 import razorpayRoutes from './routes/razorpay.js';
 import creditcardRoutes from './routes/creditcard.js';
+import contactRoutes from './routes/ContactUs.js';
+import userRoutes from './routes/user.js';
 
 // ENV setup
 dotenv.config();
@@ -100,6 +103,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // ----------------------- Routes -----------------------
+app.use('/api', userRoutes);
 
 // Test protected route
 app.get("/api/dashboard-data", protect, (req, res) => {
@@ -114,6 +118,7 @@ app.use("/api/auth", passwordRoutes); // Optional, combine with authRoutes if de
 app.use("/dashboard", dashboardCRM);
 app.use("/verification", protect, verificationRoutes);
 app.use("/api", dashboardRoutes);
+app.use("/api/webhooks", webhookRoutes);
 
 // Other API routes
 app.use("/api", invoiceRoutes);
@@ -149,7 +154,10 @@ app.use("/api/campaigncontacts", protect, campaignContactsRoutes);
 app.use("/api/campaigns", protect, campaignsRoutes);
 app.use("/api/verified-emails", protect, verifiedEmailsRouter);
 app.use('/api/analytics', protect, analyticsRouter);
- 
+
+app.use('/api/contact', contactRoutes);
+   
+
 
 
 // Socket service

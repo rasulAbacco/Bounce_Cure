@@ -1,39 +1,20 @@
+// Settings.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import DashboardLayout from "../../components/DashboardLayout";
 import { useNotificationContext } from "../../components/NotificationContext";
 import Select from "react-select";
 import { Toaster, toast } from "react-hot-toast";
+import { Shield, Bell, Trash2, AlertCircle } from 'lucide-react';
 const API_URL = import.meta.env.VITE_VRI_URL;
-// Rotating SVG wrapper
-const RotatingSvg = ({ className = "", children, ...props }) => (
-  <svg
-    className={`w-4 h-4 animate-spin ${className}`}
-    style={{ animationDuration: "18s" }}
-    fill="currentColor"
-    viewBox="0 0 20 20"
-    {...props}
-  >
-    {children}
-  </svg>
-);
 
 // Icons
 const FaBell = (props) => (
-  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" {...props}>
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" {...props}>
     <path d="M10 2a6 6 0 00-6 6v3.586l-.707.707A1 1 0 004 14h12a1 1 0 00.707-1.707L16 11.586V8a6 6 0 00-6-6zM10 18a3 3 0 01-3-3h6a3 3 0 01-3 3z" />
   </svg>
 );
-const FaKey = (props) => (
-  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" {...props}>
-    <path
-      fillRule="evenodd"
-      d="M18 8a6 6 0 01-7.743 5.743L10 14l-1 1-1 1H6v2H2v-4l4.257-4.257A6 6 0 1118 8zm-6-4a1 1 0 100 2 2 2 0 012 2 1 1 0 102 0 4 4 0 00-4-4z"
-      clipRule="evenodd"
-    />
-  </svg>
-);
+
 const FaExclamationTriangle = (props) => (
-  <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20" {...props}>
+  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" {...props}>
     <path
       fillRule="evenodd"
       d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z"
@@ -42,137 +23,8 @@ const FaExclamationTriangle = (props) => (
   </svg>
 );
 
-// Tailwind Tokens
-const TOKENS = {
-  card: "backdrop-blur-xl bg-black/30 border border-white/10 shadow-2xl rounded-2xl p-6 text-white w-full",
-  input: "w-full px-4 py-2 rounded-xl bg-white/5 border border-white/10 focus:outline-none focus:ring-2 focus:ring-[#c2831f]/70 placeholder-white/40 text-white",
-  btnPrimary: "px-4 py-2 rounded-xl text-white font-semibold shadow-md transition cursor-pointer bg-gradient-to-r from-[#c2831f] to-[#a66e19] hover:from-[#a66e19] hover:to-[#8f5c15] focus-visible:ring-2 focus-visible:ring-[#c2831f]/70",
-  btnSecondary: "px-4 py-2 rounded-xl text-white font-semibold transition cursor-pointer bg-white/10 hover:bg-white/20",
-  btnDanger: "px-4 py-2 rounded-xl text-white font-semibold shadow-md transition cursor-pointer bg-red-700/80 hover:bg-red-600/90 focus-visible:ring-2 focus-visible:ring-red-500/70",
-  iconBtn: "p-2 bg-white/10 hover:bg-white/20 rounded-lg transition flex items-center justify-center cursor-pointer focus-visible:ring-2 focus-visible:ring-white/30",
-};
-
 // Utility
 const cls = (...xs) => xs.filter(Boolean).join(" ");
-
-const SECTIONS = [
-  { id: "notifications", label: "Notifications", icon: <FaBell /> },
-  { id: "apikeys", label: "API Keys", icon: <FaKey /> },
-  { id: "danger", label: "Danger Zone", icon: <FaExclamationTriangle /> },
-];
-
-// Background FX
-function BackgroundFX() {
-  const blobs = useMemo(
-    () =>
-      Array.from({ length: 6 }, () => ({
-        x: Math.random() * 100,
-        y: Math.random() * 100,
-        s: 40 + Math.random() * 40,
-        d: 8 + Math.random() * 10,
-      })),
-    []
-  );
-
-  return (
-    <>
-      <div className="fixed inset-0 -z-20 bg-[radial-gradient(1200px_800px_at_-20%_-10%,rgba(245,158,11,0.25),transparent),radial-gradient(1000px_600px_at_120%_110%,rgba(253,224,71,0.25),transparent)]" />
-      {blobs.map((b, i) => (
-        <div
-          key={i}
-          className="pointer-events-none fixed -z-10 rounded-full blur-3xl"
-          style={{
-            top: `${b.y}%`,
-            left: `${b.x}%`,
-            width: `${b.s}vmin`,
-            height: `${b.s}vmin`,
-            background:
-              i % 2 === 0
-                ? "radial-gradient(circle at 30% 30%, rgba(245,158,11,.35), transparent 60%)"
-                : "radial-gradient(circle at 70% 70%, rgba(253,224,71,.35), transparent 60%)",
-            animation: `floaty ${b.d}s ease-in-out infinite alternate`,
-          }}
-        />
-      ))}
-      <style>{`
-        @keyframes floaty {
-          0% { transform: translate3d(0,0,0) scale(1); opacity: .6; }
-          50% { transform: translate3d(10px,-20px,0) scale(1.05); opacity: .9; }
-          100% { transform: translate3d(0,0,0) scale(1); opacity: .6; }
-        }
-        @keyframes moveSquares {
-          0% { background-position: 0 0, 0 0; }
-          100% { background-position: 40px 40px, 40px 40px; }
-        }
-      `}</style>
-    </>
-  );
-}
-
-// Section Tabs
-function SectionTabs({ sections, active, onChange }) {
-  const listRef = useRef(null);
-  const idx = sections.findIndex((s) => s.id === active);
-
-  function onKeyDown(e) {
-    if (!listRef.current) return;
-    const last = sections.length - 1;
-    let nextIdx = idx;
-    if (e.key === "ArrowRight") nextIdx = Math.min(last, idx + 1);
-    if (e.key === "ArrowLeft") nextIdx = Math.max(0, idx - 1);
-    if (e.key === "Home") nextIdx = 0;
-    if (e.key === "End") nextIdx = last;
-    if (nextIdx !== idx) {
-      e.preventDefault();
-      onChange(sections[nextIdx].id);
-      const btn = listRef.current.querySelectorAll("button")[nextIdx];
-      btn?.focus();
-    }
-  }
-
-  return (
-    <nav aria-label="Settings sections" className="relative z-10 mt-20">
-      <div
-        role="tablist"
-        aria-orientation="horizontal"
-        ref={listRef}
-        onKeyDown={onKeyDown}
-        className="flex justify-center gap-2 overflow-x-auto px-4 sm:px-0 backdrop-blur-xl border border-white/10 rounded-2xl py-3"
-      >
-        {sections.map(({ id, label, icon }) => (
-          <button
-            key={id}
-            role="tab"
-            aria-selected={active === id}
-            aria-controls={`panel-${id}`}
-            onClick={() => onChange(id)}
-            className={cls(
-              "flex items-center gap-2 px-3 py-2 rounded-xl whitespace-nowrap flex-shrink-0 transition-colors duration-200 cursor-pointer focus-visible:ring-2 focus-visible:ring-white/30 relative overflow-hidden",
-              active === id
-                ? "text-white shadow-lg before:absolute before:inset-0 before:bg-[repeating-linear-gradient(45deg,rgba(255,255,255,0.15)_0px,rgba(255,255,255,0.15)_10px,transparent_10px,transparent_20px),repeating-linear-gradient(-45deg,rgba(255,255,255,0.15)_0px,rgba(255,255,255,0.15)_10px,transparent_10px,transparent_20px)] before:bg-[#c2831f] before:bg-[length:40px_40px] before:animate-[moveSquares_3s_linear_infinite] z-10"
-                : "text-white/80 hover:text-white"
-            )}
-          >
-            <span className="relative z-20">{icon}</span>
-            <span className="hidden sm:inline relative z-20">{label}</span>
-          </button>
-        ))}
-      </div>
-      <div className="mt-3 h-px w-full bg-[#c2831f]" aria-hidden="true" />
-    </nav>
-  );
-}
-
-// Reusable inputs
-function LabeledInput({ label, hint, className, ...props }) {
-  return (
-    <label className="block">
-      <span className="text-white/90 text-sm font-medium">{label}</span>
-      <input {...props} className={cls(TOKENS.input, "mt-1", className)} />
-      {hint && <span className="text-white/50 text-xs mt-1 block">{hint}</span>}
-    </label>
-  );
-}
 
 // Sections
 function NotificationsSection() {
@@ -193,7 +45,7 @@ function NotificationsSection() {
     <button
       type="button"
       onClick={() => onChange(!active)}
-      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${active ? "bg-gray-500 border-gray-500" : "bg-gray-700 border-gray-500"
+      className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-all duration-300 ${active ? "bg-[#c2831f] border-[#c2831f]" : "bg-gray-700 border-gray-500"
         }`}
     >
       {active && (
@@ -219,98 +71,70 @@ function NotificationsSection() {
       frequency,
     });
 
-    // Example: Save to API
-    console.log("Saving Preferences:", preferences);
-
-    // Toast instead of alert
-
     toast.success("Preferences Saved Successfully!");
   };
 
   return (
-    <div className={`${TOKENS.card} space-y-6`} id="panel-notifications" role="tabpanel">
-      <h2 className="text-2xl font-bold text-[#c2831f]">Notifications</h2>
-
-      <div className="flex items-center gap-3">
-        <ToggleButton active={emailNotif} onChange={setEmailNotif} />
-        <span>Email Notifications</span>
-      </div>
-      <div className="flex items-center gap-3">
-        <ToggleButton active={smsNotif} onChange={setSmsNotif} />
-        <span>SMS Notifications</span>
-      </div>
-      <div className="flex items-center gap-3">
-        <ToggleButton active={pushNotif} onChange={setPushNotif} />
-        <span>Push Notifications</span>
-      </div>
-      <div className="flex items-center gap-3">
-        <ToggleButton active={inAppNotif} onChange={setInAppNotif} />
-        <span>In-App Notifications</span>
-      </div>
-
-      <Select
-        options={options}
-        value={options.find((o) => o.value === frequency)}
-        onChange={(opt) => setFrequency(opt.value)}
-        styles={{
-          control: (base) => ({ ...base, backgroundColor: "rgba(255,255,255,0.05)", borderColor: "rgba(255,255,255,0.1)", color: "white" }),
-          menu: (base) => ({ ...base, backgroundColor: "black" }),
-          option: (base, state) => ({ ...base, backgroundColor: state.isFocused ? "#c2831f" : "black", color: "white" }),
-          singleValue: (base) => ({ ...base, color: "white" }),
-        }}
-      />
-
-      <button className={TOKENS.btnPrimary} onClick={handleSave}>
-        Save Preferences
-      </button>
-    </div>
-  );
-}
-
-// API Keys Section
-function ApiKeysSection() {
-  const [keys, setKeys] = useState([{ id: 1, name: "Default Key", value: "sk-1234abcd...", created: "2025-08-01" }]);
-  function generateKey() {
-    const newKey = {
-      id: Date.now(),
-      name: `Key ${keys.length + 1}`,
-      value: "sk-" + Math.random().toString(36).slice(2),
-      created: new Date().toISOString().slice(0, 10),
-    };
-    setKeys((prev) => [...prev, newKey]);
-    toast.success("New API Key Generated");
-  }
-  function revokeKey(id) {
-    setKeys((prev) => prev.filter((k) => k.id !== id));
-    toast("Key Revoked", { icon: "🗝️" });
-  }
-
-  return (
-    <div className={cls(TOKENS.card, "space-y-6")} id="panel-apikeys" role="tabpanel">
-      <h2 className="text-2xl font-bold text-[#c2831f]">API Keys</h2>
-      <button
-        onClick={generateKey}
-        className="flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm text-white font-medium shadow-sm transition cursor-pointer bg-[#c2831f] hover:bg-[#a66e19] focus-visible:ring-2 focus-visible:ring-[#c2831f]/70"
-      >
-        Generate New Key
-      </button>
-
-      <div className="space-y-3">
-        {keys.map((key) => (
-          <div
-            key={key.id}
-            className="flex flex-col sm:flex-row sm:items-center justify-between bg-white/5 rounded-xl p-3 border border-white/10"
-          >
-            <div>
-              <div className="font-semibold">{key.name}</div>
-              <div className="text-white/60 text-sm">{key.value}</div>
-              <div className="text-white/40 text-xs">Created: {key.created}</div>
-            </div>
-            <button onClick={() => revokeKey(key.id)} className={cls(TOKENS.btnDanger, "mt-2 sm:mt-0")}>
-              Revoke
-            </button>
+    <div className="relative group">
+      <div className="absolute -inset-0.5 bg-gradient-to-r from-amber-400/20 to-yellow-400/20 rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
+      <div className="relative bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-[#c2831f]/10 rounded-lg">
+            <Bell className="w-6 h-6 text-[#c2831f]" />
           </div>
-        ))}
+          <h2 className="text-2xl font-bold text-white">Notification Settings</h2>
+        </div>
+
+        <div className="space-y-4">
+          <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+            <span className="text-white">Email Notifications</span>
+            <ToggleButton active={emailNotif} onChange={setEmailNotif} />
+          </div>
+          <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+            <span className="text-white">SMS Notifications</span>
+            <ToggleButton active={smsNotif} onChange={setSmsNotif} />
+          </div>
+          <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+            <span className="text-white">Push Notifications</span>
+            <ToggleButton active={pushNotif} onChange={setPushNotif} />
+          </div>
+          <div className="flex items-center justify-between p-3 bg-white/5 rounded-lg">
+            <span className="text-white">In-App Notifications</span>
+            <ToggleButton active={inAppNotif} onChange={setInAppNotif} />
+          </div>
+
+          <div className="mt-4">
+            <span className="text-white/90 text-sm font-medium block mb-2">Notification Frequency</span>
+            <Select
+              options={options}
+              value={options.find((o) => o.value === frequency)}
+              onChange={(opt) => setFrequency(opt.value)}
+              styles={{
+                control: (base) => ({ 
+                  ...base, 
+                  backgroundColor: "rgba(255,255,255,0.05)", 
+                  borderColor: "rgba(255,255,255,0.1)", 
+                  color: "white",
+                  borderRadius: "0.5rem"
+                }),
+                menu: (base) => ({ ...base, backgroundColor: "black", borderRadius: "0.5rem" }),
+                option: (base, state) => ({ 
+                  ...base, 
+                  backgroundColor: state.isFocused ? "#c2831f" : "black", 
+                  color: "white" 
+                }),
+                singleValue: (base) => ({ ...base, color: "white" }),
+              }}
+            />
+          </div>
+
+          <button 
+            onClick={handleSave}
+            className="w-full mt-6 px-4 py-3 bg-gradient-to-r from-[#c2831f] to-[#a66e19] hover:from-[#a66e19] hover:to-[#8f5c15] text-white font-medium rounded-lg transition-all duration-300"
+          >
+            Save Preferences
+          </button>
+        </div>
       </div>
     </div>
   );
@@ -320,87 +144,151 @@ function ApiKeysSection() {
 function DangerSection() {
   const [confirming, setConfirming] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const handleDeleteClick = async () => {
     if (!confirming) {
       setConfirming(true);
+      setError(null);
       return;
     }
 
     setLoading(true);
+    setError(null);
+    
     try {
       const token = localStorage.getItem("token");
+      
+      if (!token) {
+        throw new Error("Authentication token not found. Please log in again.");
+      }
 
-      await toast.promise(
-        (async () => {
-          const res = await fetch(`${API_URL}/api/settings/delete-account`, {
-            method: "DELETE",
-            headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-            credentials: "include",
-          });
+      console.log("Attempting to delete account at:", `${API_URL}/api/settings/delete-account`);
+      console.log("Using token:", token.substring(0, 10) + "...");
 
-          if (!res.ok) {
-            let message = "Failed to Delete Account!";
-            try {
-              const data = await res.json();
-              message = data?.message || message;
-            } catch (_) { }
-            throw new Error(message);
+      const res = await fetch(`${API_URL}/api/settings/delete-account`, {
+        method: "DELETE",
+        headers: { 
+          "Content-Type": "application/json", 
+          Authorization: `Bearer ${token}` 
+        },
+        credentials: "include",
+      });
+
+      console.log("Response status:", res.status);
+      console.log("Response ok:", res.ok);
+
+      if (!res.ok) {
+        let errorMessage = "Failed to Delete Account!";
+        
+        try {
+          const data = await res.json();
+          console.log("Error response data:", data);
+          errorMessage = data?.message || data?.error || errorMessage;
+        } catch (parseError) {
+          console.error("Failed to parse error response:", parseError);
+          try {
+            const text = await res.text();
+            console.log("Error response text:", text);
+            errorMessage = text || errorMessage;
+          } catch (textError) {
+            console.error("Failed to get error text:", textError);
+            errorMessage = `${errorMessage} (Status: ${res.status})`;
           }
-
-          return res;
-        })(),
-        {
-          loading: "Deleting account...",
-          success: "Account permanently deleted",
-          error: (err) => err?.message || "Error deleting account. Please try again.",
         }
-      );
+        
+        throw new Error(errorMessage);
+      }
 
+      // Success
+      toast.success("Account permanently deleted");
       localStorage.removeItem("token");
+      
+      // Redirect after a short delay
       setTimeout(() => {
         window.location.href = "/";
-      }, 800);
+      }, 1500);
+      
     } catch (err) {
-      console.error(err);
+      console.error("Delete account error:", err);
+      setError(err.message);
+      toast.error(err.message || "Error deleting account. Please try again.");
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className={cls(TOKENS.card, "space-y-4 border border-amber-700/50")} id="panel-danger" role="tabpanel">
-      <h2 className="text-2xl font-bold text-red-500">Danger Zone</h2>
-      <p className="text-white/60">
-        Deleting your account will remove all your data permanently. This action cannot be undone.
-      </p>
+    <div className="relative group">
+      <div className="absolute -inset-0.5 bg-gradient-to-r from-red-400/20 to-pink-400/20 rounded-xl blur opacity-30 group-hover:opacity-50 transition duration-300"></div>
+      <div className="relative bg-black/40 backdrop-blur-xl border border-white/10 rounded-xl p-6">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2 bg-red-500/10 rounded-lg">
+            <Trash2 className="w-6 h-6 text-red-400" />
+          </div>
+          <h2 className="text-2xl font-bold text-red-400">Danger Zone</h2>
+        </div>
+        
+        <div className="bg-red-900/20 border border-red-800/30 rounded-lg p-4 mb-6">
+          <p className="text-white/80">
+            Deleting your account will remove all your data permanently. This action cannot be undone.
+          </p>
+        </div>
 
-      <button
-        className={cls(TOKENS.btnDanger)}
-        disabled={loading}
-        onClick={handleDeleteClick}
-      >
-        {loading ? "Deleting..." : confirming ? "Click again to confirm" : "Delete Account"}
-      </button>
+        {error && (
+          <div className="mb-6 p-4 bg-red-900/30 border border-red-800/50 rounded-lg flex items-start gap-3">
+            <AlertCircle className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" />
+            <div>
+              <p className="text-red-300 font-medium">Error:</p>
+              <p className="text-red-200 text-sm">{error}</p>
+            </div>
+          </div>
+        )}
+
+        <button
+          className={`w-full px-4 py-3 font-medium rounded-lg transition-all duration-300 flex items-center justify-center gap-2 ${confirming 
+            ? 'bg-red-600 hover:bg-red-700 text-white' 
+            : 'bg-red-900/50 hover:bg-red-900/70 border border-red-800/50 text-red-300'}`}
+          disabled={loading}
+          onClick={handleDeleteClick}
+        >
+          {loading ? (
+            <>
+              <svg className="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Deleting...
+            </>
+          ) : confirming ? "Click again to confirm deletion" : "Delete Account"}
+        </button>
+      </div>
     </div>
   );
 }
 
 // Main Page
 export default function SettingsPage() {
-  const [activeSection, setActiveSection] = useState("notifications");
-
   return (
-    <DashboardLayout>
-      <BackgroundFX />
-      <div className="max-w-5xl mx-auto py-16 space-y-12">
-        <SectionTabs sections={SECTIONS} active={activeSection} onChange={setActiveSection} />
-
-        {activeSection === "notifications" && <NotificationsSection />}
-        {activeSection === "apikeys" && <ApiKeysSection />}
-        {activeSection === "danger" && <DangerSection />}
+    <div className="space-y-8">
+      <div className="text-center mb-8">
+        <div className="inline-flex items-center gap-3 mb-4">
+          <div className="p-3 bg-white/5 rounded-xl backdrop-blur-sm">
+            <Shield className="w-8 h-8 text-[#c2831f]" />
+          </div>
+          <h1 className="text-3xl font-bold text-white">Account Settings</h1>
+        </div>
+        <p className="text-gray-400 max-w-2xl mx-auto">
+          Manage your account preferences and security settings.
+        </p>
       </div>
 
-    </DashboardLayout>
+      <div className="grid grid-cols-1 gap-8">
+        <NotificationsSection />
+        <DangerSection />
+      </div>
+      
+      <Toaster position="bottom-right" />
+    </div>
   );
 }

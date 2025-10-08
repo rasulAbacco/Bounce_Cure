@@ -1,18 +1,14 @@
-// src/pages/Pricing/components/StripeWrapper.jsx
-import React from 'react';
+// client/src/pages/Pricing/components/StripeWrapper.jsx
 import { Elements } from '@stripe/react-stripe-js';
-import { loadStripe } from '@stripe/stripe-js';
-import Stripe from './Stripe';
+import { stripePromise } from '../../../utils/stripe';
+import StripeForm from './Stripe'; // your current Stripe.jsx
 
-// Replace with your actual publishable key from Stripe dashboard
-const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_12345');
+function StripePage() {
+  return (
+    <Elements stripe={stripePromise}>
+      <StripeForm />
+    </Elements>
+  );
+}
 
-const StripeWrapper = () => {
-    return (
-        <Elements stripe={stripePromise}>
-            <Stripe />
-        </Elements>
-    );
-};
-
-export default StripeWrapper;
+export default StripePage;

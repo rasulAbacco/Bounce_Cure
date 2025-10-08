@@ -1,9 +1,10 @@
+// creditcard.js
 import express from 'express';
 import Stripe from 'stripe';
 import { PrismaClient } from '@prisma/client';
 
 const router = express.Router();
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY); 
 const prisma = new PrismaClient();
 
 // ✅ Create PaymentIntent for Credit Card (One-time)

@@ -1,3 +1,4 @@
+// src/pages/LoginPage.jsx
 import React, { useState } from 'react';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield, Zap, Users, CheckCircle } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
