@@ -5,34 +5,45 @@ import { google } from "googleapis";
 
 const router = express.Router();
 
-const CLIENT_ID = "";
-const CLIENT_SECRET = "";
-const REDIRECT_URI = "https://www.bouncecure.com/";
+// === IMPORTANT: put your real client id/secret or prefer using process.env ===
+// Example: process.env.GOOGLE_CLIENT_ID etc.
+const CLIENT_ID = process.env.OAUTH_DEFAULT_CLIENT_ID || "";
+const CLIENT_SECRET = process.env.OAUTH_DEFAULT_CLIENT_SECRET || "";
+const REDIRECT_URI = process.env.OAUTH_REDIRECT_URI || "https://www.bouncecure.com/contacts";
+
+// Google scopes (keep as you had)
 const SCOPES = [
   "https://mail.google.com/",
   "https://www.googleapis.com/auth/gmail.readonly",
   "https://www.googleapis.com/auth/gmail.modify",
 ];
 
+// Outlook (Microsoft) scopes and endpoints (existing pattern)
 const OUTLOOK_SCOPES = [
   "https://outlook.office.com/IMAP.AccessAsUser.All",
   "https://outlook.office.com/SMTP.Send",
   "offline_access",
+  "openid",
+  "profile",
+  "email"
 ];
+
 const OUTLOOK_AUTH_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
 const OUTLOOK_TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
 
 const oauth2Client = new google.auth.OAuth2(CLIENT_ID, CLIENT_SECRET, REDIRECT_URI);
 
-// Utility to get Google access token
+// --------------------- Helpers (token refreshers) ---------------------
+
+// Google: reuse existing pattern
 export async function getOAuth2AccessToken(account) {
-  const oAuth2Client = new google.auth.OAuth2(account.oauthClientId, account.oauthClientSecret);
+  const oAuth2Client = new google.auth.OAuth2(account.oauthClientId || CLIENT_ID, account.oauthClientSecret || CLIENT_SECRET);
   oAuth2Client.setCredentials({ refresh_token: account.refreshToken });
   const { token } = await oAuth2Client.getAccessToken();
   return token;
 }
 
-// Utility to get Zoho access token
+// Zoho
 export async function getZohoAccessToken(refreshToken, clientId, clientSecret) {
   try {
     const response = await axios.post(
@@ -43,20 +54,16 @@ export async function getZohoAccessToken(refreshToken, clientId, clientSecret) {
         client_id: clientId,
         client_secret: clientSecret,
       }),
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     );
     return response.data.access_token;
   } catch (err) {
-    console.error("❌ Error refreshing Zoho token:", err);
-    throw new Error("Failed to refresh access token");
+    console.error("❌ Error refreshing Zoho token:", err.response?.data || err.message);
+    throw new Error("Failed to refresh Zoho access token");
   }
 }
 
-// Utility to get Rediff access token
+// Rediff
 export async function getRediffAccessToken(refreshToken, clientId, clientSecret) {
   try {
     const response = await axios.post(
@@ -67,20 +74,16 @@ export async function getRediffAccessToken(refreshToken, clientId, clientSecret)
         client_id: clientId,
         client_secret: clientSecret,
       }),
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     );
     return response.data.access_token;
   } catch (err) {
-    console.error("❌ Error refreshing Rediff token:", err);
-    throw new Error("Failed to refresh access token");
+    console.error("❌ Error refreshing Rediff token:", err.response?.data || err.message);
+    throw new Error("Failed to refresh Rediff access token");
   }
 }
 
-// Utility to get Outlook access token
+// Outlook (Microsoft)
 export async function getOutlookAccessToken(refreshToken, clientId, clientSecret) {
   try {
     const response = await axios.post(
@@ -92,18 +95,41 @@ export async function getOutlookAccessToken(refreshToken, clientId, clientSecret
         client_secret: clientSecret,
         scope: OUTLOOK_SCOPES.join(" "),
       }),
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
+    );
+    return response.data.access_token;
+  } catch (err) {
+    console.error("❌ Error refreshing Outlook token:", err.response?.data || err.message);
+    throw new Error("Failed to refresh Outlook access token");
+  }
+}
+
+// ---------- NEW: Yahoo helpers (auth URL, exchange code, refresh token) ----------
+export async function getYahooAccessToken(refreshToken, clientId, clientSecret) {
+  try {
+    const response = await axios.post(
+      "https://api.login.yahoo.com/oauth2/get_token",
+      new URLSearchParams({
+        grant_type: "refresh_token",
+        refresh_token: refreshToken,
+      }),
       {
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          "Authorization": "Basic " + Buffer.from(`${clientId}:${clientSecret}`).toString("base64"),
+        },
       }
     );
     return response.data.access_token;
   } catch (err) {
-    console.error("❌ Error refreshing Outlook token:", err);
-    throw new Error("Failed to refresh access token");
+    console.error("❌ Yahoo token refresh failed:", err.response?.data || err.message);
+    throw new Error("Failed to refresh Yahoo access token");
   }
 }
 
-// Google OAuth routes
+// --------------------- OAuth routes (auth-url + callback) ---------------------
+
+// Google: existing
 router.get("/google/auth-url", (req, res) => {
   const url = oauth2Client.generateAuthUrl({
     access_type: "offline",
@@ -116,10 +142,8 @@ router.get("/google/auth-url", (req, res) => {
 router.get("/google/callback", async (req, res) => {
   const code = req.query.code;
   if (!code) return res.status(400).json({ error: "Missing authorization code" });
-
   try {
     const { tokens } = await oauth2Client.getToken(code);
-    console.log("✅ OAuth tokens:", tokens);
     res.json({
       message: "OAuth2 tokens received",
       refreshToken: tokens.refresh_token,
@@ -127,26 +151,21 @@ router.get("/google/callback", async (req, res) => {
       expiryDate: tokens.expiry_date,
     });
   } catch (err) {
-    console.error("❌ Error exchanging code for tokens:", err);
+    console.error("❌ Error exchanging Google code:", err.response?.data || err.message);
     res.status(500).json({ error: "Failed to exchange code" });
   }
 });
 
-// Zoho OAuth routes
+// Zoho: existing pattern
 router.get("/zoho/auth-url", (req, res) => {
   const { clientId } = req.query;
-  if (!clientId) {
-    return res.status(400).json({ error: "Client ID is required" });
-  }
-  const url = `https://accounts.zoho.com/oauth/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=mail.full_access`;
+  if (!clientId) return res.status(400).json({ error: "Client ID is required" });
+  const url = `https://accounts.zoho.com/oauth/v2/auth?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=ZohoMail.accounts.READ,ZohoMail.messages.ALL,ZohoMail.folders.READ,ZohoMail.settings.ALL&access_type=offline`;
   res.json({ url });
 });
-
 router.get("/zoho/callback", async (req, res) => {
   const { code, clientId, clientSecret } = req.query;
-  if (!code || !clientId || !clientSecret) {
-    return res.status(400).json({ error: "Missing required parameters" });
-  }
+  if (!code || !clientId || !clientSecret) return res.status(400).json({ error: "Missing parameters" });
   try {
     const response = await axios.post(
       "https://accounts.zoho.com/oauth/v2/token",
@@ -157,39 +176,26 @@ router.get("/zoho/callback", async (req, res) => {
         client_id: clientId,
         client_secret: clientSecret,
       }),
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     );
     const { access_token, refresh_token } = response.data;
-    res.json({
-      message: "OAuth2 tokens received",
-      refreshToken: refresh_token,
-      accessToken: access_token,
-    });
+    res.json({ message: "OAuth2 tokens received", refreshToken: refresh_token, accessToken: access_token });
   } catch (err) {
-    console.error("❌ Error exchanging code for tokens:", err);
+    console.error("❌ Error exchanging Zoho code:", err.response?.data || err.message);
     res.status(500).json({ error: "Failed to exchange code" });
   }
 });
 
-// Rediff OAuth routes
+// Rediff: existing pattern
 router.get("/rediff/auth-url", (req, res) => {
   const { clientId } = req.query;
-  if (!clientId) {
-    return res.status(400).json({ error: "Client ID is required" });
-  }
+  if (!clientId) return res.status(400).json({ error: "Client ID is required" });
   const url = `https://accounts.rediff.com/oauth2/authorize?response_type=code&client_id=${clientId}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&scope=mail`;
   res.json({ url });
 });
-
 router.get("/rediff/callback", async (req, res) => {
   const { code, clientId, clientSecret } = req.query;
-  if (!code || !clientId || !clientSecret) {
-    return res.status(400).json({ error: "Missing required parameters" });
-  }
+  if (!code || !clientId || !clientSecret) return res.status(400).json({ error: "Missing parameters" });
   try {
     const response = await axios.post(
       "https://accounts.rediff.com/oauth2/token",
@@ -200,71 +206,67 @@ router.get("/rediff/callback", async (req, res) => {
         client_id: clientId,
         client_secret: clientSecret,
       }),
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     );
     const { access_token, refresh_token } = response.data;
-    res.json({
-      message: "OAuth2 tokens received",
-      refreshToken: refresh_token,
-      accessToken: access_token,
-    });
+    res.json({ message: "OAuth2 tokens received", refreshToken: refresh_token, accessToken: access_token });
   } catch (err) {
-    console.error("❌ Error exchanging code for tokens:", err);
+    console.error("❌ Error exchanging Rediff code:", err.response?.data || err.message);
     res.status(500).json({ error: "Failed to exchange code" });
   }
 });
 
-// Yahoo OAuth routes
+// ---------- Yahoo: auth URL and callback (NEW) ----------
 router.get("/yahoo/auth-url", (req, res) => {
-  const url = `https://api.login.yahoo.com/oauth2/request_auth?client_id=${CLIENT_ID}&redirect_uri=${encodeURIComponent(REDIRECT_URI)}&response_type=code&scope=mail`;
+  // Prefer passing clientId & redirectUri from frontend to support per-app config
+  const { clientId, redirectUri } = req.query;
+  const cid = clientId || CLIENT_ID;
+  const ruri = redirectUri || REDIRECT_URI;
+  if (!cid) return res.status(400).json({ error: "Client ID required" });
+
+  // Yahoo request_auth endpoint (user consent)
+  const url = `https://api.login.yahoo.com/oauth2/request_auth?client_id=${cid}&redirect_uri=${encodeURIComponent(ruri)}&response_type=code&language=en-us`;
   res.json({ url });
 });
 
 router.get("/yahoo/callback", async (req, res) => {
-  const code = req.query.code;
-  if (!code) {
-    return res.status(400).json({ error: "Missing authorization code" });
-  }
+  // This exchanges code for tokens. Frontend should forward code, clientId & clientSecret (or use env default).
+  const { code, clientId, clientSecret, redirectUri } = req.query;
+  const cid = clientId || CLIENT_ID;
+  const csec = clientSecret || CLIENT_SECRET;
+  const ruri = redirectUri || REDIRECT_URI;
+  if (!code || !cid || !csec) return res.status(400).json({ error: "Missing required parameters" });
+
   try {
     const response = await axios.post(
       "https://api.login.yahoo.com/oauth2/get_token",
       new URLSearchParams({
         grant_type: "authorization_code",
         code,
-        redirect_uri: REDIRECT_URI,
-        client_id: CLIENT_ID,
-        client_secret: CLIENT_SECRET,
+        redirect_uri: ruri,
+        client_id: cid,
+        client_secret: csec,
       }),
-      {
-        headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-      }
+      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
     );
     const { access_token, refresh_token } = response.data;
-    res.json({
-      message: "OAuth2 tokens received",
-      refreshToken: refresh_token,
-      accessToken: access_token,
-    });
+    res.json({ message: "OAuth2 tokens received", refreshToken: refresh_token, accessToken: access_token });
   } catch (err) {
-    console.error("❌ Error exchanging code for tokens:", err);
-    res.status(500).json({ error: "Failed to exchange code" });
+    console.error("❌ Error exchanging Yahoo code:", err.response?.data || err.message);
+    res.status(500).json({ error: "Failed to exchange yahoo code" });
   }
 });
 
-// Outlook OAuth routes
+// ---------- Outlook auth URL + callback (existing pattern) ----------
 router.get("/outlook/auth-url", (req, res) => {
-  const { clientId } = req.query;
-  if (!clientId) return res.status(400).json({ error: "Client ID required" });
+  const { clientId, redirectUri } = req.query;
+  const cid = clientId || CLIENT_ID;
+  const ruri = redirectUri || REDIRECT_URI;
+  if (!cid) return res.status(400).json({ error: "Client ID required" });
   const params = new URLSearchParams({
-    client_id: clientId,
+    client_id: cid,
     response_type: "code",
-    redirect_uri: REDIRECT_URI,
+    redirect_uri: ruri,
     scope: OUTLOOK_SCOPES.join(" "),
     response_mode: "query",
   });
@@ -273,17 +275,21 @@ router.get("/outlook/auth-url", (req, res) => {
 });
 
 router.get("/outlook/callback", async (req, res) => {
-  const { code, clientId, clientSecret } = req.query;
-  if (!code || !clientId || !clientSecret) return res.status(400).json({ error: "Missing parameters" });
+  const { code, clientId, clientSecret, redirectUri } = req.query;
+  const cid = clientId || CLIENT_ID;
+  const csec = clientSecret || CLIENT_SECRET;
+  const ruri = redirectUri || REDIRECT_URI;
+  if (!code || !cid || !csec) return res.status(400).json({ error: "Missing parameters" });
+
   try {
     const response = await axios.post(
       OUTLOOK_TOKEN_URL,
       new URLSearchParams({
         grant_type: "authorization_code",
         code,
-        redirect_uri: REDIRECT_URI,
-        client_id: clientId,
-        client_secret: clientSecret,
+        redirect_uri: ruri,
+        client_id: cid,
+        client_secret: csec,
         scope: OUTLOOK_SCOPES.join(" "),
       }),
       { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
@@ -291,8 +297,8 @@ router.get("/outlook/callback", async (req, res) => {
     const { access_token, refresh_token } = response.data;
     res.json({ message: "OAuth tokens received", refreshToken: refresh_token, accessToken: access_token });
   } catch (err) {
-    console.error("❌ Error exchanging code:", err);
-    res.status(500).json({ error: "Failed to exchange code" });
+    console.error("❌ Error exchanging outlook code:", err.response?.data || err.message);
+    res.status(500).json({ error: "Failed to exchange outlook code" });
   }
 });
 
