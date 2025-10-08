@@ -7,7 +7,8 @@ import {
   Zap, Activity, CheckCircle, Play, Clock, Calendar, 
   Mail, Edit, Trash2, Pause, PlayCircle, MoreVertical,
   Filter, Search, Eye, AlertCircle, TrendingUp, Users,
-  RefreshCw, Send, XCircle, Shield, X, AlertTriangle
+  RefreshCw, Send, XCircle, Shield, X, AlertTriangle,
+  Info, Check
 } from "lucide-react";
 
 const Automation = () => {
@@ -28,8 +29,10 @@ const Automation = () => {
   const [selectedCampaigns, setSelectedCampaigns] = useState([]);
   const [showActionMenu, setShowActionMenu] = useState(null);
   const [senderVerified, setSenderVerified] = useState(false);
+  const [domainAuth, setDomainAuth] = useState({ spf: false, dkim: false, dmarc: false });
   const [triggerMessage, setTriggerMessage] = useState("");
   const [showTriggerMessage, setShowTriggerMessage] = useState(false);
+  const [notifications, setNotifications] = useState([]);
 
   // Fetch automation logs
   const fetchAutomationData = async () => {
@@ -42,6 +45,24 @@ const Automation = () => {
       if (!response.ok) throw new Error(`Error ${response.status}`);
       const data = await response.json();
       setLogs(data);
+      
+      // Check for failed campaigns and show notifications
+      const failedCampaigns = data.filter(log => log.status === 'failed');
+      if (failedCampaigns.length > 0) {
+        failedCampaigns.forEach(campaign => {
+          if (!notifications.some(n => n.id === `failed-${campaign.id}`)) {
+            addNotification({
+              id: `failed-${campaign.id}`,
+              type: 'campaign_failed',
+              title: 'Campaign Failed',
+              message: `Campaign "${campaign.campaignName}" failed to send`,
+              details: campaign.error || 'Unknown error',
+              timestamp: new Date(),
+              read: false
+            });
+          }
+        });
+      }
     } catch (err) {
       console.error("Failed to fetch automation logs:", err);
     }
@@ -93,19 +114,50 @@ const Automation = () => {
       if (response.ok) {
         const data = await response.json();
         setSenderVerified(data.verified);
+        if (data.domainAuth) {
+          setDomainAuth(data.domainAuth);
+        }
       }
     } catch (error) {
       console.error("Error checking sender verification:", error);
     }
   };
 
+  // Add notification function
+  const addNotification = (notification) => {
+    setNotifications(prev => {
+      // Check if notification already exists
+      if (prev.some(n => n.id === notification.id)) {
+        return prev;
+      }
+      return [notification, ...prev];
+    });
+  };
+
   // Handle campaign actions
   const handleCampaignAction = async (campaignId, action) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/automation/${campaignId}/${action}`, { method: 'POST' });
+      const response = await fetch(`http://localhost:5000/api/automation/${campaignId}/${action}`, { 
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+      });
+      
       if (response.ok) {
         await fetchScheduledCampaigns();
         setShowActionMenu(null);
+        
+        // Add success notification
+        addNotification({
+          id: `${action}-${campaignId}-${Date.now()}`,
+          type: 'campaign_action',
+          title: 'Campaign Updated',
+          message: `Campaign ${action}d successfully`,
+          timestamp: new Date(),
+          read: false
+        });
       } else {
         const error = await response.json();
         alert(`Failed to ${action} campaign: ${error.error || error.message}`);
@@ -120,11 +172,27 @@ const Automation = () => {
     if (selectedCampaigns.length === 0) return;
     try {
       const promises = selectedCampaigns.map(id => 
-        fetch(`http://localhost:5000/api/automation/${id}/${action}`, { method: 'POST' })
+        fetch(`http://localhost:5000/api/automation/${id}/${action}`, { 
+          method: 'POST',
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${localStorage.getItem("token")}`
+          }
+        })
       );
       await Promise.all(promises);
       await fetchScheduledCampaigns();
       setSelectedCampaigns([]);
+      
+      // Add success notification
+      addNotification({
+        id: `bulk-${action}-${Date.now()}`,
+        type: 'bulk_action',
+        title: 'Bulk Action Completed',
+        message: `${selectedCampaigns.length} campaigns ${action}d successfully`,
+        timestamp: new Date(),
+        read: false
+      });
     } catch (error) {
       console.error(`Error performing bulk ${action}:`, error);
     }
@@ -138,7 +206,14 @@ const Automation = () => {
 
   const handleTriggerSend = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/automation/trigger-cron", { method: 'POST' });
+      const response = await fetch("http://localhost:5000/api/automation/trigger-cron", { 
+        method: 'POST',
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${localStorage.getItem("token")}`
+        }
+      });
+      
       const data = await response.json();
       await fetchScheduledCampaigns();
 
@@ -234,63 +309,121 @@ const Automation = () => {
     }]
   };
 
-  const chartOptions = { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#D1D5DB', padding: 20 } } } };
+  const chartOptions = { 
+    responsive: true, 
+    maintainAspectRatio: false, 
+    plugins: { 
+      legend: { 
+        position: 'bottom', 
+        labels: { 
+          color: '#D1D5DB', 
+          padding: 20 
+        } 
+      } 
+    } 
+  };
 
+// Enhanced deliverability tips section
+const renderDeliverabilityTips = () => (
+  <div className="bg-gray-900 border border-gray-800 rounded-lg p-4 mb-6">
+    <div className="flex items-center mb-4">
+      <Shield className="text-yellow-400 mr-2" />
+      <h3 className="text-lg font-semibold text-white">Email Deliverability Tips</h3>
+    </div>
 
-  // Add deliverability tips section
-  const renderDeliverabilityTips = () => (
-    <div className="bg-gray-900 border border-gray-800 rounded-lg p-6 mb-6">
-      <div className="flex items-center mb-4">
-        <Shield className="text-yellow-400 mr-2" />
-        <h3 className="text-lg font-semibold text-white">Email Deliverability Tips</h3>
-      </div>
-      
-      {!senderVerified && (
-        <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4 mb-4">
-          <div className="flex items-start">
-            <AlertTriangle className="text-yellow-400 mr-2 mt-1" />
-            <div>
-              <h4 className="font-medium text-yellow-400">Sender Verification Required</h4>
-              <p className="text-yellow-300 text-sm mt-1">
-                Your sender domain is not verified. This is the most common reason emails go to spam.
-              </p>
-              <button className="mt-2 px-3 py-1 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700">
-                Verify Sender Domain
-              </button>
-            </div>
+    {!senderVerified && (
+      <div className="bg-yellow-900/30 border border-yellow-700 rounded-lg p-4 mb-4">
+        <div className="flex items-start">
+          <AlertTriangle className="text-yellow-400 mr-2 mt-1" />
+          <div>
+            <h4 className="font-medium text-yellow-400">Sender Verification Required</h4>
+            <p className="text-yellow-300 text-sm mt-1">
+              Your sender domain is not fully authenticated. This is the most common reason emails go to spam.
+            </p>
+            <button className="mt-2 px-3 py-1 bg-yellow-600 text-white text-sm rounded hover:bg-yellow-700">
+              Verify Sender Domain
+            </button>
           </div>
         </div>
-      )}
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <div>
-          <h4 className="font-medium text-white mb-2">Authentication</h4>
-          <ul className="text-sm text-gray-300 space-y-1">
-            <li className="flex items-center">
-              <div className={`w-3 h-3 rounded-full mr-2 ${senderVerified ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              SPF Record
-            </li>
-            <li className="flex items-center">
-              <div className={`w-3 h-3 rounded-full mr-2 ${senderVerified ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              DKIM Signature
-            </li>
-            <li className="flex items-center">
-              <div className={`w-3 h-3 rounded-full mr-2 ${senderVerified ? 'bg-green-500' : 'bg-red-500'}`}></div>
-              DMARC Policy
-            </li>
-          </ul>
-        </div>
-        
-        <div>
-          <h4 className="font-medium text-white mb-2">Content Best Practices</h4>
-          <ul className="text-sm text-gray-300 space-y-1">
-            <li>• Avoid spam trigger words</li>
-            <li>• Include plain text version</li>
-            <li>• Balance text and images</li>
-            <li>• Personalize when possible</li>
-          </ul>
-        </div>
       </div>
+    )}
+
+    {/* All 3 sections in one row */}
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      {/* Authentication Status */}
+      <div>
+        <h4 className="font-medium text-white mb-2">Authentication Status</h4>
+        <ul className="text-sm text-gray-300 space-y-1">
+          <li className="flex items-center">
+            <div className={`w-3 h-3 rounded-full mr-2 ${domainAuth.spf ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            SPF Record {domainAuth.spf ? <Check size={14} className="ml-1 text-green-500" /> : <X size={14} className="ml-1 text-red-500" />}
+          </li>
+          <li className="flex items-center">
+            <div className={`w-3 h-3 rounded-full mr-2 ${domainAuth.dkim ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            DKIM Signature {domainAuth.dkim ? <Check size={14} className="ml-1 text-green-500" /> : <X size={14} className="ml-1 text-red-500" />}
+          </li>
+          <li className="flex items-center">
+            <div className={`w-3 h-3 rounded-full mr-2 ${domainAuth.dmarc ? 'bg-green-500' : 'bg-red-500'}`}></div>
+            DMARC Policy {domainAuth.dmarc ? <Check size={14} className="ml-1 text-green-500" /> : <X size={14} className="ml-1 text-red-500" />}
+          </li>
+        </ul>
+      </div>
+
+      {/* Content Best Practices */}
+      <div>
+        <h4 className="font-medium text-white mb-2">Content Best Practices</h4>
+        <ul className="text-sm text-gray-300 space-y-1">
+          <li>• Avoid spam trigger words</li>
+          <li>• Include plain text version</li>
+          <li>• Balance text and images</li>
+          <li>• Personalize when possible</li>
+          <li>• Use a clear subject line</li>
+        </ul>
+      </div>
+
+      {/* Technical Recommendations */}
+      <div>
+        <h4 className="font-medium text-white mb-2">Technical Recommendations</h4>
+        <ul className="text-sm text-gray-300 space-y-1">
+          <li>• Use a dedicated IP address for sending</li>
+          <li>• Warm up your sending domain gradually</li>
+          <li>• Monitor your sender reputation</li>
+          <li>• Keep your email list clean and updated</li>
+          <li>• Include an unsubscribe link in all emails</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+);
+
+
+  // Render notifications
+  const renderNotifications = () => (
+    <div className="fixed top-4 right-4 z-50 space-y-2 max-w-md">
+      {notifications.filter(n => !n.read).map(notification => (
+        <div key={notification.id} className="bg-gray-800 border border-gray-700 rounded-lg shadow-lg p-4">
+          <div className="flex justify-between items-start">
+            <div>
+              <h4 className="font-medium text-white">{notification.title}</h4>
+              <p className="text-sm text-gray-300 mt-1">{notification.message}</p>
+              {notification.details && (
+                <p className="text-xs text-gray-400 mt-2">{notification.details}</p>
+              )}
+            </div>
+            <button 
+              onClick={() => setNotifications(prev => 
+                prev.map(n => n.id === notification.id ? {...n, read: true} : n)
+              )}
+              className="text-gray-400 hover:text-white"
+            >
+              <X size={16} />
+            </button>
+          </div>
+          <div className="text-xs text-gray-500 mt-2">
+            {new Date(notification.timestamp).toLocaleString()}
+          </div>
+        </div>
+      ))}
     </div>
   );
 
@@ -306,6 +439,7 @@ const Automation = () => {
 
   return (
     <DashboardLayout>
+      {renderNotifications()}
       <div className="p-6 bg-black min-h-screen py-20">
         <div className="max-w-7xl mx-auto">
           {/* Header */}
@@ -417,6 +551,9 @@ const Automation = () => {
                         <div className="flex-1 min-w-0">
                           <p className="text-white font-medium truncate">{log.campaignName}</p>
                           <p className="text-sm text-gray-400">{log.message}</p>
+                          {log.error && (
+                            <p className="text-xs text-red-400 mt-1 truncate">{log.error}</p>
+                          )}
                         </div>
                         <span className="text-xs text-gray-500">
                           {formatDateTime(log.createdAt)}
@@ -652,6 +789,12 @@ const Automation = () => {
                           <span className="text-xs text-gray-500">{formatDateTime(log.createdAt)}</span>
                         </div>
                         <p className="text-sm text-gray-400 mt-1">{log.message}</p>
+                        {log.error && (
+                          <div className="mt-2 p-2 bg-red-900/30 border border-red-700 rounded text-xs text-red-300">
+                            <div className="font-medium">Error:</div>
+                            <div>{log.error}</div>
+                          </div>
+                        )}
                         {log.details && (
                           <p className="text-xs text-gray-500 mt-2">{log.details}</p>
                         )}

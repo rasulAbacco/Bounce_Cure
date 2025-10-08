@@ -14,11 +14,11 @@ const EMAIL_TEMPLATES = {
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${subject}</title>
+     
     <style>
         body { margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #f8f9fa; }
         .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; }
-        .header { background-color: #007bff; color: white; padding: 30px; text-align: center; }
+         
         .content { padding: 40px 30px; }
         .footer { background-color: #f8f9fa; padding: 20px 30px; border-top: 1px solid #dee2e6; text-align: center; font-size: 12px; color: #6c757d; }
         .button { display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; margin: 20px 0; }
@@ -30,9 +30,7 @@ const EMAIL_TEMPLATES = {
 </head>
 <body>
     <div class="container">
-        <div class="header">
-            <h1>${subject}</h1>
-        </div>
+        
         <div class="content">
             ${content}
         </div>

@@ -464,36 +464,46 @@ model SentEmail {
 model Campaign {
   id              Int      @id @default(autoincrement())
   name            String
-  userId          Int // ✅ Corrected from String to Int
+  userId          Int
   subject         String
   fromName        String
   fromEmail       String
-  sentCount       Int      @default(0)
+  sentCount       Int      @default(0) // Total emails attempted
+  deliveredCount  Int      @default(0) // ✅ Successfully delivered
   openCount       Int      @default(0)
   clickCount      Int      @default(0)
   conversionCount Int      @default(0)
-  designJson      String? // store canvas JSON
+  bounceCount     Int      @default(0) // ✅ Bounced emails
+  designJson      String?
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
 
-  user   User            @relation(fields: [userId], references: [id])
+  user   User            @relation(fields: [userId], references: [id], onDelete: Cascade)
   events CampaignEvent[]
+
+  @@index([userId])
+  @@index([createdAt])
 }
 
 model CampaignEvent {
   id         Int      @id @default(autoincrement())
   campaignId Int
-  type       String // "sent" | "open" | "click" | "conversion"
   userId     Int
-  email      String?
-  url        String? // For click events
-  userAgent  String? // For tracking
-  ip         String? // For tracking
+  email      String
+  type       String // "delivered", "open", "click", "bounce", "failed", etc.
   timestamp  DateTime @default(now())
-  sgEventId  String?  @unique // SendGrid event ID to prevent duplicates
+  metadata   String? // ✅ JSON string for additional data
+  url        String? // For click events
+  userAgent  String?
+  ip         String?
+  sgEventId  String?  @unique // Prevent duplicate events
 
   campaign Campaign @relation(fields: [campaignId], references: [id], onDelete: Cascade)
-  user     User     @relation(fields: [userId], references: [id])
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([campaignId, type])
+  @@index([email])
+  @@index([sgEventId])
 }
 
 model CampaignVerifiedEmail {

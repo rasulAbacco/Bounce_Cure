@@ -18,23 +18,20 @@ import DashboardLayout from "../../components/DashboardLayout";
 const API_URL = import.meta.env.VITE_VRI_URL;
 
 export default function Analytics() {
-  // Date picker state
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [showDatePicker, setShowDatePicker] = useState(false);
 
-  // Filter dropdown state
   const filters = ["All Campaigns", "Email", "SMS", "Push"];
   const [selectedFilter, setSelectedFilter] = useState("All Campaigns");
   const [showFilter, setShowFilter] = useState(false);
 
-  // Campaigns state
   const [campaigns, setCampaigns] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [sgSummary, setSgSummary] = useState(null);
 
-  // Fetch campaigns with SendGrid integration
+  // Fetch campaigns with pagination support
   useEffect(() => {
     const fetchCampaigns = async () => {
       const token = localStorage.getItem("token");
@@ -47,7 +44,6 @@ export default function Analytics() {
       try {
         setLoading(true);
 
-        // Use the new integrated endpoint
         const res = await fetch(`${API_URL}/api/analytics/sendgrid/campaigns`, {
           headers: {
             "Content-Type": "application/json",
@@ -103,14 +99,17 @@ export default function Analytics() {
     fetchSendGridSummary();
   }, []);
 
-  // Header stats - use SendGrid summary
-  const totalSent = sgSummary?.processed || campaigns.reduce((sum, c) => sum + (c.sentCount || 0), 0);
-  const delivered = sgSummary?.delivered || campaigns.reduce((sum, c) => sum + (c.sentCount || 0), 0);
+  // ✅ Header stats - use SendGrid summary with proper delivered count
+const totalSent =
+  (sgSummary?.processed && sgSummary?.processed > 0)
+    ? sgSummary.processed
+    : campaigns.reduce((sum, c) => sum + (c.sentCount || 0), 0);
+  const delivered = sgSummary?.delivered || campaigns.reduce((sum, c) => sum + (c.deliveredCount || 0), 0);
   const totalOpens = sgSummary?.opens || campaigns.reduce((sum, c) => sum + (c.openCount || 0), 0);
   const totalClicks = sgSummary?.clicks || campaigns.reduce((sum, c) => sum + (c.clickCount || 0), 0);
   const totalConversions = sgSummary?.conversions || campaigns.reduce((sum, c) => sum + (c.conversionCount || 0), 0);
 
-  // Chart data - now uses enriched campaign data with SendGrid stats
+  // Chart data
   const trendData = campaigns
     .filter(c => c.createdAt)
     .sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt))
@@ -125,13 +124,12 @@ export default function Analytics() {
       conversionRate: c.conversionRate || 0,
     }));
 
-  // Campaign table data - now uses enriched campaign data.
-
+  // ✅ Campaign table data with deliveredCount
   const campaignTable = campaigns.map((c) => ({
     id: c.id,
     name: c.name || "Untitled",
     sent: c.sentCount || 0,
-    delivered: c.sentCount || 0,
+    delivered: c.deliveredCount || 0, // ✅ Use deliveredCount from API
     opens: c.openCount || 0,
     clicks: c.clickCount || 0,
     conversions: c.conversionCount || 0,
@@ -139,7 +137,6 @@ export default function Analytics() {
     clickRate: c.clickRate || 0,
     conversionRate: c.conversionRate || 0,
   }));
-  console.log("📋 campaignTable:", campaignTable);
 
   // Delete campaign
   const handleDelete = async (id) => {
@@ -158,9 +155,6 @@ export default function Analytics() {
     }
   };
 
-  console.log("Trend data for charts:", trendData);
-  console.log("Campaign table data:", campaignTable);
-
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-black text-white p-6 space-y-6">
@@ -168,46 +162,6 @@ export default function Analytics() {
         <div className="flex justify-between items-center relative pt-16">
           <h1 className="text-2xl font-bold text-[#c2831f]">Analytics Dashboard</h1>
           <div className="flex items-center gap-2 relative">
-            {/* Date Picker */}
-            {/* <div className="relative">
-              <button
-                onClick={() => setShowDatePicker(!showDatePicker)}
-                className="flex items-center gap-1 px-3 py-2 border border-gray-700 rounded-lg bg-black hover:bg-gray-900"
-              >
-                <Calendar size={18} /> Date Range
-              </button>
-              {showDatePicker && (
-                <div className="absolute right-0 mt-2 bg-white text-black p-4 rounded-lg shadow-lg z-10 w-64">
-                  <div className="space-y-3">
-                    <div>
-                      <label className="block text-sm font-medium mb-1">Start Date</label>
-                      <input
-                        type="date"
-                        value={startDate}
-                        onChange={(e) => setStartDate(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium mb-1">End Date</label>
-                      <input
-                        type="date"
-                        value={endDate}
-                        onChange={(e) => setEndDate(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg"
-                      />
-                    </div>
-                    <button
-                      className="w-full bg-[#c2831f] text-white py-2 rounded-lg hover:bg-[#a36e19]"
-                      onClick={() => setShowDatePicker(false)}
-                    >
-                      Apply
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div> */}
-
             {/* Filter Dropdown */}
             <div className="relative">
               <button

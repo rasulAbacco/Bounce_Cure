@@ -300,6 +300,7 @@ router.put("/:id", protect, authorizeAccountAccess, async (req, res) => {
         oauthClientSecret,
         refreshToken,
         authType,
+        userId,
       },
     });
 

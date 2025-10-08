@@ -1,10 +1,15 @@
 // server/routes/webhooks.js
 import express from "express";
 import { prisma } from "../prisma/prismaClient.js";
+import rateLimit from 'express-rate-limit';
 
 const router = express.Router();
+const webhookLimiter = rateLimit({
+  windowMs: 1 * 60 * 1000, // 1 minute
+  max: 1000 // limit each IP to 1000 requests per minute
+});
 
-router.post("/sendgrid-events", express.json(), async (req, res) => {
+router.post("/sendgrid-events", express.json(), webhookLimiter, async (req, res) => {
   try {
     const events = req.body;
     if (!Array.isArray(events)) {
@@ -31,7 +36,7 @@ router.post("/sendgrid-events", express.json(), async (req, res) => {
         // ✅ Check campaign exists and get its owner
         const campaign = await prisma.campaign.findUnique({
           where: { id: parsedCampaignId },
-          select: { id: true, userId: true }
+          select: { id: true, userId: true },
         });
 
         if (!campaign) {
@@ -47,10 +52,7 @@ router.post("/sendgrid-events", express.json(), async (req, res) => {
 
           case "open": {
             const existingOpen = await prisma.campaignEvent.findFirst({
-              where: {
-                sgEventId: event.sg_event_id,
-                userId: campaign.userId
-              }
+              where: { sgEventId: event.sg_event_id, userId: campaign.userId },
             });
 
             if (!existingOpen) {
@@ -62,13 +64,13 @@ router.post("/sendgrid-events", express.json(), async (req, res) => {
                   email: event.email,
                   userAgent: event.useragent,
                   ip: event.ip,
-                  sgEventId: event.sg_event_id
-                }
+                  sgEventId: event.sg_event_id,
+                },
               });
 
               await prisma.campaign.update({
                 where: { id: parsedCampaignId },
-                data: { openCount: { increment: 1 } }
+                data: { openCount: { increment: 1 } },
               });
 
               console.log(`👁️  Open tracked: ${event.email} (Campaign ${parsedCampaignId})`);
@@ -80,10 +82,7 @@ router.post("/sendgrid-events", express.json(), async (req, res) => {
 
           case "click": {
             const existingClick = await prisma.campaignEvent.findFirst({
-              where: {
-                sgEventId: event.sg_event_id,
-                userId: campaign.userId
-              }
+              where: { sgEventId: event.sg_event_id, userId: campaign.userId },
             });
 
             if (!existingClick) {
@@ -96,13 +95,13 @@ router.post("/sendgrid-events", express.json(), async (req, res) => {
                   url: event.url,
                   userAgent: event.useragent,
                   ip: event.ip,
-                  sgEventId: event.sg_event_id
-                }
+                  sgEventId: event.sg_event_id,
+                },
               });
 
               await prisma.campaign.update({
                 where: { id: parsedCampaignId },
-                data: { clickCount: { increment: 1 } }
+                data: { clickCount: { increment: 1 } },
               });
 
               console.log(
@@ -127,8 +126,8 @@ router.post("/sendgrid-events", express.json(), async (req, res) => {
                 email: event.email,
                 userAgent: event.useragent,
                 ip: event.ip,
-                sgEventId: event.sg_event_id
-              }
+                sgEventId: event.sg_event_id,
+              },
             });
             console.log(`⚠️  ${event.event}: ${event.email} (Campaign ${parsedCampaignId})`);
             break;
@@ -148,7 +147,8 @@ router.post("/sendgrid-events", express.json(), async (req, res) => {
   }
 });
 
-export { router };
+export default router;
+
 
 // // server/routes/webhooks.js
 // import express from "express";

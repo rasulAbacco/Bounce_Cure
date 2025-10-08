@@ -10,7 +10,7 @@ export const sendInvoiceEmail = async ({ to, subject, html, pdfBuffer, fileName 
 
     const msg = {
         to,
-        from: "info@abaccotech.com", // must be verified in SendGrid
+        from: "info@abaccotech.com",
         subject,
         html,
         attachments: [
@@ -23,5 +23,12 @@ export const sendInvoiceEmail = async ({ to, subject, html, pdfBuffer, fileName 
         ],
     };
 
-    await sgMail.send(msg);
+    try {
+        await sgMail.send(msg);
+        console.log(`✅ Invoice sent to ${to}`);
+    } catch (error) {
+        console.error("❌ SendGrid send error:", error);
+        throw error;  // rethrow if you want to handle it upstream
+    }
 };
+
