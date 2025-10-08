@@ -1,3 +1,4 @@
+// UserAuthentication.jsx
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
@@ -8,6 +9,7 @@ import SecurityLogs from '../../components/auth/SecurityLogs';
 import ActiveSessions from '../../components/auth/ActiveSessions';
 import UserProfile from '../../components/UserProfile';
 import { Shield, Lock } from 'lucide-react';
+import Settings from '../Settings/Settings';
 
 const UserAuthentication = () => {
   const navigate = useNavigate();
@@ -93,6 +95,7 @@ const UserAuthentication = () => {
               <ChangePassword />
             </div>
             <div className="space-y-8">
+              <Settings />
               <TwoFactorAuth />
               <SecurityLogs />
               <ActiveSessions />

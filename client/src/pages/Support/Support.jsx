@@ -249,7 +249,7 @@ export default function HelpAndSupport() {
                                     const left = (window.screen.width / 2) - (width / 2);
                                     const top = (window.screen.height / 2) - (height / 2);
                                     window.open(
-                                        "https://mail.google.com/mail/?view=cm&to=abacco83@gmail.com&su=Support%20Request",
+                                        "https://mail.google.com/mail/?view=cm&to=support@bouncecure.com&su=Support%20Request",
                                         "gmailComposeWindow",
                                         `width=${width},height=${height},top=${top},left=${left},scrollbars=yes,resizable=yes`
                                     );
@@ -359,7 +359,7 @@ export default function HelpAndSupport() {
                             </div>
                             <p>
                                 <strong>Phone:</strong>{" "}
-                                <a href="tel:+1234567890">+1 234 567 890</a>
+                                <a href="tel:+17712204003">+1 771-220-4003</a>
                             </p>
                             <p>
                                 <strong>Live Chat:</strong> Available 9am - 9pm (Mon – Fri)
@@ -367,8 +367,7 @@ export default function HelpAndSupport() {
                             <button
                                 className="card-button"
                                 onClick={() => {
-                                    const url =
-                                        "https://wa.me/1234567890?text=Hello,%20I%20need%20support";
+                                    const url = "https://wa.me/+17712204003?text=Hello,%20I%20need%20support";
                                     window.open(
                                         url,
                                         "WhatsAppBusinessChat",
@@ -379,6 +378,7 @@ export default function HelpAndSupport() {
                                 Start Chat
                             </button>
                         </div>
+
                     </div>
                 </div>
             </div>

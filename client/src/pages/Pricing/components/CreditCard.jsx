@@ -1,14 +1,11 @@
-
-// ============================================
-// 2. CREDIT CARD PAGE (CreditCard.jsx)
-// ============================================
-
 import React, { useState, useEffect } from 'react';
 import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { CreditCard as CreditCardIcon, Lock, AlertCircle } from 'lucide-react';
+
 const API_URL = import.meta.env.VITE_VRI_URL;
+
 export default function CreditCard() {
     const stripe = useStripe();
     const elements = useElements();
@@ -17,32 +14,42 @@ export default function CreditCard() {
 
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
-    const [amount, setAmount] = useState(null);
+    const [plan, setPlan] = useState(null);
     const [status, setStatus] = useState('');
+    const [loading, setLoading] = useState(false);
 
     useEffect(() => {
-        if (location.state?.amount) {
-            setAmount(parseFloat(location.state.amount));
-        } else {
-            navigate('/pricing');
+        const incomingPlan = location.state?.plan;
+        const incomingEmail = location.state?.email;
+        const incomingName = location.state?.name;
+
+        if (incomingPlan) setPlan(incomingPlan);
+        if (incomingEmail) setEmail(incomingEmail);
+        if (incomingName) setName(incomingName);
+
+        if (!incomingPlan) {
+            const storedPlan = localStorage.getItem("pendingUpgradePlan");
+            if (storedPlan) {
+                setPlan(JSON.parse(storedPlan));
+            } else {
+                navigate("/pricing");
+            }
         }
     }, [location.state, navigate]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        if (!stripe || !elements || !amount) return;
+        if (!stripe || !elements || !plan) return;
+
+        setLoading(true);
+
+        // Use the total cost from the plan (already includes tax and discount)
+        const amount = parseFloat(plan.totalCost || 0);
 
         try {
-            const parsedAmount = amount;
-
-            if (isNaN(parsedAmount) || parsedAmount <= 0) {
-                setStatus("❌ Please enter a valid amount.");
-                return;
-            }
-
             const { data } = await axios.post(`${API_URL}/api/creditcard/charge`, {
-                amount: parsedAmount,
+                amount,
                 email,
             });
 
@@ -66,19 +73,33 @@ export default function CreditCard() {
                 await axios.post(`${API_URL}/api/creditcard/save`, {
                     userId: 1,
                     email,
+                    name,
                     transactionId: paymentIntent.id,
-                    amount: parsedAmount,
+                    planName: plan.planName,
+                    planType: plan.billingPeriod,
+                    provider: 'Stripe',
+                    contacts: plan.slots,
+                    amount,
                     currency: paymentIntent.currency,
                     paymentMethod: paymentIntent.payment_method_types[0],
                     cardLast4: paymentIntent.charges?.data[0]?.payment_method_details?.card?.last4 || '',
                     paymentDate: new Date().toISOString(),
                     status: paymentIntent.status,
+                    discount: plan?.discountAmount || 0,
+                    planPrice: amount - (plan?.discountAmount || 0),
                 });
             }
         } catch (error) {
             console.error(error);
             setStatus('❌ Something went wrong. Please try again.');
+        } finally {
+            setLoading(false);
         }
+    };
+
+    const formatCurrency = (amount) => {
+        const num = Number(amount);
+        return isNaN(num) ? "$0.00" : `$${num.toFixed(2)}`;
     };
 
     return (
@@ -129,7 +150,7 @@ export default function CreditCard() {
 
                 <div className="bg-gradient-to-r from-indigo-950/30 to-purple-950/30 border border-indigo-800/30 rounded-xl p-4">
                     <p className="text-center text-white text-2xl font-bold">
-                        ${amount ? amount.toFixed(2) : '...'}
+                        {plan ? formatCurrency(plan.totalCost) : '$0.00'}
                     </p>
                     <p className="text-center text-slate-400 text-sm mt-1">Total Amount</p>
                 </div>
@@ -155,11 +176,36 @@ export default function CreditCard() {
 
                 <button
                     type="submit"
-                    disabled={!stripe || !amount}
+                    disabled={!stripe || !plan || loading}
                     className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-4 rounded-xl transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-indigo-500/50 hover:shadow-xl hover:shadow-indigo-500/50 hover:scale-105 flex items-center justify-center gap-2"
                 >
-                    <Lock size={20} />
-                    Pay ${amount ? amount.toFixed(2) : '...'}
+                    {loading ? (
+                        <svg
+                            className="animate-spin h-6 w-6 text-white"
+                            xmlns="http://www.w3.org/2000/svg"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                        >
+                            <circle
+                                className="opacity-25"
+                                cx="12"
+                                cy="12"
+                                r="10"
+                                stroke="currentColor"
+                                strokeWidth="4"
+                            ></circle>
+                            <path
+                                className="opacity-75"
+                                fill="currentColor"
+                                d="M4 12a8 8 0 018-8v4l3-3-3-3v4a8 8 0 010 16v-4l-3 3 3 3v-4a8 8 0 01-8-8z"
+                            ></path>
+                        </svg>
+                    ) : (
+                        <>
+                            <Lock size={20} />
+                            {plan ? `Pay ${formatCurrency(plan.totalCost)}` : "Loading..."}
+                        </>
+                    )}
                 </button>
 
                 {status && (
