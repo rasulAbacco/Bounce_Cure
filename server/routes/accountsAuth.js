@@ -20,13 +20,15 @@ const SCOPES = [
 
 // Outlook (Microsoft) scopes and endpoints (existing pattern)
 const OUTLOOK_SCOPES = [
-  "https://outlook.office.com/IMAP.AccessAsUser.All",
-  "https://outlook.office.com/SMTP.Send",
   "offline_access",
   "openid",
+  "email",
   "profile",
-  "email"
+  "https://outlook.office365.com/IMAP.AccessAsUser.All",
+  "https://outlook.office365.com/SMTP.Send",
 ];
+
+
 
 const OUTLOOK_AUTH_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/authorize";
 const OUTLOOK_TOKEN_URL = "https://login.microsoftonline.com/common/oauth2/v2.0/token";
@@ -84,25 +86,40 @@ export async function getRediffAccessToken(refreshToken, clientId, clientSecret)
 }
 
 // Outlook (Microsoft)
-export async function getOutlookAccessToken(refreshToken, clientId, clientSecret) {
-  try {
-    const response = await axios.post(
-      OUTLOOK_TOKEN_URL,
-      new URLSearchParams({
-        grant_type: "refresh_token",
-        refresh_token: refreshToken,
-        client_id: clientId,
-        client_secret: clientSecret,
-        scope: OUTLOOK_SCOPES.join(" "),
-      }),
-      { headers: { "Content-Type": "application/x-www-form-urlencoded" } }
-    );
-    return response.data.access_token;
-  } catch (err) {
-    console.error("❌ Error refreshing Outlook token:", err.response?.data || err.message);
-    throw new Error("Failed to refresh Outlook access token");
-  }
-}
+// server/routes/accountsAuth.js  — replace getOutlookAccessToken
+
+// export async function getOutlookAccessToken( refreshToken, clientId,clientSecret) {
+//   try {
+//     if (!refreshToken || !clientId || !clientSecret)
+//       throw new Error("Missing required Outlook OAuth params");
+
+//     const params = new URLSearchParams({
+//       client_id: clientId,
+//       client_secret: clientSecret,
+//       grant_type: "refresh_token",
+//       refresh_token: refreshToken,
+//       scope: OUTLOOK_SCOPES.join(" "),
+//     });
+
+//     const res = await axios.post(OUTLOOK_TOKEN_URL, params.toString(), {
+//       headers: { "Content-Type": "application/x-www-form-urlencoded" },
+//     });
+
+//     if (!res.data?.access_token)
+//       throw new Error("No access_token returned from Microsoft");
+
+//     console.log("✅ [Outlook] Refreshed access token OK");
+//     return res.data.access_token;
+//   } catch (err) {
+//     console.error(
+//       "❌ [Outlook] Token refresh failed:",
+//       err.response?.data || err.message
+//     );
+//     throw new Error("Outlook token refresh failed");
+//   }
+// }
+
+
 
 // ---------- NEW: Yahoo helpers (auth URL, exchange code, refresh token) ----------
 export async function getYahooAccessToken(refreshToken, clientId, clientSecret) {

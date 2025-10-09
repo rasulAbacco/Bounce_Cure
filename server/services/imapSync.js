@@ -7,6 +7,7 @@ import fetch from "node-fetch";
 import sgMail from "@sendgrid/mail";
 import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
+import axios from "axios"; // add this if missing
 
 dotenv.config();
 sgMail.setApiKey(process.env.SENDGRID_API_KEY);
@@ -167,24 +168,92 @@ async function getGmailAccessToken(clientId, clientSecret, refreshToken) {
 /**
  * Outlook OAuth2
  */
-async function getOutlookAccessToken(clientId, clientSecret) {
-  const cca = new ConfidentialClientApplication({
-    auth: {
-      clientId,
-      authority: "https://login.microsoftonline.com/common",
-      clientSecret,
-    },
-  });
+
+// ---------------- OUTLOOK TOKEN REFRESH ----------------
+
+
+
+
+/**
+ * Refresh and return a valid Outlook access token.
+ * Also updates refresh_token in DB if Microsoft rotates it.
+ */
+export async function getOutlookAccessToken(account, prisma) {
   try {
-    const result = await cca.acquireTokenByClientCredential({
-      scopes: ["https://graph.microsoft.com/.default"],
+    const { refreshToken, oauthClientId, oauthClientSecret, id } = account;
+
+    // 🧩 Validate required OAuth fields
+    if (!refreshToken || !oauthClientId || !oauthClientSecret) {
+      console.error("❌ [Outlook] Missing OAuth params:", {
+        hasRefresh: !!refreshToken,
+        hasClientId: !!oauthClientId,
+        hasSecret: !!oauthClientSecret,
+      });
+      throw new Error("Missing Outlook OAuth params");
+    }
+
+    // 🏗️ Prepare request payload
+    const params = new URLSearchParams({
+      client_id: oauthClientId,
+      client_secret: oauthClientSecret,
+      grant_type: "refresh_token",
+      refresh_token: refreshToken,
+      redirect_uri:
+        process.env.OUTLOOK_REDIRECT_URI ||
+        "http://localhost:5173/oauth/outlook/callback",
+      scope: [
+        "offline_access",
+        "openid",
+        "email",
+        "profile",
+        "https://outlook.office365.com/IMAP.AccessAsUser.All",
+        "https://outlook.office365.com/SMTP.Send",
+      ].join(" "),
     });
-    return result.accessToken;
-  } catch (error) {
-    console.error("❌ Outlook token request failed:", error.message);
-    throw error;
+
+    // 🌍 Request new access token
+    const res = await axios.post(
+      "https://login.microsoftonline.com/common/oauth2/v2.0/token",
+      params.toString(),
+      {
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      }
+    );
+
+    if (!res.data?.access_token)
+      throw new Error("No access_token returned from Microsoft");
+
+    const newAccessToken = res.data.access_token;
+    const newRefreshToken = res.data.refresh_token;
+
+    console.log("✅ [Outlook] Refreshed access token OK");
+
+    // 🔁 Save rotated refresh token if provided
+    if (newRefreshToken && prisma) {
+      try {
+        await prisma.emailAccount.update({
+          where: { id },
+          data: { refreshToken: newRefreshToken },
+        });
+        console.log("🔄 [Outlook] Refresh token updated in DB");
+      } catch (dbErr) {
+        console.error("⚠ Failed to update new refresh token:", dbErr.message);
+      }
+    } else if (!newRefreshToken) {
+      console.log("ℹ️ [Outlook] No new refresh token returned (Microsoft did not rotate it).");
+    }
+
+    // ✅ Return usable access token
+    return newAccessToken;
+
+  } catch (err) {
+    console.error("❌ [Outlook] Token refresh failed:", err.response?.data || err.message);
+    throw err;
   }
 }
+
+
+
 
 /**
  * Zoho / Rediff / Amazon generic token fetch
@@ -206,11 +275,11 @@ async function fetchAccessToken(url, params) {
 
 async function getZohoAccessToken(clientId, clientSecret, refreshToken) {
   return fetchAccessToken("https://accounts.zoho.com/oauth/v2/token", {
-  client_id: clientId,
-  client_secret: clientSecret,
-  refresh_token: refreshToken,
-  grant_type: "refresh_token",
-});
+    client_id: clientId,
+    client_secret: clientSecret,
+    refresh_token: refreshToken,
+    grant_type: "refresh_token",
+  });
 
 }
 
@@ -295,63 +364,89 @@ async function syncGmailAPI(prisma, account) {
     }
   }
 }
- 
-// Outlook API sync
-async function syncOutlookAPI(prisma, account) {
-  const accessToken = await getOutlookAccessToken(account.oauthClientId, account.oauthClientSecret);
-  const response = await fetch("https://graph.microsoft.com/v1.0/me/mailFolders/inbox/messages?$top=20", {
-    headers: { Authorization: `Bearer ${accessToken}` },
-  });
 
-  if (!response.ok) {
-    console.error("❌ Graph API failed:", await response.text());
+// Outlook API sync
+
+
+async function syncOutlookAPI(prisma, account) {
+  console.log(`🔄 Using Outlook IMAP for ${account.email}`);
+
+  const accessToken = await getOutlookAccessToken(account, prisma);
+  if (!accessToken) {
+    console.error("❌ [Outlook] No access token available");
     return;
   }
 
-  const data = await response.json();
-  if (!data.value) return;
+  // Connect to Outlook IMAP using OAuth token
+  const client = new ImapFlow({
+    host: "outlook.office365.com",
+    port: 993,
+    secure: true,
+    auth: {
+      user: account.email,
+      accessToken,
+      xoauth2: true,
+    },
+  });
 
-  for (const message of data.value) {
-    const subject = message.subject || "(no subject)";
-    const from = message.from?.emailAddress?.address || "unknown";
-    const to = message.toRecipients?.map((t) => t.emailAddress.address).join(", ") || "unknown";
+  try {
+    await client.connect();
+    console.log(`✅ Connected to Outlook IMAP for ${account.email}`);
 
-    if (!shouldSkipEmail(subject, from)) {
-      const emailData = {
-        messageId: message.id,
-        from,
-        to,
-        subject,
-        body: message.body?.content || "",
-        bodyHtml: message.body?.contentType === "html" ? message.body.content : "",
-        date: new Date(message.receivedDateTime),
-        folder: "INBOX",
-        source: "outlook-graph",
-        status: message.isRead ? "read" : "unread",
-        tags: [],
-        threadId: message.conversationId || null,
-        inReplyTo: null,
-        isReply: false,
-      };
-      await saveEmail(prisma, emailData, account.id);
-      console.log(`📥 Saved via Graph API: ${subject}`);
+    // Open Inbox
+    const lock = await client.getMailboxLock("INBOX");
+    try {
+      let messageCount = 0;
+      for await (let message of client.fetch("1:*", {
+        envelope: true,
+        source: true,
+        bodyStructure: true,
+      })) {
+        const parsed = await simpleParser(message.source);
+        const emailData = {
+          messageId: message.envelope?.messageId || parsed.messageId,
+          from: parsed.from?.text || "unknown",
+          to: parsed.to?.text || "unknown",
+          subject: parsed.subject || "(no subject)",
+          body: parsed.text || "",
+          bodyHtml: parsed.html || "",
+          date: parsed.date || new Date(),
+          folder: "INBOX",
+          source: "outlook-imap",
+          status: "unread",
+          tags: [],
+          threadId: null,
+          inReplyTo: parsed.inReplyTo || null,
+          isReply: !!parsed.inReplyTo,
+        };
+        await saveEmail(prisma, emailData, account.id);
+        messageCount++;
+      }
+      console.log(`📥 Synced ${messageCount} messages via Outlook IMAP`);
+    } finally {
+      lock.release();
     }
+
+    await client.logout();
+  } catch (err) {
+    console.error(`❌ [Outlook IMAP] Sync failed:`, err.message);
   }
 }
+
 
 // IMAP sync (for password auth and fallback)
 async function syncImap(prisma, account) {
   let authConfig;
-  
+
   // FIXED: Check authType first
   if (account.authType === "password") {
     // Use app password for authentication
-    authConfig = { 
-      user: account.imapUser, 
-      pass: account.encryptedPass 
+    authConfig = {
+      user: account.imapUser,
+      pass: account.encryptedPass
     };
     console.log(`🔐 Using password auth for ${account.email}`);
-  } 
+  }
   // Only use OAuth if explicitly configured
   else if (account.authType === "oauth" && account.oauthClientId && account.oauthClientSecret && account.refreshToken) {
     try {
@@ -372,35 +467,35 @@ async function syncImap(prisma, account) {
     throw new Error("No valid authentication method available");
   }
 
-let client;
+  let client;
 
-if (account.authType === 'password') {
-  // Standard IMAP login with app password
-  client = new ImapFlow({
-    host: account.imapHost,
-    port: account.imapPort,
-    secure: true,
-    auth: {
-      user: account.imapUser,
-      pass: account.encryptedPass, // ✅ direct app password
-    },
-    tls: {
-      rejectUnauthorized: false, // helps for Zoho/Outlook SSL handshake edge cases
-    },
-    socketTimeout: 120000,
-    authTimeout: 30000,
-  });
-} else if (account.authType === 'oauth') {
-  // OAuth flow (for Gmail, Zoho OAuth, etc.)
-  client = new ImapFlow({
-    host: account.imapHost,
-    port: account.imapPort,
-    secure: true,
-    auth: authConfig,
-    socketTimeout: 120000,
-    authTimeout: 30000,
-  });
-}
+  if (account.authType === 'password') {
+    // Standard IMAP login with app password
+    client = new ImapFlow({
+      host: account.imapHost,
+      port: account.imapPort,
+      secure: true,
+      auth: {
+        user: account.imapUser,
+        pass: account.encryptedPass, // ✅ direct app password
+      },
+      tls: {
+        rejectUnauthorized: false, // helps for Zoho/Outlook SSL handshake edge cases
+      },
+      socketTimeout: 120000,
+      authTimeout: 30000,
+    });
+  } else if (account.authType === 'oauth') {
+    // OAuth flow (for Gmail, Zoho OAuth, etc.)
+    client = new ImapFlow({
+      host: account.imapHost,
+      port: account.imapPort,
+      secure: true,
+      auth: authConfig,
+      socketTimeout: 120000,
+      authTimeout: 30000,
+    });
+  }
 
 
   client.on("error", (err) => console.error(`❌ IMAP socket error [${account.imapUser}]:`, err.message));
@@ -408,7 +503,7 @@ if (account.authType === 'password') {
   try {
     await client.connect();
     console.log(`✅ Connected to IMAP for ${account.email}`);
-    
+
     const lock = await client.getMailboxLock("INBOX");
     try {
       let messageCount = 0;
@@ -465,34 +560,58 @@ if (account.authType === 'password') {
  * Main sync for all accounts
  * -----------------------
  */
+
+//server/services/imapSync.js
 export async function runSync(prisma) {
-  console.log("⏳ Running email sync...");
+  console.log("⏳ Running email sync for all accounts...");
 
   const accounts = await prisma.emailAccount.findMany();
-  for (const account of accounts) {
-    try {
-      // FIXED: Check authType before choosing sync method
-      if (account.authType === "password") {
-        console.log(`🔄 Using IMAP for password-authenticated account: ${account.email}`);
-        await syncImap(prisma, account);
-      } else if (account.authType === "oauth") {
-        if (account.provider === "gmail") {
-          console.log(`🔄 Using Gmail API for OAuth account: ${account.email}`);
-          await syncGmailAPI(prisma, account);
-        } else if (account.provider === "outlook") {
-          console.log(`🔄 Using Outlook API for OAuth account: ${account.email}`);
-          await syncOutlookAPI(prisma, account);
-        } else {
-          console.log(`🔄 Using IMAP for OAuth account: ${account.email}`);
-          await syncImap(prisma, account);
-        }
-      } else {
-        console.error(`❌ Unknown authType for ${account.email}: ${account.authType}`);
-      }
-    } catch (err) {
-      console.error(`❌ Failed sync for ${account.email}:`, err.message);
-    }
+
+  if (!accounts.length) {
+    console.warn("⚠ No email accounts found in DB.");
+    return;
   }
+
+  // for (const account of accounts) {
+  //   try {
+  //     const { email, provider, authType } = account;
+
+  //     if (!email || !provider || !authType) {
+  //       console.warn("⚠ Skipping invalid account:", { id: account.id, email, provider, authType });
+  //       continue;
+  //     }
+
+  //     // 🧠 Handle PASSWORD-based IMAP
+  //     if (authType === "password") {
+  //       if (!account.encryptedPass) {
+  //         console.warn(`⚠ Missing password for ${email}, skipping.`);
+  //         continue;
+  //       }
+  //       console.log(`🔄 Using password IMAP for ${email}`);
+  //       await syncEmailsForAccount(prisma, account);
+  //       continue;
+  //     }
+
+  //     // 🧠 Handle OAUTH-based accounts
+  //     if (authType === "oauth") {
+  //       if (provider === "gmail") {
+  //         console.log(`🔄 Using Gmail API for ${email}`);
+  //         await syncGmailAPI(prisma, account);
+  //       } else if (provider === "outlook") {
+  //         console.log(`🔄 Using Outlook IMAP OAuth for ${email}`);
+  //         await syncEmailsForAccount(prisma, account); // uses XOAUTH2 under the hood
+  //       } else {
+  //         console.log(`⚠ Unknown OAuth provider for ${email}, using IMAP fallback`);
+  //         await syncEmailsForAccount(prisma, account);
+  //       }
+  //       continue;
+  //     }
+
+  //     console.error(`❌ Unknown authType for ${email}: ${authType}`);
+  //   } catch (err) {
+  //     console.error(`❌ Failed sync for ${account.email}:`, err.message);
+  //   }
+  // }
 
   console.log("✅ Sync cycle finished");
 }
@@ -527,3 +646,103 @@ export async function syncEmailsForAccount(prisma, account) {
     throw err;
   }
 }
+
+
+
+// helper to return access token for the account
+async function fetchAccessTokenForAccount(account) {
+  if (account.authType !== "oauth") return null;
+
+  switch (account.provider) {
+    case "outlook":
+      return await getOutlookAccessToken(
+        account.refreshToken,
+        account.oauthClientId,
+        account.oauthClientSecret
+      );
+    case "yahoo":
+      return await getYahooAccessToken(
+        account.refreshToken,
+        account.oauthClientId,
+        account.oauthClientSecret
+      );
+    default:
+      return await getOAuth2AccessToken(account);
+  }
+}
+
+function buildImapConfig(account, accessToken) {
+  if (account.authType === "password") {
+    return {
+      user: account.imapUser,
+      password: account.encryptedPass,
+      host: account.imapHost,
+      port: account.imapPort,
+      tls: true,
+      authTimeout: 15000,
+    };
+  }
+
+  // XOAUTH2 flow
+  const xoauth2Token = Buffer.from(
+    `user=${account.imapUser}\x01auth=Bearer ${accessToken}\x01\x01`
+  ).toString("base64");
+
+  return {
+    user: account.imapUser,
+    xoauth2: xoauth2Token,
+    host: account.imapHost,
+    port: account.imapPort,
+    tls: true,
+    authTimeout: 15000,
+  };
+}
+
+// Example connect & error handling (call from your sync function)
+export async function connectImapAndSync(prisma, account) {
+  let accessToken = null;
+
+  try {
+    if (account.authType === "oauth") {
+      accessToken = await fetchAccessTokenForAccount(account);
+      if (!accessToken) throw new Error("Failed to get Outlook access token");
+    }
+
+    const imapConfig = buildImapConfig(account, accessToken);
+    const imap = new Imap(imapConfig);
+
+    imap.once("ready", () => {
+      console.log(`[imapSync] IMAP ready for ${account.email}`);
+      imap.openBox("INBOX", true, (err, box) => {
+        if (err) throw err;
+        console.log(`[imapSync] ${account.email} INBOX opened, ${box.messages.total} messages`);
+        // ... fetch or idle logic here ...
+        imap.end();
+      });
+    });
+
+    imap.once("error", async (err) => {
+      console.error(`[imapSync] IMAP error for ${account.email}`, err);
+      const msg = err.message || "";
+      if (/auth/i.test(msg) || /invalid/i.test(msg)) {
+        await prisma.emailAccount.update({
+          where: { id: account.id },
+          data: { status: "auth_failed", lastAuthError: msg.slice(0, 255) },
+        });
+      }
+    });
+
+    imap.once("end", () => {
+      console.log(`[imapSync] IMAP connection ended for ${account.email}`);
+    });
+
+    imap.connect();
+  } catch (err) {
+    console.error(`[imapSync] Failed IMAP connect for ${account.email}:`, err.message);
+    await prisma.emailAccount.update({
+      where: { id: account.id },
+      data: { status: "sync_failed", lastAuthError: err.message },
+    });
+  }
+}
+

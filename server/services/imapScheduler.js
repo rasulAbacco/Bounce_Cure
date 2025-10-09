@@ -1,4 +1,3 @@
-// server/services/imapScheduler.js
 import { PrismaClient } from "@prisma/client";
 import { syncEmailsForAccount } from "./imapSync.js";
 
@@ -13,18 +12,42 @@ export function startEmailScheduler() {
                 return;
             }
 
-            console.log(`⏳ Running IMAP sync for ${ accounts.length } accounts...`);
+            console.log(`⏳ Running IMAP sync for ${accounts.length} accounts...`);
 
             for (const account of accounts) {
-                if (!account || !account.imapUser || !account.imapHost || !account.encryptedPass) {
-                    console.warn("⚠ Skipping invalid account:", account);
+                // ✅ Check for valid account based on authType
+                const isPasswordAccount =
+                    account.authType === "password" && account.encryptedPass;
+
+                const isOutlookOAuth =
+                    account.authType === "oauth" &&
+                    account.provider === "outlook" &&
+                    account.refreshToken &&
+                    account.oauthClientId &&
+                    account.oauthClientSecret;
+
+                const isValid =
+                    account &&
+                    account.imapUser &&
+                    account.imapHost &&
+                    account.imapPort &&
+                    (isPasswordAccount || isOutlookOAuth);
+
+                if (!isValid) {
+                    console.warn("⚠ Skipping invalid account:", {
+                        id: account.id,
+                        email: account.email,
+                        authType: account.authType,
+                        hasRefresh: !!account.refreshToken,
+                        hasPass: !!account.encryptedPass,
+                    });
                     continue;
                 }
 
                 try {
                     await syncEmailsForAccount(prisma, account);
                 } catch (err) {
-                    console.error(`❌ Failed sync for ${ account.imapUser || account.email }:`, err.message);
+                    console.error(`❌ Failed sync for ${account.imapUser || account.email}:`, err.message);
                 }
             }
         } catch (err) {
@@ -32,7 +55,9 @@ export function startEmailScheduler() {
         }
     };
 
-    runSync(); // Run immediately on startup
+    // 🟢 Run immediately on startup
+    runSync();
 
-    setInterval(runSync, 2 * 60 * 1000); // Repeat every 2 minutes
+    // 🔁 Repeat every 2 minutes
+    setInterval(runSync, 2 * 60 * 1000);
 }

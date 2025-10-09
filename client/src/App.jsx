@@ -61,6 +61,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import CampaignTextEditor from './pages/Campaign/Components/Editor/CampaignTextEditor';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 
+import OAuthOutlookCallback from './components/inbox/OAuthOutlookCallback';
 
 
 function App() {
@@ -148,6 +149,7 @@ function App() {
             <Route path="/sms" element={<ProtectedRoute><SMScampaign /></ProtectedRoute>} />
             <Route path="/texteditor" element={<ProtectedRoute><CampaignTextEditor /></ProtectedRoute>} />
 
+            <Route path="/oauth/outlook/callback" element={<OAuthOutlookCallback />} />
 
 
           </Routes>
