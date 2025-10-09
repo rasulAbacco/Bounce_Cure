@@ -38,6 +38,10 @@ const PlanProtectedRoute = ({ children, requiresCRM = false }) => {
                         <ul className="space-y-2 text-sm text-gray-300">
                             <li className="flex items-center gap-2">
                                 <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
+                                Inbox & Lead Management
+                            </li>
+                            <li className="flex items-center gap-2">
+                                <div className="w-1.5 h-1.5 bg-yellow-500 rounded-full"></div>
                                 Contact Management
                             </li>
                             <li className="flex items-center gap-2">

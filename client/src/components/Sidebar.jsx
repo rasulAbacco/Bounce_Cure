@@ -1,49 +1,29 @@
 // client/src/components/Sidebar.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import {
     Users, Mail, HelpCircle,
     BarChart3, Shield, Wrench, PenTool, Zap,
-    UserCheck, Home, X, Lock
+    UserCheck, Home, X, Lock, Settings
 } from 'lucide-react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { hasCRMAccess, getUserPlan } from '../utils/PlanAccessControl';
+import { UserContext } from '../components/UserContext';
 
 const Sidebar = ({ isOpen, toggleSidebar, pageName }) => {
     const location = useLocation();
     const navigate = useNavigate();
-    const [userPlan, setUserPlan] = useState('Free');
+    const { user } = useContext(UserContext);
     const [crmAccess, setCrmAccess] = useState(false);
 
     useEffect(() => {
-        // Function to load and check plan
-        const loadPlan = () => {
-            const plan = getUserPlan();
-            const access = hasCRMAccess();
-            
-            console.log('🔍 Sidebar - Current Plan:', plan);
-            console.log('🔍 Sidebar - CRM Access:', access);
-            
-            setUserPlan(plan);
+        // Function to check CRM access based on user plan
+        const checkCrmAccess = () => {
+            const access = user.plan === 'Standard' || user.plan === 'Premium';
             setCrmAccess(access);
         };
 
-        // Load on mount
-        loadPlan();
-
-        // Listen for storage changes (plan updates)
-        const handleStorageChange = (e) => {
-            if (e.key === 'userPlan') {
-                console.log('📢 Plan changed in sidebar:', e.newValue);
-                loadPlan();
-            }
-        };
-
-        window.addEventListener('storage', handleStorageChange);
-
-        return () => {
-            window.removeEventListener('storage', handleStorageChange);
-        };
-    }, []);
+        // Load on mount and when user plan changes
+        checkCrmAccess();
+    }, [user.plan]);
 
     const menuItems = [
         { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard', requiresCRM: false },
@@ -58,24 +38,18 @@ const Sidebar = ({ isOpen, toggleSidebar, pageName }) => {
     ];
 
     const handleNavigation = (item) => {
-        // Check if CRM access is required and user doesn't have it
-        if (item.requiresCRM && !crmAccess) {
-            console.log('🔒 CRM access denied, redirecting to pricing');
-            // Show upgrade prompt and redirect to pricing
-            navigate('/pricingdash', { 
-                state: { 
-                    message: 'Upgrade to Standard or Premium plan to access CRM features',
-                    requiredFeature: 'CRM'
-                } 
-            });
-            toggleSidebar();
-            return;
-        }
-
-        // Normal navigation
-        pageName(item.label);
+    // Check if CRM access is required and user doesn't have it
+    if (item.requiresCRM && !crmAccess) {
+        // Navigate to the CRM path, PlanProtectedRoute will handle showing the upgrade page
+        navigate(item.path);
         toggleSidebar();
-    };
+        return;
+    }
+
+    // Normal navigation
+    pageName(item.label);
+    toggleSidebar();
+};
 
     return (
         <div>
@@ -152,8 +126,32 @@ const Sidebar = ({ isOpen, toggleSidebar, pageName }) => {
                     {/* Current Plan Badge */}
                     <div className="mb-3 px-4 py-2 bg-black/20 rounded-lg border border-white/20">
                         <p className="text-xs text-gray-400">Current Plan</p>
-                        <p className="text-sm font-semibold text-white">{userPlan}</p>
+                        <div className="flex items-center justify-between">
+                            <p className="text-sm font-semibold text-white">{user.plan}</p>
+                            {user.plan === 'Free' && (
+                                <span className="text-xs bg-yellow-500 text-black px-2 py-0.5 rounded-full">Upgrade</span>
+                            )}
+                        </div>
                     </div>
+
+                    {/* Usage Stats */}
+                    {/* <div className="mb-3 px-4 py-2 bg-black/20 rounded-lg border border-white/20">
+                        <p className="text-xs text-gray-400 mb-2">Usage</p>
+                        <div className="space-y-1">
+                            <div className="flex justify-between text-xs">
+                                <span className="text-gray-300">Contacts</span>
+                                <span className="text-white">
+                                    {user.contactLimit === Infinity ? 'Unlimited' : user.contactLimit.toLocaleString()}
+                                </span>
+                            </div>
+                            <div className="flex justify-between text-xs">
+                                <span className="text-gray-300">Emails</span>
+                                <span className="text-white">
+                                    {user.emailLimit === Infinity ? 'Unlimited' : user.emailLimit.toLocaleString()}/mo
+                                </span>
+                            </div>
+                        </div>
+                    </div> */}
 
                     {/* Upgrade CTA */}
                     <div className="bg-black/30 backdrop-blur-md border border-white/30 rounded-lg text-white p-2 bg-gradient-to-r from-yellow-400/20 via-yellow-300/10 to-yellow-400/20">

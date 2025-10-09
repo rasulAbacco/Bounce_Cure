@@ -58,6 +58,7 @@ const Dashboard = () => {
     openRate: 0,
     clickRate: 0,
   });
+  const [greeting, setGreeting] = useState("");
 
   // ======== Helper Functions ========
   const fetchWithAuth = async (url) => {
@@ -152,6 +153,27 @@ const Dashboard = () => {
     setMetrics(calculatedMetrics);
   }, [allCampaigns, sgSummary]);
 
+
+  // ======== Greeting ========
+  useEffect(() => {
+    const updateGreeting = () => {
+      const usaTime = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
+      const currentHour = new Date(usaTime).getHours();
+
+      if (currentHour >= 5 && currentHour < 12) {
+        setGreeting("Good Morning");
+      } else if (currentHour >= 12 && currentHour < 17) {
+        setGreeting("Good Afternoon");
+      } else {
+        setGreeting("Good Evening");
+      }
+    };
+
+    updateGreeting();
+    const interval = setInterval(updateGreeting, 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
   // ======== Performance Data for Chart ========
   const performanceData = useMemo(() => {
     const map = new Map();
@@ -312,6 +334,8 @@ const Dashboard = () => {
     );
   }
   
+ 
+ 
 
  
 
@@ -320,7 +344,7 @@ const Dashboard = () => {
       <div className="min-h-screen bg-black text-white pt-16">
         <div className="backdrop-blur-xl border-b border-gray-800 p-6">
           <div className="max-w-7xl mx-auto">
-            <h1 className="text-2xl font-bold text-white">Good Evening</h1>
+            <h1 className="text-2xl font-bold text-white">{greeting}</h1>
             <p className="text-gray-400">
               Monitor your email marketing performance and insights
             </p>

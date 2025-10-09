@@ -1,3 +1,4 @@
+// src/components/TopNavbar.jsx
 import React, { useState, useContext } from "react";
 import {
   Bell,
@@ -11,45 +12,43 @@ import {
 import { Link, useNavigate } from "react-router-dom";
 import { UserContext } from "./UserContext";
 import { useNotificationContext } from "./NotificationContext";
+import { getCurrentPlanFeatures } from '../utils/PlanAccessControl';
 
 const TopNavbar = ({ toggleSidebar, pageName }) => {
   const { preferences, allNotifications, markAsRead, deleteNotification } = useNotificationContext();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
   const [showMobileSearch, setShowMobileSearch] = useState(false);
-
+  const planFeatures = getCurrentPlanFeatures();
   const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
+  
+  // Get purchased contact count from localStorage
+  const purchasedContacts = parseInt(localStorage.getItem('totalContacts')) || 0;
+  const purchasedEmails = parseInt(localStorage.getItem('totalEmails')) || 0;
 
   // Filter notifications based on preferences
   const notifications = allNotifications.filter((n) => {
     const shouldShow = preferences[n.type];
-    // console.log(`Filtering notification type "${n.type}":`, shouldShow, "Preferences:", preferences);
     return shouldShow;
   });
 
   // Count unread notifications
   const unreadCount = notifications.filter((n) => n.unread).length;
 
-  // console.log("TopNavbar notifications:", notifications);
-  // console.log("Unread count:", unreadCount);
-
   const handleLogout = () => {
     const confirmed = window.confirm("Are you sure you want to log out?");
     if (confirmed) {
       localStorage.clear();
-      setUser({ name: "", email: "", profileImage: "" }); // clear context
+      setUser({ name: "", email: "", profileImage: "" });
       navigate("/");
     }
   };
 
   const handleNotificationClick = (id) => {
     markAsRead(id);
-    // Optional: Navigate to related page when notification is clicked
-    // navigate('/dashboard');
   };
 
-  // New function to clear all notifications
   const handleClearAllNotifications = () => {
     const confirmed = window.confirm("Are you sure you want to clear all notifications?");
     if (confirmed) {
@@ -94,6 +93,17 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
           >
             {showMobileSearch ? <X className="w-5 h-5" /> : <Search className="w-5 h-5" />}
           </button>
+           <div className="flex items-center space-x-2 mt-1">
+                  <span className="text-xs bg-[#c2831f] text-black px-2 py-0.5 rounded-full font-medium">
+                    {user.plan} Plan
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {purchasedContacts > 0 ? purchasedContacts.toLocaleString() : (user.contactLimit === Infinity ? 'Unlimited' : user.contactLimit)} Contacts
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {purchasedEmails > 0 ? purchasedEmails.toLocaleString() : (user.emailLimit === Infinity ? 'Unlimited' : user.emailLimit)} Emails
+                  </span>
+                </div>
 
           {/* Notifications */}
           <div className="relative">
@@ -193,7 +203,9 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
                   <p className="text-xs text-[#c2831f]">{user.email}</p>
                 )}
               </div>
+              
             </button>
+            
 
             {showProfileMenu && (
               <div className="absolute right-3 w-[70%] min-w-30 top-17 z-[999] bg-black backdrop-blur-lg border border-white/50 rounded-lg shadow-xl">

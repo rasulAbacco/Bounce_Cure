@@ -19,6 +19,12 @@ model User {
   profileImage Bytes?
   updatedAt    DateTime @updatedAt
 
+  // New fields
+  plan               String  @default("Free") // "Free", "Essentials", "Standard", "Premium"
+  hasPurchasedBefore Boolean @default(false)
+  contactLimit       Int     @default(500)
+  emailLimit         Int     @default(1000)
+
   // Relations
   apiKeys             ApiKey[]
   contents            Content[]
@@ -422,6 +428,8 @@ model Payment {
   notified        Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
+  
+  // Relation to User model
   User            User     @relation(fields: [userId], references: [id])
 }
 

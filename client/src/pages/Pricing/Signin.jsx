@@ -1,264 +1,357 @@
-// Signin.jsx
-import React, { useState, useEffect } from "react";
-import { useNavigate, useLocation, Link } from "react-router-dom";
-import toast from "react-hot-toast";
+// client/src/pages/Pricing/Signin.jsx
+import React, { useState, useContext } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { UserContext } from '../../components/UserContext';
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield, Zap, Users, CheckCircle } from 'lucide-react';
+import PageLayout from '../../components/PageLayout';
+import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL;
 
-export default function Signin() {
-  const navigate = useNavigate();
-  const location = useLocation();
-
-  // Get the pending plan from storage or location state
-  const [selectedPlan, setSelectedPlan] = useState(() => {
-    console.log("=== INITIALIZING SIGNIN COMPONENT ===");
+const Signin = () => {
+    const [formData, setFormData] = useState({
+        email: "",
+        password: ""
+    });
     
-    // First check location state
-    if (location.state?.plan) {
-      console.log("Found plan in location state:", location.state.plan);
-      return location.state.plan;
-    }
+    const [focusedField, setFocusedField] = useState('');
+    const [showPassword, setShowPassword] = useState(false);
+    const [rememberMe, setRememberMe] = useState(false);
+    const [isHovered, setIsHovered] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     
-    // Then check sessionStorage
-    const sessionPlan = sessionStorage.getItem("pendingUpgradePlan");
-    if (sessionPlan) {
-      try {
-        const parsed = JSON.parse(sessionPlan);
-        console.log("Found plan in sessionStorage:", parsed);
-        return parsed;
-      } catch (e) {
-        console.error("Error parsing session plan:", e);
-      }
-    }
+    const navigate = useNavigate();
+    const location = useLocation();
+    const { setUser } = useContext(UserContext);
     
-    // Finally check localStorage
-    const localPlan = localStorage.getItem("pendingUpgradePlan");
-    if (localPlan) {
-      try {
-        const parsed = JSON.parse(localPlan);
-        console.log("Found plan in localStorage:", parsed);
-        return parsed;
-      } catch (e) {
-        console.error("Error parsing local plan:", e);
-      }
-    }
+    // Get redirect path from location state or default to pricing
+    const from = location.state?.redirectTo || '/pricingdash';
     
-    console.log("No plan found");
-    return null;
-  });
+    // Get plan details from location state if available
+    const planDetails = location.state?.plan;
 
-  const redirectTo = location.state?.redirectTo || null;
-  const requirePlan = location.state?.requirePlan ?? false; // ✅ Safe fallback
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+    const handleChange = (e) => {
+        setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
 
-  // ✅ Run this only if requirePlan is true
-  useEffect(() => {
-    console.log("=== SIGNIN USE EFFECT ===");
-    console.log("requirePlan:", requirePlan);
-    console.log("selectedPlan:", selectedPlan);
-    
-    if (requirePlan && !selectedPlan) {
-      toast.error("No plan selected. Redirecting to pricing...", { duration: 5000 });
-      navigate("/pricing", { replace: true });
-    }
-  }, [requirePlan, selectedPlan, navigate]);
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setLoading(true);
+        setError('');
 
-  const handleBack = () => {
-    if (selectedPlan) {
-      navigate("/pricing", { state: { plan: selectedPlan }, replace: true });
-    } else {
-      navigate("/pricing", { replace: true });
-    }
-  };
-
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError("");
-
-    console.log("=== LOGIN PROCESS START ===");
-    console.log("Email:", email);
-    console.log("Selected plan:", selectedPlan);
-    console.log("Redirect to:", redirectTo);
-
-    // Validate inputs before sending
-    if (!email.trim() || !password.trim()) {
-      setError("Email and password are required");
-      toast.error("Email and password are required");
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      console.log("Attempting login with:", { email: email.trim() });
-      
-      const response = await fetch(`${API_URL}/auth/login`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ 
-          email: email.trim(), 
-          password: password.trim() 
-        }),
-      });
-
-      console.log("Response status:", response.status);
-
-      if (!response.ok) {
-        // Try to get more detailed error message
-        let errorMessage = "Login failed";
         try {
-          const errorData = await response.json();
-          errorMessage = errorData.message || errorData.error || errorMessage;
-          console.error("Server error response:", errorData);
-        } catch (e) {
-          console.error("Could not parse error response");
+            const res = await fetch(`${API_URL}/auth/login`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(formData)
+            });
+
+            const data = await res.json().catch(err => {
+                console.error("JSON parse error:", err);
+                return {};
+            });
+
+            if (res.ok && data.token) {
+                // Store token securely
+                localStorage.setItem("token", data.token);
+                
+                // Update user context with plan information
+                if (data.user) {
+                    setUser({
+                        id: data.user.id,
+                        name: data.user.name || "",
+                        email: data.user.email || "",
+                        profileImage: "",
+                        plan: data.user.plan || "Free",
+                        hasPurchasedBefore: data.user.hasPurchasedBefore || false,
+                        contactLimit: data.user.contactLimit || 500,
+                        emailLimit: data.user.emailLimit || 1000
+                    });
+                    
+                    // Store user info in localStorage
+                    localStorage.setItem("userName", data.user.name || "");
+                    localStorage.setItem("userEmail", data.user.email || "");
+                    localStorage.setItem("userPlan", data.user.plan || "Free");
+                    localStorage.setItem("hasPurchasedBefore", (data.user.hasPurchasedBefore || false).toString());
+                    localStorage.setItem("contactLimit", (data.user.contactLimit || 500).toString());
+                    localStorage.setItem("emailLimit", (data.user.emailLimit || 1000).toString());
+                }
+                
+                toast.success("Login successful! 🎉");
+                console.log("Token saved, redirecting to:", from);
+                navigate(from, { replace: true });
+                window.location.reload();
+            } else {
+                // Clear any old token to avoid using stale credentials
+                localStorage.removeItem("token");
+                setError(data.message || "Login failed");
+                toast.error(data.message || "Login failed");
+            }
+        } catch (err) {
+            console.error("Error:", err);
+            setError("Something went wrong!");
+            toast.error("Something went wrong!");
+        } finally {
+            setLoading(false);
         }
-        
-        throw new Error(errorMessage);
-      }
+    };
 
-      const data = await response.json();
-      console.log("Login successful, received data:", data);
-      
-      // Check if token exists in response
-      if (!data.token) {
-        throw new Error("No authentication token received from server");
-      }
+    const stats = [
+        { icon: <Users className="w-6 h-6" />, number: "400K+", label: "Active Users" },
+        { icon: <CheckCircle className="w-6 h-6" />, number: "99.9%", label: "Accuracy Rate" },
+        { icon: <Zap className="w-6 h-6" />, number: "<2s", label: "Response Time" },
+        { icon: <Shield className="w-6 h-6" />, number: "100%", label: "Secure" }
+    ];
 
-      const token = data.token;
-      localStorage.setItem("authToken", token);
-      sessionStorage.setItem("authToken", token);
-
-      toast.success("Login successful!");
-
-      // Determine where to redirect after login
-      if (redirectTo) {
-        if (redirectTo === "/payment") {
-          console.log("Redirecting to payment with plan");
-          navigate("/payment", { state: { plan: selectedPlan }, replace: true });
-        } else {
-          console.log("Redirecting to:", redirectTo);
-          navigate(redirectTo, { replace: true });
+    const testimonials = [
+        {
+            quote: "Bounce Cure transformed our email campaigns with 99% accuracy.",
+            author: "Sarah Chen",
+            company: "TechStart Inc"
+        },
+        {
+            quote: "The fastest and most reliable email validation service we've used.",
+            author: "Michael Rodriguez",
+            company: "Digital Marketing Pro"
+        },
+        {
+            quote: "Saved us thousands in email costs with precise validation.",
+            author: "Emma Thompson",
+            company: "E-commerce Solutions"
         }
-      } else if (selectedPlan) {
-        console.log("Redirecting to payment with plan");
-        navigate("/payment", { state: { plan: selectedPlan }, replace: true });
-      } else {
-        console.log("Redirecting to dashboard");
-        navigate("/dashboard", { replace: true });
-      }
+    ];
 
-      // Clean up stored plan data after successful login
-      localStorage.removeItem("pendingUpgradePlan");
-      sessionStorage.removeItem("pendingUpgradePlan");
-      
-      console.log("=== LOGIN PROCESS END ===");
-      
-    } catch (error) {
-      console.error("Login error:", error);
-      setError(error.message || "Login failed. Please try again.");
-      toast.error(error.message || "Login failed. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+    const [currentTestimonial, setCurrentTestimonial] = useState(0);
 
-  return (
-    <div className="flex items-center justify-center min-h-screen bg-black backdrop-blur-md text-white">
-      <form
-        onSubmit={handleLogin}
-        className="bg-gray-800 p-8 rounded-xl shadow-xl w-full max-w-md relative"
-      >
-        {/* Back button */}
-        <button
-          type="button"
-          onClick={handleBack}
-          className="absolute top-4 left-4 text-[#c2831f] hover:text-[#dba743] flex items-center text-sm"
-        >
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            className="h-5 w-5 mr-1"
-            viewBox="0 0 20 20"
-            fill="currentColor"
-          >
-            <path
-              fillRule="evenodd"
-              d="M9.707 14.707a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 1.414L7.414 9H15a1 1 0 110 2H7.414l2.293 2.293a1 1 0 010 1.414z"
-              clipRule="evenodd"
-            />
-          </svg>
-          Back
-        </button>
+    React.useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+        }, 4000);
+        return () => clearInterval(interval);
+    }, []);
 
-        <h2 className="text-2xl font-bold text-[#c2831f] mb-6 mt-2">Sign In</h2>
+    return (
+        <PageLayout>
+            <div className="min-h-screen mt-[5%] sm:mt-0 flex flex-col md:flex-row w-full">
+                {/* Animated Background Elements */}
+                <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute -top-40 -right-40 w-80 h-80 bg-white rounded-full mix-blend-difference filter blur-xl opacity-3 animate-pulse"></div>
+                    <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white rounded-full mix-blend-difference filter blur-xl opacity-3 animate-pulse"></div>
+                    <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white rounded-full mix-blend-difference filter blur-xl opacity-2 animate-pulse"></div>
+                </div>
 
-        {selectedPlan && (
-          <div className="mb-6 p-4 bg-gray-700 rounded-lg border-l-4 border-[#c2831f]">
-            <p className="text-gray-300 text-sm mb-1">Selected Plan:</p>
-            <p className="text-[#c2831f] font-semibold text-lg">
-              {selectedPlan.planName || selectedPlan.name || "Selected Plan"}
-            </p>
-            {selectedPlan.basePrice && (
-              <p className="text-gray-300 text-sm mt-1">
-                ${selectedPlan.basePrice.toFixed(2)}
-              </p>
-            )}
-          </div>
-        )}
+                {/* Left Side */}
+                <div className="flex-1 flex items-center justify-center p-6 sm:p-8 relative z-10 mt-[5%]">
+                    <div className="w-full max-w-lg text-center md:text-left">
+                        {/* Welcome Section */}
+                        <div className="mb-8 sm:mb-12 mt-8 md:mt-0">
+                            <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-3xl mb-6 sm:mb-8 transform hover:scale-110 transition-transform duration-300">
+                                <Mail className="w-8 h-8 sm:w-10 sm:h-10 text-[#dea923]" />
+                            </div>
+                            <h1 className="text-3xl sm:text-5xl font-bold text-[#c2831f] mb-3 sm:mb-4 leading-tight">
+                                Welcome Back to
+                                <br />
+                                <span className="block mt-2">Bounce Cure</span>
+                            </h1>
+                            <p className="text-base sm:text-xl text-gray-300 leading-relaxed">
+                                Sign in to access your account and upgrade to a premium plan with exclusive features.
+                            </p>
+                        </div>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-900 text-red-100 rounded-lg">{error}</div>
-        )}
+                        
+                    </div>
+                </div>
 
-        <label className="block text-sm mb-2">Email</label>
-        <input
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className="w-full p-2 mb-4 rounded bg-gray-700 border border-gray-600"
-          required
-          placeholder="Enter your email"
-        />
+                {/* Right Side */}
+                <div className="flex-1 flex items-center justify-center p-6 sm:p-8 relative z-10">
+                    <div className="w-full max-w-md">
+                        <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl">
+                            {/* Header */}
+                            <div className="text-center mb-6 sm:mb-8">
+                                <h2 className="text-2xl sm:text-3xl font-bold text-[#c2831f] mb-2">
+                                    Sign In to Upgrade
+                                </h2>
+                                <p className="text-gray-300 text-sm sm:text-base">
+                                    Access your account to purchase a premium plan
+                                </p>
+                                
+                                {/* Selected Plan Display */}
+                                {planDetails && (
+                                    <div className="mt-4 bg-black/30 backdrop-blur-sm rounded-xl p-4 border border-white/10">
+                                        <div className="flex justify-between items-center">
+                                            <div>
+                                                <p className="text-xs text-gray-400">Selected Plan</p>
+                                                <p className="text-lg font-bold text-white">{planDetails.planName}</p>
+                                            </div>
+                                            <div className="text-right">
+                                                <p className="text-xs text-gray-400">Price</p>
+                                                <p className="text-lg font-bold text-[#c2831f]">
+                                                    ${planDetails.basePrice.toFixed(2)}
+                                                    <span className="text-sm text-gray-400 font-normal">
+                                                        /{planDetails.billingPeriod === 'year' ? 'year' : 'month'}
+                                                    </span>
+                                                </p>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* {planDetails.discountApplied && (
+                                            <div className="mt-2 flex items-center justify-between">
+                                                <span className="text-xs text-green-400">New Customer Discount (50%)</span>
+                                                <span className="text-xs text-green-400">
+                                                    Save ${planDetails.discountAmount.toFixed(2)}
+                                                </span>
+                                            </div>
+                                        )}
+                                        
+                                        <div className="mt-2 flex items-center justify-between">
+                                            <span className="text-xs text-gray-400">Contacts</span>
+                                            <span className="text-xs text-white">
+                                                {planDetails.contactCount === Infinity ? 'Unlimited' : planDetails.contactCount.toLocaleString()}
+                                            </span>
+                                        </div> */}
+                                    </div>
+                                )}
+                                
+                                <div className="w-12 sm:w-16 h-1 bg-white mx-auto mt-3 sm:mt-4 rounded-full"></div>
+                            </div>
 
-        <label className="block text-sm mb-2">Password</label>
-        <input
-          type="password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          className="w-full p-2 mb-6 rounded bg-gray-700 border border-gray-600"
-          required
-          placeholder="Enter your password"
-        />
+                            {error && (
+                                <div className="bg-red-900/30 border border-red-500 rounded-lg p-4 text-red-200 text-sm mb-6">
+                                    {error}
+                                </div>
+                            )}
 
-        <button
-          type="submit"
-          disabled={isLoading}
-          className={`w-full font-semibold py-2 rounded cursor-pointer ${
-            isLoading
-              ? "bg-gray-600 cursor-not-allowed"
-              : "bg-[#c2831f] hover:bg-[#dba743] text-black"
-          }`}
-        >
-          {isLoading ? "Signing In..." : "Sign In"}
-        </button>
+                            {/* Google Button */}
+                            <button
+                                className="w-full bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl py-2 sm:py-3 px-4 text-white font-medium flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all duration-300 mb-6 group"
+                                onMouseEnter={() => setIsHovered(true)}
+                                onMouseLeave={() => setIsHovered(false)}
+                            >
+                                <div className="w-5 h-5 bg-[#c2831f] rounded-full flex items-center justify-center group-hover:bg-black transition-colors duration-300">
+                                    <span className="text-xs font-bold text-black group-hover:text-white">G</span>
+                                </div>
+                                <span className={`transition-transform text-[#c2831f] duration-300 ${isHovered ? 'translate-x-1' : ''}`}>
+                                    Continue with Google
+                                </span>
+                            </button>
 
-        <div className="mt-6 text-center text-sm">
-          <p>
-            Don't have an account?{" "}
-            <Link to="/signup" className="text-[#c2831f] hover:underline font-medium">
-              Sign up
-            </Link>
-          </p>
-          <p className="mt-2">
-            <Link to="/forgot-password" className="text-[#c2831f] hover:underline">
-              Forgot password?
-            </Link>
-          </p>
-        </div>
-      </form>
-    </div>
-  );
-}
+                            {/* Divider */}
+                            <div className="relative mb-6">
+                                <div className="absolute inset-0 flex items-center">
+                                    <div className="w-full border-t border-gray-600"></div>
+                                </div>
+                                <div className="relative flex justify-center text-sm">
+                                    <span className="px-4 bg-black/50 text-gray-400">or sign in with email</span>
+                                </div>
+                            </div>
+
+                            {/* Login Form */}
+                            <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
+                                <div className="relative group">
+                                    <Mail className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'email' ? 'text-white' : 'text-gray-400'}`} />
+                                    <input
+                                        type="email"
+                                        name="email"
+                                        placeholder="Email Address"
+                                        value={formData.email}
+                                        onChange={handleChange}
+                                        onFocus={() => setFocusedField('email')}
+                                        onBlur={() => setFocusedField('')}
+                                        className="w-full bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl py-2 sm:py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
+                                        required
+                                    />
+                                </div>
+
+                                <div className="relative group">
+                                    <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'password' ? 'text-white' : 'text-gray-400'}`} />
+                                    <input
+                                        type={showPassword ? 'text' : 'password'}
+                                        name="password"
+                                        placeholder="Password"
+                                        value={formData.password}
+                                        onChange={handleChange}
+                                        onFocus={() => setFocusedField('password')}
+                                        onBlur={() => setFocusedField('')}
+                                        className="w-full bg-white/5 backdrop-blur-sm border border-white/20 rounded-xl py-2 sm:py-3 pl-10 pr-12 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
+                                        required
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors duration-300"
+                                    >
+                                        {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                                    </button>
+                                </div>
+
+                                {/* Remember Me & Forgot Password */}
+                                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-0">
+                                    <label className="flex items-center gap-2 cursor-pointer group">
+                                        <div className="relative">
+                                            <input
+                                                type="checkbox"
+                                                checked={rememberMe}
+                                                onChange={(e) => setRememberMe(e.target.checked)}
+                                                className="sr-only"
+                                            />
+                                            <div className={`w-5 h-5 border-2 border-white/20 rounded transition-all duration-300 ${rememberMe ? 'bg-white border-white' : 'group-hover:border-white/40'}`}>
+                                                {rememberMe && (
+                                                    <CheckCircle className="w-3 h-3 text-black absolute top-0.5 left-0.5" />
+                                                )}
+                                            </div>
+                                        </div>
+                                        <span className="text-gray-300 text-sm group-hover:text-white transition-colors duration-300">
+                                            Remember me
+                                        </span>
+                                    </label>
+
+                                    <a href="/forgot-password" className="text-gray-400 hover:text-white text-sm transition-colors duration-300">
+                                        Forgot password?
+                                    </a>
+                                </div>
+
+                                {/* Sign In Button */}
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="w-full bg-[#c2831f] text-black font-bold py-2 sm:py-3 px-4 rounded-xl transition-all duration-300 transform hover:scale-105 hover:shadow-2xl hover:shadow-white/25 hover:bg-gray-100 flex items-center justify-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+                                >
+                                    {loading ? (
+                                        <>
+                                            <div className="w-4 h-4 border-t-2 border-black border-solid rounded-full animate-spin"></div>
+                                            Signing in...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span>Sign In</span>
+                                            <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform duration-300" />
+                                        </>
+                                    )}
+                                </button>
+                            </form>
+
+                            {/* Sign Up Link */}
+                            <p className="text-center text-gray-400 mt-6 text-sm sm:text-base">
+                                Don't have an account?{' '}
+                                <a href="/signupd" className="text-[#c2831f] hover:text-gray-300 transition-colors duration-300 underline font-medium">
+                                    Create free account
+                                </a>
+                            </p>
+                        </div>
+
+                        {/* Security Badge */}
+                        <div className="mt-6 text-center">
+                            <div className="inline-flex items-center gap-2 text-gray-400 bg-white/5 rounded-full px-3 sm:px-4 py-1.5 sm:py-2 border border-white/10 text-xs sm:text-sm">
+                                <Shield className="w-4 h-4" />
+                                <span>256-bit SSL secured</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </PageLayout>
+    );
+};
+
+export default Signin;

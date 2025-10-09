@@ -3,6 +3,7 @@ import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useLocation, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { CreditCard as CreditCardIcon, Lock, AlertCircle } from 'lucide-react';
+import { initializeUserAfterPurchase } from '../../../utils/PlanAccessControl';
 
 const API_URL = import.meta.env.VITE_VRI_URL;
 
@@ -88,6 +89,41 @@ export default function CreditCard() {
                     discount: plan?.discountAmount || 0,
                     planPrice: amount - (plan?.discountAmount || 0),
                 });
+
+                // ⭐⭐⭐ CRITICAL: Initialize user after purchase ⭐⭐⭐
+                console.log('💾 Initializing user data after purchase');
+                
+                const initSuccess = initializeUserAfterPurchase({
+                    planName: plan.planName,
+                    slots: plan.slots || plan.contactCount || 0,
+                    contactCount: plan.slots || plan.contactCount || 0
+                });
+                
+                if (!initSuccess) {
+                    console.error('⚠️ Failed to initialize user data');
+                }
+                
+                // Remove pending plan
+                localStorage.removeItem('pendingUpgradePlan');
+                sessionStorage.removeItem('pendingUpgradePlan');
+                
+                // Verify it was saved
+                const savedPlan = localStorage.getItem('userPlan');
+                const totalContacts = localStorage.getItem('totalContacts');
+                const hasPurchased = localStorage.getItem('hasPurchasedBefore');
+                
+                console.log('✅ Verified saved data:', { 
+                    plan: savedPlan, 
+                    totalContacts: totalContacts,
+                    hasPurchased: hasPurchased
+                });
+
+                // Show success and redirect
+                setStatus('✅ Payment successful! Redirecting to dashboard...');
+                
+                setTimeout(() => {
+                    window.location.href = '/dashboard';
+                }, 2000);
             }
         } catch (error) {
             console.error(error);
