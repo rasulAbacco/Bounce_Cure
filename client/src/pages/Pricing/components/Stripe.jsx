@@ -4,6 +4,7 @@ import { useStripe, useElements, CardElement } from "@stripe/react-stripe-js";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Shield, Lock, CheckCircle, AlertCircle, MapPin } from "lucide-react";
+import { initializeUserAfterPurchase } from '../../../utils/PlanAccessControl';
 
 const API_URL = import.meta.env.VITE_VRI_URL;
 
@@ -142,10 +143,22 @@ function Stripe() {
 
         console.log('✅ Payment saved to backend');
 
-        // ⭐⭐⭐ CRITICAL: Save plan to localStorage ⭐⭐⭐
-        console.log('💾 Saving plan to localStorage:', plan.planName);
-        localStorage.setItem('userPlan', plan.planName);
-        localStorage.setItem('hasPurchasedBefore', 'true');
+        // ⭐⭐⭐ CRITICAL: Initialize user after purchase ⭐⭐⭐
+        console.log('💾 Initializing user data after purchase');
+        
+        const initSuccess = initializeUserAfterPurchase({
+          planName: plan.planName,
+          slots: plan.slots || plan.contactCount || 0,
+          contactCount: plan.slots || plan.contactCount || 0,
+          emails: plan.emails || 0
+        });
+        
+        if (!initSuccess) {
+          console.error('⚠️ Failed to initialize user data');
+        }
+        
+        // Also save email count separately for TopNavbar
+        localStorage.setItem('totalEmails', plan.emails || 0);
         
         // Remove pending plan
         localStorage.removeItem('pendingUpgradePlan');
@@ -153,11 +166,16 @@ function Stripe() {
         
         // Verify it was saved
         const savedPlan = localStorage.getItem('userPlan');
-        console.log('✅ Verified saved plan:', savedPlan);
+        const totalContacts = localStorage.getItem('totalContacts');
+        const totalEmails = localStorage.getItem('totalEmails');
+        const hasPurchased = localStorage.getItem('hasPurchasedBefore');
         
-        if (savedPlan !== plan.planName) {
-          console.error('⚠️ Plan save verification failed!');
-        }
+        console.log('✅ Verified saved data:', { 
+          plan: savedPlan, 
+          totalContacts: totalContacts,
+          totalEmails: totalEmails,
+          hasPurchased: hasPurchased
+        });
 
         // Show success message
         setStatus("✅ Payment successful! Redirecting to dashboard...");
@@ -165,7 +183,7 @@ function Stripe() {
         // Wait 2 seconds to show success message, then redirect
         setTimeout(() => {
           console.log('🔄 Redirecting to dashboard...');
-          // Force hard reload to update sidebar
+          // Force hard reload to update sidebar and context
           window.location.href = '/dashboard';
         }, 2000);
       }
@@ -224,6 +242,7 @@ function Stripe() {
               <div className="text-right">
                 <p className="text-blue-400 font-semibold">{plan.planName}</p>
                 <p className="text-slate-400 text-sm">{plan.slots || plan.contactCount || 0} contacts</p>
+                <p className="text-slate-400 text-sm">{plan.emails || 0} emails/mo</p>
                 <p className="text-slate-400 text-sm">{plan.billingPeriod}</p>
               </div>
             </div>

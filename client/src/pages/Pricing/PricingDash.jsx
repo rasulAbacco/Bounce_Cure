@@ -90,21 +90,20 @@ const PricingDash = () => {
   const isPlanAvailable = (planName) => selectedContacts <= getPlanContactLimit(planName);
   const calculateEmailSends = (plan, contacts) => plan.name === "Free" ? plan.emailLimit : contacts * plan.emailMultiplier;
   
-  // Updated calculatePrice function - returns discounted price for new users, full price for existing
+  // Updated calculatePrice function - now returns FULL PRICE only (no discounts applied here)
   const calculatePrice = (plan, contacts) => {
     if (plan.name === "Free") return 0;
 
     const tier = contactTiers.find((t) => t.value === contacts);
     if (!tier) return 0;
 
-    const fullPrice = tier.pricing[plan.name.toLowerCase()]; // full price for existing users
-    const hasPurchasedBefore = localStorage.getItem("hasPurchasedBefore") === "true";
+    // Always return the full price (no discount applied here)
+    return tier.pricing[plan.name.toLowerCase()];
+  };
 
-    // For new users → apply 50% discount
-    // For existing users → charge full price
-    const finalPrice = hasPurchasedBefore ? fullPrice : fullPrice * 0.5;
-
-    return finalPrice.toFixed(2);
+  // Function to calculate discounted price (used in handleBuyNow)
+  const calculateDiscountedPrice = (fullPrice, isNewCustomer) => {
+    return isNewCustomer ? fullPrice * 0.5 : fullPrice;
   };
 
   // Updated handleBuyNow function
@@ -117,11 +116,11 @@ const PricingDash = () => {
     const fullPrice = tier ? tier.pricing[plan.name.toLowerCase()] : 0;
     
     // Calculate monthly price (with 50% discount for new users)
-    const monthlyPrice = parseFloat(calculatePrice(plan, contacts));
-    const price = isAnnual ? monthlyPrice * 12 : monthlyPrice;
-
-    // Determine if discount applies (only for new customers)
+    const monthlyFullPrice = parseFloat(calculatePrice(plan, contacts));
     const isNewCustomer = !hasPurchasedBefore;
+    const monthlyPrice = calculateDiscountedPrice(monthlyFullPrice, isNewCustomer);
+    
+    const price = isAnnual ? monthlyPrice * 12 : monthlyPrice;
     const originalPrice = isAnnual ? fullPrice * 12 : fullPrice;
 
     const emailSendLimit = plan.name === "Free" ? plan.emailLimit : contacts * plan.emailMultiplier;
@@ -158,7 +157,10 @@ const PricingDash = () => {
   };
 
   const standardPlan = plans[2];
-  const promoPrice = calculatePrice(standardPlan, selectedContacts);
+  const fullPrice = calculatePrice(standardPlan, selectedContacts);
+  const hasPurchasedBefore = localStorage.getItem("hasPurchasedBefore") === "true";
+  const isNewCustomer = !hasPurchasedBefore;
+  const discountedPrice = calculateDiscountedPrice(fullPrice, isNewCustomer);
   const emailSends = calculateEmailSends(standardPlan, selectedContacts);
 
   const renderCell = (val, idx) => (
@@ -185,8 +187,19 @@ const PricingDash = () => {
             <div className="bg-gray-200 text-black p-6 rounded-xl mt-8 md:mt-0 md:w-1/3 shadow-lg">
               <h3 className="text-lg font-semibold">Standard Plan</h3>
               <p className="text-sm text-gray-600 mb-2">Send up to <strong>{(emailSends * 12).toLocaleString()}</strong> emails/year</p>
-              <div className="mt-4 text-xl font-bold">${promoPrice}<span className="text-sm font-normal text-gray-500">/month</span></div>
-              <p className="text-xs text-gray-500">Then ${(parseFloat(promoPrice) * 2).toFixed(2)} after 12 months</p>
+              <div className="mt-4">
+                {isNewCustomer ? (
+                  <>
+                    <div className="flex items-baseline gap-2">
+                      <div className="text-xl font-bold line-through text-gray-500">${fullPrice}<span className="text-sm font-normal text-gray-500">/month</span></div>
+                      <div className="text-2xl font-bold">${discountedPrice.toFixed(2)}<span className="text-sm font-normal text-gray-500">/month</span></div>
+                    </div>
+                    <p className="text-xs text-green-600 font-semibold">50% OFF for new customers!</p>
+                  </>
+                ) : (
+                  <div className="text-2xl font-bold">${fullPrice}<span className="text-sm font-normal text-gray-500">/month</span></div>
+                )}
+              </div>
               <button onClick={() => handleBuyNow(standardPlan, selectedContacts)} className="mt-4 w-full bg-[#c2831f] text-black font-semibold py-2 rounded hover:bg-[#dba743] cursor-pointer">Buy Now</button>
             </div>
           </div>
@@ -216,10 +229,12 @@ const PricingDash = () => {
           {/* Plan Cards */}
           <div className={`grid grid-cols-1 ${pricingType === "monthly" ? "md:grid-cols-2 lg:grid-cols-4" : "md:grid-cols-3"} gap-6 mt-25`}>
             {(pricingType === "monthly" ? plans : plans.slice(1)).map((plan) => {
-              const monthlyPrice = parseFloat(calculatePrice(plan, selectedContacts));
-              const price = pricingType === "annual" ? monthlyPrice * 12 : monthlyPrice;
+              const monthlyFullPrice = parseFloat(calculatePrice(plan, selectedContacts));
+              const price = pricingType === "annual" ? monthlyFullPrice * 12 : monthlyFullPrice;
               const planEmailSends = calculateEmailSends(plan, selectedContacts);
               const planAvailable = isPlanAvailable(plan.name);
+              const isNewCustomer = !localStorage.getItem("hasPurchasedBefore");
+              const discountedPrice = calculateDiscountedPrice(monthlyFullPrice, isNewCustomer);
 
               return (
                 <div key={plan.name} className={`bg-[#111] rounded-xl p-6 border relative shadow transition ${plan.highlight ? "border-yellow-500 -mt-10 z-10" : "border-gray-700"} ${!planAvailable ? "opacity-60" : ""}`}>
@@ -232,14 +247,16 @@ const PricingDash = () => {
                       <div className="text-2xl font-bold">${price}<span className="text-sm font-normal text-gray-500">/month</span></div>
                     ) : (
                       <>
-                        <div className="flex items-baseline gap-2">
+                        {isNewCustomer && plan.isDiscounted ? (
+                          <>
+                            <div className="flex items-baseline gap-2">
+                              <div className="text-xl line-through text-gray-500">${price.toFixed(2)}<span className="text-sm font-normal text-gray-500">{pricingType === "annual" ? "/12 months" : "/mo"}</span></div>
+                              <div className="text-2xl font-bold">${discountedPrice.toFixed(2)}<span className="text-sm font-normal text-gray-500">{pricingType === "annual" ? "/12 months" : "/mo"}</span></div>
+                            </div>
+                            <div className="text-sm text-green-400 font-semibold">50% OFF for new customers!</div>
+                          </>
+                        ) : (
                           <div className="text-2xl font-bold">${price.toFixed(2)}<span className="text-sm font-normal text-gray-500">{pricingType === "annual" ? "/12 months" : "/mo"}</span></div>
-                        </div>
-                        {plan.isDiscounted && !localStorage.getItem("hasPurchasedBefore") && (
-                          <div className="text-sm text-green-400 font-semibold">50% OFF for new customers!</div>
-                        )}
-                        {plan.isDiscounted && localStorage.getItem("hasPurchasedBefore") && (
-                          <div className="text-sm text-gray-500 font-semibold">Standard price for existing users</div>
                         )}
                       </>
                     )}

@@ -6,7 +6,7 @@ import {
   FaMapMarkerAlt,
   FaTwitter,
   FaLinkedinIn,
-  FaInstagram,
+  FaInstagram, 
   FaFacebookF,
   FaPaperPlane,
   FaCheckCircle,

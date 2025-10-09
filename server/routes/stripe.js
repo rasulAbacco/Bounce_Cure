@@ -2,7 +2,6 @@
 import express from "express";
 import Stripe from "stripe";
 import { PrismaClient } from "@prisma/client";
-
 import { sendInvoiceEmail } from "../config/sendgrid.js";
 import { generateInvoice } from "../utils/invoiceGenerator.js";
 import { invoiceEmailTemplate } from "../utils/invoiceEmailTemplate.js";
@@ -64,63 +63,60 @@ router.post("/create-payment-intent", async (req, res) => {
 router.post("/save-payment", async (req, res) => {
   try {
     const {
-    name,
-    amount,
-    discount,
-    planPrice,
-    paymentDate,
-    billingAddress,
-    planName,
-    planType,
-    email,
-    transactionId,
-    userId,
-    provider,
-    contacts,
-    currency,
-    paymentMethod,
-    cardLast4,
-    status,
-   
+      name,
+      amount,
+      discount,
+      planPrice,
+      paymentDate,
+      billingAddress,
+      planName,
+      planType,
+      email,
+      transactionId,
+      userId,
+      provider,
+      contacts,
+      currency,
+      paymentMethod,
+      cardLast4,
+      status,
     } = req.body;
 
-
     // Validate required fields
-    if (!name || !amount || !planName || !email || !transactionId) {
+    if (!name || !amount || !planName || !email || !transactionId || !userId) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // Safe defaults
-    const paymentDateObj = new Date(paymentDate || new Date());
+    // Convert userId to integer
+    const userIdInt = parseInt(userId, 10);
+    if (isNaN(userIdInt)) {
+      return res.status(400).json({ error: "Invalid userId format" });
+    }
+
+    // Safe defaults and type conversions
+    const paymentDateObj = paymentDate ? new Date(paymentDate) : new Date();
     const nextPaymentDate = getNextPaymentDate(paymentDateObj, planType);
-    const safeContacts = contacts ?? 0; // default 0 if undefined
-    const safeDiscount = discount ?? 0;
-    const safePlanPrice = planPrice ?? amount;
-
-const paymentData = {
-  userId,
-  name,
-  email,
-  transactionId,
-  planName,
-  planType,
-  provider,
-  contacts: Number(contacts ?? 0),
-  amount: Number(amount),
-  currency: currency || 'usd',
-  planPrice: Number(planPrice ?? amount),
-  discount: Number(discount ?? 0),
-  paymentMethod: paymentMethod || 'card',
-  cardLast4: cardLast4 || '',
-  billingAddress: billingAddress || '',
-  paymentDate: new Date(paymentDate),
-  nextPaymentDate: nextPaymentDate
-    ? new Date(nextPaymentDate)
-    : new Date(getNextPaymentDate(paymentDate, planType)),
-  status: status || 'succeeded',
-};
-
-
+    
+    const paymentData = {
+      userId: userIdInt, // Now properly converted to integer
+      name,
+      email,
+      transactionId,
+      planName,
+      planType,
+      provider,
+      contacts: Number(contacts) || 0, // Ensure it's a number
+      amount: Number(amount),
+      currency: currency || 'usd',
+      planPrice: Number(planPrice) || Number(amount),
+      discount: Number(discount) || 0,
+      paymentMethod: paymentMethod || 'card',
+      cardLast4: cardLast4 || '',
+      billingAddress: billingAddress || '',
+      paymentDate: paymentDateObj,
+      nextPaymentDate: new Date(nextPaymentDate),
+      status: status || 'succeeded',
+    };
 
     // Save payment in database
     const payment = await prisma.payment.create({ data: paymentData });

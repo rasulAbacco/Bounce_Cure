@@ -39,9 +39,18 @@ router.post("/signup", async (req, res) => {
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Save to DB
+    // Save to DB with default plan info
     const newUser = await prisma.user.create({
-      data: { firstName, lastName, email, password: hashedPassword },
+      data: { 
+        firstName, 
+        lastName, 
+        email, 
+        password: hashedPassword,
+        plan: "Free",
+        hasPurchasedBefore: false,
+        contactLimit: 500,
+        emailLimit: 1000
+      },
     });
 
     // Generate token
@@ -55,6 +64,10 @@ router.post("/signup", async (req, res) => {
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         email: newUser.email,
+        plan: newUser.plan,
+        hasPurchasedBefore: newUser.hasPurchasedBefore,
+        contactLimit: newUser.contactLimit,
+        emailLimit: newUser.emailLimit
       },
     });
   } catch (error) {
@@ -95,6 +108,10 @@ router.post("/login", async (req, res) => {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        plan: user.plan,
+        hasPurchasedBefore: user.hasPurchasedBefore,
+        contactLimit: user.contactLimit,
+        emailLimit: user.emailLimit
       },
     });
   } catch (error) {
@@ -102,6 +119,43 @@ router.post("/login", async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 });
+
+/**
+ * -------------------------
+ *  PUT /api/users/plan
+ * -------------------------
+ * Update user's plan after purchase
+ */
+router.put("/plan", protect, async (req, res) => {
+  try {
+    const { planName, contactLimit, emailLimit } = req.body;
+    
+    const updatedUser = await prisma.user.update({
+      where: { id: req.user.id },
+      data: {
+        plan: planName,
+        hasPurchasedBefore: true,
+        contactLimit: contactLimit,
+        emailLimit: emailLimit
+      }
+    });
+
+    res.json({
+      message: "Plan updated successfully",
+      user: {
+        id: updatedUser.id,
+        plan: updatedUser.plan,
+        hasPurchasedBefore: updatedUser.hasPurchasedBefore,
+        contactLimit: updatedUser.contactLimit,
+        emailLimit: updatedUser.emailLimit
+      }
+    });
+  } catch (error) {
+    console.error("Plan update error:", error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+});
+
 
 /**
  * -------------------------
