@@ -56,11 +56,79 @@ export default function AccountManager({ onAccountSelected, onAccountAdded, curr
     }
   };
 
+  // const addAccount = async (e) => {
+  //   e.preventDefault();
+  //   setLoading(true);
+  //   setError(null);
+
+  //   try {
+  //     const formData = { ...form };
+  //     if (form.authType === "password") {
+  //       formData.oauthClientId = "";
+  //       formData.oauthClientSecret = "";
+  //       formData.refreshToken = "";
+  //     } else {
+  //       formData.encryptedPass = "";
+  //     }
+  //     if (!formData.smtpUser) formData.smtpUser = formData.email;
+
+  //     const res = await api.post("/accounts", formData);
+  //     const newAcc = res.data;
+
+  //     setForm({
+  //       userId: 1,
+  //       email: "",
+  //       provider: form.provider,
+  //       imapHost: form.imapHost,
+  //       imapPort: form.imapPort,
+  //       imapUser: "",
+  //       smtpHost: form.smtpHost,
+  //       smtpPort: form.smtpPort,
+  //       smtpUser: "",
+  //       encryptedPass: "",
+  //       oauthClientId: "",
+  //       oauthClientSecret: "",
+  //       refreshToken: "",
+  //       authType: form.authType,
+  //     });
+
+  //     await fetchAccounts();
+  //     setSelectedAccountId(newAcc.id);
+  //     if (onAccountSelected) onAccountSelected(newAcc, true);
+  //     setShowSuccessMessage(true);
+  //     if (onAccountAdded) onAccountAdded();
+  //   } catch (err) {
+  //     setError(err.response?.data?.error || "Failed to add account");
+  //   } finally { 
+  //     setLoading(false);
+  //   }
+  // };
+  
   const addAccount = async (e) => {
     e.preventDefault();
-    setLoading(true);
     setError(null);
+    localStorage.setItem("outlookClientId", form.oauthClientId);
+    localStorage.setItem("outlookClientSecret", form.oauthClientSecret);
+    localStorage.setItem("outlookEmail", form.email);
 
+
+    if (form.authType === "oauth" && form.provider === "outlook") {
+      try {
+        const res = await api.get("/auth/outlook/auth-url", {
+          params: {
+            clientId: form.oauthClientId,
+            redirectUri: window.location.origin + "/oauth/outlook/callback"
+          },
+        });
+        const { url } = res.data;
+        window.location.href = url; // Redirect to Microsoft login
+      } catch (err) {
+        setError("Failed to initiate Outlook OAuth");
+      }
+      return;
+    }
+
+    setLoading(true);
     try {
       const formData = { ...form };
       if (form.authType === "password") {
@@ -99,11 +167,12 @@ export default function AccountManager({ onAccountSelected, onAccountAdded, curr
       if (onAccountAdded) onAccountAdded();
     } catch (err) {
       setError(err.response?.data?.error || "Failed to add account");
-    } finally { 
+    } finally {
       setLoading(false);
     }
   };
 
+  
   const confirmLogout = (id) => { 
     setAccountToLogout(id); 
     setShowLogoutConfirm(true); 

@@ -63,7 +63,9 @@ import PlanProtectedRoute from "./components/PlanProtectedRoute"; // NEW - Plan-
 import CampaignTextEditor from './pages/Campaign/Components/Editor/CampaignTextEditor';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 
- 
+import OAuthOutlookCallback from './components/inbox/OAuthOutlookCallback';
+
+
 function App() {
   return (
     <UserProvider>
@@ -149,6 +151,10 @@ function App() {
             <Route path="/MultimediaCampaign" element={<ProtectedRoute><MultimediaCampaign /></ProtectedRoute>} />
             <Route path="/whatsapp" element={<ProtectedRoute><WhatsappCampaign /></ProtectedRoute>} />
             <Route path="/sms" element={<ProtectedRoute><SMScampaign /></ProtectedRoute>} />
+            <Route path="/texteditor" element={<ProtectedRoute><CampaignTextEditor /></ProtectedRoute>} />
+
+            <Route path="/oauth/outlook/callback" element={<OAuthOutlookCallback />} />
+
             <Route path="/WatsupCampaign" element={<ProtectedRoute><WatsupCampaign /></ProtectedRoute>} />
             <Route path="/smscampaign" element={<ProtectedRoute><SMSCampaign /></ProtectedRoute>} />
             

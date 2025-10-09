@@ -7,9 +7,10 @@ import {
   getOAuth2AccessToken,
   getZohoAccessToken,
   getRediffAccessToken,
-  getOutlookAccessToken,
+  
   getYahooAccessToken,
 } from "./accountsAuth.js";
+import {getOutlookAccessToken} from "../services/imapSync.js"
 import { protect } from "../middleware/authMiddleware.js"; // keep your middleware
 
 const prisma = new PrismaClient();
@@ -121,18 +122,31 @@ router.post("/send-via-smtp", protect, async (req, res) => {
         });
       }
       // Outlook (Microsoft)
+      // Outlook SMTP (OAuth2)
       else if (account.provider === "outlook") {
-        const accessToken = await getOutlookAccessToken(account.refreshToken, account.oauthClientId, account.oauthClientSecret);
-        console.log("✅ Outlook access token obtained");
+        const accessToken = await getOutlookAccessToken(account, prisma);
+
+        console.log("✅ [SMTP] Outlook access token obtained for send");
+
         transporter = nodemailer.createTransport({
-          host: account.smtpHost,
-          port: account.smtpPort,
-          secure: account.smtpPort === 465,
-          auth: { type: "OAuth2", user: account.smtpUser, accessToken },
+          host: "smtp.office365.com",
+          port: 587,
+          secure: false, // STARTTLS
+          auth: {
+            type: "OAuth2",
+            user: account.smtpUser,
+            clientId: account.oauthClientId,
+            clientSecret: account.oauthClientSecret,
+            refreshToken: account.refreshToken,
+            accessToken,
+          },
+          requireTLS: true,
+          tls: { ciphers: "TLSv1.2" },
           logger: true,
           debug: true,
         });
       }
+
       // Yahoo (NEW)
       else if (account.provider === "yahoo") {
         const accessToken = await getYahooAccessToken(account.refreshToken, account.oauthClientId, account.oauthClientSecret);
