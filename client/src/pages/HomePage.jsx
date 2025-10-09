@@ -1030,7 +1030,7 @@ const renderMultimedia = () => (
                   <button
                     key={tab.id}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center px-6 py-4 whitespace-nowrap border-b-2 font-medium text-sm transition-all duration-200 
+                    className={`flex items-center px-6 text-[#c2831f] py-4 whitespace-nowrap border-b-2 font-medium text-sm transition-all duration-200 
                       ${
                         activeTab === tab.id
                           ? "border-[#c2831f] text-[#c2831f] bg-opacity-160 backdrop-blur-md shadow-md cursor-pointer"

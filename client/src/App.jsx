@@ -1,5 +1,6 @@
+// client/src/App.jsx
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import HomePage from './pages/HomePage';
 import FreeValidation from './pages/FreeValidation';
 import IntegrationPage from './pages/IntegrationPage';
@@ -56,8 +57,9 @@ import VerifydEmail from './pages/Campaign/pages/VerifydEmail';
 import StripeWrapper from './pages/Pricing/components/StripeWrapper';
 import Razorpay from './pages/Pricing/components/Razorpay'
 import Paypal from './pages/Pricing/components/Paypal'
-import CreditCardWrapper from './pages/Pricing/components/CreditCardWrapper' // Optional
+import CreditCardWrapper from './pages/Pricing/components/CreditCardWrapper'
 import ProtectedRoute from "./components/ProtectedRoute";
+import PlanProtectedRoute from "./components/PlanProtectedRoute"; // NEW - Plan-based protection
 import CampaignTextEditor from './pages/Campaign/Components/Editor/CampaignTextEditor';
 import PrivacyPolicy from './pages/PrivacyPolicy';
 
@@ -92,34 +94,36 @@ function App() {
           />
 
           <Routes>
-            <Route path="/services/email-verification" element={<FreeValidation />} />
-            <Route path="/services/integrations" element={<IntegrationPage />} />
-            <Route path="/signup" element={<SignupPage />} />
-            <Route path="/login" element={<LoginPage />} />
-            <Route path="/forgot-password" element={<ForgotPassword />} />
+            {/* ==================== PUBLIC ROUTES ==================== */}
             <Route path="/" element={<HomePage />} />
             <Route path="/about" element={<About />} />
             <Route path="/features" element={<Features />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/pricing" element={<Pricing />} />
+            <Route path="/services/email-verification" element={<FreeValidation />} />
+            <Route path="/services/integrations" element={<IntegrationPage />} />
             <Route path="/refund-policy" element={<RefundPolicy />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-and-conditions" element={<TermsConditions />} />
+            <Route path="/faq" element={<FaqSection />} />
+            
+            {/* ==================== AUTH ROUTES ==================== */}
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signin" element={<Signin />} />
             <Route path="/signupd" element={<Signupd />} />
-             <Route path="/WatsupCampaign" element={ <WatsupCampaign /> } />
-            <Route path="/smscampaign" element={ <SMSCampaign /> } />
-
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
+            
+            {/* ==================== PAYMENT ROUTES ==================== */}
+            <Route path="/payment" element={<PaymentPage />} />
             <Route path="/stripe" element={<StripeWrapper />} />
             <Route path="/razorpay" element={<Razorpay />} />
             <Route path="/paypal" element={<Paypal />} />
             <Route path="/creditcard" element={<StripeWrapper />} />
-            <Route path="/signin" element={<Signin />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route path="/faq" element={<FaqSection />} />
-            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
-
+            
+            {/* ==================== PROTECTED ROUTES (Auth Only) ==================== */}
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/payment" element={<ProtectedRoute><PaymentPage /></ProtectedRoute>} />
-            <Route path="/services/bulk-verification" element={<ProtectedRoute><BulkVerification /></ProtectedRoute>} />
-            <Route path="/contacts" element={<ProtectedRoute><Contacts /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
             <Route path="/email-campaign" element={<ProtectedRoute><Campaign /></ProtectedRoute>} />
             <Route path="/automation" element={<ProtectedRoute><Automation /></ProtectedRoute>} />
@@ -127,23 +131,23 @@ function App() {
             <Route path="/auth" element={<ProtectedRoute><UserAuthentication /></ProtectedRoute>} />
             <Route path="/verification" element={<ProtectedRoute><Verification /></ProtectedRoute>} />
             <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
-            <Route path='/phoneValidation' element={<ProtectedRoute><PhoneValidation /></ProtectedRoute>} />
             <Route path='/pricingdash' element={<ProtectedRoute><PricingDash /></ProtectedRoute>} />
+            <Route path='/phoneValidation' element={<ProtectedRoute><PhoneValidation /></ProtectedRoute>} />
+            <Route path="/services/bulk-verification" element={<ProtectedRoute><BulkVerification /></ProtectedRoute>} />
+            
+            {/* Campaign Routes */}
             <Route path='/new-campaign' element={<ProtectedRoute><NewCampaignWindow /></ProtectedRoute>} />
             <Route path="/create" element={<ProtectedRoute><CreateCampaign /></ProtectedRoute>} />
             <Route path="/editor" element={<ProtectedRoute><EditorPage /></ProtectedRoute>} />
-            <Route path="/leads" element={<ProtectedRoute><Leads /></ProtectedRoute>} />
-            <Route path="/contactsPage" element={<ProtectedRoute><ContactsPage /></ProtectedRoute>} />
-            <Route path="/deals" element={<ProtectedRoute><Deals /></ProtectedRoute>} />
-            <Route path="/tasks" element={<ProtectedRoute><Tasks /></ProtectedRoute>} />
             <Route path="/templetes" element={<ProtectedRoute><Templets /></ProtectedRoute>} />
             <Route path="/canva" element={<ProtectedRoute><CanvasArea /></ProtectedRoute>} />
             <Route path="/send-campaign" element={<ProtectedRoute><SendCampaign /></ProtectedRoute>} />
-            <Route path="/verifydemail" element={<ProtectedRoute><VerifydEmail /></ProtectedRoute>} /> // Old route for backward compatibility
             <Route path="/all-templates" element={<ProtectedRoute><AllTemplates /></ProtectedRoute>} />
+            <Route path="/texteditor" element={<ProtectedRoute><CampaignTextEditor /></ProtectedRoute>} />
+            <Route path="/verifydemail" element={<ProtectedRoute><VerifydEmail /></ProtectedRoute>} />
             <Route path="/verify-email" element={<ProtectedRoute><VerifyEmail /></ProtectedRoute>} />
-           
-            <Route path="/terms-and-conditions" element={<TermsConditions />} />
+            
+            {/* Multimedia Campaigns */}
             <Route path="/MultimediaCampaign" element={<ProtectedRoute><MultimediaCampaign /></ProtectedRoute>} />
             <Route path="/whatsapp" element={<ProtectedRoute><WhatsappCampaign /></ProtectedRoute>} />
             <Route path="/sms" element={<ProtectedRoute><SMScampaign /></ProtectedRoute>} />
@@ -151,9 +155,69 @@ function App() {
 
             <Route path="/oauth/outlook/callback" element={<OAuthOutlookCallback />} />
 
+            <Route path="/WatsupCampaign" element={<ProtectedRoute><WatsupCampaign /></ProtectedRoute>} />
+            <Route path="/smscampaign" element={<ProtectedRoute><SMSCampaign /></ProtectedRoute>} />
+            
+            {/* ==================== CRM ROUTES (Auth + Plan Protection) ==================== */}
+            {/* These routes require BOTH authentication AND Standard/Premium plan */}
+            <Route 
+              path="/contacts" 
+              element={
+                <ProtectedRoute>
+                  <PlanProtectedRoute requiresCRM={true}>
+                    <Contacts />
+                  </PlanProtectedRoute>
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/contactsPage" 
+              element={
+                <ProtectedRoute>
+                  <PlanProtectedRoute requiresCRM={true}>
+                    <ContactsPage />
+                  </PlanProtectedRoute>
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/leads" 
+              element={
+                <ProtectedRoute>
+                  <PlanProtectedRoute requiresCRM={true}>
+                    <Leads />
+                  </PlanProtectedRoute>
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/deals" 
+              element={
+                <ProtectedRoute>
+                  <PlanProtectedRoute requiresCRM={true}>
+                    <Deals />
+                  </PlanProtectedRoute>
+                </ProtectedRoute>
+              } 
+            />
+            
+            <Route 
+              path="/tasks" 
+              element={
+                <ProtectedRoute>
+                  <PlanProtectedRoute requiresCRM={true}>
+                    <Tasks />
+                  </PlanProtectedRoute>
+                </ProtectedRoute>
+              } 
+            />
 
+            {/* ==================== FALLBACK ROUTES ==================== */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
-
 
           <Chatbot />
         </Router>

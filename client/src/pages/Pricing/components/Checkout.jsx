@@ -1,6 +1,7 @@
+// client/src/pages/Pricing/components/Checkout.jsx
 import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { CreditCard, Wallet, Shield, CheckCircle } from 'lucide-react';
+import { CreditCard, Wallet, Shield, CheckCircle, Users, Mail } from 'lucide-react';
 
 export default function Checkout() {
     const navigate = useNavigate();
@@ -8,41 +9,95 @@ export default function Checkout() {
 
     const [selectedPayment, setSelectedPayment] = useState("stripe");
     const [plan, setPlan] = useState(null);
+    const [email, setEmail] = useState("");
+    const [isNewUser, setIsNewUser] = useState(true);
 
     useEffect(() => {
         const incomingPlan = location.state?.plan;
         if (incomingPlan) {
             setPlan(incomingPlan);
+            setIsNewUser(incomingPlan.isNewUser !== false); // Default to true if not specified
         } else {
             const storedPlan = localStorage.getItem("pendingUpgradePlan");
             if (storedPlan) {
-                setPlan(JSON.parse(storedPlan));
+                const parsedPlan = JSON.parse(storedPlan);
+                setPlan(parsedPlan);
+                setIsNewUser(parsedPlan.isNewUser !== false);
             } else {
                 navigate("/pricing");
             }
         }
+        
+        // Get user email from localStorage
+        const userEmail = localStorage.getItem("userEmail") || sessionStorage.getItem("userEmail");
+        if (userEmail) {
+            setEmail(userEmail);
+        }
     }, [location.state, navigate]);
 
     const handlePay = () => {
-        navigate(`/${selectedPayment}`, {
-            state: {
-                plan,
-                email: "youremail@example.com", // Update this dynamically if needed
-                name: "Your Name",              // Optional
-            },
-        });
+        if (!plan) {
+            return;
+        }
+        
+        // Create updated plan with correct calculations
+        const updatedPlan = {
+            ...plan,
+            totalCost: getTotalAmount()
+        };
+        
+        // Navigate to the selected payment method
+        if (selectedPayment === "stripe") {
+            navigate("/stripe", {
+                state: {
+                    plan: updatedPlan,
+                    email: email,
+                    name: "Your Name",
+                },
+            });
+        } else if (selectedPayment === "creditcard") {
+            navigate("/creditcard", {
+                state: {
+                    plan: updatedPlan,
+                    email: email,
+                    name: "Your Name",
+                },
+            });
+        } else {
+            alert(`${selectedPayment} payment method is not implemented yet.`);
+        }
     };
 
+    // Calculate values based on plan
+    const getOriginalPrice = () => {
+        return Number(plan?.originalBasePrice || 0);
+    };
+    
+    const getDiscountAmount = () => {
+        if (!isNewUser) return 0; // No discount for existing users
+        return Number(plan?.discountAmount || 0);
+    };
+    
+    const getDiscountedPrice = () => {
+        const originalPrice = getOriginalPrice();
+        const discountAmount = getDiscountAmount();
+        return originalPrice - discountAmount;
+    };
+    
+    const getTaxAmount = () => {
+        const discountedPrice = getDiscountedPrice();
+        return discountedPrice * 0.1; // 10% tax on discounted price
+    };
+    
+    const getTotalAmount = () => {
+        const discountedPrice = getDiscountedPrice();
+        const taxAmount = getTaxAmount();
+        return discountedPrice + taxAmount;
+    };
 
-    const calculateTax = (amount) => +(amount * 0.10).toFixed(2);
     const formatCurrency = (amount) => {
         const num = Number(amount);
         return isNaN(num) ? "$0.00" : `$${num.toFixed(2)}`;
-    };
-
-    const getDiscountAmount = () => {
-        const discount = plan?.discountAmount ?? (plan?.originalBasePrice - plan?.totalCost);
-        return discount > 0 ? discount : 0;
     };
 
     const paymentMethods = [
@@ -53,7 +108,7 @@ export default function Checkout() {
     ];
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white relative overflow-hidden">
+        <div className="min-h-screen bg-black text-white relative overflow-hidden">
             {/* Animated background */}
             <div className="absolute inset-0 overflow-hidden pointer-events-none">
                 <div className="absolute w-96 h-96 bg-blue-500/10 rounded-full blur-3xl -top-48 -left-48 animate-pulse"></div>
@@ -65,7 +120,7 @@ export default function Checkout() {
                     {/* Left Panel */}
                     <div className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-xl rounded-2xl p-8 w-full lg:w-3/5 border border-slate-700/50 shadow-2xl">
                         <div className="mb-8">
-                            <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                            <h2 className="text-3xl font-bold mb-2 bg-gradient-to-r from-yellow-500 to-amber-500 bg-clip-text text-transparent">
                                 Complete Your Purchase
                             </h2>
                             <p className="text-slate-400">
@@ -79,18 +134,23 @@ export default function Checkout() {
                             </label>
                             <input
                                 type="email"
-                                defaultValue="youremail@example.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
                                 className="w-full p-4 rounded-xl bg-slate-900/50 border border-slate-700 text-white placeholder-slate-500"
+                                placeholder="Enter your email"
                             />
                         </div>
 
-                        <div className="bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold py-4 px-6 rounded-xl mb-8 text-center shadow-lg">
-                            <div className="flex items-center justify-center gap-2">
-                                <span className="text-2xl">🎉</span>
-                                <span>50% off for 12 months!</span>
+                        {/* Discount banner - Only show for new users */}
+                        {isNewUser && (
+                            <div className="bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold py-4 px-6 rounded-xl mb-8 text-center shadow-lg">
+                                <div className="flex items-center justify-center gap-2">
+                                    <span className="text-2xl">🎉</span>
+                                    <span>50% off for 12 months!</span>
+                                </div>
+                                <p className="text-sm mt-1 font-normal">Special discount for {plan?.planName || 'Pro Plan'} users</p>
                             </div>
-                            <p className="text-sm mt-1 font-normal">Special discount for {plan?.planName || 'Pro Plan'} users</p>
-                        </div>
+                        )}
 
                         <div className="mb-8">
                             <p className="text-sm font-medium text-slate-300 mb-4">Select Payment Method:</p>
@@ -136,38 +196,56 @@ export default function Checkout() {
                                         <span>Plan:</span>
                                         <span className="font-semibold text-white">{plan.planName}</span>
                                     </div>
-                                    <div className="flex justify-between text-slate-300">
-                                        <span>Slots/Contacts:</span>
-                                        <span className="font-semibold text-white">{plan.slots}</span>
+                                    
+                                    {/* Contact and Email Information */}
+                                    <div className="bg-slate-800/50 rounded-xl p-4 mb-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <div className="flex items-center">
+                                                <Users size={16} className="text-blue-400 mr-2" />
+                                                <span className="text-sm text-slate-300">Contacts:</span>
+                                            </div>
+                                            <span className="font-semibold text-white">{plan.slots?.toLocaleString() || '0'}</span>
+                                        </div>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex items-center">
+                                                <Mail size={16} className="text-purple-400 mr-2" />
+                                                <span className="text-sm text-slate-300">Email Sends:</span>
+                                            </div>
+                                            <span className="font-semibold text-white">{plan.emails?.toLocaleString() || '0'}/mo</span>
+                                        </div>
                                     </div>
+                                    
                                     <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent my-4"></div>
                                     <div className="flex justify-between text-slate-300">
-                                        <span>Base Price:</span>
-                                        <span className="font-semibold text-white">{formatCurrency(plan.basePrice)}</span>
+                                        <span>{plan.planName} plan:</span>
+                                        <span className="font-semibold text-white">{formatCurrency(getOriginalPrice())}</span>
                                     </div>
+                                     
+                                    {/* Discount section - Only show for new users */}
+                                    {isNewUser && (
+                                        <>
+                                            <div className="flex justify-between text-green-400">
+                                                <span>Discounts (50% off for 12 months):</span>
+                                                <span>– {formatCurrency(getDiscountAmount())}</span>
+                                            </div>
+                                            <div className="bg-green-950/30 border border-green-800/30 text-green-300 p-3 rounded-lg mt-4">
+                                                <p className="text-sm font-medium">
+                                                    💰 You're saving {formatCurrency(getDiscountAmount())} with this offer!
+                                                </p>
+                                            </div>
+                                        </>
+                                    )}
+                                    
                                     <div className="flex justify-between text-slate-300">
-                                        <span>Subtotal:</span>
-                                        <span className="font-semibold text-white">{formatCurrency(plan.totalCost)}</span>
-                                    </div>
-                                    <div className="flex justify-between text-green-400">
-                                        <span>Discount:</span>
-                                        <span>– {formatCurrency(getDiscountAmount())}</span>
-                                    </div>
-                                    <div className="flex justify-between text-slate-300">
-                                        <span>Tax (10%):</span>
-                                        <span className="font-semibold text-white">{formatCurrency(calculateTax(plan.totalCost))}</span>
+                                        <span>Tax:</span>
+                                        <span className="font-semibold text-white">{formatCurrency(getTaxAmount())}</span>
                                     </div>
                                     <div className="h-px bg-gradient-to-r from-transparent via-slate-600 to-transparent my-4"></div>
                                     <div className="flex justify-between text-xl font-bold">
                                         <span>Total:</span>
                                         <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                                            {formatCurrency(plan.totalCost + calculateTax(plan.totalCost))}
+                                            {formatCurrency(getTotalAmount())}
                                         </span>
-                                    </div>
-                                    <div className="bg-green-950/30 border border-green-800/30 text-green-300 p-3 rounded-lg mt-4">
-                                        <p className="text-sm font-medium">
-                                            💰 You're saving {formatCurrency(getDiscountAmount())} with this offer!
-                                        </p>
                                     </div>
                                 </>
                             ) : (

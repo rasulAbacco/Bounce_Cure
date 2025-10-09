@@ -19,12 +19,12 @@ import {
 } from "lucide-react";
 import Templets from "./Templets";
 
-const API_URL = "http://localhost:5000";
+const API_URL = import.meta.env.VITE_VRI_URL || "http://localhost:5000";
 
 const Dashboard = () => {
   const navigate = useNavigate();
   const [campaigns, setCampaigns] = useState([]);
-  const [allCampaigns, setAllCampaigns] = useState([]); // New state for all campaigns
+  const [allCampaigns, setAllCampaigns] = useState([]);
   const [scheduledCampaigns, setScheduledCampaigns] = useState([]);
   const [automationLogs, setAutomationLogs] = useState([]);
   const [sgSummary, setSgSummary] = useState(null);
@@ -47,7 +47,7 @@ const Dashboard = () => {
   const [showActionMenu, setShowActionMenu] = useState(null);
   const [showOptions, setShowOptions] = useState(false);
 
-  // Fetch all campaigns (not just scheduled)
+  // Fetch all campaigns
   const fetchAllCampaigns = async () => {
     try {
       const token = localStorage.getItem("token") || "demo-token";
@@ -61,7 +61,6 @@ const Dashboard = () => {
 
       const data = await response.json();
 
-      // Ensure data is an array
       if (Array.isArray(data)) {
         setAllCampaigns(data);
       } else {
@@ -70,23 +69,28 @@ const Dashboard = () => {
       }
     } catch (err) {
       console.error("Error fetching all campaigns:", err);
-      setAllCampaigns([]); // Set empty array on error
+      setAllCampaigns([]);
     }
   };
 
-  // Fetch analytics data
+  // ✅ Fetch analytics data with proper campaign enrichment
   const fetchAnalyticsData = async () => {
     try {
       const token = localStorage.getItem("token") || "demo-token";
-      // Fetch SendGrid summary
+      
+      // Fetch SendGrid summary - this has the correct metrics
       const summaryRes = await fetch(`${API_URL}/api/analytics/sendgrid/summary`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (summaryRes.ok) {
         const summaryData = await summaryRes.json();
+        console.log('✅ Summary Data:', summaryData);
         setSgSummary(summaryData);
+      } else {
+        console.error('❌ Summary fetch failed:', summaryRes.status);
       }
-      // Fetch campaigns with analytics
+      
+      // Fetch campaigns with analytics - includes deliveredCount
       const campaignsRes = await fetch(`${API_URL}/api/analytics/sendgrid/campaigns`, {
         headers: {
           "Content-Type": "application/json",
@@ -95,10 +99,18 @@ const Dashboard = () => {
       });
       if (campaignsRes.ok) {
         const campaignsData = await campaignsRes.json();
-        setCampaigns(campaignsData);
+        console.log('✅ Campaigns Data:', campaignsData);
+        // Handle both array and object with campaigns property
+        const campaignsList = Array.isArray(campaignsData) 
+          ? campaignsData 
+          : (campaignsData.campaigns || []);
+        console.log('✅ Processed Campaigns List:', campaignsList);
+        setCampaigns(campaignsList);
+      } else {
+        console.error('❌ Campaigns fetch failed:', campaignsRes.status);
       }
     } catch (err) {
-      console.error("Error fetching analytics data:", err);
+      console.error("❌ Error fetching analytics data:", err);
       setError("Failed to fetch analytics data");
     }
   };
@@ -107,6 +119,7 @@ const Dashboard = () => {
   const fetchAutomationData = async () => {
     try {
       const token = localStorage.getItem("token") || "demo-token";
+      
       // Fetch automation stats
       const statsRes = await fetch(`${API_URL}/api/automation/stats`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -115,6 +128,7 @@ const Dashboard = () => {
         const statsData = await statsRes.json();
         setAutomationStats(statsData);
       }
+      
       // Fetch scheduled campaigns
       const scheduledRes = await fetch(`${API_URL}/api/automation/scheduled`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -123,6 +137,7 @@ const Dashboard = () => {
         const scheduledData = await scheduledRes.json();
         setScheduledCampaigns(scheduledData);
       }
+      
       // Fetch automation logs
       const logsRes = await fetch(`${API_URL}/api/automation/logs`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -131,6 +146,7 @@ const Dashboard = () => {
         const logsData = await logsRes.json();
         setAutomationLogs(logsData);
       }
+      
       // Check sender verification
       const verificationRes = await fetch(`${API_URL}/api/automation/sender/verification`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -155,7 +171,6 @@ const Dashboard = () => {
       });
 
       if (response.ok) {
-        // Refresh both all campaigns and scheduled campaigns
         await Promise.all([fetchAllCampaigns(), fetchAutomationData()]);
         setShowActionMenu(null);
       } else {
@@ -168,7 +183,6 @@ const Dashboard = () => {
     }
   };
 
-
   // Initialize data
   useEffect(() => {
     const fetchData = async () => {
@@ -178,7 +192,7 @@ const Dashboard = () => {
         await Promise.all([
           fetchAnalyticsData(),
           fetchAutomationData(),
-          fetchAllCampaigns() // Add this to fetch all campaigns
+          fetchAllCampaigns()
         ]);
       } catch (err) {
         console.error("Error fetching data:", err);
@@ -190,11 +204,11 @@ const Dashboard = () => {
 
     fetchData();
 
-    // Set up periodic refresh
+    // Set up periodic refresh every 30 seconds
     const interval = setInterval(() => {
       fetchAnalyticsData();
       fetchAutomationData();
-      fetchAllCampaigns(); // Add this to refresh all campaigns
+      fetchAllCampaigns();
     }, 30000);
 
     return () => clearInterval(interval);
@@ -202,13 +216,32 @@ const Dashboard = () => {
 
   const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
 
-  // Calculate metrics from real data
-  const totalSent = sgSummary?.processed ?? safeCampaigns.reduce((sum, c) => sum + (c.sentCount || 0), 0);
-  const totalOpens = sgSummary?.opens ?? safeCampaigns.reduce((sum, c) => sum + (c.openCount || 0), 0);
-  const totalClicks = sgSummary?.clicks ?? safeCampaigns.reduce((sum, c) => sum + (c.clickCount || 0), 0);
-  const totalConversions = sgSummary?.conversions ?? safeCampaigns.reduce((sum, c) => sum + (c.conversionCount || 0), 0);
+  // ✅ Calculate metrics - use sgSummary if available, otherwise calculate from campaigns
+  const totalSent = sgSummary?.processed || safeCampaigns.reduce((sum, c) => sum + (c.sentCount || 0), 0);
+  const totalDelivered = sgSummary?.delivered || safeCampaigns.reduce((sum, c) => sum + (c.deliveredCount || 0), 0);
+  const totalOpens = sgSummary?.opens || safeCampaigns.reduce((sum, c) => sum + (c.openCount || 0), 0);
+  const totalClicks = sgSummary?.clicks || safeCampaigns.reduce((sum, c) => sum + (c.clickCount || 0), 0);
+  const totalConversions = sgSummary?.conversions || safeCampaigns.reduce((sum, c) => sum + (c.conversionCount || 0), 0);
+  
+  // ✅ Calculate rates based on delivered emails (same as Analytics page)
+  const openRate = sgSummary?.openRate || (totalDelivered > 0 ? Math.round((totalOpens / totalDelivered) * 100) : 0);
+  const clickRate = sgSummary?.clickRate || (totalDelivered > 0 ? Math.round((totalClicks / totalDelivered) * 100) : 0);
+  const conversionRate = sgSummary?.conversionRate || (totalDelivered > 0 ? Math.round((totalConversions / totalDelivered) * 100) : 0);
+  
+  console.log('📊 Dashboard Metrics:', {
+    sgSummary,
+    totalSent,
+    totalDelivered,
+    totalOpens,
+    totalClicks,
+    totalConversions,
+    openRate,
+    clickRate,
+    conversionRate,
+    campaignsCount: safeCampaigns.length
+  });
 
-  // Top performers chart data
+  // Top performers chart data - use the enriched campaign data
   const topPerformersData = [...safeCampaigns]
     .sort((a, b) => (b.openRate || 0) - (a.openRate || 0))
     .slice(0, 5)
@@ -224,10 +257,8 @@ const Dashboard = () => {
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
     .slice(0, 5);
 
-
-  // Filter all campaigns (not just scheduled) - FIXED VERSION
+  // Filter all campaigns
   const filteredCampaigns = allCampaigns.filter(campaign => {
-    // Ensure campaign and its properties exist before accessing them
     const campaignName = campaign?.campaignName || campaign?.name || '';
     const subject = campaign?.subject || '';
     const status = campaign?.status || '';
@@ -286,17 +317,21 @@ const Dashboard = () => {
       {/* Top Header */}
       <div className="flex justify-between items-center ml-5 mt-23">
         <div>
-          <h1 className="text-2xl font-bold ">Email Campaign Dashboard</h1>
+          <h1 className="text-2xl font-bold">Email Campaign Dashboard</h1>
           <p className="text-gray-400 mb-8">
             Complete email marketing management in one place
           </p>
         </div>
 
         <div className="flex flex-row items-center justify-center gap-5 mr-8">
-          {/* Top Row Actions */}
+          {/* Refresh Button */}
           <div className="flex space-x-3 cursor-pointer z-50">
             <button
-              onClick={() => window.location.reload()}
+              onClick={() => {
+                fetchAnalyticsData();
+                fetchAutomationData();
+                fetchAllCampaigns();
+              }}
               className="flex items-center justify-center w-10 h-10 rounded-lg border border-gray-500 text-[#e2971f] hover:text-white hover:border-yellow-500 transition"
             >
               <RefreshCw className="w-6 h-6" />
@@ -314,15 +349,12 @@ const Dashboard = () => {
           {/* Modal */}
           {showOptions && (
             <div className="fixed inset-0 z-50 flex items-center justify-center">
-              {/* Background Blur Overlay */}
               <div
                 className="absolute inset-0 bg-black/60 backdrop-blur-sm"
                 onClick={() => setShowOptions(false)}
               ></div>
 
-              {/* Modal Content */}
               <div className="relative bg-[#111] text-white rounded-2xl shadow-2xl p-8 w-[90%] max-w-3xl border border-gray-800">
-                {/* Close Button */}
                 <button
                   className="absolute top-4 right-4 text-gray-400 hover:text-white text-xl"
                   onClick={() => setShowOptions(false)}
@@ -335,7 +367,6 @@ const Dashboard = () => {
                 </h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Option 1 - Scratch */}
                   <div
                     onClick={() => {
                       setShowOptions(false);
@@ -357,7 +388,6 @@ const Dashboard = () => {
                     </p>
                   </div>
 
-                  {/* Option 2 - Templates */}
                   <div
                     onClick={() => {
                       setShowOptions(false);
@@ -386,7 +416,7 @@ const Dashboard = () => {
               activeTab === "dashboard" 
                 ? "bg-[#e2971f] text-black rounded-t-lg" 
                 : "text-gray-400 hover:text-white"
-              }`}
+            }`}
           >
             <LayoutDashboard size={18} />
             Dashboard
@@ -397,7 +427,7 @@ const Dashboard = () => {
               activeTab === "campaigns" 
                 ? "bg-[#e2971f] text-black rounded-t-lg" 
                 : "text-gray-400 hover:text-white"
-              }`}
+            }`}
           >
             <Send size={18} />
             Campaigns
@@ -408,7 +438,7 @@ const Dashboard = () => {
               activeTab === "templates" 
                 ? "bg-[#e2971f] text-black rounded-t-lg" 
                 : "text-gray-400 hover:text-white"
-              }`}
+            }`}
           >
             <FileText size={18} />
             Templates
@@ -425,46 +455,56 @@ const Dashboard = () => {
 
         {activeTab === "dashboard" && (
           <>
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* ✅ Updated Stats Cards with accurate metrics */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
               {[
                 {
                   title: "Total Sent",
                   value: totalSent.toLocaleString(),
                   icon: <Send size={20} />,
                   color: "bg-blue-500",
-                  change: totalSent > 0 ? "↑ 8% vs last month" : "No data"
+                  subtitle: `${totalDelivered.toLocaleString()} delivered`
                 },
                 { 
                   title: "Opens", 
                   value: totalOpens.toLocaleString(), 
                   icon: <BarChart3 size={20} />, 
                   color: "bg-[#e2971f]",
-                  change: totalOpens > 0 ? "↑ 3% vs last month" : "No data"
+                  subtitle: `${openRate}% rate`
                 },
                 {
                   title: "Clicks",
                   value: totalClicks.toLocaleString(),
                   icon: <MousePointer size={20} />,
                   color: "bg-[#60a5fa]",
-                  change: totalClicks > 0 ? "↓ 2% vs last month" : "No data"
+                  subtitle: `${clickRate}% rate`
                 },
                 {
                   title: "Conversions",
                   value: totalConversions.toLocaleString(),
                   icon: <TrendingUp size={20} />,
                   color: "bg-[#8b5cf6]",
-                  change: totalConversions > 0 ? "↑ 5% vs last month" : "No data"
+                  subtitle: `${conversionRate}% rate`
+                },
+                {
+                  title: "Campaigns",
+                  value: safeCampaigns.length.toLocaleString(),
+                  icon: <Mail size={20} />,
+                  color: "bg-green-500",
+                  subtitle: `${automationStats.scheduled || 0} scheduled`
                 },
               ].map((stat, idx) => (
                 <div
                   key={idx}
                   className="bg-[#0a0a0a] border border-gray-700 p-6 rounded-xl shadow-lg transition-all duration-200 hover:border-gray-500"
                 >
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between mb-2">
                     <div>
                       <h3 className="text-sm text-gray-400 mb-1">{stat.title}</h3>
                       <p className="text-3xl font-bold text-white">{stat.value}</p>
+                      {stat.subtitle && (
+                        <p className="text-xs text-gray-500 mt-1">{stat.subtitle}</p>
+                      )}
                     </div>
                     <div className={`p-3 rounded-full ${stat.color} bg-opacity-20`}>{stat.icon}</div>
                   </div>
@@ -527,7 +567,7 @@ const Dashboard = () => {
                               Clicks: <span className="text-blue-400 font-semibold">{campaign.clickRate || 0}%</span>
                             </span>
                             <span className="text-gray-400">
-                              Conversions: <span className="text-purple-400 font-semibold">{campaign.conversionRate || 0}%</span>
+                              Conv: <span className="text-purple-400 font-semibold">{campaign.conversionRate || 0}%</span>
                             </span>
                           </div>
                         </div>
@@ -539,7 +579,6 @@ const Dashboard = () => {
                 </div>
               </div>
             </div>
-
 
             {/* Recent Activity */}
             <div className="bg-[#0a0a0a] border border-gray-800 p-6 rounded-2xl shadow-lg">
@@ -626,9 +665,7 @@ const Dashboard = () => {
                         </div>
                       </div>
                       <div className="flex items-center gap-3">
-
                         <div className="relative">
-
                           {showActionMenu === campaign.id && (
                             <div className="absolute right-0 top-full mt-1 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
                               <div className="py-1">
@@ -678,7 +715,7 @@ const Dashboard = () => {
                   <h3 className="text-gray-400 font-medium mb-2">No campaigns found</h3>
                   <p className="text-gray-500 mb-4">Create your first campaign to see it here</p>
                   <button
-                    onClick={() => window.location.href = '/send-campaign'}
+                    onClick={() => setShowOptions(true)}
                     className="px-4 py-2 bg-[#e2971f] text-white rounded-lg hover:bg-[#d09025]"
                   >
                     Create Campaign
