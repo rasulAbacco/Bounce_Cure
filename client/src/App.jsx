@@ -106,6 +106,8 @@ function App() {
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-and-conditions" element={<TermsConditions />} />
             <Route path="/faq" element={<FaqSection />} />
+            <Route path="/WatsupCampaign" element={<WatsupCampaign />} />
+            <Route path="/smscampaign" element={<SMSCampaign />} />
             
             {/* ==================== AUTH ROUTES ==================== */}
             <Route path="/signup" element={<SignupPage />} />
@@ -155,8 +157,7 @@ function App() {
 
             <Route path="/oauth/outlook/callback" element={<OAuthOutlookCallback />} />
 
-            <Route path="/WatsupCampaign" element={<ProtectedRoute><WatsupCampaign /></ProtectedRoute>} />
-            <Route path="/smscampaign" element={<ProtectedRoute><SMSCampaign /></ProtectedRoute>} />
+          
             
             {/* ==================== CRM ROUTES (Auth + Plan Protection) ==================== */}
             {/* These routes require BOTH authentication AND Standard/Premium plan */}

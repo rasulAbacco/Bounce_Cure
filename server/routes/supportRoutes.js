@@ -5,7 +5,7 @@ import { prisma } from "../prisma/prismaClient.js";
 import sendEmail from "../utils/emailService.js";
 import { protect } from "../middleware/authMiddleware.js";
 import supportMiddleware from "../middleware/supportMiddleware.js";
-
+ 
 const upload = multer();
 const router = express.Router();
 
@@ -37,7 +37,7 @@ router.post("/message", protect, supportMiddleware, async (req, res) => {
 
     // Send email notification
     await sendEmail({
-      to: "abacco83@gmail.com",
+      to: "jeffwilseyb2bleads@gmail.com",
       subject: `Support Message from ${name}`,
       text: message,
       html: `
@@ -51,8 +51,10 @@ router.post("/message", protect, supportMiddleware, async (req, res) => {
     res.json({ success: true, message: "Message saved & email sent successfully!" });
   } catch (error) {
     console.error("❌ Error saving support message:", error);
+    console.error("Error details:", error.message);
+    console.error("Error stack:", error.stack);
     res.status(500).json({ error: "Failed to save or send message." });
-  }
+}
 });
 
 /**
@@ -103,7 +105,7 @@ router.post(
       }
 
       await sendEmail({
-        to: "abacco83@gmail.com",
+        to: "jeffwilseyb2bleads@gmail.com",
         subject: `New Support Ticket: ${subject}`,
         html: `
           <h2>New Support Ticket</h2>

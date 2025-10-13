@@ -9,9 +9,13 @@ import {
   FaGoogle,
 } from "react-icons/fa";
 import { RiTwitterXFill } from "react-icons/ri";
+import { useNavigate } from "react-router-dom";
 import PageLayout from "../components/PageLayout";
 
 const WatsupCampaign = () => {
+  const navigate = useNavigate();
+  const marqueeRef = useRef(null);
+
   const socialMediaCampaigns = [
     {
       id: 1,
@@ -36,6 +40,7 @@ const WatsupCampaign = () => {
       description:
         "Connect directly with customers through personalized WhatsApp marketing campaigns.",
       status: "active",
+      route: "/login", // ✅ Add navigation target
     },
     {
       id: 4,
@@ -68,6 +73,7 @@ const WatsupCampaign = () => {
       description:
         "Reach customers instantly with targeted SMS marketing campaigns.",
       status: "active",
+      route: "/login", // ✅ Add navigation target
     },
     {
       id: 8,
@@ -78,8 +84,6 @@ const WatsupCampaign = () => {
       status: "coming-soon",
     },
   ];
-
-  const marqueeRef = useRef(null);
 
   return (
     <PageLayout>
@@ -116,7 +120,12 @@ const WatsupCampaign = () => {
                 (campaign, index) => (
                   <div
                     key={index}
-                    className="bg-black border border-[#c2831f] rounded-xl p-6 w-72 flex-shrink-0 mr-6"
+                    className={`bg-black border border-[#c2831f] rounded-xl p-6 w-72 flex-shrink-0 mr-6 transition-transform transform hover:scale-105 hover:border-yellow-400 cursor-pointer ${
+                      campaign.route ? "hover:bg-[#c2831f]/10" : "opacity-80"
+                    }`}
+                    onClick={() => {
+                      if (campaign.route) navigate(campaign.route);
+                    }}
                   >
                     <div className="flex items-center mb-4">
                       <div className="mr-3">{campaign.icon}</div>
@@ -148,7 +157,6 @@ const WatsupCampaign = () => {
                   100% { transform: translateX(-50%); }
                 }
 
-                /* Pop up and disappear cycle */
                 @keyframes popDisappear {
                   0% { transform: scale(0.5); opacity: 0; }
                   20% { transform: scale(1.2); opacity: 1; }
@@ -167,19 +175,20 @@ const WatsupCampaign = () => {
           {/* Call to Action */}
           <div className="text-center py-12 px-6 bg-gradient-to-r from-[#c2831f]/20 to-yellow-500/20 rounded-2xl border border-[#c2831f]/30">
             <h2 className="text-3xl font-bold mb-4">
-              Ready to Boost Your WhatsApp Campaign?
+              Ready to Boost Your Campaigns?
             </h2>
             <p className="text-xl text-gray-300 max-w-2xl mx-auto mb-8">
-              Let our experts create a customized WhatsApp campaign that drives
+              Let our experts create a customized campaigns that drives
               real results for your business.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button className="bg-[#c2831f] hover:bg-[#a66a1a] text-white font-bold py-3 px-8 rounded-lg transition-colors">
+              <button
+                className="bg-[#c2831f] hover:bg-[#a66a1a] text-white font-bold py-3 px-8 rounded-lg transition-colors"
+                onClick={() => navigate("/login")}
+              >
                 Get Started
               </button>
-              <button className="bg-transparent border-2 border-[#c2831f] text-[#c2831f] hover:bg-[#c2831f]/10 font-bold py-3 px-8 rounded-lg transition-colors">
-                Learn More
-              </button>
+               
             </div>
           </div>
         </div>

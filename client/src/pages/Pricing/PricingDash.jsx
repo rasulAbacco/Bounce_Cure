@@ -9,6 +9,52 @@ const PricingDash = () => {
   const navigate = useNavigate();
   const [pricingType, setPricingType] = useState("monthly");
   const [selectedContacts, setSelectedContacts] = useState(500);
+  const [selectedCurrency, setSelectedCurrency] = useState("USD");
+
+  // Currency exchange rates (relative to USD)
+  const exchangeRates = {
+    USD: 1,
+    EUR: 0.93,
+    GBP: 0.79,
+    INR: 83.12,
+    AUD: 1.52,
+    CAD: 1.36,
+    JPY: 149.62,
+    NZD: 1.66,
+    NOK: 10.65,
+    SEK: 10.75,
+    CHF: 0.89
+  };
+
+  // Currency symbols
+  const currencySymbols = {
+    USD: '$',
+    EUR: '€',
+    GBP: '£',
+    INR: '₹',
+    AUD: 'A$',
+    CAD: 'C$',
+    JPY: '¥',
+    NZD: 'NZ$',
+    NOK: 'kr',
+    SEK: 'kr',
+    CHF: 'CHF'
+  };
+
+  // Format price with selected currency
+  const formatPrice = (price) => {
+    const convertedPrice = price * exchangeRates[selectedCurrency];
+    const symbol = currencySymbols[selectedCurrency];
+    
+    // Special handling for JPY (no decimals) and CHF (symbol after)
+    if (selectedCurrency === 'JPY') {
+      return `${symbol}${Math.round(convertedPrice)}`;
+    } else if (selectedCurrency === 'CHF') {
+      return `${Math.round(convertedPrice * 100) / 100} ${symbol}`;
+    } else {
+      return `${symbol}${convertedPrice.toFixed(2)}`;
+    }
+  };
 
   // Updated pricing tiers with FULL PRICES (existing users pay this, new users get 50% off)
   const contactTiers = [
@@ -141,6 +187,7 @@ const PricingDash = () => {
       emailLimit: plan.emailLimit,
       isFromPricingDash: true,
       isNewUser: isNewCustomer,
+      currency: selectedCurrency, // Add selected currency
     };
 
     // Store purchase state
@@ -191,26 +238,41 @@ const PricingDash = () => {
                 {isNewCustomer ? (
                   <>
                     <div className="flex items-baseline gap-2">
-                      <div className="text-xl font-bold line-through text-gray-500">${fullPrice}<span className="text-sm font-normal text-gray-500">/month</span></div>
-                      <div className="text-2xl font-bold">${discountedPrice.toFixed(2)}<span className="text-sm font-normal text-gray-500">/month</span></div>
+                      <div className="text-xl font-bold line-through text-gray-500">{formatPrice(fullPrice)}<span className="text-sm font-normal text-gray-500">/month</span></div>
+                      <div className="text-2xl font-bold">{formatPrice(discountedPrice)}<span className="text-sm font-normal text-gray-500">/month</span></div>
                     </div>
                     <p className="text-xs text-green-600 font-semibold">50% OFF for new customers!</p>
                   </>
                 ) : (
-                  <div className="text-2xl font-bold">${fullPrice}<span className="text-sm font-normal text-gray-500">/month</span></div>
+                  <div className="text-2xl font-bold">{formatPrice(fullPrice)}<span className="text-sm font-normal text-gray-500">/month</span></div>
                 )}
               </div>
               <button onClick={() => handleBuyNow(standardPlan, selectedContacts)} className="mt-4 w-full bg-[#c2831f] text-black font-semibold py-2 rounded hover:bg-[#dba743] cursor-pointer">Buy Now</button>
             </div>
           </div>
 
-          {/* Header with Contact Selector */}
+          {/* Header with Contact and Currency Selector */}
           <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-10">
             <h2 className="text-2xl font-bold text-[#c2831f] mb-4 md:mb-0">Choose Plans</h2>
             <div className="flex items-center space-x-4">
               <label className="text-gray-400">Contacts:</label>
               <select className="bg-[#1e1e1e] text-white border border-gray-600 rounded px-3 py-2 text-sm" value={selectedContacts} onChange={(e) => setSelectedContacts(Number(e.target.value))}>
                 {contactTiers.map((tier) => <option key={tier.value} value={tier.value}>{tier.label}</option>)}
+              </select>
+              
+              <label className="text-gray-400">Currency:</label>
+              <select className="bg-[#1e1e1e] text-white border border-gray-600 rounded px-3 py-2 text-sm" value={selectedCurrency} onChange={(e) => setSelectedCurrency(e.target.value)}>
+                <option value="USD">USD ($)</option>
+                <option value="EUR">EUR (€)</option>
+                <option value="GBP">GBP (£)</option>
+                <option value="INR">INR (₹)</option>
+                <option value="AUD">AUD (A$)</option>
+                <option value="CAD">CAD (C$)</option>
+                <option value="JPY">JPY (¥)</option>
+                <option value="NZD">NZD (NZ$)</option>
+                <option value="NOK">NOK (kr)</option>
+                <option value="SEK">SEK (kr)</option>
+                <option value="CHF">CHF</option>
               </select>
             </div>
           </div>
@@ -244,19 +306,19 @@ const PricingDash = () => {
                   <p className="text-gray-400 text-sm mb-4">{plan.tagline}</p>
                   <div className="mb-4">
                     {pricingType === "monthly" && plan.name === "Free" ? (
-                      <div className="text-2xl font-bold">${price}<span className="text-sm font-normal text-gray-500">/month</span></div>
+                      <div className="text-2xl font-bold">{formatPrice(price)}<span className="text-sm font-normal text-gray-500">/month</span></div>
                     ) : (
                       <>
                         {isNewCustomer && plan.isDiscounted ? (
                           <>
                             <div className="flex items-baseline gap-2">
-                              <div className="text-xl line-through text-gray-500">${price.toFixed(2)}<span className="text-sm font-normal text-gray-500">{pricingType === "annual" ? "/12 months" : "/mo"}</span></div>
-                              <div className="text-2xl font-bold">${discountedPrice.toFixed(2)}<span className="text-sm font-normal text-gray-500">{pricingType === "annual" ? "/12 months" : "/mo"}</span></div>
+                              <div className="text-xl line-through text-gray-500">{formatPrice(price)}<span className="text-sm font-normal text-gray-500">{pricingType === "annual" ? "/12 months" : "/mo"}</span></div>
+                              <div className="text-2xl font-bold">{formatPrice(discountedPrice)}<span className="text-sm font-normal text-gray-500">{pricingType === "annual" ? "/12 months" : "/mo"}</span></div>
                             </div>
                             <div className="text-sm text-green-400 font-semibold">50% OFF for new customers!</div>
                           </>
                         ) : (
-                          <div className="text-2xl font-bold">${price.toFixed(2)}<span className="text-sm font-normal text-gray-500">{pricingType === "annual" ? "/12 months" : "/mo"}</span></div>
+                          <div className="text-2xl font-bold">{formatPrice(price)}<span className="text-sm font-normal text-gray-500">{pricingType === "annual" ? "/12 months" : "/mo"}</span></div>
                         )}
                       </>
                     )}
@@ -307,7 +369,7 @@ const PricingDash = () => {
             </div>
           </div>
 
-          <p className="text-center text-xs text-gray-600 mt-8">All plans billed monthly in USD unless specified otherwise. Contact amount applies across all plans.</p>
+          <p className="text-center text-xs text-gray-600 mt-8">All plans billed monthly in {selectedCurrency} unless specified otherwise. Contact amount applies across all plans.</p>
         </div>
       </div>
     </DashboardLayout>

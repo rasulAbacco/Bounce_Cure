@@ -1,5 +1,5 @@
 // UserAuthentication.jsx
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../components/DashboardLayout';
 import EmailVerification from '../../components/auth/EmailVerification';
@@ -13,6 +13,33 @@ import Settings from '../Settings/Settings';
 
 const UserAuthentication = () => {
   const navigate = useNavigate();
+  const [twoFactorStatus, setTwoFactorStatus] = useState('Not Enabled');
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetchUserStatus();
+  }, []);
+
+  const fetchUserStatus = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch('http://localhost:5000/api/auth/users/me', {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.ok) {
+        const data = await response.json();
+        setTwoFactorStatus(data.user?.is2FAEnabled ? 'Enabled' : 'Not Enabled');
+      }
+    } catch (error) {
+      console.error('Error fetching user status:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-gradient-to-br from-black via-gray-900 to-black mt-[5%]">
@@ -65,7 +92,17 @@ const UserAuthentication = () => {
                   </div>
                   <div>
                     <h3 className="text-lg font-semibold text-white">2FA Status</h3>
-                    <p className="text-yellow-400 font-medium">Not Enabled</p>
+                    {loading ? (
+                      <p className="text-gray-400 font-medium">Loading...</p>
+                    ) : (
+                      <p className={`font-medium ${
+                        twoFactorStatus === 'Enabled' 
+                          ? 'text-green-400' 
+                          : 'text-yellow-400'
+                      }`}>
+                        {twoFactorStatus}
+                      </p>
+                    )}
                   </div>
                 </div>
               </div>

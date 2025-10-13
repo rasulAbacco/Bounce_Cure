@@ -473,74 +473,7 @@ const ContactPage = () => {
           </div>
         </div>
 
-        {/* Newsletter Section */}
-        <div
-          className="glassmorphism rounded-3xl p-12 text-center animate-fadeInUp"
-          style={{ animationDelay: "0.4s" }}
-        >
-          <h2 className="text-4xl font-bold text-white mb-4">Stay Updated</h2>
-          <p className="text-gray-300 text-lg mb-8">
-            Join 10,000+ professionals getting product updates and tips.
-          </p>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              alert("Thanks for subscribing!");
-            }}
-            className="max-w-md mx-auto mb-8"
-          >
-            <div className="flex gap-3">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                required
-                className="flex-1 px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-gray-400 focus:outline-none focus:border-purple-500 input-field"
-              />
-              <button
-                type="submit"
-                className="px-8 py-3 bg-white text-purple-600 font-semibold rounded-xl hover:bg-gray-100 transition-all duration-300 transform hover:scale-105"
-              >
-                Subscribe
-              </button>
-            </div>
-          </form>
-
-          <div className="flex justify-center gap-6">
-            {[
-              {
-                Icon: FaFacebookF,
-                link: "https://facebook.com",
-                color: "hover:text-blue-500",
-              },
-              {
-                Icon: FaTwitter,
-                link: "https://twitter.com",
-                color: "hover:text-sky-400",
-              },
-              {
-                Icon: FaInstagram,
-                link: "https://instagram.com",
-                color: "hover:text-pink-500",
-              },
-              {
-                Icon: FaLinkedinIn,
-                link: "https://linkedin.com",
-                color: "hover:text-blue-600",
-              },
-            ].map(({ Icon, link, color }, index) => (
-              <a
-                key={index}
-                href={link}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`w-12 h-12 rounded-full bg-white/10 flex items-center justify-center text-white ${color} transition-all duration-300 transform hover:scale-110 hover:bg-white/20`}
-              >
-                <Icon className="text-xl" />
-              </a>
-            ))}
-          </div>
-        </div>
+       
       </div>
       <Footer />
     </div>
