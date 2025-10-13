@@ -178,25 +178,25 @@ const Navbar = () => {
     { name: "About", to: "/about" },
     { name: "Features", to: "/features" },
     { name: "Services", to: "/services" },
-    { name: "Multimedia", to: "/multimedia" },
     { name: "Pricing", to: "/pricing" },
+    { name: "Multimedia", to: "/WatsupCampaign" },
     { name: "Contact", to: "/contact" },
+
   ];
   const services = [
     { name: "Email Verification", icon: <FaEnvelope />, to: "/services/email-verification" },
     { name: "Bulk Verification", icon: <FaListAlt />, to: "/services/bulk-verification" },
-    { name: "Integrations", icon: <FaPlug />, to: "/services/integrations" },
-  ];
-  const multimedia = [
-    { name: "WhatsApp Campaign", icon: <FaWhatsapp />, to: "/WatsupCampaign" },
-    { name: "SMS Campaign", icon: <FaSms />, to: "/SMScampaign" },
-    { name: "Facebook Campaign", icon: <FaFacebook />, to: "/WatsupCampaign" },
-    { name: "Instagram Campaign", icon: <FaInstagram />, to: "/WatsupCampaign" },
-    { name: "Twitter Campaign", icon: <RiTwitterXFill />, to: "/WatsupCampaign" },
-    { name: "LinkedIn Campaign", icon: <FaLinkedin />, to: "/WatsupCampaign" },
-    { name: "YouTube Ads", icon: <FaYoutube />, to: "/WatsupCampaign" },
-    { name: "Google Ads", icon: <FaGoogle />, to: "/WatsupCampaign" },
-  ];
+   ];
+  // const multimedia = [
+  //   { name: "WhatsApp Campaign", icon: <FaWhatsapp />, to: "/WatsupCampaign" },
+  //   { name: "SMS Campaign", icon: <FaSms />, to: "/SMScampaign" },
+  //   { name: "Facebook Campaign", icon: <FaFacebook />, to: "/WatsupCampaign" },
+  //   { name: "Instagram Campaign", icon: <FaInstagram />, to: "/WatsupCampaign" },
+  //   { name: "Twitter Campaign", icon: <RiTwitterXFill />, to: "/WatsupCampaign" },
+  //   { name: "LinkedIn Campaign", icon: <FaLinkedin />, to: "/WatsupCampaign" },
+  //   { name: "YouTube Ads", icon: <FaYoutube />, to: "/WatsupCampaign" },
+  //   { name: "Google Ads", icon: <FaGoogle />, to: "/WatsupCampaign" },
+  // ];
   const handleLogoClick = (e) => {
     e.preventDefault();
     navigate('/');
@@ -479,42 +479,8 @@ const Navbar = () => {
                   )}
                 </div>
               );
-            } else if (link.name === "Multimedia") {
-              return (
-                <div key={link.name} className="relative group">
-                  <button
-                    onClick={() => setMultimediaOpen(!multimediaOpen)}
-                    className="nav-link flex items-center cursor-pointer"
-                  >
-                    {link.name}
-                    <svg
-                      className={`ml-1 w-4 h-4 transition-transform ${multimediaOpen ? "rotate-180" : "rotate-0"}`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                    </svg>
-                  </button>
-                  {multimediaOpen && (
-                    <div className="absolute top-full left-0 mt-2 bg-black backdrop-blur-lg rounded-lg shadow-lg py-2 w-64 border border-white/10 max-h-96 overflow-y-auto">
-                      {multimedia.map((item) => (
-                        <a
-                          key={item.name}
-                          href={item.to}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="multimedia-item px-4 py-2 rounded-lg"
-                        >
-                          <span className="mr-2">{item.icon}</span>
-                          {item.name}
-                        </a>
-                      ))}
-                    </div> 
-                  )}
-                </div>
-              );
-            } else {
+            }  
+            else {
               return <Link key={link.name} to={link.to} className="nav-link">{link.name}</Link>;
             }
           })}

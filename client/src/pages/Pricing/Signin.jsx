@@ -9,6 +9,51 @@ import toast from 'react-hot-toast';
 const API_URL = import.meta.env.VITE_API_URL;
 
 const Signin = () => {
+    // Currency exchange rates (relative to USD)
+    const exchangeRates = {
+        USD: 1,
+        EUR: 0.93,
+        GBP: 0.79,
+        INR: 83.12,
+        AUD: 1.52,
+        CAD: 1.36,
+        JPY: 149.62,
+        NZD: 1.66,
+        NOK: 10.65,
+        SEK: 10.75,
+        CHF: 0.89
+    };
+
+    // Currency symbols
+    const currencySymbols = {
+        USD: '$',
+        EUR: '€',
+        GBP: '£',
+        INR: '₹',
+        AUD: 'A$',
+        CAD: 'C$',
+        JPY: '¥',
+        NZD: 'NZ$',
+        NOK: 'kr',
+        SEK: 'kr',
+        CHF: 'CHF'
+    };
+
+    // Format price with selected currency
+    const formatPrice = (price, currency) => {
+        const convertedPrice = price * exchangeRates[currency];
+        const symbol = currencySymbols[currency];
+        
+        // Special handling for JPY (no decimals) and CHF (symbol after)
+        if (currency === 'JPY') {
+            return `${symbol}${Math.round(convertedPrice)}`;
+        } else if (currency === 'CHF') {
+            return `${Math.round(convertedPrice * 100) / 100} ${symbol}`;
+        } else {
+            return `${symbol}${convertedPrice.toFixed(2)}`;
+        }
+    };
+
     const [formData, setFormData] = useState({
         email: "",
         password: ""
@@ -187,7 +232,7 @@ const Signin = () => {
                                             <div className="text-right">
                                                 <p className="text-xs text-gray-400">Price</p>
                                                 <p className="text-lg font-bold text-[#c2831f]">
-                                                    ${planDetails.basePrice.toFixed(2)}
+                                                    {formatPrice(planDetails.basePrice, planDetails.currency || 'USD')}
                                                     <span className="text-sm text-gray-400 font-normal">
                                                         /{planDetails.billingPeriod === 'year' ? 'year' : 'month'}
                                                     </span>
@@ -195,21 +240,25 @@ const Signin = () => {
                                             </div>
                                         </div>
                                         
-                                        {/* {planDetails.discountApplied && (
-                                            <div className="mt-2 flex items-center justify-between">
-                                                <span className="text-xs text-green-400">New Customer Discount (50%)</span>
-                                                <span className="text-xs text-green-400">
-                                                    Save ${planDetails.discountAmount.toFixed(2)}
-                                                </span>
+                                        {/* Currency Display */}
+                                        <div className="mt-2 flex justify-between items-center">
+                                            <div>
+                                                <p className="text-xs text-gray-400">Currency</p>
+                                                <p className="text-sm font-medium text-white">{planDetails.currency || 'USD'}</p>
+                                            </div>
+                                            <div>
+                                                <p className="text-xs text-gray-400">Contacts</p>
+                                                <p className="text-sm font-medium text-white">{planDetails.contactCount?.toLocaleString() || '500'}</p>
+                                            </div>
+                                        </div>
+                                        
+                                        {/* Discount Badge */}
+                                        {planDetails.discountApplied && (
+                                            <div className="mt-3 bg-green-900/30 border border-green-500 rounded-lg p-2 text-green-200 text-xs flex items-center justify-center">
+                                                <CheckCircle className="w-4 h-4 mr-1" />
+                                                New customer discount: {Math.round(planDetails.discount * 100)}% OFF
                                             </div>
                                         )}
-                                        
-                                        <div className="mt-2 flex items-center justify-between">
-                                            <span className="text-xs text-gray-400">Contacts</span>
-                                            <span className="text-xs text-white">
-                                                {planDetails.contactCount === Infinity ? 'Unlimited' : planDetails.contactCount.toLocaleString()}
-                                            </span>
-                                        </div> */}
                                     </div>
                                 )}
                                 

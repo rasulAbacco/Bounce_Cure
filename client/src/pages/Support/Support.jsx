@@ -1,3 +1,4 @@
+// HelpAndSupport.jsx
 import React, { useState, useMemo, useEffect } from "react";
 import { FaEnvelope, FaTicketAlt, FaPhoneAlt, FaComments } from "react-icons/fa";
 import DashboardLayout from "../../components/DashboardLayout";
@@ -72,7 +73,7 @@ export default function HelpAndSupport() {
 
             const res = await fetch(`${API_URL}/api/support/message`, {
                 method: "POST",
-                headers: {
+                headers: { 
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`, // 👈 send JWT
                 },

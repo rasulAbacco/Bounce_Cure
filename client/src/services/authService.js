@@ -9,7 +9,7 @@ const API = axios.create({
     withCredentials: true, // Needed if your backend uses cookies/sessions
 });
 
-// Token injector helper
+// Token injector helper 
 const getAuthHeaders = () => {
     const token = localStorage.getItem("token");
     return token

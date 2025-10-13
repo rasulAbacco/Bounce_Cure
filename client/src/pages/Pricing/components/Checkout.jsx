@@ -7,46 +7,90 @@ export default function Checkout() {
     const navigate = useNavigate();
     const location = useLocation();
 
+    // Currency exchange rates (relative to USD)
+    const exchangeRates = {
+        USD: 1,
+        EUR: 0.93,
+        GBP: 0.79,
+        INR: 83.12,
+        AUD: 1.52,
+        CAD: 1.36,
+        JPY: 149.62,
+        NZD: 1.66,
+        NOK: 10.65,
+        SEK: 10.75,
+        CHF: 0.89
+    };
+
+    // Currency symbols
+    const currencySymbols = {
+        USD: '$',
+        EUR: '€',
+        GBP: '£',
+        INR: '₹',
+        AUD: 'A$',
+        CAD: 'C$',
+        JPY: '¥',
+        NZD: 'NZ$',
+        NOK: 'kr',
+        SEK: 'kr',
+        CHF: 'CHF'
+    };
+
+    // Format price with selected currency
+    const formatCurrency = (amount, currency) => {
+        const convertedAmount = amount * exchangeRates[currency];
+        const symbol = currencySymbols[currency];
+        
+        // Special handling for JPY (no decimals) and CHF (symbol after)
+        if (currency === 'JPY') {
+            return `${symbol}${Math.round(convertedAmount)}`;
+        } else if (currency === 'CHF') {
+            return `${Math.round(convertedAmount * 100) / 100} ${symbol}`;
+        } else {
+            return `${symbol}${convertedAmount.toFixed(2)}`;
+        }
+    };
+
     const [selectedPayment, setSelectedPayment] = useState("stripe");
     const [plan, setPlan] = useState(null);
     const [email, setEmail] = useState("");
     const [isNewUser, setIsNewUser] = useState(true);
+    const [selectedCurrency, setSelectedCurrency] = useState("USD");
 
     useEffect(() => {
         const incomingPlan = location.state?.plan;
         if (incomingPlan) {
             setPlan(incomingPlan);
-            setIsNewUser(incomingPlan.isNewUser !== false); // Default to true if not specified
+            setIsNewUser(incomingPlan.isNewUser !== false);
+            setSelectedCurrency(incomingPlan.currency || "USD");
         } else {
             const storedPlan = localStorage.getItem("pendingUpgradePlan");
             if (storedPlan) {
                 const parsedPlan = JSON.parse(storedPlan);
                 setPlan(parsedPlan);
                 setIsNewUser(parsedPlan.isNewUser !== false);
+                setSelectedCurrency(parsedPlan.currency || "USD");
             } else {
                 navigate("/pricing");
             }
         }
-        
-        // Get user email from localStorage
+
         const userEmail = localStorage.getItem("userEmail") || sessionStorage.getItem("userEmail");
         if (userEmail) {
             setEmail(userEmail);
         }
     }, [location.state, navigate]);
 
+    // Payment logic
     const handlePay = () => {
-        if (!plan) {
-            return;
-        }
-        
-        // Create updated plan with correct calculations
+        if (!plan) return;
+
         const updatedPlan = {
             ...plan,
-            totalCost: getTotalAmount()
+            totalCost: getTotalAmount(),
         };
-        
-        // Navigate to the selected payment method
+
         if (selectedPayment === "stripe") {
             navigate("/stripe", {
                 state: {
@@ -63,49 +107,48 @@ export default function Checkout() {
                     name: "Your Name",
                 },
             });
+        } else if (selectedPayment === "UPI") {
+            // UPI Payment Handling
+            const upiID = "bouncecure@kotak";
+            const amount = getTotalAmount().toFixed(2);
+            const upiLink = `upi://pay?pa=${upiID}&pn=Bouncecure&am=${amount}&cu=INR&tn=${encodeURIComponent(plan?.planName || "Payment")}`;
+
+            // Detect mobile or desktop
+            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+            if (isMobile) {
+                // On mobile → open UPI app
+                window.location.href = upiLink;
+            } else {
+                // On desktop → show message
+                alert(
+                    `UPI payments can only be made through a mobile UPI app.\n\n` +
+                    `Use this UPI ID: ${upiID}\nAmount: ${formatCurrency(amount, selectedCurrency)}\n\n` +
+                    `Or scan the QR code shown on the screen to complete your payment.`
+                );
+            }
         } else {
             alert(`${selectedPayment} payment method is not implemented yet.`);
         }
     };
 
-    // Calculate values based on plan
-    const getOriginalPrice = () => {
-        return Number(plan?.originalBasePrice || 0);
-    };
-    
-    const getDiscountAmount = () => {
-        if (!isNewUser) return 0; // No discount for existing users
-        return Number(plan?.discountAmount || 0);
-    };
-    
-    const getDiscountedPrice = () => {
-        const originalPrice = getOriginalPrice();
-        const discountAmount = getDiscountAmount();
-        return originalPrice - discountAmount;
-    };
-    
-    const getTaxAmount = () => {
-        const discountedPrice = getDiscountedPrice();
-        return discountedPrice * 0.1; // 10% tax on discounted price
-    };
-    
-    const getTotalAmount = () => {
-        const discountedPrice = getDiscountedPrice();
-        const taxAmount = getTaxAmount();
-        return discountedPrice + taxAmount;
-    };
+    // Helper functions
+    const getOriginalPrice = () => Number(plan?.originalBasePrice || 0);
+    const getDiscountAmount = () => (isNewUser ? Number(plan?.discountAmount || 0) : 0);
+    const getDiscountedPrice = () => getOriginalPrice() - getDiscountAmount();
+    const getTaxAmount = () => getDiscountedPrice() * 0.1;
+    const getTotalAmount = () => getDiscountedPrice() + getTaxAmount();
 
-    const formatCurrency = (amount) => {
-        const num = Number(amount);
-        return isNaN(num) ? "$0.00" : `$${num.toFixed(2)}`;
-    };
-
+    // Payment methods - conditionally show UPI only for INR
     const paymentMethods = [
         { id: "creditcard", name: "Credit Card", icon: CreditCard },
-        { id: "razorpay", name: "Razorpay", icon: Wallet },
         { id: "stripe", name: "Stripe", icon: Shield },
-        { id: "UPI", name: "UPI", icon: Wallet }
     ];
+
+    // Add UPI only if currency is INR
+    if (selectedCurrency === "INR") {
+        paymentMethods.push({ id: "UPI", name: "UPI", icon: Wallet });
+    }
 
     return (
         <div className="min-h-screen bg-black text-white relative overflow-hidden">
@@ -141,7 +184,15 @@ export default function Checkout() {
                             />
                         </div>
 
-                        {/* Discount banner - Only show for new users */}
+                        {/* Currency display */}
+                        <div className="mb-6 bg-slate-800/50 rounded-xl p-4 border border-slate-700">
+                            <div className="flex justify-between items-center">
+                                <span className="text-slate-300">Currency:</span>
+                                <span className="font-semibold text-white">{selectedCurrency} {currencySymbols[selectedCurrency]}</span>
+                            </div>
+                        </div>
+
+                        {/* Discount banner */}
                         {isNewUser && (
                             <div className="bg-gradient-to-r from-yellow-500 to-amber-500 text-black font-bold py-4 px-6 rounded-xl mb-8 text-center shadow-lg">
                                 <div className="flex items-center justify-center gap-2">
@@ -172,6 +223,24 @@ export default function Checkout() {
                                     );
                                 })}
                             </div>
+
+                            {/* UPI Info Section */}
+                            {selectedPayment === "UPI" && (
+                                <div className="mt-6 bg-slate-800/60 border border-slate-700 rounded-xl p-4 text-center">
+                                    <h4 className="text-lg font-semibold mb-2 text-yellow-400">Pay via UPI</h4>
+                                    <p className="text-slate-300 mb-2">
+                                        Use the UPI ID below to complete your payment:
+                                    </p>
+                                    <p className="text-xl font-bold text-white">bouncecure@kotak</p>
+                                    <p className="text-sm text-slate-400 mt-2">
+                                        Amount: {formatCurrency(getTotalAmount(), selectedCurrency)}
+                                    </p>
+                                    <p className="text-sm text-slate-400">
+                                        After payment, please share your transaction ID for confirmation.
+                                    </p>
+                                </div>
+                            )}
+
                         </div>
 
                         <div className="bg-blue-950/30 border border-blue-800/30 text-blue-300 p-4 rounded-xl flex items-start gap-3">
@@ -196,8 +265,7 @@ export default function Checkout() {
                                         <span>Plan:</span>
                                         <span className="font-semibold text-white">{plan.planName}</span>
                                     </div>
-                                    
-                                    {/* Contact and Email Information */}
+
                                     <div className="bg-slate-800/50 rounded-xl p-4 mb-4">
                                         <div className="flex items-center justify-between mb-3">
                                             <div className="flex items-center">
@@ -214,37 +282,36 @@ export default function Checkout() {
                                             <span className="font-semibold text-white">{plan.emails?.toLocaleString() || '0'}/mo</span>
                                         </div>
                                     </div>
-                                    
+
                                     <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent my-4"></div>
                                     <div className="flex justify-between text-slate-300">
                                         <span>{plan.planName} plan:</span>
-                                        <span className="font-semibold text-white">{formatCurrency(getOriginalPrice())}</span>
+                                        <span className="font-semibold text-white">{formatCurrency(getOriginalPrice(), selectedCurrency)}</span>
                                     </div>
-                                     
-                                    {/* Discount section - Only show for new users */}
+
                                     {isNewUser && (
                                         <>
                                             <div className="flex justify-between text-green-400">
                                                 <span>Discounts (50% off for 12 months):</span>
-                                                <span>– {formatCurrency(getDiscountAmount())}</span>
+                                                <span>– {formatCurrency(getDiscountAmount(), selectedCurrency)}</span>
                                             </div>
                                             <div className="bg-green-950/30 border border-green-800/30 text-green-300 p-3 rounded-lg mt-4">
                                                 <p className="text-sm font-medium">
-                                                    💰 You're saving {formatCurrency(getDiscountAmount())} with this offer!
+                                                    💰 You're saving {formatCurrency(getDiscountAmount(), selectedCurrency)} with this offer!
                                                 </p>
                                             </div>
                                         </>
                                     )}
-                                    
+
                                     <div className="flex justify-between text-slate-300">
                                         <span>Tax:</span>
-                                        <span className="font-semibold text-white">{formatCurrency(getTaxAmount())}</span>
+                                        <span className="font-semibold text-white">{formatCurrency(getTaxAmount(), selectedCurrency)}</span>
                                     </div>
                                     <div className="h-px bg-gradient-to-r from-transparent via-slate-600 to-transparent my-4"></div>
                                     <div className="flex justify-between text-xl font-bold">
                                         <span>Total:</span>
                                         <span className="bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                                            {formatCurrency(getTotalAmount())}
+                                            {formatCurrency(getTotalAmount(), selectedCurrency)}
                                         </span>
                                     </div>
                                 </>

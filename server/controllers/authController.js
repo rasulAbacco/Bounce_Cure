@@ -8,7 +8,7 @@ import sendEmail from '../utils/emailService.js';
 import { generateOTP } from "../utils/generateOTP.js";
 import { generateQRCode } from "../utils/generateQRCode.js";
 import speakeasy from 'speakeasy'; // for TOTP 2FA
-
+ 
 
 // Signup
 export const signup = async (req, res) => {
@@ -156,30 +156,25 @@ export const getLoginLogs = async (req, res) => {
 
 // Send verification email
 export const sendVerificationEmail = async (req, res) => {
-    const { email } = req.user;
+  const { email } = req.user;  // user email from JWT
+  const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '15m' });
+  const link = `${process.env.BASE_URL}/verify-email?token=${token}`;
 
-    const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: "15m" });
-    const link = `${process.env.BASE_URL}/verify-email?token=${token}`;
+  try {
+    await sendEmail({
+      to: email,
+      subject: "Verify your account",
+      html: `<p>Click to verify:</p><a href="${link}">${link}</a>`
+    });
 
-    try {
-        // 🛠 Make sure you're sending to the actual user's email
-        await sendEmail({
-            to: email, // ✅ Not hardcoded anymore
-            from: "info@abaccotech.com",
-            subject: "Verify your email",
-            text: `Click this link to verify your email: ${link}`,
-            html: `<p>Please verify your email by clicking the link below:</p>
-                <a href="${link}">Verify Email</a>`
-        });
-
-        console.log(`✅ Verification email sent to: ${email}`);
-        res.json({ message: "Verification email sent" });
-
-    } catch (error) {
-        console.error("❌ Email sending failed:", error);
-        res.status(500).json({ message: "Failed to send verification email", error: error.message });
-    }
+    res.json({ success: true, message: "Verification email sent!" });
+  } catch (err) {
+    console.error("Email send error:", err);
+    res.status(500).json({ success: false, message: err.message });
+  }
 };
+
+
 
 
 // Verify email
@@ -213,9 +208,6 @@ export const verifyEmail = async (req, res) => {
         res.redirect(`${process.env.FRONTEND_URL}/email-verification-failed`);
     }
 };
-
-
-
 
 // Change password
 export const changePassword = async (req, res) => {
@@ -253,20 +245,189 @@ export const changePassword = async (req, res) => {
 // Enable 2FA
 // authController.js
 
+// Add these functions to your authController.js
+
+// Enable 2FA - sends OTP to user's email
 export const enable2FA = async (req, res) => {
     try {
         const userId = req.user.id;
 
         const user = await prisma.user.findUnique({ where: { id: userId } });
-        if (!user) return res.status(404).json({ error: 'User not found' });
+        if (!user) {
+            return res.status(404).json({ error: 'User not found' });
+        }
 
-        // Call sendOTP with the user object to generate and send OTP
-        await sendOTP(user);
+        // Generate and send OTP
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
 
-        res.status(200).json({ success: true });
+        // Delete any existing OTPs for this user
+        await prisma.oTPCode.deleteMany({ where: { userId: user.id } });
+
+        // Store new OTP with expiry
+        await prisma.oTPCode.create({
+            data: {
+                code: otp,
+                expiresAt: new Date(Date.now() + 10 * 60 * 1000), // 10 minutes
+                userId: user.id,
+            },
+        });
+
+        // Send OTP email
+        await sendEmail({
+            to: user.email,
+            from: "info@abaccotech.com",
+            subject: "Your 2FA Verification Code",
+            text: `Your OTP code is: ${otp}. This code will expire in 10 minutes.`,
+            html: `
+                <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f4f4f4;">
+                    <div style="max-width: 600px; margin: 0 auto; background-color: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <h2 style="color: #333; margin-bottom: 20px;">Two-Factor Authentication</h2>
+                        <p style="color: #666; font-size: 16px; margin-bottom: 20px;">
+                            You requested to enable Two-Factor Authentication for your account.
+                        </p>
+                        <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; text-align: center; margin: 30px 0;">
+                            <p style="color: #666; margin-bottom: 10px; font-size: 14px;">Your verification code is:</p>
+                            <h1 style="color: #007bff; font-size: 36px; letter-spacing: 8px; margin: 10px 0;">${otp}</h1>
+                        </div>
+                        <p style="color: #999; font-size: 14px; margin-top: 20px;">
+                            This code will expire in 10 minutes. If you didn't request this, please ignore this email.
+                        </p>
+                    </div>
+                </div>
+            `,
+        });
+
+        console.log(`✅ 2FA OTP sent to: ${user.email}`);
+        res.status(200).json({ 
+            success: true, 
+            message: 'OTP sent to your email successfully' 
+        });
+
     } catch (error) {
         console.error('Enable 2FA error:', error);
-        res.status(500).json({ error: 'Server error' });
+        res.status(500).json({ error: 'Failed to send OTP. Please try again.' });
+    }
+};
+
+// Verify 2FA OTP and enable 2FA for user
+export const verify2FA = async (req, res) => {
+    try {
+        const { otp } = req.body;
+        const userId = req.user.id;
+
+        if (!otp) {
+            return res.status(400).json({ message: 'OTP is required' });
+        }
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        // Find the latest valid OTP for the user
+        const otpRecord = await prisma.oTPCode.findFirst({
+            where: {
+                userId,
+                code: otp,
+                expiresAt: { gt: new Date() },  // not expired
+            },
+            orderBy: { expiresAt: 'desc' }
+        });
+
+        if (!otpRecord) {
+            return res.status(400).json({ message: 'Invalid or expired OTP' });
+        }
+
+        // Enable 2FA on user
+        await prisma.user.update({
+            where: { id: userId },
+            data: { is2FAEnabled: true },
+        });
+
+        // Delete all OTP codes for this user after successful verification
+        await prisma.oTPCode.deleteMany({ where: { userId } });
+
+        console.log(`✅ 2FA enabled for user: ${user.email}`);
+        res.json({ 
+            success: true, 
+            message: '2FA enabled successfully' 
+        });
+
+    } catch (err) {
+        console.error('Verify 2FA error:', err);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+// Disable 2FA
+export const disable2FA = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const user = await prisma.user.findUnique({ where: { id: userId } });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        if (!user.is2FAEnabled) {
+            return res.status(400).json({ message: '2FA is not enabled for this account' });
+        }
+
+        // Disable 2FA
+        await prisma.user.update({
+            where: { id: userId },
+            data: { is2FAEnabled: false },
+        });
+
+        // Delete any pending OTP codes
+        await prisma.oTPCode.deleteMany({ where: { userId } });
+
+        console.log(`✅ 2FA disabled for user: ${user.email}`);
+        res.json({ 
+            success: true, 
+            message: '2FA disabled successfully' 
+        });
+
+    } catch (error) {
+        console.error('Disable 2FA error:', error);
+        res.status(500).json({ message: 'Internal server error' });
+    }
+};
+
+// Get user profile with 2FA status
+export const getUserProfile = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        const user = await prisma.user.findUnique({ 
+            where: { id: userId },
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                email: true,
+                profileImage: true,
+                isVerified: true,
+                is2FAEnabled: true,
+                createdAt: true
+            }
+        });
+
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+
+        res.json({
+            success: true,
+            user: {
+                ...user,
+                name: `${user.firstName} ${user.lastName}`.trim()
+            }
+        });
+
+    } catch (error) {
+        console.error('Get user profile error:', error);
+        res.status(500).json({ message: 'Internal server error' });
     }
 };
 
@@ -290,45 +451,10 @@ export const sendOTP = async (user) => {
         html: `<p>Your OTP is: <strong>${otp}</strong></p>`,
     });
 
-
-
     return otp;
 };
 
-export const verify2FA = async (req, res) => {
-    try {
-        const { otp } = req.body;
-        const userId = req.user.id;
 
-        const user = await prisma.user.findUnique({ where: { id: userId } });
-        if (!user) return res.status(404).json({ message: 'User not found' });
-
-        // Find the latest valid OTP for the user
-        const otpRecord = await prisma.oTPCode.findFirst({
-            where: {
-                userId,
-                code: otp,
-                expiresAt: { gt: new Date() },  // not expired
-            },
-            orderBy: { expiresAt: 'desc' }
-        });
-
-        if (!otpRecord) return res.status(400).json({ message: 'Invalid or expired OTP' });
-
-        // Enable 2FA on user and delete the OTP record after successful verification
-        await prisma.user.update({
-            where: { id: userId },
-            data: { is2FAEnabled: true },
-        });
-
-        await prisma.oTPCode.deleteMany({ where: { userId } });
-
-        res.json({ message: '2FA enabled successfully' });
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ message: 'Internal server error' });
-    }
-};
 
 // Fixed backend version of getSecurityLogs
 export const getSecurityLogs = async (req, res) => {

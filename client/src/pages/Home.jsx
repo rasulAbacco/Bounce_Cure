@@ -17,7 +17,7 @@ import {
 } from "recharts";
 import { CheckCircle2 } from "lucide-react";
 import { motion } from "framer-motion";
-
+import { Link } from "react-router-dom";
 function Home() {
 
   const total = 57755;
@@ -340,12 +340,10 @@ function Home() {
 
           {/* Buttons */}
           <div className="mt-8 flex gap-4 ">
-            <button className="bg-[#c2831f] text-white px-6 py-3 rounded-lg shadow hover:bg-[#c2831f] transition cursor-pointer">
-              SCHEDULE A CONSULTATION
-            </button>
-            <button className="border-2 border-[#c2831f] text-white px-6 py-3 rounded-lg hover:bg-[#c2831f] transition cursor-pointer">
+           
+            <Link to="/services/email-verification" className="border-2 border-[#c2831f] text-white px-6 py-3 rounded-lg hover:bg-[#c2831f] transition cursor-pointer">
               SEE SERVICES
-            </button>
+            </Link>
           </div>
         </div>
       </div>

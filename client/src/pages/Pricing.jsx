@@ -1,10 +1,9 @@
 // client/src/pages/Pricing.jsx
 import React, { useState, useEffect } from 'react';
 import { Check, X, ChevronDown, ChevronUp, Gift, Users, TrendingUp, Star, ArrowRight, Phone, Mail, Zap, BarChart, Globe, Shield, Smartphone, Package, Target, Send, Layout } from 'lucide-react';
+import { useNavigate, Link } from 'react-router-dom';
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
-import { useNavigate } from 'react-router-dom';
-import { Link } from 'react-router-dom';
 
 const Pricing = () => {
   const [billingPeriod, setBillingPeriod] = useState('monthly');
@@ -12,9 +11,25 @@ const Pricing = () => {
   const [expandedSections, setExpandedSections] = useState({});
   const [showComparison, setShowComparison] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
+  const [selectedCurrency, setSelectedCurrency] = useState('USD');
   
   // Navigation hook
   const navigate = useNavigate();
+
+  // Currency conversion rates (base: USD)
+  const currencyRates = {
+    USD: { symbol: '$', rate: 1, name: 'US Dollar' },
+    EUR: { symbol: '€', rate: 0.92, name: 'Euro' },
+    GBP: { symbol: '£', rate: 0.79, name: 'British Pound' },
+    INR: { symbol: '₹', rate: 83.12, name: 'Indian Rupee' },
+    AUD: { symbol: 'A$', rate: 1.53, name: 'Australian Dollar' },
+    CAD: { symbol: 'C$', rate: 1.36, name: 'Canadian Dollar' },
+    JPY: { symbol: '¥', rate: 149.50, name: 'Japanese Yen' },
+    NZD: { symbol: 'NZ$', rate: 1.67, name: 'New Zealand Dollar' },
+    NOK: { symbol: 'kr', rate: 10.87, name: 'Norwegian Krone' },
+    SEK: { symbol: 'kr', rate: 10.96, name: 'Swedish Krona' },
+    CHF: { symbol: 'CHF', rate: 0.88, name: 'Swiss Franc' }
+  };
 
   const contactTiers = [
     { value: 500, label: '500', pricing: { essentials: 4.31, standard: 6.44, premium: 128.79 } },
@@ -41,17 +56,46 @@ const Pricing = () => {
     return tier ? tier.pricing : contactTiers[0].pricing;
   };
 
+  // Convert price to selected currency
+  const convertPrice = (priceUSD) => {
+    const rate = currencyRates[selectedCurrency].rate;
+    const convertedPrice = priceUSD * rate;
+    // Format based on currency (JPY has no decimals)
+    if (selectedCurrency === 'JPY') {
+      return Math.round(convertedPrice).toLocaleString();
+    }
+    return convertedPrice.toFixed(2);
+  };
+
+  // Get currency symbol
+  const getCurrencySymbol = () => {
+    return currencyRates[selectedCurrency].symbol;
+  };
+
+  // Format price with currency symbol
+  const formatPrice = (priceUSD) => {
+    const symbol = getCurrencySymbol();
+    const convertedPrice = convertPrice(priceUSD);
+    
+    // Special handling for CHF (symbol after amount)
+    if (selectedCurrency === 'CHF') {
+      return `${convertedPrice} ${symbol}`;
+    }
+    
+    return `${symbol}${convertedPrice}`;
+  };
+
   // Function to get plan-specific contact limit
   const getPlanContactLimit = (planType) => {
     switch(planType) {
       case 'free':
-        return 500; // Free plan is limited to 500 contacts
+        return 500;
       case 'essentials':
-        return 5000; // Essentials plan is limited to 5,000 contacts
+        return 5000;
       case 'standard':
-        return 100000; // Standard plan is limited to 100,000 contacts
+        return 100000;
       case 'premium':
-        return Infinity; // Premium plan has unlimited contacts
+        return Infinity;
       default:
         return contactCount;
     }
@@ -109,16 +153,15 @@ const Pricing = () => {
 
   // Handle plan selection with navigation logic
   const handlePlanSelection = (planName, planType) => {
-    // Check if plan is available for the selected contact count
     if (!isPlanAvailable(planType)) {
-      // Show error message or handle unavailable plan
-      alert(`The ${planName} plan is not available for ${contactCount} contacts. Please select a different plan or reduce your contact count.`);
+      alert(`The ${planName} plan is not available for ${contactCount.toLocaleString()} contacts. Please select a different plan or reduce your contact count.`);
       return;
     }
 
     const planData = plans[planType];
     const pricing = getCurrentPricing();
-    const price = planType === 'free' ? 0 : pricing[planType];
+    const priceUSD = planType === 'free' ? 0 : pricing[planType];
+    const priceConverted = parseFloat(convertPrice(priceUSD).replace(/,/g, ''));
     
     // Calculate email send limit based on plan type and contact count
     let emailSendLimit;
@@ -132,52 +175,49 @@ const Pricing = () => {
     const planDetails = {
       planName: planName,
       planType: planType,
-      basePrice: price,
-      originalBasePrice: price * 2, // Original price (before 50% discount)
+      basePrice: priceConverted,
+      originalBasePrice: priceConverted * 2,
       billingPeriod: billingPeriod === 'monthly' ? 'month' : 'year',
       emails: emailSendLimit,
       features: planData.features,
-      slots: contactCount, // Use contact count instead of emails
+      slots: contactCount,
       selectedIntegrations: [],
       additionalSlotsCost: 0,
       integrationCosts: 0,
-      discount: 0.5, // 50% discount
-      subtotal: price,
+      discount: 0.5,
+      subtotal: priceConverted,
       taxRate: 0.1,
-      tax: price * 0.1,
-      total: price * 1.1,
+      tax: priceConverted * 0.1,
+      totalCost: priceConverted * 1.1,
       contactCount: contactCount,
-      // Add properties expected by PricingDash
+      currency: selectedCurrency,
+      currencySymbol: getCurrencySymbol(),
       isFromPricingDash: false,
       pricingModel: "multiplier",
       discountApplied: true,
-      discountAmount: price // Discount amount (50% of original price)
+      discountAmount: priceConverted,
+      isNewUser: true // Assume new user for discount
     };
 
-    // Store plan temporarily
     localStorage.setItem("pendingUpgradePlan", JSON.stringify(planDetails));
     sessionStorage.setItem("pendingUpgradePlan", JSON.stringify(planDetails));
     
-    // Set the selected plan state
     setSelectedPlan(planDetails);
 
     const isLoggedIn = !!localStorage.getItem("authToken");
 
     if (!isLoggedIn) {
-      // Navigate to signin page with plan details
       navigate("/signin", {
         state: {
-          plan: planDetails, // Pass the plan details directly
+          plan: planDetails,
           redirectTo: "/payment",
         },
       });
     } else { 
-      // Navigate directly to payment page
       navigate("/payment", {
         state: { plan: planDetails },
       });
     }
-    
   };
 
   const keyPlanFeatures = {
@@ -185,25 +225,22 @@ const Pricing = () => {
       { label: 'Monthly Email Sends', value: 'Max of 1,000/mo' },
       { label: 'SMS and MMS add-on', value: 'Not included' },
       { label: 'Marketing Automation Flows', value: 'Not included' },
-      { label: 'Intuit Assist (beta)', value: 'Not included' }
-    ],
+     ],
     essentials: [
       { label: 'Monthly Email Sends', value: '10X contacts' },
       { label: 'SMS add-on', value: 'SMS add-on' },
       { label: 'Marketing Automation Flows', value: 'Up to 4 flow steps' },
-      { label: 'Intuit Assist (beta)', value: 'Not included' }
+     
     ],
     standard: [
       { label: 'Monthly Email Sends', value: '12X contacts' },
       { label: 'SMS and MMS add-on', value: 'SMS and MMS add-on' },
       { label: 'Marketing Automation Flows', value: 'Up to 200 flow steps' },
-      { label: 'Intuit Assist (beta)', value: 'No additional cost add-on' }
-    ],
+     ],
     premium: [
       { label: 'Monthly Email Sends', value: '15X contacts' },
       { label: 'SMS and MMS add-on', value: 'SMS and MMS add-on' },
       { label: 'Marketing Automation Flows', value: 'Up to 200 flow steps' },
-      { label: 'Intuit Assist (beta)', value: 'No additional cost add-on' },
       { label: 'Premium Migration Services', value: 'Contact Sales' }
     ]
   };
@@ -327,7 +364,10 @@ const Pricing = () => {
       q: 'Can I buy email credits instead?',
       a: 'Yes. If you send emails infrequently and prefer to pay as you go, you can buy email credits as an alternative to a monthly plan.'
     },
-    
+    {
+      q: 'Do prices vary by currency?',
+      a: 'Yes. Prices are displayed in multiple currencies for your convenience. All prices are converted from USD at current exchange rates and may vary slightly based on market conditions. The currency you select will be used throughout your purchase process.'
+    },
     {
       q: 'Do you have plans for high-volume senders?',
       a: 'Yes. If you have more than 200,000 contacts, we have a high-volume plan that can meet your needs.'
@@ -349,17 +389,18 @@ const Pricing = () => {
 
   const PlanCard = ({ planKey, plan }) => {
     const pricing = getCurrentPricing();
-    const price = planKey === 'free' ? 0 : pricing[planKey];
-    const originalPrice = planKey === 'free' ? 0 : (price * 2);
-    const yearlyPrice = planKey === 'free' ? 0 : (originalPrice * 2).toFixed(2);
+    const priceUSD = planKey === 'free' ? 0 : pricing[planKey];
+    const price = convertPrice(priceUSD);
+    const originalPriceUSD = planKey === 'free' ? 0 : (priceUSD * 2);
+    const originalPrice = convertPrice(originalPriceUSD);
+    const yearlyPriceUSD = planKey === 'free' ? 0 : (originalPriceUSD * 12);
+    const yearlyPrice = convertPrice(yearlyPriceUSD);
+    const currencySymbol = getCurrencySymbol();
     const Icon = plan.icon;
     
-    // Get plan-specific contact limit
     const planContactLimit = getPlanContactLimit(planKey);
-    // Check if plan is available for the selected contact count
     const planAvailable = isPlanAvailable(planKey);
     
-    // Calculate email send limit for display
     let emailSendLimit;
     if (planKey === 'free') {
       emailSendLimit = plan.emailLimit;
@@ -367,14 +408,13 @@ const Pricing = () => {
       emailSendLimit = contactCount * plan.emailMultiplier;
     }
     
-    // Determine display contact count
     const displayContactCount = planKey === 'free' ? Math.min(contactCount, 500) : contactCount;
     
     return (
       <div className={`relative bg-gray-900 rounded-2xl border-2 ${
         plan.popular ? 'border-[#c2831f] shadow-lg' : 
         !planAvailable ? 'border-gray-800 opacity-60' : 'border-gray-700'
-      } overflow-hidden transition-all hover:scale-[1.02] flex flex-col h-full sticky top-6`}>
+      } overflow-hidden transition-all hover:scale-[1.02] flex flex-col h-full`}>
         {plan.popular && (
           <div className="absolute top-0 left-0 right-0 bg-[#c2831f] text-white text-center py-2 text-sm font-bold z-10">
             {plan.badge.toUpperCase()}
@@ -400,7 +440,7 @@ const Pricing = () => {
           <div className="mb-6 border-b border-gray-700 pb-6">
             {planKey === 'free' && (
               <div className="text-4xl font-bold text-white mb-1">
-                ${price}
+                {formatPrice(0)}
                 <span className="text-lg text-gray-300 font-normal"> per month</span>
               </div>
             )}
@@ -408,20 +448,19 @@ const Pricing = () => {
               <>
                 <div className="flex flex-col sm:flex-row sm:items-baseline">
                   <div className="text-4xl font-bold text-white">
-                    ${price}
+                    {formatPrice(priceUSD)}
                     <span className="text-lg text-gray-300 font-normal">/mo</span>
                   </div>
                    <div className="ml-0 sm:ml-2 text-green-500 font-bold text-sm">
                     50% OFF
                   </div>
-                 
                 </div>
                 <div className="ml-0 sm:ml-3 text-lg text-gray-400 line-through">
-                    ${originalPrice}
+                    {formatPrice(originalPriceUSD)}
                   </div>
                 
                 <div className="mt-3">
-                  <div className="text-sm text-gray-300">12 months: <span className="font-semibold text-white">${yearlyPrice}/mo</span></div>
+                  <div className="text-sm text-gray-300">12 months: <span className="font-semibold text-white">{formatPrice(yearlyPriceUSD)}/yr</span></div>
                 </div>
               </>
             )}
@@ -430,7 +469,6 @@ const Pricing = () => {
             )}
           </div>
 
-          {/* Contact and Email Information - Moved above Key Plan Features */}
           <div className="mb-6 bg-gray-800 rounded-xl p-4">
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm text-gray-400">Contacts:</span>
@@ -479,7 +517,7 @@ const Pricing = () => {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <Navbar/>
+      <Navbar />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="text-center mb-8 sm:mb-12 mt-15">
           <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 py-5 text-[#c2831f]">
@@ -490,29 +528,55 @@ const Pricing = () => {
           </p>
         </div>
 
-        <div className="max-w-md mx-auto mb-8 px-4 height-100">
-          <label className="block text-center text-sm font-medium text-gray-300 mb-3">
-            Customize your plan
-          </label>
-          <div className="relative height-100">
-            <select 
-              value={contactCount}
-              onChange={(e) => setContactCount(Number(e.target.value))}
-              className="w-full bg-gray-800 border-2 border-gray-700 rounded-xl px-4 py-3 text-white appearance-none cursor-pointer focus:border-[#c2831f] focus:outline-none"
-            >
-              {contactTiers.map(tier => (
-                <option key={tier.value} value={tier.value}>
-                  {tier.label} contacts
-                </option>
-              ))}
-            </select>
-            <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+        <div className="max-w-4xl mx-auto mb-8 px-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Contact Count Selector */}
+            <div>
+              <label className="block text-center text-sm font-medium text-gray-300 mb-3">
+                Number of Contacts
+              </label>
+              <div className="relative">
+                <select 
+                  value={contactCount}
+                  onChange={(e) => setContactCount(Number(e.target.value))}
+                  className="w-full bg-gray-800 border-2 border-gray-700 rounded-xl px-4 py-3 text-white appearance-none cursor-pointer focus:border-[#c2831f] focus:outline-none"
+                >
+                  {contactTiers.map(tier => (
+                    <option key={tier.value} value={tier.value}>
+                      {tier.label} contacts
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+              </div>
+              {contactCount > 500 && (
+                <p className="text-sm text-yellow-400 mt-2 text-center">
+                  Free plan is not available for more than 500 contacts
+                </p>
+              )}
+            </div>
+
+            {/* Currency Selector */}
+            <div>
+              <label className="block text-center text-sm font-medium text-gray-300 mb-3">
+                Select Your Currency
+              </label>
+              <div className="relative">
+                <select 
+                  value={selectedCurrency}
+                  onChange={(e) => setSelectedCurrency(e.target.value)}
+                  className="w-full bg-gray-800 border-2 border-gray-700 rounded-xl px-4 py-3 text-white appearance-none cursor-pointer focus:border-[#c2831f] focus:outline-none"
+                >
+                  {Object.entries(currencyRates).map(([code, data]) => (
+                    <option key={code} value={code}>
+                      {data.symbol} {code} - {data.name}
+                    </option>
+                  ))}
+                </select>
+                <Globe className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+              </div>
+            </div>
           </div>
-          {contactCount > 500 && (
-            <p className="text-sm text-red-400 mt-2 text-center">
-              Free plan is not available for more than 500 contacts
-            </p>
-          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
@@ -653,7 +717,7 @@ const Pricing = () => {
               </button>
               <Link 
                 to="/login"
-                className="px-8 py-4 bg-gray-800 border-2 border-gray-700 text-white rounded-xl font-semibold hover:bg-gray-700 transition-all"
+                className="px-8 py-4 bg-gray-800 border-2 border-gray-700 text-white rounded-xl font-semibold hover:bg-gray-700 transition-all flex items-center justify-center"
               >
                 Sign Up Free
               </Link>
@@ -663,10 +727,12 @@ const Pricing = () => {
 
         <div className="mt-12 text-center text-xs text-gray-500 max-w-4xl mx-auto space-y-2">
           <p>*Terms and conditions apply. Statistics based on platform user data.</p>
-          <p>Prices are in USD and may vary by country.</p>
+          <p>Prices may vary globally depending on your region and selected currency.</p>
+          <p>Currency conversions are approximate and based on current exchange rates.</p>
+          <p>Selected currency: {selectedCurrency} {currencyRates[selectedCurrency].symbol}</p>
         </div>
       </div>
-      <Footer/>
+      <Footer />
     </div>
   );
 };

@@ -217,13 +217,7 @@ const TopNavbar = ({ toggleSidebar, pageName }) => {
                     <User className="w-4 h-4" />
                     <span>Profile</span>
                   </Link>
-                  <Link
-                    to="/settings"
-                    className="w-full flex items-center space-x-2 text-white hover:bg-white/10 p-2 rounded-lg transition-colors"
-                  >
-                    <Settings className="w-4 h-4" />
-                    <span>Settings</span>
-                  </Link>
+                  
                   <hr className="border-white/80 my-1" />
                   <button
                     onClick={handleLogout}

@@ -1,3 +1,4 @@
+// client/src/pages/Pricing/components/CreditCard.jsx
 import React, { useState, useEffect } from 'react';
 import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
 import { useLocation, useNavigate } from 'react-router-dom';
@@ -13,25 +14,76 @@ export default function CreditCard() {
     const location = useLocation();
     const navigate = useNavigate();
 
+    // Currency exchange rates (relative to USD)
+    const exchangeRates = {
+        USD: 1,
+        EUR: 0.93,
+        GBP: 0.79,
+        INR: 83.12,
+        AUD: 1.52,
+        CAD: 1.36,
+        JPY: 149.62,
+        NZD: 1.66,
+        NOK: 10.65,
+        SEK: 10.75,
+        CHF: 0.89
+    };
+
+    // Currency symbols
+    const currencySymbols = {
+        USD: '$',
+        EUR: '€',
+        GBP: '£',
+        INR: '₹',
+        AUD: 'A$',
+        CAD: 'C$',
+        JPY: '¥',
+        NZD: 'NZ$',
+        NOK: 'kr',
+        SEK: 'kr',
+        CHF: 'CHF'
+    };
+
+    // Format price with selected currency
+    const formatCurrency = (amount, currency) => {
+        const convertedAmount = amount * exchangeRates[currency];
+        const symbol = currencySymbols[currency];
+        
+        // Special handling for JPY (no decimals) and CHF (symbol after)
+        if (currency === 'JPY') {
+            return `${symbol}${Math.round(convertedAmount)}`;
+        } else if (currency === 'CHF') {
+            return `${Math.round(convertedAmount * 100) / 100} ${symbol}`;
+        } else {
+            return `${symbol}${convertedAmount.toFixed(2)}`;
+        }
+    };
+
     const [name, setName] = useState('');
     const [email, setEmail] = useState('');
     const [plan, setPlan] = useState(null);
     const [status, setStatus] = useState('');
     const [loading, setLoading] = useState(false);
+    const [selectedCurrency, setSelectedCurrency] = useState("USD");
 
     useEffect(() => {
         const incomingPlan = location.state?.plan;
         const incomingEmail = location.state?.email;
         const incomingName = location.state?.name;
 
-        if (incomingPlan) setPlan(incomingPlan);
+        if (incomingPlan) {
+            setPlan(incomingPlan);
+            setSelectedCurrency(incomingPlan.currency || "USD");
+        }
         if (incomingEmail) setEmail(incomingEmail);
         if (incomingName) setName(incomingName);
 
         if (!incomingPlan) {
             const storedPlan = localStorage.getItem("pendingUpgradePlan");
             if (storedPlan) {
-                setPlan(JSON.parse(storedPlan));
+                const parsedPlan = JSON.parse(storedPlan);
+                setPlan(parsedPlan);
+                setSelectedCurrency(parsedPlan.currency || "USD");
             } else {
                 navigate("/pricing");
             }
@@ -52,6 +104,7 @@ export default function CreditCard() {
             const { data } = await axios.post(`${API_URL}/api/creditcard/charge`, {
                 amount,
                 email,
+                currency: selectedCurrency.toLowerCase(), // Pass currency to backend
             });
 
             const result = await stripe.confirmCardPayment(data.clientSecret, {
@@ -81,7 +134,7 @@ export default function CreditCard() {
                     provider: 'Stripe',
                     contacts: plan.slots,
                     amount,
-                    currency: paymentIntent.currency,
+                    currency: selectedCurrency.toLowerCase(), // Save currency
                     paymentMethod: paymentIntent.payment_method_types[0],
                     cardLast4: paymentIntent.charges?.data[0]?.payment_method_details?.card?.last4 || '',
                     paymentDate: new Date().toISOString(),
@@ -133,11 +186,6 @@ export default function CreditCard() {
         }
     };
 
-    const formatCurrency = (amount) => {
-        const num = Number(amount);
-        return isNaN(num) ? "$0.00" : `$${num.toFixed(2)}`;
-    };
-
     return (
         <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 text-white px-4 relative overflow-hidden">
             {/* Background Elements */}
@@ -186,9 +234,10 @@ export default function CreditCard() {
 
                 <div className="bg-gradient-to-r from-indigo-950/30 to-purple-950/30 border border-indigo-800/30 rounded-xl p-4">
                     <p className="text-center text-white text-2xl font-bold">
-                        {plan ? formatCurrency(plan.totalCost) : '$0.00'}
+                        {plan ? formatCurrency(plan.totalCost, selectedCurrency) : '$0.00'}
                     </p>
                     <p className="text-center text-slate-400 text-sm mt-1">Total Amount</p>
+                    <p className="text-center text-slate-400 text-xs mt-1">Currency: {selectedCurrency}</p>
                 </div>
 
                 <div>
@@ -239,7 +288,7 @@ export default function CreditCard() {
                     ) : (
                         <>
                             <Lock size={20} />
-                            {plan ? `Pay ${formatCurrency(plan.totalCost)}` : "Loading..."}
+                            {plan ? `Pay ${formatCurrency(plan.totalCost, selectedCurrency)}` : "Loading..."}
                         </>
                     )}
                 </button>

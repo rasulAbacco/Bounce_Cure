@@ -1,3 +1,4 @@
+// client/src/components/auth/EmailVerification.jsx
 import React, { useState } from 'react';
 import { MailCheck, MailWarning, Mail, Send, CheckCircle, AlertTriangle } from 'lucide-react';
 import authService from '../../services/authService';

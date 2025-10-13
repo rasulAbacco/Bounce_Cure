@@ -7,7 +7,7 @@ const fonts = {
         bold: "Helvetica-Bold",
         lineHeight: 1.3,
     },
-};
+}; 
 
 const printer = new PdfPrinter(fonts);
 
