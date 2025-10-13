@@ -262,14 +262,14 @@ function StripeForm() {
 
         // ⭐⭐⭐ CRITICAL: Initialize user after purchase ⭐⭐⭐
         console.log('💾 Initializing user data after purchase');
-        
+
         const initSuccess = initializeUserAfterPurchase({
           planName: plan.planName,
           slots: plan.slots || plan.contactCount || 0,
           contactCount: plan.slots || plan.contactCount || 0,
           emails: plan.emails || 0
         });
-        
+
         if (!initSuccess) {
           console.error('⚠️ Failed to initialize user data');
         }
@@ -282,9 +282,9 @@ function StripeForm() {
         const totalContacts = localStorage.getItem('totalContacts');
         const totalEmails = localStorage.getItem('totalEmails');
         const hasPurchased = localStorage.getItem('hasPurchasedBefore');
-        
-        console.log('✅ Verified saved data:', { 
-          plan: savedPlan, 
+
+        console.log('✅ Verified saved data:', {
+          plan: savedPlan,
           totalContacts: totalContacts,
           totalEmails: totalEmails,
           hasPurchased: hasPurchased
@@ -320,6 +320,9 @@ function StripeForm() {
     };
     return countryMap[currency] || 'US';
   };
+
+  
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex justify-center items-center p-4 relative overflow-hidden">
@@ -450,9 +453,10 @@ function StripeForm() {
                   },
                   invalid: { color: "#ef4444" },
                 },
-              }}
-            />
-          </div>
+                invalid: { color: "#ef4444" },
+              },
+            }}
+          />
         </div>
 
         <button
@@ -494,11 +498,10 @@ function StripeForm() {
 
         {status && (
           <div
-            className={`p-4 rounded-xl flex items-center gap-3 ${
-              status.includes("✅")
-                ? "bg-green-950/30 border border-green-800/30 text-green-300"
-                : "bg-red-950/30 border border-red-800/30 text-red-300"
-            }`}
+            className={`p-4 rounded-xl flex items-center gap-3 ${status.includes("✅")
+              ? "bg-green-950/30 border border-green-800/30 text-green-300"
+              : "bg-red-950/30 border border-red-800/30 text-red-300"
+              }`}
           >
             {status.includes("✅") ? (
               <CheckCircle size={20} />
