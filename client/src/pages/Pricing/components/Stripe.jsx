@@ -145,33 +145,33 @@ function Stripe() {
 
         // ⭐⭐⭐ CRITICAL: Initialize user after purchase ⭐⭐⭐
         console.log('💾 Initializing user data after purchase');
-        
+
         const initSuccess = initializeUserAfterPurchase({
           planName: plan.planName,
           slots: plan.slots || plan.contactCount || 0,
           contactCount: plan.slots || plan.contactCount || 0,
           emails: plan.emails || 0
         });
-        
+
         if (!initSuccess) {
           console.error('⚠️ Failed to initialize user data');
         }
-        
+
         // Also save email count separately for TopNavbar
         localStorage.setItem('totalEmails', plan.emails || 0);
-        
+
         // Remove pending plan
         localStorage.removeItem('pendingUpgradePlan');
         sessionStorage.removeItem('pendingUpgradePlan');
-        
+
         // Verify it was saved
         const savedPlan = localStorage.getItem('userPlan');
         const totalContacts = localStorage.getItem('totalContacts');
         const totalEmails = localStorage.getItem('totalEmails');
         const hasPurchased = localStorage.getItem('hasPurchasedBefore');
-        
-        console.log('✅ Verified saved data:', { 
-          plan: savedPlan, 
+
+        console.log('✅ Verified saved data:', {
+          plan: savedPlan,
           totalContacts: totalContacts,
           totalEmails: totalEmails,
           hasPurchased: hasPurchased
@@ -199,6 +199,9 @@ function Stripe() {
     const num = Number(amount);
     return isNaN(num) ? "$0.00" : `$${num.toFixed(2)}`;
   };
+
+  
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex justify-center items-center p-4 relative overflow-hidden">
@@ -318,26 +321,27 @@ function Stripe() {
         </div>
 
         {/* Card Element */}
-        <div>
-          <label className="text-sm font-medium text-slate-300 mb-2 block">
-            Card Details
-          </label>
-          <div className="px-4 py-4 border border-slate-700 rounded-xl bg-slate-900/50 focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent transition-all">
-            <CardElement
-              options={{
-                style: {
-                  base: {
-                    fontSize: "16px",
-                    color: "#ffffff",
-                    "::placeholder": { color: "#64748b" },
-                    fontFamily: "system-ui, -apple-system, sans-serif",
-                  },
-                  invalid: { color: "#ef4444" },
+        <div
+          className="px-4 py-4 border border-slate-700 rounded-xl bg-slate-900/50 
+             focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent 
+             transition-all relative z-50"
+          style={{ pointerEvents: "auto" }}
+        >
+          <CardElement
+            options={{
+              style: {
+                base: {
+                  fontSize: "16px",
+                  color: "#ffffff",
+                  fontFamily: "system-ui, -apple-system, sans-serif",
+                  "::placeholder": { color: "#64748b" },
                 },
-              }}
-            />
-          </div>
+                invalid: { color: "#ef4444" },
+              },
+            }}
+          />
         </div>
+
 
         {/* Submit Button with loader */}
         <button
@@ -380,11 +384,10 @@ function Stripe() {
         {/* Status Message */}
         {status && (
           <div
-            className={`p-4 rounded-xl flex items-center gap-3 ${
-              status.includes("✅")
-                ? "bg-green-950/30 border border-green-800/30 text-green-300"
-                : "bg-red-950/30 border border-red-800/30 text-red-300"
-            }`}
+            className={`p-4 rounded-xl flex items-center gap-3 ${status.includes("✅")
+              ? "bg-green-950/30 border border-green-800/30 text-green-300"
+              : "bg-red-950/30 border border-red-800/30 text-red-300"
+              }`}
           >
             {status.includes("✅") ? (
               <CheckCircle size={20} />

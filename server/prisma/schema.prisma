@@ -428,9 +428,9 @@ model Payment {
   notified        Boolean  @default(false)
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
-  
+
   // Relation to User model
-  User            User     @relation(fields: [userId], references: [id])
+  User User @relation(fields: [userId], references: [id])
 }
 
 model ScheduledCampaign {

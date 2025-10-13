@@ -15,44 +15,7 @@ import { AiFillDelete } from "react-icons/ai";
 const API_URL = import.meta.env.VITE_VRI_URL;
 
 function Deals() {
-  const [deals, setDeals] = useState([
-    {
-      id: 1,
-      name: "Website Redesign",
-      client: "Acme Inc.",
-      stage: "Negotiation",
-      value: "$12,000",
-      closing: "2025-09-10",
-      status: "Open",
-    },
-    {
-      id: 2,
-      name: "SEO Package",
-      client: "XYZ Corp",
-      stage: "Proposal Sent",
-      value: "$5,000",
-      closing: "2025-08-25",
-      status: "Open",
-    },
-    {
-      id: 3,
-      name: "Mobile App Development",
-      client: "Startup Hub",
-      stage: "Closed Won",
-      value: "$20,000",
-      closing: "2025-08-15",
-      status: "Won",
-    },
-    {
-      id: 4,
-      name: "Digital Marketing",
-      client: "Freelance Client",
-      stage: "Closed Lost",
-      value: "$3,500",
-      closing: "2025-08-05",
-      status: "Lost",
-    },
-  ]);
+  const [deals, setDeals] = useState([]);
 
   const [showForm, setShowForm] = useState(false);
   const [newDeal, setNewDeal] = useState({
