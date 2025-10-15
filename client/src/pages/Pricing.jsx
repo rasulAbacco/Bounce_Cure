@@ -1,10 +1,7 @@
-// client/src/pages/Pricing.jsx
 import React, { useState, useEffect } from 'react';
 import { Check, X, ChevronDown, ChevronUp, Gift, Users, TrendingUp, Star, ArrowRight, Phone, Mail, Zap, BarChart, Globe, Shield, Smartphone, Package, Target, Send, Layout } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
-import Navbar from '../components/Navbar';
-import Footer from '../components/Footer';
-
+import PageLayout from "../components/PageLayout"; // Adjust path as needed
 const Pricing = () => {
   const [billingPeriod, setBillingPeriod] = useState('monthly');
   const [contactCount, setContactCount] = useState(500);
@@ -31,29 +28,81 @@ const Pricing = () => {
     CHF: { symbol: 'CHF', rate: 0.88, name: 'Swiss Franc' }
   };
 
+  // Billing periods without discounts
+  const billingPeriods = {
+    monthly: { 
+      label: 'Monthly', 
+      months: 1,
+      displayText: 'per month',
+    },
+    quarterly: { 
+      label: 'Quarterly', 
+      months: 3,
+      displayText: 'for 3 months',
+    },
+    
+    yearly: { 
+      label: 'Yearly', 
+      months: 12,
+      displayText: 'for 12 months',
+    }
+  };
+
+  // Per-contact pricing rates as per image
+  const perContactRates = {
+    essentials: { 500: 0.05, 2500: 0.05, 5000: 0.05, 10000: 0.04, 20000: 0.04, 30000: 0.03, 40000: 0.03, 50000: 0.03 },
+    standard: { 500: 0.08, 2500: 0.07, 5000: 0.07, 10000: 0.07, 20000: 0.07, 30000: 0.07, 40000: 0.07, 50000: 0.07 },
+    premium: { 500: 0.10, 2500: 0.09, 5000: 0.08, 10000: 0.07, 20000: 0.07, 30000: 0.06, 40000: 0.06, 50000: 0.06 }
+  };
+
   const contactTiers = [
-    { value: 500, label: '500', pricing: { essentials: 4.31, standard: 6.44, premium: 128.79 } },
-    { value: 1000, label: '1,000', pricing: { essentials: 8.62, standard: 12.88, premium: 257.58 } },
-    { value: 1500, label: '1,500', pricing: { essentials: 12.93, standard: 19.32, premium: 386.37 } },
-    { value: 2500, label: '2,500', pricing: { essentials: 21.55, standard: 32.20, premium: 643.95 } },
-    { value: 5000, label: '5,000', pricing: { essentials: 43.10, standard: 64.40, premium: 1287.90 } },
-    { value: 10000, label: '10,000', pricing: { essentials: 86.20, standard: 128.80, premium: 2575.80 } },
-    { value: 15000, label: '15,000', pricing: { essentials: 129.30, standard: 193.20, premium: 3863.70 } },
-    { value: 20000, label: '20,000', pricing: { essentials: 172.40, standard: 257.60, premium: 5151.60 } },
-    { value: 25000, label: '25,000', pricing: { essentials: 215.50, standard: 322.00, premium: 6439.50 } },
-    { value: 30000, label: '30,000', pricing: { essentials: 258.60, standard: 386.40, premium: 7727.40 } },
-    { value: 40000, label: '40,000', pricing: { essentials: 344.80, standard: 515.20, premium: 10303.20 } },
-    { value: 50000, label: '50,000', pricing: { essentials: 431.00, standard: 644.00, premium: 12879.00 } },
-    { value: 75000, label: '75,000', pricing: { essentials: 646.50, standard: 966.00, premium: 19318.50 } },
-    { value: 100000, label: '100,000', pricing: { essentials: 862.00, standard: 1288.00, premium: 25758.00 } },
-    { value: 150000, label: '150,000', pricing: { essentials: 1293.00, standard: 1932.00, premium: 38637.00 } },
-    { value: 200000, label: '200,000', pricing: { essentials: 1724.00, standard: 2576.00, premium: 51516.00 } },
-    { value: 250000, label: '250,000+', pricing: { essentials: 2155.00, standard: 3220.00, premium: 64395.00 } }
+    { value: 500, label: '500' },
+    { value: 1000, label: '1,000' },
+    { value: 1500, label: '1,500' },
+    { value: 2500, label: '2,500' },
+    { value: 5000, label: '5,000' },
+    { value: 10000, label: '10,000' },
+    { value: 15000, label: '15,000' },
+    { value: 20000, label: '20,000' },
+    { value: 25000, label: '25,000' },
+    { value: 30000, label: '30,000' },
+    { value: 40000, label: '40,000' },
+    { value: 50000, label: '50,000' },
+    { value: 75000, label: '75,000' },
+    { value: 100000, label: '100,000' },
+    { value: 150000, label: '150,000' },
+    { value: 200000, label: '200,000' },
+    { value: 250000, label: '250,000+' }
   ];
 
+  // Function to get per-contact rate based on contact count
+  const getPerContactRate = (planType, contacts) => {
+    const rates = perContactRates[planType];
+    if (!rates) return 0;
+    
+    // Find the appropriate tier
+    if (contacts <= 500) return rates[500];
+    if (contacts <= 2500) return rates[2500];
+    if (contacts <= 5000) return rates[5000];
+    if (contacts <= 10000) return rates[10000];
+    if (contacts <= 20000) return rates[20000];
+    if (contacts <= 30000) return rates[30000];
+    if (contacts <= 40000) return rates[40000];
+    return rates[50000];
+  };
+
   const getCurrentPricing = () => {
-    const tier = contactTiers.find(t => t.value === contactCount);
-    return tier ? tier.pricing : contactTiers[0].pricing;
+    return {
+      essentials: contactCount * getPerContactRate('essentials', contactCount),
+      standard: contactCount * getPerContactRate('standard', contactCount),
+      premium: contactCount * getPerContactRate('premium', contactCount)
+    };
+  };
+
+  // Calculate price without billing period discount
+  const calculatePrice = (monthlyPriceUSD) => {
+    const periodInfo = billingPeriods[billingPeriod];
+    return monthlyPriceUSD * periodInfo.months;
   };
 
   // Convert price to selected currency
@@ -126,7 +175,8 @@ const Pricing = () => {
       icon: Users,
       color: 'text-blue-400',
       cta: 'Buy Now',
-      emailMultiplier: 10,
+      emailMultiplier: 1,
+      emailValidationMultiplier: 0,
       features: ["Email marketing", "SMS marketing", "Marketing automation", "Basic support"]
     },
     standard: {
@@ -137,7 +187,8 @@ const Pricing = () => {
       badge: 'Best value',
       popular: true,
       cta: 'Buy Now',
-      emailMultiplier: 12,
+      emailMultiplier: 1,
+      emailValidationMultiplier: 1,
       features: ["Email marketing", "SMS marketing", "Advanced automation", "A/B testing", "24/7 support"]
     },
     premium: {
@@ -146,7 +197,10 @@ const Pricing = () => {
       icon: Star,
       color: 'text-purple-400',
       cta: 'Buy Now',
-      emailMultiplier: 15,
+      emailMultiplier: 1,
+      emailValidationMultiplier: 1,
+      smsWhatsappAccess: true,
+      crmAccess: true,
       features: ["Email marketing", "SMS marketing", "Advanced automation", "A/B testing", "Priority support", "Custom integrations"]
     }
   };
@@ -160,8 +214,19 @@ const Pricing = () => {
 
     const planData = plans[planType];
     const pricing = getCurrentPricing();
-    const priceUSD = planType === 'free' ? 0 : pricing[planType];
-    const priceConverted = parseFloat(convertPrice(priceUSD).replace(/,/g, ''));
+    const monthlyPriceUSD = planType === 'free' ? 0 : pricing[planType];
+    const periodInfo = billingPeriods[billingPeriod];
+    
+    // Calculate prices
+    const originalMonthlyPriceUSD = monthlyPriceUSD;
+    const discountedMonthlyPriceUSD = originalMonthlyPriceUSD * 0.5;
+    const periodPriceUSD = calculatePrice(monthlyPriceUSD);
+    const originalPeriodPriceUSD = originalMonthlyPriceUSD * periodInfo.months;
+    
+    // Convert to selected currency
+    const baseMonthlyPriceConverted = parseFloat(convertPrice(discountedMonthlyPriceUSD).replace(/,/g, ''));
+    const periodPriceConverted = parseFloat(convertPrice(periodPriceUSD).replace(/,/g, ''));
+    const originalPeriodPriceConverted = parseFloat(convertPrice(originalPeriodPriceUSD).replace(/,/g, ''));
     
     // Calculate email send limit based on plan type and contact count
     let emailSendLimit;
@@ -171,13 +236,15 @@ const Pricing = () => {
       emailSendLimit = contactCount * planData.emailMultiplier;
     }
 
-    // Build plan object consistent with PricingDash
+    // Build plan object
     const planDetails = {
       planName: planName,
       planType: planType,
-      basePrice: priceConverted,
-      originalBasePrice: priceConverted * 2,
-      billingPeriod: billingPeriod === 'monthly' ? 'month' : 'year',
+      basePrice: baseMonthlyPriceConverted,
+      periodPrice: periodPriceConverted,
+      originalPeriodPrice: originalPeriodPriceConverted,
+      billingPeriod: periodInfo.label.toLowerCase(),
+      billingMonths: periodInfo.months,
       emails: emailSendLimit,
       features: planData.features,
       slots: contactCount,
@@ -185,18 +252,18 @@ const Pricing = () => {
       additionalSlotsCost: 0,
       integrationCosts: 0,
       discount: 0.5,
-      subtotal: priceConverted,
+      subtotal: periodPriceConverted,
       taxRate: 0.1,
-      tax: priceConverted * 0.1,
-      totalCost: priceConverted * 1.1,
+      tax: periodPriceConverted * 0.1,
+      totalCost: periodPriceConverted * 1.1,
       contactCount: contactCount,
       currency: selectedCurrency,
       currencySymbol: getCurrencySymbol(),
       isFromPricingDash: false,
       pricingModel: "multiplier",
       discountApplied: true,
-      discountAmount: priceConverted,
-      isNewUser: true // Assume new user for discount
+      discountAmount: baseMonthlyPriceConverted,
+      isNewUser: true
     };
 
     localStorage.setItem("pendingUpgradePlan", JSON.stringify(planDetails));
@@ -222,25 +289,25 @@ const Pricing = () => {
 
   const keyPlanFeatures = {
     free: [
-      { label: 'Monthly Email Sends', value: 'Max of 1,000/mo' },
-      { label: 'SMS and MMS add-on', value: 'Not included' },
-      { label: 'Marketing Automation Flows', value: 'Not included' },
-     ],
+      { label: 'Marketing Automation Flows', value: 'Included' },
+    ],
     essentials: [
-      { label: 'Monthly Email Sends', value: '10X contacts' },
-      { label: 'SMS add-on', value: 'SMS add-on' },
       { label: 'Marketing Automation Flows', value: 'Up to 4 flow steps' },
-     
+      { label: 'Email Sending', value: 'Only email sending' },
     ],
     standard: [
-      { label: 'Monthly Email Sends', value: '12X contacts' },
-      { label: 'SMS and MMS add-on', value: 'SMS and MMS add-on' },
+    
       { label: 'Marketing Automation Flows', value: 'Up to 200 flow steps' },
-     ],
+      { label: 'Email Sending', value: 'Included' },
+      { label: 'Email Validation', value: 'Included' },
+    ],
     premium: [
-      { label: 'Monthly Email Sends', value: '15X contacts' },
-      { label: 'SMS and MMS add-on', value: 'SMS and MMS add-on' },
+       
       { label: 'Marketing Automation Flows', value: 'Up to 200 flow steps' },
+      { label: 'Email Sending', value: 'Included' },
+      { label: 'Email Validation', value: 'Included' },
+      { label: 'SMS+ Whatsapp Campaign', value: 'Included' },
+      { label: 'CRM', value: 'CRM access' },
       { label: 'Premium Migration Services', value: 'Contact Sales' }
     ]
   };
@@ -250,7 +317,6 @@ const Pricing = () => {
       name: 'Core Features',
       icon: Mail,
       features: [
-        { name: 'Remove Mailchimp Branding', free: false, essentials: true, standard: true, premium: true },
         { name: 'Email Scheduling', free: false, essentials: true, standard: true, premium: true },
         { name: 'A/B Testing', free: false, essentials: 'Limited', standard: true, premium: true },
         { name: 'Custom Templates', free: false, essentials: false, standard: true, premium: true },
@@ -335,45 +401,6 @@ const Pricing = () => {
     } 
   ];
 
-  const faqs = [
-    {
-      q: 'How long is the Free Trial?',
-      a: 'The free trial of Standard or Essentials lasts for 14 days. For example, if you start your trial on August 29, your trial would end on September 12.'
-    },
-    {
-      q: 'Can I upgrade or downgrade during my trial?',
-      a: 'Yes! You can upgrade or downgrade at any time during your trial. If you upgrade to Premium, you will pay the difference in price between the two plans for the remaining days.'
-    },
-    {
-      q: 'What happens after my Free Trial ends?',
-      a: 'We will send you reminders with upcoming billing estimates before your trial ends. When the free trial ends, you will be charged the then-current monthly fee.'
-    },
-    {
-      q: 'Can I cancel during the free trial?',
-      a: 'If you cancel your subscription during the free trial, you will not be charged for any services. You can pause or delete your account at any time.'
-    },
-    {
-      q: 'How do I add SMS marketing?',
-      a: 'SMS marketing is available in select markets with a paid plan. After you agree to the terms and get approved, you can purchase SMS credits.'
-    },
-    {
-      q: 'How do SMS credits work?',
-      a: 'Credits are purchased in blocks as an add-on to a paid monthly plan. Credit blocks are automatically re-purchased each month. Unused credits expire monthly.'
-    },
-    {
-      q: 'Can I buy email credits instead?',
-      a: 'Yes. If you send emails infrequently and prefer to pay as you go, you can buy email credits as an alternative to a monthly plan.'
-    },
-    {
-      q: 'Do prices vary by currency?',
-      a: 'Yes. Prices are displayed in multiple currencies for your convenience. All prices are converted from USD at current exchange rates and may vary slightly based on market conditions. The currency you select will be used throughout your purchase process.'
-    },
-    {
-      q: 'Do you have plans for high-volume senders?',
-      a: 'Yes. If you have more than 200,000 contacts, we have a high-volume plan that can meet your needs.'
-    }
-  ];
-
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
       ...prev,
@@ -389,26 +416,22 @@ const Pricing = () => {
 
   const PlanCard = ({ planKey, plan }) => {
     const pricing = getCurrentPricing();
-    const priceUSD = planKey === 'free' ? 0 : pricing[planKey];
-    const price = convertPrice(priceUSD);
-    const originalPriceUSD = planKey === 'free' ? 0 : (priceUSD * 2);
-    const originalPrice = convertPrice(originalPriceUSD);
-    const yearlyPriceUSD = planKey === 'free' ? 0 : (originalPriceUSD * 12);
-    const yearlyPrice = convertPrice(yearlyPriceUSD);
-    const currencySymbol = getCurrencySymbol();
-    const Icon = plan.icon;
+    const monthlyPriceUSD = planKey === 'free' ? 0 : pricing[planKey];
+    const periodInfo = billingPeriods[billingPeriod];
     
+  // Apply 50% discount correctly
+  const originalMonthlyUSD = monthlyPriceUSD;
+  const discountedMonthlyUSD = originalMonthlyUSD * 0.5;
+  const periodPriceUSD = calculatePrice(discountedMonthlyUSD);
+  const originalPeriodPriceUSD = calculatePrice(originalMonthlyUSD);
+
+    
+    const Icon = plan.icon;
     const planContactLimit = getPlanContactLimit(planKey);
     const planAvailable = isPlanAvailable(planKey);
     
-    let emailSendLimit;
-    if (planKey === 'free') {
-      emailSendLimit = plan.emailLimit;
-    } else {
-      emailSendLimit = contactCount * plan.emailMultiplier;
-    }
-    
-    const displayContactCount = planKey === 'free' ? Math.min(contactCount, 500) : contactCount;
+    const emailSendLimit = planKey === 'free' ? plan.emailLimit : contactCount * plan.emailMultiplier;
+    const emailValidationLimit = planKey === 'free' ? 0 : contactCount * (plan.emailValidationMultiplier || 0);
     
     return (
       <div className={`relative bg-gray-900 rounded-2xl border-2 ${
@@ -448,19 +471,21 @@ const Pricing = () => {
               <>
                 <div className="flex flex-col sm:flex-row sm:items-baseline">
                   <div className="text-4xl font-bold text-white">
-                    {formatPrice(priceUSD)}
-                    <span className="text-lg text-gray-300 font-normal">/mo</span>
+                    {formatPrice(periodPriceUSD)}
+                    <span className="text-lg text-gray-300 font-normal">/{periodInfo.displayText}</span>
                   </div>
-                   <div className="ml-0 sm:ml-2 text-green-500 font-bold text-sm">
-                    50% OFF
-                  </div>
+                  
                 </div>
-                <div className="ml-0 sm:ml-3 text-lg text-gray-400 line-through">
-                    {formatPrice(originalPriceUSD)}
+                <div className="ml-0 sm:ml-2 flex flex-wrap gap-2 mt-2 sm:mt-0">
+                    <div className="text-green-500 font-bold text-[13px] bg-green-500/10 px-2 py-1 rounded">
+                      50% OFF
+                    </div>
                   </div>
-                
-                <div className="mt-3">
-                  <div className="text-sm text-gray-300">12 months: <span className="font-semibold text-white">{formatPrice(yearlyPriceUSD)}/yr</span></div>
+                <div className="text-sm text-gray-400 mt-2">
+                  {formatPrice(getPerContactRate(planKey, contactCount))} per contact
+                </div>
+                <div className="ml-0 sm:ml-3 text-lg text-gray-400 line-through mt-1">
+                  {formatPrice(originalPeriodPriceUSD)}
                 </div>
               </>
             )}
@@ -470,18 +495,23 @@ const Pricing = () => {
           </div>
 
           <div className="mb-6 bg-gray-800 rounded-xl p-4">
+            {/* Email Sending */}
             <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-400">Contacts:</span>
+              <span className="text-sm text-gray-400">Email Sending:</span>
               <span className="text-sm font-semibold text-white">
-                {planKey === 'free' ? 'Up to 500' : displayContactCount.toLocaleString()}
-                {planKey !== 'free' && planKey !== 'premium' && ` (Limit: ${planContactLimit.toLocaleString()})`}
-                {planKey === 'premium' && ' (Unlimited)'}
+                {planKey === 'free' ? plan.emailLimit.toLocaleString() : contactCount.toLocaleString()} emails
               </span>
             </div>
-            <div className="flex justify-between items-center">
-              <span className="text-sm text-gray-400">Email Sends:</span>
-              <span className="text-sm font-semibold text-white">{emailSendLimit.toLocaleString()}/mo</span>
-            </div>
+
+            {/* Email Validation - only for Standard and Premium */}
+            {planKey !== 'free' && (
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-gray-400">Email Validation:</span>
+                <span className="text-sm font-semibold text-white">
+                  {emailValidationLimit > 0 ? `${emailValidationLimit.toLocaleString()} validations` : 'Not included'}
+                </span>
+              </div>
+            )}
           </div>
 
           <div className="mb-6 flex-1">
@@ -516,8 +546,9 @@ const Pricing = () => {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      <Navbar />
+    <PageLayout>
+    <div className="min-h-screen text-white">
+
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
         <div className="text-center mb-8 sm:mb-12 mt-15">
           <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 py-5 text-[#c2831f]">
@@ -526,6 +557,25 @@ const Pricing = () => {
           <p className="text-lg sm:text-xl text-gray-300 max-w-3xl mx-auto px-4">
             Choose the plan that fits your business needs. All plans include powerful email marketing, automation, and analytics.
           </p>
+        </div>
+
+        {/* Billing Period Selector */}
+        <div className="max-w-md mx-auto mb-8">
+          <div className="bg-gray-800 rounded-xl p-1 flex gap-1">
+            {Object.entries(billingPeriods).map(([key, period]) => (
+              <button
+                key={key}
+                onClick={() => setBillingPeriod(key)}
+                className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
+                  billingPeriod === key
+                    ? 'bg-[#c2831f] text-white'
+                    : 'text-gray-300 hover:text-white'
+                }`}
+              >
+                <div className="text-sm">{period.label}</div>
+              </button>
+            ))}
+          </div>
         </div>
 
         <div className="max-w-4xl mx-auto mb-8 px-4">
@@ -673,34 +723,6 @@ const Pricing = () => {
           </div>
         )}
 
-        <div className="max-w-4xl mx-auto mb-16">
-          <h2 className="text-3xl font-bold text-center mb-8 text-[#c2831f]">Frequently Asked Questions</h2>
-          <div className="space-y-4">
-            {faqs.map((faq, idx) => {
-              const isExpanded = expandedSections[`faq-${idx}`];
-              return (
-                <div key={idx} className="bg-gray-900 rounded-xl border border-gray-800 overflow-hidden">
-                  <button
-                    onClick={() => toggleSection(`faq-${idx}`)}
-                    className="w-full p-6 text-left flex items-center justify-between hover:bg-gray-800 transition-colors"
-                  >
-                    <h3 className="font-semibold text-lg text-white pr-4">{faq.q}</h3>
-                    {isExpanded ? 
-                      <ChevronUp className="w-5 h-5 text-[#c2831f] flex-shrink-0" /> : 
-                      <ChevronDown className="w-5 h-5 text-[#c2831f] flex-shrink-0" />
-                    }
-                  </button>
-                  {isExpanded && (
-                    <div className="px-6 pb-6">
-                      <p className="text-gray-300 leading-relaxed">{faq.a}</p>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
-
         <div className="bg-gradient-to-r from-[#c2831f]/20 via-[#c2831f]/30 to-[#c2831f]/20 rounded-2xl border-2 border-[#c2831f]/50 p-8 sm:p-12 mb-16">
           <div className="max-w-3xl mx-auto text-center">
             <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-[#c2831f]">Ready to Get Started?</h2>
@@ -732,8 +754,9 @@ const Pricing = () => {
           <p>Selected currency: {selectedCurrency} {currencyRates[selectedCurrency].symbol}</p>
         </div>
       </div>
-      <Footer />
+      
     </div>
+    </PageLayout>
   );
 };
 

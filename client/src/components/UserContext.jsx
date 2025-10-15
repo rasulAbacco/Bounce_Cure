@@ -1,6 +1,5 @@
 // client/src/components/UserContext.jsx
 import React, { createContext, useState, useEffect } from 'react';
-import { getUserPlan, getCurrentPlanFeatures, getContactUsage } from '../utils/PlanAccessControl';
 
 export const UserContext = createContext();
 
@@ -16,54 +15,60 @@ export const UserProvider = ({ children }) => {
         contactsRemaining: 500
     });
 
-    // Load user data from localStorage on mount
-    useEffect(() => {
-        const loadUserData = () => {
-            try {
-                // Get basic user info
-                const userName = localStorage.getItem('userName') || '';
-                const userEmail = localStorage.getItem('userEmail') || sessionStorage.getItem('userEmail') || '';
-                const profileImage = localStorage.getItem('profileImage') || '';
-                
-                // Get plan information
-                const planName = getUserPlan();
-                const planFeatures = getCurrentPlanFeatures();
-                const contactUsage = getContactUsage();
-                
-                console.log('📊 Loading user data:', {
-                    plan: planName,
-                    features: planFeatures,
-                    usage: contactUsage
-                });
-                
-                setUser({
-                    name: userName,
-                    email: userEmail,
-                    profileImage: profileImage,
-                    plan: planName,
-                    contactLimit: planFeatures.maxContacts,
-                    emailLimit: planFeatures.maxEmails,
-                    contactsUsed: contactUsage.used,
-                    contactsRemaining: contactUsage.remaining
-                });
-            } catch (error) {
-                console.error('Error loading user data:', error);
-            }
-        };
+    // Utility functions to read from localStorage
+    const getUserPlan = () => localStorage.getItem('userPlan') || 'Free';
+    
+    const getCurrentPlanFeatures = () => {
+        const features = JSON.parse(localStorage.getItem('planFeatures') || '{}');
+        return features.maxContacts ? features : { maxContacts: 500, maxEmails: 1000 };
+    };
 
+    const getContactUsage = () => {
+        const usage = JSON.parse(localStorage.getItem('contactUsage') || '{}');
+        return usage.used !== undefined ? usage : { used: 0, remaining: 500 };
+    };
+
+    const loadUserData = () => {
+        try {
+            const userName = localStorage.getItem('userName') || '';
+            const userEmail = localStorage.getItem('userEmail') || sessionStorage.getItem('userEmail') || '';
+            const profileImage = localStorage.getItem('profileImage') || '';
+
+            const planName = getUserPlan();
+            const planFeatures = getCurrentPlanFeatures();
+            const contactUsage = getContactUsage();
+
+            const newUser = {
+                name: userName,
+                email: userEmail,
+                profileImage,
+                plan: planName,
+                contactLimit: planFeatures.maxContacts,
+                emailLimit: planFeatures.maxEmails,
+                contactsUsed: contactUsage.used,
+                contactsRemaining: contactUsage.remaining
+            };
+
+            // Only update state if data changed to prevent unnecessary re-renders
+            setUser(prev => JSON.stringify(prev) !== JSON.stringify(newUser) ? newUser : prev);
+        } catch (error) {
+            console.error('Error loading user data:', error);
+        }
+    };
+
+    useEffect(() => {
         loadUserData();
 
-        // Set up event listener for storage changes (for cross-tab sync)
+        // Cross-tab sync
         const handleStorageChange = (e) => {
-            if (e.key === 'userPlan' || e.key === 'totalContacts' || e.key === 'usedContacts') {
-                console.log('🔄 Storage changed, reloading user data');
+            if (['userPlan', 'planFeatures', 'contactUsage', 'userName', 'userEmail', 'profileImage'].includes(e.key)) {
                 loadUserData();
             }
         };
 
         window.addEventListener('storage', handleStorageChange);
 
-        // Poll for updates every 30 seconds
+        // Poll every 30s
         const interval = setInterval(loadUserData, 30000);
 
         return () => {
@@ -72,21 +77,9 @@ export const UserProvider = ({ children }) => {
         };
     }, []);
 
-    // Method to manually refresh user data
+    // Manual refresh
     const refreshUserData = () => {
-        const planName = getUserPlan();
-        const planFeatures = getCurrentPlanFeatures();
-        const contactUsage = getContactUsage();
-        
-        setUser(prev => ({
-            ...prev,
-            plan: planName,
-            contactLimit: planFeatures.maxContacts,
-            emailLimit: planFeatures.maxEmails,
-            contactsUsed: contactUsage.used,
-            contactsRemaining: contactUsage.remaining
-        }));
-        
+        loadUserData();
         console.log('🔄 User data refreshed');
     };
 

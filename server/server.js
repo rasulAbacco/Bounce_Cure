@@ -57,8 +57,8 @@ import razorpayRoutes from './routes/razorpay.js';
 import creditcardRoutes from './routes/creditcard.js';
 import contactRoutes from './routes/ContactUs.js';
 import userRoutes from './routes/user.js';
+import customRoutes from "./routes/customRoutes.js";
 
-// ENV setup
 dotenv.config();
 
 // Init
@@ -167,7 +167,8 @@ app.use("/api/verified-emails", protect, verifiedEmailsRouter);
 app.use('/api/analytics', protect, analyticsRouter);
 
 app.use('/api/contact', contactRoutes);
-   
+
+app.use("/api/custom", customRoutes);
 
 
 
@@ -250,4 +251,6 @@ app.get('/verify-email', async (req, res) => {
     console.error("Email verification error:", error);
     res.status(500).send('An error occurred during email verification');
   }
+
+
 });
