@@ -1,3 +1,4 @@
+// orders.jsx
 import React, { useState, useMemo, useEffect } from "react";
 const API_URL1 = import.meta.env.VITE_VRI_URL;
 const API_URL = `${API_URL1}/orders`; // Your Express API
@@ -59,7 +60,7 @@ const Orders = () => {
       const data = await res.json();
       setOrders(data);
     } catch (err) {
-      console.error("Failed to fetch orders:", err);
+      console.error("Failed to fetch orders:", err);  
       // Fallback to mock data for development
       setOrders(mockOrders);
     } finally {
@@ -322,12 +323,12 @@ const Orders = () => {
             {orders.filter((o) => o.status === "Paid" || o.status === "Delivered").length}
           </div>
         </div>
-        <div className="bg-gray-900 p-5 rounded-lg shadow-sm border border-gray-700">
+        {/* <div className="bg-gray-900 p-5 rounded-lg shadow-sm border border-gray-700">
           <div className="text-gray-300 text-lg font-bold mb-1">Revenue</div>
           <div className="text-2xl font-bold text-indigo-400">
             ${calculateRevenue()}
           </div>
-        </div>
+        </div> */}
       </div>
 
       {/* Filters and Search */}

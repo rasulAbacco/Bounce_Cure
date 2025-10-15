@@ -6,28 +6,18 @@ import nodemailer from 'nodemailer';
  * Initialize SendGrid with API key
  */
 export function initSendGrid() {
-  const apiKey = process.env.SENDGRID_CMP_API_KEY;
+  const apiKey = process.env.SENDGRID_CMP_API_KEY; // ✅ use correct env var
   if (!apiKey) {
-    console.warn('SendGrid API key not found in environment variables');
+    console.warn('⚠️ SendGrid API key not found in environment variables (SENDGRID_CMP_API_KEY)');
     return false;
   }
   sgMail.setApiKey(apiKey);
-  console.log('SendGrid initialized successfully');
+  console.log('✅ SendGrid initialized successfully');
   return true;
 }
 
 /**
  * Send email using SendGrid API
- * @param {Object} options - Email options
- * @param {string} options.from - Sender email (must be verified in SendGrid)
- * @param {string} options.fromName - Sender name
- * @param {string} options.to - Recipient email
- * @param {string} options.subject - Email subject
- * @param {string} options.text - Plain text content
- * @param {string} options.html - HTML content
- * @param {string} options.inReplyTo - Message ID this is replying to
- * @param {string} options.references - Reference message IDs
- * @param {string} options.messageId - Custom message ID
  */
 export async function sendEmailViaSendGrid(options) {
   try {
@@ -40,57 +30,51 @@ export async function sendEmailViaSendGrid(options) {
       subject: options.subject,
       text: options.text,
       html: options.html,
-      // Custom headers for threading
       headers: {}
     };
 
-    // Add threading headers if available
-    if (options.inReplyTo) {
-      msg.headers['In-Reply-To'] = options.inReplyTo;
-    }
-    if (options.references) {
-      msg.headers['References'] = options.references;
-    }
-    if (options.messageId) {
-      msg.headers['Message-ID'] = options.messageId;
+    // Threading headers
+    if (options.inReplyTo) msg.headers['In-Reply-To'] = options.inReplyTo;
+    if (options.references) msg.headers['References'] = options.references;
+    if (options.messageId) msg.headers['Message-ID'] = options.messageId;
+
+    if (options.attachments && options.attachments.length > 0) {
+      msg.attachments = options.attachments;
     }
 
     const response = await sgMail.send(msg);
-    console.log('SendGrid email sent successfully:', {
+    console.log('✅ SendGrid email sent successfully:', {
       to: options.to,
-      messageId: response[0].headers['x-message-id']
+      messageId: response[0].headers['x-message-id'] || options.messageId,
     });
 
     return {
       success: true,
-      messageId: options.messageId,
-      response: response[0]
+      method: 'sendgrid',
+      messageId: response[0].headers['x-message-id'] || options.messageId,
     };
   } catch (error) {
-    console.error('SendGrid send error:', error);
-    
-    // Parse SendGrid error
-    if (error.response) {
+    console.error('❌ SendGrid send error:', error.message);
+    if (error.response?.body) {
       console.error('SendGrid error details:', error.response.body);
     }
-    
     throw new Error(`SendGrid failed: ${error.message}`);
   }
 }
 
 /**
- * Create SMTP transporter (fallback method)
- * This is kept for accounts that use SMTP instead of SendGrid
+ * Create SMTP transporter (fallback)
  */
 export async function createTransporter(account) {
   if (!account || !account.smtpHost) {
     throw new Error("Account SMTP configuration is missing");
   }
 
-  const transporter = nodemailer.createTransporter({
+  // ✅ Fixed createTransporter → createTransport
+  const transporter = nodemailer.createTransport({
     host: account.smtpHost,
     port: account.smtpPort || 587,
-    secure: account.smtpPort === 465,
+    secure: account.smtpPort === 465, // true for 465, false for others
     auth: {
       user: account.smtpUser || account.email,
       pass: account.smtpPassword,
@@ -98,47 +82,27 @@ export async function createTransporter(account) {
   });
 
   await transporter.verify();
+  console.log(`✅ SMTP transporter verified for ${account.email}`);
   return transporter;
 }
 
 /**
- * Send email using the best available method
- * Tries SendGrid first, falls back to SMTP if account has SMTP config
+ * Send email using SendGrid (primary) or SMTP (fallback)
  */
 export async function sendEmail(options, account) {
-  // Try SendGrid first if API key is available
-  if (process.env.SENDGRID_API_KEY) {
+  // ✅ Try SendGrid first (using correct env variable)
+  if (process.env.SENDGRID_CMP_API_KEY) {
     try {
-      return await sendEmailViaSendGrid(options);
+      const result = await sendEmailViaSendGrid(options);
+      console.log('📬 Sending via SendGrid');
+      return result;
     } catch (error) {
-      console.error('SendGrid failed, trying SMTP fallback:', error.message);
-      
-      // If SendGrid fails and we have SMTP config, try SMTP
-      if (account?.smtpHost) {
-        const transporter = await createTransporter(account);
-        const info = await transporter.sendMail({
-          from: `"${options.fromName}" <${options.from}>`,
-          to: options.to,
-          subject: options.subject,
-          text: options.text,
-          html: options.html,
-          inReplyTo: options.inReplyTo,
-          references: options.references,
-          messageId: options.messageId,
-        });
-        
-        return {
-          success: true,
-          messageId: info.messageId,
-          method: 'smtp'
-        };
-      }
-      
-      throw error;
+      console.error('⚠️ SendGrid failed, trying SMTP fallback:', error.message);
+      // Continue to fallback below
     }
   }
-  
-  // If no SendGrid key, try SMTP
+
+  // ✅ Fallback to SMTP if configured
   if (account?.smtpHost) {
     const transporter = await createTransporter(account);
     const info = await transporter.sendMail({
@@ -150,14 +114,17 @@ export async function sendEmail(options, account) {
       inReplyTo: options.inReplyTo,
       references: options.references,
       messageId: options.messageId,
+      attachments: options.attachments || [],
     });
-    
+
+    console.log('✅ Email sent successfully via SMTP:', info.messageId);
     return {
       success: true,
+      method: 'smtp',
       messageId: info.messageId,
-      method: 'smtp'
     };
   }
-  
-  throw new Error('No email sending method available (no SendGrid API key or SMTP config)');
+
+  // ❌ No send method available
+  throw new Error('No email sending method available (missing SendGrid API key and SMTP config)');
 }

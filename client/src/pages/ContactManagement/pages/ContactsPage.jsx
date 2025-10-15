@@ -38,14 +38,10 @@ function ContactsPage() {
   };
 
   const badgeStyle = {
-    Active:
-      "bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700",
-    Inactive:
-      "bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-400 border border-red-300 dark:border-red-700",
-    Prospect:
-      "bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 border border-blue-300 dark:border-blue-700",
-    Customer:
-      "bg-yellow-100 dark:bg-yellow-900/40 text-yellow-700 dark:text-yellow-400 border border-yellow-300 dark:border-yellow-700",
+    Active: "bg-green-900/40 text-green-400 border border-green-700",
+    Inactive: "bg-red-900/40 text-red-400 border border-red-700",
+    Prospect: "bg-blue-900/40 text-blue-400 border border-blue-700",
+    Customer: "bg-yellow-900/40 text-yellow-400 border border-yellow-700",
   };
   
   const [modalOpen, setModalOpen] = useState(false);
@@ -237,13 +233,13 @@ function ContactsPage() {
   }, [page, search]);
 
   return (
-    <div className="space-y-10 px-4 py-8 sm:px-6 lg:px-8">
+    <div className="space-y-10 px-4 py-8 sm:px-6 lg:px-8 bg-black min-h-screen">
       {/* Page Header */}
       <div>
-        <h1 className="text-3xl font-bold text-yellow-500 flex items-center gap-2">
-          <User className="w-7 h-7" /> Contacts
+        <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-yellow-600 flex items-center gap-2">
+          <User className="w-7 h-7 text-yellow-500" /> Contacts
         </h1>
-        <p className="text-zinc-600 dark:text-zinc-400 mt-2 text-sm">
+        <p className="text-gray-400 mt-2 text-sm">
           Manage all your contacts, companies, and recent interactions in one
           place.
         </p>
@@ -259,10 +255,10 @@ function ContactsPage() {
         ].map((stat, i) => (
           <div
             key={i}
-            className="bg-black dark:bg-zinc-900 p-5 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm transition"
+            className="bg-gray-900 p-5 rounded-xl border border-gray-800 shadow-sm transition"
           >
-            <p className="text-sm text-zinc-500 dark:text-zinc-400">{stat.label}</p>
-            <p className="text-2xl font-bold text-zinc-800 dark:text-white mt-1">
+            <p className="text-sm text-gray-400">{stat.label}</p>
+            <p className="text-2xl font-bold text-white mt-1">
               {stat.value}
             </p>
           </div>
@@ -271,18 +267,18 @@ function ContactsPage() {
       
       {/* Search & Filter */}
       <div className="flex flex-col sm:flex-row gap-4 sm:items-center justify-between">
-        <div className="flex items-center gap-2 bg-black dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-800 rounded-lg px-3 py-2 w-full sm:w-1/3">
-          <Search className="w-4 h-4 text-zinc-400" />
+        <div className="flex items-center gap-2 bg-gray-900 border border-gray-700 rounded-lg px-3 py-2 w-full sm:w-1/3">
+          <Search className="w-4 h-4 text-gray-500" />
           <input
             type="text"
             placeholder="Search contacts..."
-            className="bg-transparent outline-none w-full text-sm text-zinc-800 dark:text-white"
+            className="bg-transparent outline-none w-full text-sm text-white placeholder-gray-500"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
         </div>
         <div className="flex gap-3">
-          <button className="flex items-center gap-2 px-3 py-2 bg-black dark:bg-zinc-900 border border-zinc-300 dark:border-zinc-700 rounded-lg text-sm text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition">
+          <button className="flex items-center gap-2 px-3 py-2 bg-gray-900 border border-gray-700 rounded-lg text-sm text-gray-300 hover:bg-gray-800 transition">
             <Filter className="w-4 h-4" /> Filter
           </button>
         </div>
@@ -291,10 +287,10 @@ function ContactsPage() {
       {/* Header Actions */}
       <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-yellow-500 flex items-center gap-2">
-            <User className="w-7 h-7" /> Contacts
+          <h1 className="text-3xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-yellow-600 flex items-center gap-2">
+            <User className="w-7 h-7 text-yellow-500" /> Contacts
           </h1>
-          <p className="text-zinc-600 dark:text-zinc-400 text-sm mt-1">
+          <p className="text-gray-400 text-sm mt-1">
             Manage all your contacts, companies, and interactions.
           </p>
         </div>
@@ -303,13 +299,13 @@ function ContactsPage() {
             data={allContacts}
             headers={headers}
             filename={`contacts_export_${Date.now()}.csv`}
-            className="bg-green-500 text-black px-4 py-2 rounded-lg hover:bg-green-400 transition"
+            className="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-500 transition"
           >
             Export CSV
           </CSVLink>
           <button
             onClick={() => setModalOpen(true)}
-            className="flex items-center gap-2 bg-yellow-500 text-black px-4 py-2 rounded-lg hover:bg-yellow-400 transition"
+            className="flex items-center gap-2 bg-gradient-to-r from-yellow-500 to-yellow-600 text-black px-4 py-2 rounded-lg hover:from-yellow-400 hover:to-yellow-500 transition"
           >
             <Plus className="w-4 h-4" /> Add Contact
           </button>
@@ -318,7 +314,7 @@ function ContactsPage() {
       
       {/* Error Message */}
       {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg">
+        <div className="bg-red-900/30 border border-red-700 text-red-400 px-4 py-3 rounded-lg">
           Error: {error}
         </div>
       )}
@@ -328,16 +324,16 @@ function ContactsPage() {
         <div className="flex justify-center items-center h-64">
           <div className="text-center">
             <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-yellow-500 mx-auto"></div>
-            <p className="mt-4 text-zinc-600 dark:text-zinc-400">Loading contacts...</p>
+            <p className="mt-4 text-gray-400">Loading contacts...</p>
           </div>
         </div>
       ) : (
         <>
           {/* Contacts Table */}
-          <div className="overflow-x-auto border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm">
+          <div className="overflow-x-auto border border-gray-800 rounded-xl shadow-sm">
             <table className="min-w-full text-sm">
               <thead>
-                <tr className="bg-zinc-100 dark:bg-zinc-900 text-zinc-500 dark:text-zinc-400 border-b border-zinc-200 dark:border-zinc-800">
+                <tr className="bg-gray-900 text-gray-400 border-b border-gray-800">
                   {[
                     "Name",
                     "Email",
@@ -362,33 +358,33 @@ function ContactsPage() {
                   contacts.map((c) => (
                     <tr
                       key={c.id}
-                      className="border-b border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition"
+                      className="border-b border-gray-800 hover:bg-gray-900/50 transition"
                     >
-                      <td className="px-4 py-3 whitespace-nowrap text-zinc-800 dark:text-white">
+                      <td className="px-4 py-3 whitespace-nowrap text-white">
                         <div className="flex items-center gap-2">
                           <User className="w-4 h-4 text-yellow-500" />
                           {c.name}
                         </div>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-zinc-600 dark:text-zinc-300">
+                      <td className="px-4 py-3 whitespace-nowrap text-gray-300">
                         <div className="flex items-center gap-2">
-                          <Mail className="w-4 h-4 text-zinc-400" />
+                          <Mail className="w-4 h-4 text-gray-500" />
                           {c.email}
                         </div>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-zinc-600 dark:text-zinc-300">
+                      <td className="px-4 py-3 whitespace-nowrap text-gray-300">
                         <div className="flex items-center gap-2">
-                          <Phone className="w-4 h-4 text-zinc-400" />
+                          <Phone className="w-4 h-4 text-gray-500" />
                           {c.phone}
                         </div>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-zinc-500 dark:text-zinc-400">
+                      <td className="px-4 py-3 whitespace-nowrap text-gray-400">
                         <div className="flex items-center gap-2">
-                          <Building2 className="w-4 h-4 text-zinc-400" />
+                          <Building2 className="w-4 h-4 text-gray-500" />
                           {c.company}
                         </div>
                       </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-zinc-500 dark:text-zinc-400">
+                      <td className="px-4 py-3 whitespace-nowrap text-gray-400">
                         <select
                           value={editPriority[c.id] ?? c.priority}
                           onChange={(e) =>
@@ -397,7 +393,7 @@ function ContactsPage() {
                               [c.id]: e.target.value,
                             })
                           }
-                          className="border px-2 py-1 rounded"
+                          className="bg-gray-800 border border-gray-700 px-2 py-1 rounded text-white"
                         >
                           <option value="vip">VIP</option>
                           <option value="subscriber">Subscriber</option>
@@ -411,8 +407,8 @@ function ContactsPage() {
                           }
                           className={`ml-2 px-2 py-1 rounded ${editPriority[c.id] !== undefined &&
                             editPriority[c.id] !== c.priority
-                            ? "bg-yellow-500 hover:bg-yellow-400 text-black font-bold"
-                            : "bg-gray-300 text-black font-bold cursor-not-allowed"
+                            ? "bg-gradient-to-r from-yellow-500 to-yellow-600 text-black font-bold"
+                            : "bg-gray-700 text-gray-400 font-bold cursor-not-allowed"
                             }`}
                         >
                           Save
@@ -425,13 +421,13 @@ function ContactsPage() {
                           {c.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-zinc-500 dark:text-zinc-400 whitespace-nowrap">
+                      <td className="px-4 py-3 text-gray-400 whitespace-nowrap">
                         {c.last}
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap">
                         <button
                           onClick={() => deleteContact(c.id)}
-                          className="text-red-600 hover:text-red-800 text-sm font-bold"
+                          className="text-red-400 hover:text-red-300 text-sm font-bold"
                         >
                           Delete
                         </button>
@@ -440,7 +436,7 @@ function ContactsPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={8} className="text-center py-8 text-zinc-500">
+                    <td colSpan={8} className="text-center py-8 text-gray-500">
                       No contacts found
                     </td>
                   </tr>
@@ -450,35 +446,35 @@ function ContactsPage() {
           </div>
           
           <div className="flex justify-between items-center mt-4">
-            <p className="text-sm text-zinc-400">
+            <p className="text-sm text-gray-500">
               Page {page} of {totalPages}
             </p>
             <div className="flex gap-2">
               <button
                 onClick={() => setPage(1)}
                 disabled={page === 1}
-                className="px-3 py-1 text-sm rounded bg-zinc-700 text-white hover:bg-zinc-600 disabled:opacity-40"
+                className="px-3 py-1 text-sm rounded bg-gray-800 text-white hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 First
               </button>
               <button
                 onClick={() => setPage((prev) => Math.max(prev - 1, 1))}
                 disabled={page === 1}
-                className="px-3 py-1 text-sm rounded bg-zinc-700 text-white hover:bg-zinc-600 disabled:opacity-40"
+                className="px-3 py-1 text-sm rounded bg-gray-800 text-white hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Prev
               </button>
               <button
                 onClick={() => setPage((prev) => Math.min(prev + 1, totalPages))}
                 disabled={page === totalPages}
-                className="px-3 py-1 text-sm rounded bg-zinc-700 text-white hover:bg-zinc-600 disabled:opacity-40"
+                className="px-3 py-1 text-sm rounded bg-gray-800 text-white hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Next
               </button>
               <button
                 onClick={() => setPage(totalPages)}
                 disabled={page === totalPages}
-                className="px-3 py-1 text-sm rounded bg-zinc-700 text-white hover:bg-zinc-600 disabled:opacity-40"
+                className="px-3 py-1 text-sm rounded bg-gray-800 text-white hover:bg-gray-700 disabled:opacity-40 disabled:cursor-not-allowed"
               >
                 Last
               </button>
@@ -488,9 +484,9 @@ function ContactsPage() {
       )}
       
       {/* Bar Chart Insights */}
-      <div className="bg-black dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm">
-        <h2 className="text-xl font-semibold text-yellow-500 mb-4 flex items-center gap-2">
-          <BarChart3 className="w-[1rem] h-5" /> Contacts by Status
+      <div className="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow-sm">
+        <h2 className="text-xl font-semibold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-yellow-600 mb-4 flex items-center gap-2">
+          <BarChart3 className="w-[1rem] h-5 text-yellow-500" /> Contacts by Status
         </h2>
         <div className="h-64">
           <ResponsiveContainer width="100%" height="100%">
@@ -516,16 +512,16 @@ function ContactsPage() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.3 }}
-            className="relative bg-black dark:bg-zinc-950 p-6 rounded-xl border border-zinc-300 dark:border-zinc-800 shadow-xl w-full max-w-md"
+            className="relative bg-gray-900 p-6 rounded-xl border border-gray-800 shadow-xl w-full max-w-md"
           >
-            <h3 className="text-lg font-semibold text-yellow-500 mb-4">
+            <h3 className="text-lg font-semibold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-yellow-600 mb-4">
               Add New Contact
             </h3>
             <form onSubmit={addContact} className="space-y-4">
               {["name", "email", "phone", "company", "priority", "status"].map(
                 (field) => (
                   <div key={field} className="flex flex-col">
-                    <label className="text-sm text-zinc-700 dark:text-zinc-400 mb-1 capitalize">
+                    <label className="text-sm text-gray-400 mb-1 capitalize">
                       {field}
                     </label>
                     {field === "priority" ? (
@@ -534,7 +530,7 @@ function ContactsPage() {
                         onChange={(e) =>
                           setNewContact({ ...newContact, [field]: e.target.value })
                         }
-                        className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg outline-none text-zinc-800 dark:text-zinc-100"
+                        className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg outline-none text-white"
                       >
                         <option value="vip">VIP</option>
                         <option value="subscriber">Subscriber</option>
@@ -546,7 +542,7 @@ function ContactsPage() {
                         onChange={(e) =>
                           setNewContact({ ...newContact, [field]: e.target.value })
                         }
-                        className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg outline-none text-zinc-800 dark:text-zinc-100"
+                        className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg outline-none text-white"
                       >
                         <option value="Active">Active</option>
                         <option value="Inactive">Inactive</option>
@@ -560,7 +556,7 @@ function ContactsPage() {
                         onChange={(e) =>
                           setNewContact({ ...newContact, [field]: e.target.value })
                         }
-                        className="px-3 py-2 bg-zinc-100 dark:bg-zinc-800 border border-zinc-300 dark:border-zinc-700 rounded-lg outline-none text-zinc-800 dark:text-zinc-100"
+                        className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-lg outline-none text-white"
                       />
                     )}
                   </div>
@@ -570,13 +566,13 @@ function ContactsPage() {
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 rounded-lg border border-zinc-300 dark:border-zinc-700 hover:bg-zinc-200 dark:hover:bg-zinc-800 transition"
+                  className="px-4 py-2 rounded-lg border border-gray-700 hover:bg-gray-800 transition text-gray-300"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 rounded-lg bg-yellow-500 text-black hover:bg-yellow-400 transition"
+                  className="px-4 py-2 rounded-lg bg-gradient-to-r from-yellow-500 to-yellow-600 text-black hover:from-yellow-400 hover:to-yellow-500 transition"
                 >
                   Save Contact
                 </button>
@@ -592,12 +588,12 @@ function ContactsPage() {
           (title, i) => (
             <div
               key={i}
-              className="bg-black dark:bg-zinc-900 p-6 rounded-xl border border-zinc-200 dark:border-zinc-800 shadow-sm"
+              className="bg-gray-900 p-6 rounded-xl border border-gray-800 shadow-sm"
             >
-              <h2 className="text-lg font-semibold text-yellow-500 mb-4 flex items-center gap-2">
-                <BarChart3 className="w-5 h-5" /> {title}
+              <h2 className="text-lg font-semibold text-transparent bg-clip-text bg-gradient-to-r from-yellow-500 to-yellow-600 mb-4 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-yellow-500" /> {title}
               </h2>
-              <div className="h-40 flex items-center justify-center text-zinc-500 text-sm border border-dashed border-zinc-300 dark:border-zinc-700 rounded-lg">
+              <div className="h-40 flex items-center justify-center text-gray-500 text-sm border border-dashed border-gray-700 rounded-lg">
                 📊 Chart Placeholder
               </div>
             </div>

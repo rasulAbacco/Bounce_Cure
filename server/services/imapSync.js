@@ -63,11 +63,22 @@ export async function sendAndUpdateEmail(emailId) {
 
 /**
  * -----------------------
- * Save email safely
+ * Save email safely with account validation
  * -----------------------
  */
 export async function saveEmail(prisma, emailData, accountId) {
   try {
+    // ✅ Validate that the account exists before attempting to save
+    const accountExists = await prisma.emailAccount.findUnique({
+      where: { id: accountId },
+      select: { id: true } // Only select id for minimal data transfer
+    });
+
+    if (!accountExists) {
+      console.error(`❌ Cannot save email: EmailAccount with id ${accountId} not found`);
+      throw new Error(`EmailAccount with id ${accountId} does not exist`);
+    }
+
     await prisma.email.upsert({
       where: { messageId: emailData.messageId },
       update: {}, // Do nothing if exists
@@ -89,12 +100,17 @@ export async function saveEmail(prisma, emailData, accountId) {
         account: { connect: { id: accountId } },
       },
     });
+    
+    console.log(`✅ Saved email: ${emailData.subject} for account ${accountId}`);
   } catch (err) {
-    console.error("❌ Failed to save email:", err);
-    throw new Error(`HTTP 500: {"error":"Failed to create email"}`);
+    if (err.code === 'P2025') {
+      console.error(`❌ Failed to save email: EmailAccount ${accountId} not found`);
+    } else {
+      console.error("❌ Failed to save email:", err.message);
+    }
+    throw new Error(`Failed to create email: ${err.message}`);
   }
 }
-
 /**
  * -----------------------
  * Email skip logic

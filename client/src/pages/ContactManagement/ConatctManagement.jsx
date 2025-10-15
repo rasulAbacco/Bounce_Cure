@@ -15,7 +15,7 @@ import {
   List,
   Inbox,
   Package,
-
+  Settings,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import {
@@ -35,26 +35,10 @@ import Tasks from "./pages/Tasks";
 import Lists from "./pages/Lists";
 import Orders from "./pages/Orders";
 import Inboxs from "./pages/Inbox";
+import CustomFieldsPage from "./CustomFields/CustomFieldsPage";
+
 const API_URL = import.meta.env.VITE_VRI_URL;
-const token = localStorage.getItem("token"); // or sessionStorage
 
-
-/**
- * NOTE:
- * This component attempts to fetch resources from multiple likely endpoints
- * to match your server mounts (examples from your server.js):
- *  - app.use("/api/leads", leadsRouter)          -> /api/leads
- *  - app.use("/api/contacts", contactRoutes)     -> /api/contacts
- *  - app.use("/tasks", taskRoutes)               -> /tasks
- *  - app.use("/deals", dealsRoutes)              -> /deals
- *  - app.use("/orders", orderRoutes)             -> /orders
- *  - app.use("/lists", listRoutes)               -> /lists
- *  - inbox may be under /api/emails or /notifications or /api/inbox
- *
- * If you have different endpoints, update the fallback arrays below.
- */
-
-// --- UI helpers (kept same as your original) ---
 const Section = ({ title, children, right }) => (
   <section className="bg-black/80 dark:bg-black/60 border border-zinc-200 dark:border-zinc-800 rounded-2xl p-5 shadow-xl transition">
     <div className="flex items-center justify-between mb-4">
@@ -151,9 +135,7 @@ const Modal = ({ open, onClose, title, children, footer }) => {
   );
 };
 
-//=== Main Component ===
 export default function ContactManagement() {
-  // data states
   const [leads, setLeads] = useState([]);
   const [tasks, setTasks] = useState([]);
   const [contacts, setContacts] = useState([]);
@@ -163,8 +145,6 @@ export default function ContactManagement() {
   const [inbox, setInbox] = useState([]);
   const [pipelinePercents, setPipelinePercents] = useState([]);
   const [chartData, setChartData] = useState([]);
-
-  // UI states
   const [leadModal, setLeadModal] = useState(false);
   const [taskModal, setTaskModal] = useState(false);
   const [activeTab, setActiveTab] = useState("Dashboard");
@@ -180,22 +160,22 @@ export default function ContactManagement() {
     due: "",
     status: "Pending",
   });
+  
   const navItems = [
     { icon: LayoutDashboard, label: "Dashboard" },
     { icon: Users, label: "Leads" },
     { icon: Contact2, label: "Contacts" },
     { icon: Handshake, label: "Deals" },
     { icon: ClipboardList, label: "Tasks" },
-    { icon: List, label: "Lists" },
     { icon: Inbox, label: "Inbox" },
     { icon: Package, label: "Orders" },
+    { icon: Settings, label: "Custom Fields" },
   ];
 
   const baseURL = import.meta.env.VITE_VRI_URL;
 
-  // Helper: try multiple endpoints for a resource and return first successful result
   const fetchWithFallback = async (paths = [], options = {}) => {
-    const token = localStorage.getItem("token"); // Replace with your method
+    const token = localStorage.getItem("token");
 
     for (const p of paths) {
       try {
@@ -217,24 +197,16 @@ export default function ContactManagement() {
     return [];
   };
 
-
   useEffect(() => {
     const loadAll = async () => {
       try {
         const promises = [
-          // leads: preferred /api/leads (your server uses app.use("/api/leads", ...))
           fetchWithFallback(["/api/leads", "/leads"]),
-          // tasks: your server mounts tasks at "/tasks"
           fetchWithFallback(["/tasks", "/api/tasks"]),
-          // contacts: prefer /api/contacts (you have app.use("/api/contacts", ...))
           fetchWithFallback(["/contact", "/contact", "/contact/"]),
-          // deals: mounted at "/deals"
           fetchWithFallback(["/deals", "/api/deals"]),
-          // orders: mounted at "/orders"
           fetchWithFallback(["/orders", "/api/orders"]),
-          // lists: mounted at "/lists"
           fetchWithFallback(["/lists", "/api/lists"]),
-          // inbox / email notifications: try likely places
           fetchWithFallback([
             "/api/emails",
             "/notifications",
@@ -267,13 +239,12 @@ export default function ContactManagement() {
     };
 
     loadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
     const fetchDashboardStats = async () => {
       try {
-        const token = localStorage.getItem("token"); // Or from context/session
+        const token = localStorage.getItem("token");
         const res = await axios.get(`${baseURL}/stats`, {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -289,8 +260,6 @@ export default function ContactManagement() {
     fetchDashboardStats();
   }, []);
 
-
-  // Add lead: try preferred /api/leads then fallback to /leads
   const addLead = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
@@ -321,8 +290,6 @@ export default function ContactManagement() {
     }
   };
 
-
-  // Add task: try /tasks then /api/tasks
   const addTask = async (e) => {
     e.preventDefault();
     const token = localStorage.getItem("token");
@@ -353,14 +320,9 @@ export default function ContactManagement() {
     }
   };
 
-
-
-
-
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-black text-white dark:bg-black dark:text-white pt-40 transition-colors duration-300">
-        {/* Header */}
         <header className="fixed top-20 left-0 right-0 bg-black/70 dark:bg-black/40 backdrop-blur border-b border-zinc-200 dark:border-zinc-800 z-40">
           <div className="relative flex items-center justify-center px-6 py-3">
             <div className="absolute left-6 flex items-center gap-2">
@@ -377,7 +339,6 @@ export default function ContactManagement() {
                   className={`cursor-pointer flex items-center gap-2 px-3 py-2 rounded-xl border text-sm transition ${activeTab === item.label
                     ? "bg-zinc-900 border-zinc-300 dark:border-zinc-800 text-yellow-500"
                     : "hover:bg-zinc-100 dark:hover:bg-zinc-900 border-transparent text-zinc-200 hover:text-white hover:border hover:border-yellow-500 dark:text-zinc-300"
-
                     }`}
                 >
                   <item.icon className="w-4 h-4" />
@@ -388,11 +349,9 @@ export default function ContactManagement() {
           </div>
         </header>
 
-        {/* Main */}
         <main className="p-6 space-y-6 bg-black">
           {activeTab === "Dashboard" && (
             <>
-              {/* Stats */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 <StatCard label="Leads" value={leads.length} icon={Users} />
                 <StatCard label="Contacts" value={contacts.length} icon={Contact2} />
@@ -400,7 +359,6 @@ export default function ContactManagement() {
                 <StatCard label="Tasks" value={tasks.length} icon={ClipboardList} />
               </div>
 
-              {/* Pipeline + Chart */}
               <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
                 <div className="lg:col-span-2">
                   <Section title="Sales Pipeline Overview" right={<Badge tone="info">This month</Badge>}>
@@ -433,7 +391,6 @@ export default function ContactManagement() {
                 </div>
               </div>
 
-              {/* Activities + Tasks */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <Section title="Recent Activities" right={<Badge>Auto-feed</Badge>}>
                   <ul className="space-y-3">
@@ -484,8 +441,6 @@ export default function ContactManagement() {
                         >
                           {t.status ?? "Pending"}
                         </Badge>
-
-                        <Badge tone={t.status === "Scheduled" ? "info" : t.status === "Completed" ? "success" : "warn"}>{t.status}</Badge>
                       </li>
                     ))}
                   </ul>
@@ -513,9 +468,9 @@ export default function ContactManagement() {
               <Orders data={orders} />
             </Section>
           )}
+          {activeTab === "Custom Fields" && <CustomFieldsPage />}
         </main>
 
-        {/* Lead Modal */}
         <Modal
           open={leadModal}
           onClose={() => setLeadModal(false)}
@@ -556,7 +511,6 @@ export default function ContactManagement() {
           </form>
         </Modal>
 
-        {/* Task Modal */}
         <Modal
           open={taskModal}
           onClose={() => setTaskModal(false)}
