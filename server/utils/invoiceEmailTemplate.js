@@ -1,5 +1,33 @@
 // utils/invoiceEmailTemplate.js
-export const invoiceEmailTemplate = ({ transactionId, planName, total }) => `
+
+const currencySymbols = {
+  USD: "$",
+  EUR: "€",
+  GBP: "£",
+  INR: "₹",
+  AUD: "A$",
+  CAD: "C$",
+  JPY: "¥",
+  NZD: "NZ$",
+  NOK: "kr",
+  SEK: "kr",
+  CHF: "CHF",
+};
+
+const formatCurrency = (value, currencyCode) => {
+  try {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency: currencyCode,
+    }).format(value);
+  } catch {
+    const symbol = currencySymbols[currencyCode] || "$";
+    return `${symbol}${value.toFixed(2)}`;
+  }
+};
+
+
+export const invoiceEmailTemplate = ({ transactionId, planName, total, currency = "USD" }) => `
   <div style="font-family: Arial, sans-serif; max-width: 650px; margin: auto; 
               background: #000000; color: #FFFFFF; border-radius: 12px; 
               overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.5);">
@@ -30,7 +58,7 @@ export const invoiceEmailTemplate = ({ transactionId, planName, total }) => `
         <tr style="background: #1a1a1a;">
           <td style="padding: 12px; border: 1px solid #333;">Total</td>
           <td style="padding: 12px; border: 1px solid #333; font-weight: bold; color: #FFD700;">
-            $${total.toFixed(2)}
+           ${formatCurrency(total, currency)}
           </td>
         </tr>
       </table>

@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { CreditCard, Wallet, Shield, CheckCircle, Users, Mail } from 'lucide-react';
 
+
 export default function Checkout() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -41,7 +42,7 @@ export default function Checkout() {
     const formatCurrency = (amount, currency) => {
         const convertedAmount = amount * exchangeRates[currency];
         const symbol = currencySymbols[currency];
-        
+
         // Special handling for JPY (no decimals) and CHF (symbol after)
         if (currency === 'JPY') {
             return `${symbol}${Math.round(convertedAmount)}`;
@@ -83,6 +84,7 @@ export default function Checkout() {
     }, [location.state, navigate]);
 
     // Payment logic
+    // ✅ Correct handlePay function
     const handlePay = () => {
         if (!plan) return;
 
@@ -108,29 +110,20 @@ export default function Checkout() {
                 },
             });
         } else if (selectedPayment === "UPI") {
-            // UPI Payment Handling
-            const upiID = "bouncecure@kotak";
-            const amount = getTotalAmount().toFixed(2);
-            const upiLink = `upi://pay?pa=${upiID}&pn=Bouncecure&am=${amount}&cu=INR&tn=${encodeURIComponent(plan?.planName || "Payment")}`;
-
-            // Detect mobile or desktop
-            const isMobile = /Android|iPhone|iPad|iPod/i.test(navigator.userAgent);
-
-            if (isMobile) {
-                // On mobile → open UPI app
-                window.location.href = upiLink;
-            } else {
-                // On desktop → show message
-                alert(
-                    `UPI payments can only be made through a mobile UPI app.\n\n` +
-                    `Use this UPI ID: ${upiID}\nAmount: ${formatCurrency(amount, selectedCurrency)}\n\n` +
-                    `Or scan the QR code shown on the screen to complete your payment.`
-                );
-            }
+            // ✅ Navigate to new UPI page
+            navigate("/upi", {
+                state: {
+                    plan: updatedPlan,
+                    email: email,
+                    name: "Your Name",
+                    currency: selectedCurrency,
+                },
+            });
         } else {
             alert(`${selectedPayment} payment method is not implemented yet.`);
         }
     };
+
 
     // Helper functions
     const getOriginalPrice = () => Number(plan?.originalBasePrice || 0);
@@ -224,22 +217,7 @@ export default function Checkout() {
                                 })}
                             </div>
 
-                            {/* UPI Info Section */}
-                            {selectedPayment === "UPI" && (
-                                <div className="mt-6 bg-slate-800/60 border border-slate-700 rounded-xl p-4 text-center">
-                                    <h4 className="text-lg font-semibold mb-2 text-yellow-400">Pay via UPI</h4>
-                                    <p className="text-slate-300 mb-2">
-                                        Use the UPI ID below to complete your payment:
-                                    </p>
-                                    <p className="text-xl font-bold text-white">bouncecure@kotak</p>
-                                    <p className="text-sm text-slate-400 mt-2">
-                                        Amount: {formatCurrency(getTotalAmount(), selectedCurrency)}
-                                    </p>
-                                    <p className="text-sm text-slate-400">
-                                        After payment, please share your transaction ID for confirmation.
-                                    </p>
-                                </div>
-                            )}
+                           
 
                         </div>
 

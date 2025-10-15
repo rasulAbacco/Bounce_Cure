@@ -57,7 +57,7 @@ import razorpayRoutes from './routes/razorpay.js';
 import creditcardRoutes from './routes/creditcard.js';
 import contactRoutes from './routes/ContactUs.js';
 import userRoutes from './routes/user.js';
-
+import upiRoutes from "./routes/upi.js";
 // ENV setup
 dotenv.config();
 
@@ -68,10 +68,33 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 
 // Allowed origins for CORS
+// ---------- CORS (update this block completely) ----------
 const allowedOrigins = [
-  'http://localhost:5173',
-  'https://www.bouncecure.com'
+  "http://localhost:5173",
+  "https://www.bouncecure.com"
 ];
+
+app.use(
+  cors({
+    origin(origin, callback) {
+      // Allow requests with no origin (mobile apps, curl, Postman)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      return callback(new Error("Not allowed by CORS"));
+    },
+    methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    credentials: true,
+    optionsSuccessStatus: 204,
+  })
+);
+
+// Explicitly handle preflight requests (very important for GIS)
+app.options("*", cors({
+  origin: allowedOrigins,
+  credentials: true,
+}));
+// ---------- end updated CORS block ----------
 
 // HTTP server and socket
 const server = http.createServer(app);
@@ -91,16 +114,8 @@ io.on('connection', (socket) => {
 });
 
 // CORS
-app.use(cors({
-  origin: function (origin, callback) {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-  credentials: true
-}));
+
+
 app.use(express.json());
 
 app.use((req, res, next) => {
@@ -135,6 +150,7 @@ app.use("/api/webhooks", webhookRoutes);
 app.use("/api", invoiceRoutes);
 app.use('/api/stripe', stripeRoutes);
 app.use('/api/razorpay', razorpayRoutes);
+app.use('/api/upi', upiRoutes);
 app.use('/api', creditcardRoutes);
 
 app.use("/api/verification", advancedVerificationRoute);
