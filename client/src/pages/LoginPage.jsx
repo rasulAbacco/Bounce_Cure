@@ -5,8 +5,89 @@ import PageLayout from '../components/PageLayout';
 import { useNavigate } from "react-router-dom";
 import toast from 'react-hot-toast';
 const API_URL = import.meta.env.VITE_API_URL;
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const ModernLogin = () => {
+
+
+
+    // inside component (e.g. ModernLogin or ModernSignup)
+    // add useEffect to initialize GIS
+    // ✅ Google Sign-In initialization (stable version)
+    React.useEffect(() => {
+        if (!window.google || !GOOGLE_CLIENT_ID) return;
+
+        try {
+            // Initialize Google Identity Services
+            window.google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: handleGoogleCredential,
+            });
+
+            // Render the Google Sign-In button
+            window.google.accounts.id.renderButton(
+                document.getElementById("googleSignInDiv"),
+                {
+                    theme: "outline",
+                    size: "large",
+                    text: "continue_with",
+                    shape: "rectangular",
+                    width: 320,
+                }
+            );
+
+            // Optionally show One Tap (commented for localhost)
+            // window.google.accounts.id.prompt();
+            console.log("✅ Google Sign-In initialized");
+        } catch (err) {
+            console.error("Google initialization error:", err);
+        }
+    }, []);
+
+
+    // add this function in the component
+    const handleGoogleCredential = async (response) => {
+        console.log("handleGoogleCredential called:", response);
+
+        if (!response?.credential) {
+            toast.error("Google sign-in failed: no credential returned");
+            return;
+        }
+
+        // Print token in console for verification
+        console.log("Google ID Token:", response.credential);
+
+        try {
+            console.log("🟢 Google ID Token received:", response.credential?.slice(0, 25) + "...");
+
+            const res = await fetch(`${API_URL}/auth/google`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include", // ✅ important for CORS cookies
+                body: JSON.stringify({ idToken: response.credential }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+            console.log("Backend response:", data);
+
+            if (res.ok && data.token) {
+                localStorage.setItem("token", data.token);
+                if (data.user) {
+                    localStorage.setItem("userName", data.user.name || "");
+                    localStorage.setItem("userEmail", data.user.email || "");
+                }
+                toast.success("Signed in with Google ✔️");
+                navigate("/dashboard");
+                window.location.reload();
+            } else {
+                toast.error(data.message || "Google sign-in failed");
+            }
+        } catch (err) {
+            console.error("Google sign-in error:", err);
+            toast.error("Google sign-in error");
+        }
+    };
+
 
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
@@ -200,18 +281,12 @@ const ModernLogin = () => {
                             </div>
 
                             {/* Google Button */}
-                            <button
-                                className="w-full bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl py-2 sm:py-3 px-4 text-white font-medium flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all duration-300 mb-6 group"
-                                onMouseEnter={() => setIsHovered(true)}
-                                onMouseLeave={() => setIsHovered(false)}
-                            >
-                                <div className="w-5 h-5 bg-[#c2831f] rounded-full flex items-center justify-center group-hover:bg-black transition-colors duration-300">
-                                    <span className="text-xs font-bold text-black group-hover:text-white">G</span>
-                                </div>
-                                <span className={`transition-transform text-[#c2831f] duration-300 ${isHovered ? 'translate-x-1' : ''}`}>
-                                    Continue with Google
-                                </span>
-                            </button>
+                            {/* ✅ Official Google Sign-In Button (rendered by GIS) */}
+                            <div className="flex justify-center mb-6">
+                                <div id="googleSignInDiv"></div>
+                            </div>
+
+
 
                             {/* Divider */}
                             <div className="relative mb-6">

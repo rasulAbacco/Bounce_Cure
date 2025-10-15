@@ -1,6 +1,7 @@
 // server/routes/authRoutes.js
 import express from 'express';
 import multer from 'multer';
+import { googleAuth } from "../controllers/googleAuth.js"; // 👈 import h
 
 import {
     signup,
@@ -57,6 +58,7 @@ router.post('/auth/send-verification-email', verifyAuth, sendVerificationEmail);
 
 // Test route (optionally protect if desired)
 router.get('/test-email', testEmail);
+router.post("/google", googleAuth); // 👈 new route
 
 // Uncomment if you want to enable login logs endpoint
 // router.get('/login-logs', protect, getLoginLogs);
