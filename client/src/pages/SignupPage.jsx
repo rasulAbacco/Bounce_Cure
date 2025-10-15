@@ -1,11 +1,13 @@
 // client/src/pages/SignupPage.jsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, Lock, User, CheckCircle, Shield, Zap, Globe, Clock, Phone } from 'lucide-react';
 import PageLayout from '../components/PageLayout';
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
+
 const API_URL = import.meta.env.VITE_API_URL;
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const ModernSignup = () => {
     const navigate = useNavigate();
@@ -18,6 +20,84 @@ const ModernSignup = () => {
 
     const [focusedField, setFocusedField] = useState('');
     const [isHovered, setIsHovered] = useState(false);
+
+    // ✅ Load Google SDK on mount
+    useEffect(() => {
+        const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+        const script = document.createElement("script");
+        script.src = "https://accounts.google.com/gsi/client";
+        script.async = true;
+        script.defer = true;
+        script.onload = () => {
+            console.log("✅ Google SDK loaded");
+
+            window.google.accounts.id.initialize({
+                client_id: clientId,
+                callback: handleGoogleCredential,
+            });
+
+            window.google.accounts.id.renderButton(
+                document.getElementById("googleSignupButton"),
+                { theme: "outline", size: "large", text: "continue_with", width: "300" }
+            );
+        };
+
+        document.body.appendChild(script);
+    }, []);
+
+
+    // ✅ Handle Google credential response
+    const handleGoogleCredential = async (response) => {
+        try {
+            console.log("🟢 handleGoogleCredential called:", response);
+            const idToken = response.credential;
+            if (!idToken) return toast.error("Failed to get Google token");
+
+            const res = await fetch(`${API_URL}/auth/google`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ idToken }),
+            });
+
+            const data = await res.json();
+            console.log("Backend response:", data);
+
+            if (res.ok) {
+                toast.success("Google signup successful 🎉");
+                localStorage.setItem("token", data.token);
+                navigate("/dashboard");
+            } else {
+                toast.error(data.message || "Google signup failed ❌");
+            }
+        } catch (err) {
+            console.error("Google signup error:", err);
+            toast.error("Something went wrong with Google signup!");
+        }
+    };
+
+    // ✅ Trigger Google popup
+    const handleGoogleSignupClick = () => {
+        if (window.google && window.google.accounts && window.google.accounts.id) {
+            // ✅ Render the actual Google button flow, not just the prompt
+            window.google.accounts.id.renderButton(
+                document.getElementById("googleSignupButton"), // hidden div we'll render into
+                {
+                    theme: "outline",
+                    size: "large",
+                    text: "continue_with",
+                    shape: "rectangular",
+                    width: 320,
+                }
+            );
+            // Immediately trigger One Tap
+            window.google.accounts.id.prompt();
+        } else {
+            toast.error("Google SDK not loaded yet");
+        }
+    };
+
+
 
     // Handle input change
     const handleInputChange = (e) => {
@@ -106,16 +186,9 @@ const ModernSignup = () => {
                         </div>
 
                         {/* Google signup button */}
-                        <button
-                            className="w-full bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl py-3 px-4 text-white font-medium flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all duration-300 mb-6 group"
-                            onMouseEnter={() => setIsHovered(true)}
-                            onMouseLeave={() => setIsHovered(false)}
-                        >
-                            <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center group-hover:bg-black transition-colors duration-300">
-                                <span className="text-xs font-bold text-black group-hover:text-white">G</span>
-                            </div>
-                            <span className={`transition-transform duration-300 ${isHovered ? 'translate-x-1' : ''}`}>Continue with Google</span>
-                        </button>
+                        <div id="googleSignupButton" className="flex justify-center mt-4"></div>
+
+
 
                         {/* Divider */}
                         <div className="relative mb-6">

@@ -1,13 +1,10 @@
-// Option 1: Create a wrapper component in the same file
-// client/src/pages/Pricing/components/Stripe.jsx
-
 import React, { useState, useEffect } from "react";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, useStripe, useElements, CardElement } from "@stripe/react-stripe-js";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { Shield, Lock, CheckCircle, AlertCircle, MapPin } from "lucide-react";
-import { initializeUserAfterPurchase } from '../../../utils/PlanAccessControl';
+import { initializeUserAfterPurchase } from "../../../utils/PlanAccessControl";
 
 const API_URL = import.meta.env.VITE_VRI_URL;
 
@@ -33,39 +30,41 @@ function StripeForm() {
     NZD: 1.66,
     NOK: 10.65,
     SEK: 10.75,
-    CHF: 0.89
+    CHF: 0.89,
   };
 
   // Currency symbols
   const currencySymbols = {
-    USD: '$',
-    EUR: '€',
-    GBP: '£',
-    INR: '₹',
-    AUD: 'A$',
-    CAD: 'C$',
-    JPY: '¥',
-    NZD: 'NZ$',
-    NOK: 'kr',
-    SEK: 'kr',
-    CHF: 'CHF'
+    USD: "$",
+    EUR: "€",
+    GBP: "£",
+    INR: "₹",
+    AUD: "A$",
+    CAD: "C$",
+    JPY: "¥",
+    NZD: "NZ$",
+    NOK: "kr",
+    SEK: "kr",
+    CHF: "CHF",
+  };
+
+  // Convert USD → selected currency
+  const convertAmountToCurrency = (usdAmount, targetCurrency) => {
+    const rate = exchangeRates[targetCurrency] || 1;
+    return usdAmount * rate;
   };
 
   // Format price with selected currency
   const formatCurrency = (amount, currency) => {
     const convertedAmount = amount * exchangeRates[currency];
     const symbol = currencySymbols[currency];
-    
-    if (currency === 'JPY') {
-      return `${symbol}${Math.round(convertedAmount)}`;
-    } else if (currency === 'CHF') {
-      return `${Math.round(convertedAmount * 100) / 100} ${symbol}`;
-    } else {
-      return `${symbol}${convertedAmount.toFixed(2)}`;
-    }
+    if (currency === "JPY") return `${symbol}${Math.round(convertedAmount)}`;
+    if (currency === "CHF") return `${Math.round(convertedAmount * 100) / 100} ${symbol}`;
+    return `${symbol}${convertedAmount.toFixed(2)}`;
   };
 
   const [email, setEmail] = useState("");
+  const [canEditEmail, setCanEditEmail] = useState(false);
   const [name, setName] = useState("");
   const [line1, setLine1] = useState("");
   const [city, setCity] = useState("");
@@ -79,27 +78,31 @@ function StripeForm() {
     const incomingPlan = location.state?.plan;
     const incomingEmail = location.state?.email;
     const incomingName = location.state?.name;
+    const storedEmail = localStorage.getItem("userEmail") || sessionStorage.getItem("userEmail");
+    const storedName = localStorage.getItem("userName") || sessionStorage.getItem("userName");
 
     if (incomingPlan) {
-      console.log('📦 Received plan:', incomingPlan);
+      console.log("📦 Received plan:", incomingPlan);
       setPlan(incomingPlan);
       setSelectedCurrency(incomingPlan.currency || "USD");
-    }
-    if (incomingEmail) setEmail(incomingEmail);
-    if (incomingName) setName(incomingName);
-
-    if (!incomingPlan) {
+    } else {
       const storedPlan = localStorage.getItem("pendingUpgradePlan");
       if (storedPlan) {
         const parsedPlan = JSON.parse(storedPlan);
-        console.log('📦 Retrieved stored plan:', parsedPlan);
+        console.log("📦 Retrieved stored plan:", parsedPlan);
         setPlan(parsedPlan);
         setSelectedCurrency(parsedPlan.currency || "USD");
       } else {
-        console.warn('⚠️ No plan found, redirecting to pricing');
+        console.warn("⚠️ No plan found, redirecting to pricing");
         navigate("/pricing");
       }
     }
+
+    if (incomingEmail) setEmail(incomingEmail);
+    else if (storedEmail) setEmail(storedEmail);
+
+    if (incomingName) setName(incomingName);
+    else if (storedName) setName(storedName);
   }, [location.state, navigate]);
 
   const handleSubmit = async (e) => {
@@ -113,36 +116,35 @@ function StripeForm() {
     setLoading(true);
     setStatus("Processing payment...");
 
-    const amount = parseFloat(plan.totalCost || 0);
-    const userId = localStorage.getItem('userId') || 1;
+    const usdAmount = parseFloat(plan.totalCost || 0);
+    const convertedAmount = convertAmountToCurrency(usdAmount, selectedCurrency);
+    const amount = parseFloat(convertedAmount.toFixed(2));
+
+    const userId = localStorage.getItem("userId") || 1;
     const billingAddress = `${line1}, ${city}, ${postalCode}`;
     const discount = plan?.discountAmount || 0;
 
-    console.log('💳 Processing payment for plan:', plan.planName);
-    console.log('💰 Amount:', amount);
-    console.log('💱 Currency:', selectedCurrency);
+    console.log("💳 Processing payment for plan:", plan.planName);
+    console.log("💰 Amount:", amount, selectedCurrency);
 
     try {
       // Step 1: Create payment intent
-      console.log('🔄 Step 1: Creating payment intent...');
-      const { data } = await axios.post(
-        `${API_URL}/api/stripe/create-payment-intent`,
-        {
-          amount,
-          email,
-          userId,
-          planName: plan.planName,
-          planType: plan.billingPeriod,
-          provider: "Stripe",
-          contacts: plan.slots || plan.contactCount || 0,
-          currency: selectedCurrency.toLowerCase(),
-        }
-      );
+      console.log("🔄 Step 1: Creating payment intent...");
+      const { data } = await axios.post(`${API_URL}/api/stripe/create-payment-intent`, {
+        amount,
+        email,
+        userId,
+        planName: plan.planName,
+        planType: plan.billingPeriod,
+        provider: "Stripe",
+        contacts: plan.slots || plan.contactCount || 0,
+        currency: selectedCurrency.toLowerCase(),
+      });
 
-      console.log('✅ Payment intent created:', data.paymentIntentId);
+      console.log("✅ Payment intent created:", data.transactionId);
 
       // Step 2: Confirm payment with card
-      console.log('🔄 Step 2: Confirming payment...');
+      console.log("🔄 Step 2: Confirming payment...");
       const result = await stripe.confirmCardPayment(data.clientSecret, {
         payment_method: {
           card: elements.getElement(CardElement),
@@ -161,16 +163,16 @@ function StripeForm() {
 
       // Step 3: Handle success or error
       if (result.error) {
-        console.error('❌ Payment error:', result.error);
+        console.error("❌ Payment error:", result.error);
         setStatus(`❌ ${result.error.message}`);
       } else if (result.paymentIntent.status === "succeeded") {
-        console.log('✅ Payment succeeded!');
-        setStatus("✅ Payment successful! Processing invoice...");
+        console.log("✅ Payment succeeded!");
+        setStatus("✅ Payment successful! Sending invoice...");
 
         const paymentIntent = result.paymentIntent;
 
-        // Step 4: Save payment to backend
-        console.log('🔄 Step 3: Saving payment to backend...');
+        // Step 4: Save payment to backend (backend auto-sends invoice)
+        console.log("🔄 Step 3: Saving payment to backend...");
         await axios.post(`${API_URL}/api/stripe/save-payment`, {
           userId,
           name,
@@ -182,122 +184,41 @@ function StripeForm() {
           contacts: plan.slots || plan.contactCount || 0,
           amount,
           currency: selectedCurrency.toLowerCase(),
-          planPrice: amount - (plan.discountAmount || 0),
-          discount: plan.discountAmount || 0,
+          planPrice: amount - discount,
+          discount,
           paymentMethod: paymentIntent.payment_method_types[0],
           cardLast4:
-            paymentIntent.charges?.data[0]?.payment_method_details?.card
-              ?.last4 || "",
+            paymentIntent.charges?.data[0]?.payment_method_details?.card?.last4 || "",
           billingAddress,
           paymentDate: new Date().toISOString(),
-          nextPaymentDate: null,
           status: paymentIntent.status,
         });
 
-        console.log('✅ Payment saved to backend');
+        console.log("✅ Payment saved. Invoice email sent via backend.");
+        setStatus("✅ Payment successful! Invoice sent to your email.");
 
-        // ⭐⭐⭐ STEP 5: SEND INVOICE EMAIL ⭐⭐⭐
-        console.log('📧 Step 4: Sending invoice email...');
-        try {
-          const invoiceData = {
-            email: email,
-            transactionId: paymentIntent.id,
-            processedDate: new Date().toLocaleDateString('en-US', {
-              month: 'numeric',
-              day: 'numeric',
-              year: 'numeric'
-            }) + '. ' + new Date().toLocaleTimeString('en-US', {
-              hour: 'numeric',
-              minute: '2-digit',
-              hour12: true
-            }) + ' AM New York',
-            planName: plan.planName,
-            planPrice: `$${(amount - discount).toFixed(2)}`,
-            contacts: plan.slots || plan.contactCount || 0,
-            subtotal: `$${amount.toFixed(2)}`,
-            discountAmount: discount > 0 ? `$${discount.toFixed(2)}` : null,
-            discountTitle: discount > 0 ? "50% off for 12 months" : null,
-            tax: `$${(amount * 0.1).toFixed(2)}`,
-            taxRate: 10,
-            finalTotal: `$${amount.toFixed(2)}`,
-            paymentMethod: paymentIntent.payment_method_types[0] || "card",
-            cardLast4: paymentIntent.charges?.data[0]?.payment_method_details?.card?.last4 || "",
-            paymentDate: new Date(paymentIntent.created * 1000).toLocaleDateString('en-US', { 
-              month: 'long', 
-              day: 'numeric', 
-              year: 'numeric' 
-            }),
-            nextPaymentDate: null,
-            stripePaymentIntentId: paymentIntent.id,
-            issuedTo: {
-              companyName: name,
-              email: email,
-              address: billingAddress,
-              placeOfSupply: city
-            },
-            issuedBy: {
-              name: "BounceCure",
-              address: "c/o The Rocket Science Group, LLC\n405 N. Angier Ave. NE, Atlanta, GA 30212 USA",
-              website: "www.bouncecure.com",
-              taxId: "9922USA29012OSN"
-            }
-          };
-
-          const invoiceResponse = await axios.post(
-            `${API_URL}/api/invoice/send-invoice`,
-            invoiceData
-          );
-
-          if (invoiceResponse.data.success) {
-            console.log('✅ Invoice sent successfully!');
-            setStatus("✅ Payment successful! Invoice sent to your email.");
-          } else {
-            console.warn('⚠️ Invoice sending failed:', invoiceResponse.data.message);
-            setStatus("✅ Payment successful! Invoice sending pending.");
-          }
-        } catch (invoiceError) {
-          console.error('❌ Error sending invoice:', invoiceError);
-          setStatus("✅ Payment successful! Invoice will be sent shortly.");
-        }
-
-        // ⭐⭐⭐ CRITICAL: Initialize user after purchase ⭐⭐⭐
-        console.log('💾 Initializing user data after purchase');
-
+        // Initialize user after purchase
+        console.log("💾 Initializing user data after purchase");
         const initSuccess = initializeUserAfterPurchase({
           planName: plan.planName,
           slots: plan.slots || plan.contactCount || 0,
           contactCount: plan.slots || plan.contactCount || 0,
-          emails: plan.emails || 0
+          emails: plan.emails || 0,
         });
 
-        if (!initSuccess) {
-          console.error('⚠️ Failed to initialize user data');
-        }
-        
-        localStorage.setItem('totalEmails', plan.emails || 0);
-        localStorage.removeItem('pendingUpgradePlan');
-        sessionStorage.removeItem('pendingUpgradePlan');
-        
-        const savedPlan = localStorage.getItem('userPlan');
-        const totalContacts = localStorage.getItem('totalContacts');
-        const totalEmails = localStorage.getItem('totalEmails');
-        const hasPurchased = localStorage.getItem('hasPurchasedBefore');
+        if (!initSuccess) console.error("⚠️ Failed to initialize user data");
 
-        console.log('✅ Verified saved data:', {
-          plan: savedPlan,
-          totalContacts: totalContacts,
-          totalEmails: totalEmails,
-          hasPurchased: hasPurchased
-        });
+        localStorage.setItem("totalEmails", plan.emails || 0);
+        localStorage.removeItem("pendingUpgradePlan");
+        sessionStorage.removeItem("pendingUpgradePlan");
 
-        // Redirect after delay
         setTimeout(() => {
-          console.log('🔄 Redirecting to dashboard...');
-          window.location.href = '/dashboard';
+          console.log("🔄 Redirecting to dashboard...");
+          window.location.href = "/dashboard";
         }, 3000);
       }
     } catch (error) {
-      console.error('❌ Error during payment process:', error);
+      console.error("❌ Error during payment process:", error);
       setStatus(`❌ Something went wrong: ${error.message}`);
     } finally {
       setLoading(false);
@@ -306,23 +227,20 @@ function StripeForm() {
 
   const getCountryCode = (currency) => {
     const countryMap = {
-      USD: 'US',
-      EUR: 'DE',
-      GBP: 'GB',
-      INR: 'IN',
-      AUD: 'AU',
-      CAD: 'CA',
-      JPY: 'JP',
-      NZD: 'NZ',
-      NOK: 'NO',
-      SEK: 'SE',
-      CHF: 'CH'
+      USD: "US",
+      EUR: "DE",
+      GBP: "GB",
+      INR: "IN",
+      AUD: "AU",
+      CAD: "CA",
+      JPY: "JP",
+      NZD: "NZ",
+      NOK: "NO",
+      SEK: "SE",
+      CHF: "CH",
     };
-    return countryMap[currency] || 'US';
+    return countryMap[currency] || "US";
   };
-
-  
-
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950 flex justify-center items-center p-4 relative overflow-hidden">
@@ -345,9 +263,7 @@ function StripeForm() {
           <h2 className="text-3xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
             {plan ? `Subscribe to ${plan.planName}` : "Loading..."}
           </h2>
-          <p className="text-slate-400 mt-2">
-            Complete your subscription with Stripe
-          </p>
+          <p className="text-slate-400 mt-2">Complete your subscription with Stripe</p>
         </div>
 
         {plan && (
@@ -363,7 +279,9 @@ function StripeForm() {
               </div>
               <div className="text-right">
                 <p className="text-blue-400 font-semibold">{plan.planName}</p>
-                <p className="text-slate-400 text-sm">{plan.slots || plan.contactCount || 0} contacts</p>
+                <p className="text-slate-400 text-sm">
+                  {plan.slots || plan.contactCount || 0} contacts
+                </p>
                 <p className="text-slate-400 text-sm">{plan.emails || 0} emails/mo</p>
                 <p className="text-slate-400 text-sm">{plan.billingPeriod}</p>
               </div>
@@ -373,9 +291,7 @@ function StripeForm() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
           <div>
-            <label className="text-sm font-medium text-slate-300 mb-2 block">
-              Full Name
-            </label>
+            <label className="text-sm font-medium text-slate-300 mb-2 block">Full Name</label>
             <input
               type="text"
               placeholder="John Doe"
@@ -387,17 +303,39 @@ function StripeForm() {
           </div>
 
           <div>
-            <label className="text-sm font-medium text-slate-300 mb-2 block">
-              Email Address
-            </label>
-            <input
-              type="email"
-              placeholder="john@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              className="w-full text-white px-4 py-3 border border-slate-700 bg-slate-900/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-            />
+            <label className="text-sm font-medium text-slate-300 mb-2 block">Billing Email</label>
+            <div className="flex items-center gap-2">
+              <input
+                type="email"
+                placeholder="john@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={!canEditEmail}
+                required
+                className={`w-full text-white px-4 py-3 border border-slate-700 bg-slate-900/50 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all ${!canEditEmail ? "opacity-60 cursor-not-allowed" : ""
+                  }`}
+              />
+              {!canEditEmail ? (
+                <button
+                  type="button"
+                  onClick={() => setCanEditEmail(true)}
+                  className="text-sm text-blue-400 hover:underline"
+                >
+                  Change
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setCanEditEmail(false)}
+                  className="text-sm text-slate-400 hover:underline"
+                >
+                  Lock
+                </button>
+              )}
+            </div>
+            <p className="text-slate-500 text-xs mt-1">
+              Your invoice will be sent to this email.
+            </p>
           </div>
         </div>
 
@@ -453,10 +391,9 @@ function StripeForm() {
                   },
                   invalid: { color: "#ef4444" },
                 },
-                invalid: { color: "#ef4444" },
-              },
-            }}
-          />
+              }}
+            />
+          </div>
         </div>
 
         <button
@@ -491,7 +428,9 @@ function StripeForm() {
           ) : (
             <>
               <Lock size={20} />
-              {plan ? `Pay ${formatCurrency(plan.totalCost, selectedCurrency)}` : "Loading..."}
+              {plan
+                ? `Pay ${formatCurrency(plan.totalCost, selectedCurrency)}`
+                : "Loading..."}
             </>
           )}
         </button>
@@ -499,8 +438,8 @@ function StripeForm() {
         {status && (
           <div
             className={`p-4 rounded-xl flex items-center gap-3 ${status.includes("✅")
-              ? "bg-green-950/30 border border-green-800/30 text-green-300"
-              : "bg-red-950/30 border border-red-800/30 text-red-300"
+                ? "bg-green-950/30 border border-green-800/30 text-green-300"
+                : "bg-red-950/30 border border-red-800/30 text-red-300"
               }`}
           >
             {status.includes("✅") ? (
