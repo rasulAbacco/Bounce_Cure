@@ -27,8 +27,9 @@ const TwoFactorAuth = () => {
       
       if (response.ok) {
         const data = await response.json();
-        setIsEnabled(data.is2FAEnabled || false);
+        setIsEnabled(data.user?.is2FAEnabled || false);
       }
+
     } catch (error) {
       console.error('Error checking 2FA status:', error);
     }
@@ -74,7 +75,7 @@ const TwoFactorAuth = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/2fa/verify', {
+      const response = await fetch('http://localhost:5000/api/auth/verify-2fa', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

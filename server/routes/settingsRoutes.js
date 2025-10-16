@@ -16,21 +16,22 @@ const notifSchema = z.object({
   email: z.boolean(),
   sms: z.boolean(),
   push: z.boolean(),
+  inApp: z.boolean().optional(), // ✅ match frontend
   frequency: z.enum(["instant", "daily", "weekly"]),
 });
 
-// ✅ Protect all settings routes
 router.use(protect);
 
-// Get notification settings
+// ✅ Get notification settings
 router.get("/notifications", async (req, res) => {
   try {
     const userId = req.user.id;
+
     let setting = await prisma.notificationSetting.findUnique({ where: { userId } });
 
     if (!setting) {
-      // return defaults if none
-      setting = { email: true, sms: false, push: false, frequency: "daily" };
+      // return default if none
+      setting = { email: true, sms: false, push: false, inApp: false, frequency: "daily" };
     }
 
     res.json(setting);
@@ -40,7 +41,7 @@ router.get("/notifications", async (req, res) => {
   }
 });
 
-// Update notification settings
+// ✅ Update notification settings
 router.put("/notifications", async (req, res) => {
   try {
     const parsed = notifSchema.safeParse(req.body);
@@ -49,6 +50,7 @@ router.put("/notifications", async (req, res) => {
     }
 
     const userId = req.user.id;
+
     const saved = await prisma.notificationSetting.upsert({
       where: { userId },
       update: parsed.data,
@@ -72,7 +74,7 @@ function maskKey(k) {
   return k.slice(0, 6) + "..." + k.slice(-4);
 }
 
-// Get all API keys (masked)
+// ✅ Get API keys
 router.get("/apikeys", async (req, res) => {
   try {
     const keys = await prisma.apiKey.findMany({
@@ -86,7 +88,7 @@ router.get("/apikeys", async (req, res) => {
   }
 });
 
-// Create new API key
+// ✅ Create API key
 router.post("/apikeys", async (req, res) => {
   try {
     const userId = req.user.id;
@@ -97,7 +99,6 @@ router.post("/apikeys", async (req, res) => {
       data: { name, key: value, userId },
     });
 
-    // 🔔 Notify
     await sendNotification(userId, {
       subject: "New API Key Created",
       message: `Your API key "${name}" was created successfully.`,
@@ -110,7 +111,7 @@ router.post("/apikeys", async (req, res) => {
   }
 });
 
-// Revoke an API key
+// ✅ Revoke API key
 router.delete("/apikeys/:id", async (req, res) => {
   try {
     const id = Number(req.params.id);
@@ -139,9 +140,7 @@ router.delete("/apikeys/:id", async (req, res) => {
 router.post("/push-subscribe", async (req, res) => {
   try {
     const { subscription } = req.body;
-    if (!subscription) {
-      return res.status(400).json({ error: "Subscription is required" });
-    }
+    if (!subscription) return res.status(400).json({ error: "Subscription is required" });
 
     await prisma.pushSubscription.upsert({
       where: { userId: req.user.id },
@@ -157,7 +156,7 @@ router.post("/push-subscribe", async (req, res) => {
 });
 
 //
-// ---------------- Danger Zone ----------------
+// ---------------- Danger Zone (Delete Account) ----------------
 //
 router.delete("/delete-account", async (req, res) => {
   try {
@@ -165,7 +164,7 @@ router.delete("/delete-account", async (req, res) => {
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) return res.status(404).json({ error: "User not found" });
 
-    const userEmail = user.email; // capture before delete
+    const userEmail = user.email;
 
     await prisma.$transaction(async (tx) => {
       await tx.passwordResetToken.deleteMany({ where: { userId } });
@@ -179,207 +178,18 @@ router.delete("/delete-account", async (req, res) => {
       await tx.user.delete({ where: { id: userId } });
     });
 
-    // 🔔 Notify via email only (push/sms won't work after delete)
+    // ✅ Send email notification only (user already deleted)
     await sendNotification(null, {
       to: userEmail,
       subject: "Account Deleted",
-      message: "Your account has been permanently deleted.",
+      message: "Your account has been permanently deleted from Bounce Cure.",
     });
 
-    res.json({ message: "Account deleted" });
-  } catch (e) {
-    console.error("DELETE /delete-account error:", e);
+    res.json({ message: "Account deleted successfully" });
+  } catch (err) {
+    console.error("DELETE /delete-account error:", err);
     res.status(500).json({ error: "Failed to delete account" });
   }
 });
 
 export default router;
-
-// //server/routes/settingsRoutes.js
-// import express from "express";
-// import { PrismaClient } from "@prisma/client";
-// import { z } from "zod";
-// import crypto from "crypto";
-// import { sendNotification } from "../services/notificationService.js";  // ✅ notification service
-
-// const router = express.Router();
-// const prisma = new PrismaClient();
-
-// //
-// // ---------------- Notification Settings (email, sms, push only) ----------------
-// //
-// const notifSchema = z.object({
-//   email: z.boolean(),
-//   sms: z.boolean(),
-//   push: z.boolean(),
-//   frequency: z.enum(["instant", "daily", "weekly"]),
-// });
-
-// // Get notification settings
-// router.get("/notifications", async (req, res) => {
-//   try {
-//     const userId = req.userId;
-//     const setting = await prisma.notificationSetting.findUnique({ where: { userId } });
-
-//     res.json(
-//       setting || { email: true, sms: false, push: false, frequency: "daily" }
-//     );
-//   } catch (err) {
-//     console.error("GET /notifications error:", err);
-//     res.status(500).json({ error: "Failed to fetch notification settings" });
-//   }
-// });
-
-// // Update notification settings
-// router.put("/notifications", async (req, res) => {
-//   try {
-//     const parsed = notifSchema.safeParse(req.body);
-//     if (!parsed.success) {
-//       return res.status(400).json({ error: parsed.error.flatten() });
-//     }
-
-//     const saved = await prisma.notificationSetting.upsert({
-//       where: { userId: req.userId },
-//       update: parsed.data,
-//       create: { userId: req.userId, ...parsed.data },
-//     });
-
-//     res.json(saved);
-//   } catch (err) {
-//     console.error("PUT /notifications error:", err);
-//     res.status(500).json({ error: "Failed to update notification settings" });
-//   }
-// });
-
-// //
-// // ---------------- API Keys ----------------
-// //
-// function generateKey() {
-//   return "sk-" + crypto.randomBytes(20).toString("hex");
-// }
-// function maskKey(k) {
-//   return k.slice(0, 6) + "..." + k.slice(-4);
-// }
-
-// // Get all API keys
-// router.get("/apikeys", async (req, res) => {
-//   try {
-//     const keys = await prisma.apiKey.findMany({
-//       where: { userId: req.userId },
-//       orderBy: { createdAt: "desc" },
-//     });
-//     res.json(keys.map(k => ({ ...k, value: maskKey(k.key) })));
-//   } catch (err) {
-//     console.error("GET /apikeys error:", err);
-//     res.status(500).json({ error: "Failed to fetch API keys" });
-//   }
-// });
-
-// // ✅ Create a new API key (send notifications: email + sms + push + in-app)
-// router.post("/apikeys", async (req, res) => {
-//   try {
-//     const name = (req.body?.name || "New Key").toString().slice(0, 64);
-//     const value = generateKey();
-//     const created = await prisma.apiKey.create({
-//       data: { name, key: value, userId: req.userId },
-//     });
-
-//     // 🔔 Send notification via all enabled channels
-//     await sendNotification(req.userId, {
-//       subject: "New API Key Created",
-//       message: `Your API key "${name}" was created successfully.`,
-//     });
-
-//     res.status(201).json({ ...created, value });
-//   } catch (err) {
-//     console.error("POST /apikeys error:", err);
-//     res.status(500).json({ error: "Failed to create API key" });
-//   }
-// });
-
-
-
-// // Save a new push subscription
-// router.post("/push-subscribe", async (req, res) => {
-//   try {
-//     const { subscription } = req.body;
-
-//     if (!subscription) {
-//       return res.status(400).json({ error: "Subscription is required" });
-//     }
-
-//     await prisma.pushSubscription.create({
-//       data: {
-//         userId: req.userId,
-//         subscription: JSON.stringify(subscription), // save subscription JSON
-//       },
-//     });
-
-//     res.json({ message: "Push subscription saved" });
-//   } catch (err) {
-//     console.error("POST /push-subscribe error:", err);
-//     res.status(500).json({ error: "Failed to save push subscription" });
-//   }
-// });
-
-// // Revoke an API key
-// router.delete("/apikeys/:id", async (req, res) => {
-//   try {
-//     const id = Number(req.params.id);
-//     const existing = await prisma.apiKey.findFirst({ where: { id, userId: req.userId } });
-//     if (!existing) return res.status(404).json({ error: "Key not found" });
-
-//     await prisma.apiKey.update({ where: { id }, data: { revoked: true } });
-
-//     // 🔔 Send notification for revoked key
-//     await sendNotification(req.userId, {
-//       subject: "API Key Revoked",
-//       message: `Your API key "${existing.name}" has been revoked.`,
-//     });
-
-//     res.json({ message: "Key revoked" });
-//   } catch (err) {
-//     console.error("DELETE /apikeys/:id error:", err);
-//     res.status(500).json({ error: "Failed to revoke API key" });
-//   }
-// });
-
-// //
-// // ---------------- Danger Zone (Delete Account) ----------------
-// //
-// router.delete("/delete-account", async (req, res) => {
-//   try {
-//     const user = await prisma.user.findUnique({ where: { id: req.userId } });
-//     if (!user) return res.status(404).json({ error: "User not found" });
-
-//     await prisma.$transaction(async (tx) => {
-//       // Delete all related records first
-//       await tx.passwordResetToken.deleteMany({ where: { userId: req.userId } });
-//       await tx.apiKey.deleteMany({ where: { userId: req.userId } });
-//       await tx.notificationSetting.deleteMany({ where: { userId: req.userId } });
-//       await tx.session.deleteMany({ where: { userId: req.userId } });
-//       await tx.loginLog.deleteMany({ where: { userId: req.userId } });
-//       await tx.oTPCode.deleteMany({ where: { userId: req.userId } });
-//       await tx.content.deleteMany({ where: { createdBy: req.userId } });
-
-//       // Save deleted account record
-//       await tx.deletedAccount.create({ data: { userEmail: user.email } });
-
-//       // Finally delete the user
-//       await tx.user.delete({ where: { id: req.userId } });
-//     });
-
-//     // 🔔 Send account deletion notification
-//     await sendNotification(req.userId, {
-//       subject: "Account Deleted",
-//       message: "Your account has been permanently deleted.",
-//     });
-
-//     res.json({ message: "Account deleted" });
-//   } catch (e) {
-//     console.error("DELETE /delete-account error:", e);
-//     res.status(500).json({ error: "Failed to delete account" });
-//   }
-// });
-
-// export default router;

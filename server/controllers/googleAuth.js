@@ -38,45 +38,47 @@ export const googleAuth = async (req, res) => {
             sub: googleId,
         } = payload;
 
-        // ✅ Ensure valid Google user
         if (!email_verified) {
             return res.status(400).json({ message: "Google email not verified" });
         }
 
-        // ✅ Find existing user
+        // ✅ Find user by email
         let user = await prisma.user.findUnique({ where: { email } });
 
-        // ✅ If user not found, create one
         if (!user) {
+            // ✅ Create new user from Google data
             user = await prisma.user.create({
                 data: {
                     firstName: given_name || "",
                     lastName: family_name || "",
                     email,
-                    password: null, // ✅ optional because OAuth
+                    password: null, // because OAuth user
                     googleId: String(googleId || ""),
-                    profileImage: picture || null,
+                    profileImgUrl: picture || null, // ✅ use URL field, not Bytes
                 },
             });
         } else {
-            // ✅ Update Google info if missing
+            // ✅ Update only if Google data missing
             await prisma.user.update({
                 where: { id: user.id },
                 data: {
                     googleId: user.googleId || String(googleId || ""),
-                    profileImage: user.profileImage || picture || null,
+                    profileImgUrl: user.profileImgUrl || picture || null, // ✅ updated
                 },
             });
+
+            // ✅ Re-fetch updated user
+            user = await prisma.user.findUnique({ where: { id: user.id } });
         }
 
-        // ✅ Generate App JWT
+        // ✅ Generate JWT
         const token = jwt.sign(
             { id: user.id, email: user.email },
             process.env.JWT_SECRET,
             { expiresIn: "7d" }
         );
 
-        // ✅ Optional: Log login & session
+        // ✅ Log session
         try {
             await prisma.loginLog.create({
                 data: {
@@ -86,6 +88,7 @@ export const googleAuth = async (req, res) => {
                     location: "Unknown",
                 },
             });
+
             await prisma.session.create({
                 data: {
                     userId: user.id,
@@ -106,7 +109,7 @@ export const googleAuth = async (req, res) => {
                 firstName: user.firstName,
                 lastName: user.lastName,
                 email: user.email,
-                profileImage: user.profileImage,
+                profileImgUrl: user.profileImgUrl, // ✅ always use URL
                 name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || name,
             },
         });

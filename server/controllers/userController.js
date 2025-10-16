@@ -18,6 +18,9 @@ export const getMe = async (req, res) => {
                 lastName: true,
                 email: true,
                 profileImage: true, // binary buffer
+                isVerified: true,   // ✅ email verification status
+                is2FAEnabled: true, // ✅ two-factor status
+                createdAt: true,
             },
         });
 
@@ -25,23 +28,29 @@ export const getMe = async (req, res) => {
             return res.status(404).json({ message: "User not found" });
         }
 
+        // Convert image (if exists) to base64 for frontend
         let profileImageBase64 = null;
-
         if (user.profileImage) {
-            // Convert Prisma's Buffer (Uint8Array) to Base64
             const buffer = Buffer.from(user.profileImage);
             profileImageBase64 = `data:image/jpeg;base64,${buffer.toString("base64")}`;
         }
 
-        res.json({
+        res.status(200).json({
             id: user.id,
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
             profileImage: profileImageBase64,
+            success: true,
+            user: {
+                isVerified: user.isVerified,
+                is2FAEnabled: user.is2FAEnabled,
+                name: `${user.firstName} ${user.lastName}`.trim(),
+                createdAt: user.createdAt,
+            },
         });
     } catch (error) {
-        console.error(error);
+        console.error("Error in getMe:", error);
         res.status(500).json({ message: "Internal server error" });
     }
 };
@@ -125,6 +134,32 @@ export const getProfileImage = async (req, res) => {
     }
 };
 
+export const getPlanLimit = async (req, res) => {
+    try {
+        const payment = await prisma.payment.findFirst({
+            where: { userId: req.user.id, status: "success" },
+            orderBy: { paymentDate: "desc" },
+        });
+
+        let maxSessions = 1;
+        if (payment) {
+            switch (payment.planName?.toLowerCase()) {
+                case "essential": maxSessions = 3; break;
+                case "standard": maxSessions = 5; break;
+                case "premium": maxSessions = Infinity; break;
+            }
+        }
+
+        res.json({
+            success: true,
+            planName: payment?.planName || "Free",
+            maxSessions,
+        });
+    } catch (err) {
+        console.error("Error fetching plan limit:", err);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
 
 
 

@@ -8,17 +8,19 @@ datasource db {
 }
 
 model User {
-  id           Int      @id @default(autoincrement())
-  firstName    String
-  lastName     String
-  email        String   @unique
-  password     String?
-  googleId     String? // ✅ add this
-  profileImage String? // ✅ ensure this is String, not Bytes
-  createdAt    DateTime @default(now())
-  twoFASecret  String?
-  is2FAEnabled Boolean  @default(false)
-  updatedAt    DateTime @updatedAt
+  id            Int      @id @default(autoincrement())
+  firstName     String
+  lastName      String
+  email         String   @unique
+  password      String?
+  googleId      String? // ✅ add this
+  profileImage  Bytes?
+  profileImgUrl String?
+  createdAt     DateTime @default(now())
+  twoFASecret   String?
+  is2FAEnabled  Boolean  @default(false)
+  isVerified    Boolean  @default(false)
+  updatedAt     DateTime @updatedAt
 
   // New fields
   plan               String  @default("Free")
