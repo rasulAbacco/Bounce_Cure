@@ -3,6 +3,7 @@ import express from "express";
 import { prisma } from "../prisma/prismaClient.js";
 import { protect } from "../middleware/authMiddleware.js";
 import { z } from "zod";
+import { v4 as uuidv4 } from "uuid";
 
 const router = express.Router();
 
@@ -25,21 +26,11 @@ const orderSchema = z.object({
     }),
 });
 
-
 // ================== ORDER CODE GENERATOR ==================
-async function generateOrderCode(userId) {
-  const lastOrder = await prisma.order.findFirst({
-    where: { userId },
-    orderBy: { id: "desc" },
-  });
-
-  let lastNumber = 1000;
-  if (lastOrder?.orderCode) {
-    const match = lastOrder.orderCode.match(/\d+$/);
-    if (match) lastNumber = parseInt(match[0]);
-  }
-
-  return `ORD-${lastNumber + 1}`;
+// ✅ Globally unique order code using timestamp + UUID segment
+function generateOrderCode() {
+  const uniquePart = uuidv4().split("-")[0].toUpperCase();
+  return `ORD-${Date.now()}-${uniquePart}`;
 }
 
 // ================== GET ALL ORDERS (user only) ==================
@@ -78,48 +69,20 @@ router.post("/", async (req, res) => {
     }
 
     const { name, phone, plan, amount, status, date } = parsed.data;
+    const orderCode = generateOrderCode();
 
-    console.log("Parsed order data:", parsed.data);
-    console.log("User ID:", req.user.id);
-
-    let orderCode;
-    let newOrder;
-    let attempts = 0;
-
-    while (attempts < 5) {
-      try {
-        orderCode = await generateOrderCode(req.user.id);
-        console.log("Generated orderCode:", orderCode);
-
-        newOrder = await prisma.order.create({
-          data: {
-            orderCode,
-            name,
-            phone,
-            plan,
-            amount: String(amount), // ✅ convert amount to string (matches schema)
-            status,
-            date,
-            userId: req.user.id,
-          },
-        });
-
-        console.log("Order created successfully:", newOrder);
-        break;
-      } catch (err) {
-        console.error("Order creation attempt failed:", err);
-        if (err.code === "P2002") {
-          attempts++;
-        } else {
-          throw err;
-        }
-      }
-    }
-
-    if (!newOrder) {
-      console.error("All attempts to create order failed");
-      return res.status(500).json({ error: "Failed to create order after multiple attempts" });
-    }
+    const newOrder = await prisma.order.create({
+      data: {
+        orderCode,
+        name,
+        phone,
+        plan,
+        amount: String(amount),
+        status,
+        date,
+        userId: req.user.id,
+      },
+    });
 
     return res.status(201).json({
       id: newOrder.orderCode,
@@ -130,13 +93,11 @@ router.post("/", async (req, res) => {
       status: newOrder.status,
       date: newOrder.date,
     });
-
   } catch (error) {
-    console.error("Unexpected error creating order:", error);
+    console.error("Error creating order:", error);
     res.status(500).json({ error: "Internal server error" });
   }
 });
-
 
 // ================== UPDATE ORDER (user only) ==================
 router.put("/:id", async (req, res) => {
@@ -185,7 +146,7 @@ router.delete("/:id", async (req, res) => {
 
     await prisma.order.update({
       where: { id: order.id },
-      data: { deleted: true },
+      data: { deleted: true, deletedAt: new Date() },
     });
 
     res.json({ success: true });
@@ -199,7 +160,7 @@ router.delete("/:id", async (req, res) => {
 router.get("/deleted", async (req, res) => {
   try {
     const deletedOrders = await prisma.order.findMany({
-      where: { userId: req.user.id, delete: true },
+      where: { userId: req.user.id, deleted: true },
       orderBy: [{ deletedAt: "desc" }],
     });
 
@@ -215,7 +176,7 @@ router.put("/restore/:id", async (req, res) => {
   try {
     const { id } = req.params;
     const order = await prisma.order.findFirst({
-      where: { orderCode: id, userId: req.user.id, deleted:true },
+      where: { orderCode: id, userId: req.user.id, deleted: true },
     });
 
     if (!order) return res.status(404).json({ error: "Deleted order not found" });

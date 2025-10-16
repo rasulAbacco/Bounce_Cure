@@ -53,6 +53,7 @@ model User {
   VerifiedSender      VerifiedSender[]
   ScheduledCampaign   ScheduledCampaign[]
   BatchResult         BatchResult[]
+  CustomRecord        CustomRecord[]
 }
 
 model Content {
@@ -270,8 +271,22 @@ model Email {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Relation to EmailAccount
-  account EmailAccount @relation(fields: [accountId], references: [id])
+  // ✅ Added onDelete: Cascade here
+  account EmailAccount @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  attachments Attachment[]
+}
+
+model Attachment {
+  id       Int    @id @default(autoincrement())
+  emailId  Int
+  email    Email  @relation(fields: [emailId], references: [id], onDelete: Cascade)
+  filename String
+  mimetype String
+  size     Int
+  data     Bytes
+
+  createdAt DateTime @default(now())
 }
 
 model Reply {
@@ -290,7 +305,7 @@ model Lead {
   id        Int      @id @default(autoincrement())
   name      String
   email     String   @unique
-  campaign  String
+  company   String
   source    String
   status    String
   score     Int
@@ -551,4 +566,26 @@ model VerifiedSender {
 
   @@unique([email, userId])
   @@index([userId])
+}
+
+model CustomRecord {
+  id           String   @id @default(cuid())
+  recordType   String
+  name         String?
+  email        String?
+  phone        String?
+  company      String?
+  website      String?
+  source       String   @default("manual")
+  status       String?
+  score        Int?
+  last         String?
+  customFields Json?
+  userId       Int // must match User.id
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("custom_records")
 }

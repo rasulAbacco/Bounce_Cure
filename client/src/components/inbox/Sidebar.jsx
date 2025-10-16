@@ -49,22 +49,21 @@ export default function Sidebar({ conversations, onSelect, selected, refreshConv
         if (window.confirm(`Are you sure you want to delete ${selectedForDelete.length} conversation(s)?`)) {
             setIsDeleting(true);
             try {
-                // Delete each selected conversation
-                await Promise.all(
-                    selectedForDelete.map(conversation => 
-                        api.delete(`/conversations/${conversation.id}`)
-                    )
-                );
+                // Extract IDs and send to backend
+                const idsToDelete = selectedForDelete.map(c => c.id);
+                await api.delete("/conversations", { 
+                    data: { ids: idsToDelete } 
+                });
                 
                 // Refresh the conversation list
-                refreshConversations();
+                await refreshConversations();
                 
                 // Clear selection
                 setSelectedForDelete([]);
                 setSelectAll(false);
                 
                 // If the currently selected conversation was deleted, clear it
-                if (selectedForDelete.find(c => c.id === selected?.id)) {
+                if (selected && idsToDelete.includes(selected.id)) {
                     onSelect(null);
                 }
             } catch (err) {
@@ -104,7 +103,7 @@ export default function Sidebar({ conversations, onSelect, selected, refreshConv
                         <button
                             onClick={deleteSelectedConversations}
                             disabled={isDeleting}
-                            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded flex items-center"
+                            className="px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-sm rounded flex items-center disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isDeleting ? (
                                 <>
@@ -115,7 +114,12 @@ export default function Sidebar({ conversations, onSelect, selected, refreshConv
                                     Deleting...
                                 </>
                             ) : (
-                                "Delete"
+                                <>
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                    </svg>
+                                    Delete
+                                </>
                             )}
                         </button>
                     </div>
