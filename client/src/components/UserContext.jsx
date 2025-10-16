@@ -9,10 +9,10 @@ export const UserProvider = ({ children }) => {
         email: '',
         profileImage: '',
         plan: 'Free',
-        contactLimit: 500,
-        emailLimit: 1000,
+        contactLimit: 50,
+        emailLimit: 50,
         contactsUsed: 0,
-        contactsRemaining: 500
+        contactsRemaining: 50
     });
 
     // Utility functions to read from localStorage
@@ -20,12 +20,12 @@ export const UserProvider = ({ children }) => {
     
     const getCurrentPlanFeatures = () => {
         const features = JSON.parse(localStorage.getItem('planFeatures') || '{}');
-        return features.maxContacts ? features : { maxContacts: 500, maxEmails: 1000 };
+        return features.maxContacts ? features : { maxContacts: 50, maxEmails: 50 };
     };
 
     const getContactUsage = () => {
         const usage = JSON.parse(localStorage.getItem('contactUsage') || '{}');
-        return usage.used !== undefined ? usage : { used: 0, remaining: 500 };
+        return usage.used !== undefined ? usage : { used: 0, remaining: 50 };
     };
 
     const loadUserData = () => {

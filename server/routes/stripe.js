@@ -98,26 +98,33 @@ router.post("/save-payment", async (req, res) => {
     const paymentDateObj = paymentDate ? new Date(paymentDate) : new Date();
     const nextPaymentDate = getNextPaymentDate(paymentDateObj, planType);
     
-    const paymentData = {
-      userId: userIdInt, // Now properly converted to integer
-      name,
-      email,
-      transactionId,
-      planName,
-      planType,
-      provider,
-      contacts: Number(contacts) || 0, // Ensure it's a number
-      amount: Number(amount),
-      currency: currency || 'usd',
-      planPrice: Number(planPrice) || Number(amount),
-      discount: Number(discount) || 0,
-      paymentMethod: paymentMethod || 'card',
-      cardLast4: cardLast4 || '',
-      billingAddress: billingAddress || '',
-      paymentDate: paymentDateObj,
-      nextPaymentDate: new Date(nextPaymentDate),
-      status: status || 'succeeded',
-    };
+  const paymentData = {
+    userId: userIdInt,
+    name,
+    email,
+    transactionId,
+    planName,
+    planType,
+    provider,
+
+    // ✅ New credit fields
+    emailVerificationCredits:
+      Number(req.body.emailVerificationCredits || req.body.contacts || 0),
+    emailSendCredits:
+      Number(req.body.emailSendCredits || req.body.emails || 0),
+
+    amount: Number(amount),
+    currency: currency || "usd",
+    planPrice: Number(planPrice) || Number(amount),
+    discount: Number(discount) || 0,
+    paymentMethod: paymentMethod || "card",
+    cardLast4: cardLast4 || "",
+    billingAddress: billingAddress || "",
+    paymentDate: paymentDateObj,
+    nextPaymentDate: new Date(nextPaymentDate),
+    status: status || "succeeded",
+  };
+
 
     // Save payment in database
     const payment = await prisma.payment.create({ data: paymentData });

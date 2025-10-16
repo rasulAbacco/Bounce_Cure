@@ -58,7 +58,7 @@ import creditcardRoutes from './routes/creditcard.js';
 import contactRoutes from './routes/ContactUs.js';
 import userRoutes from './routes/user.js';
 import customRoutes from "./routes/customRoutes.js";
-
+import upiRoutes from './routes/upi.js'; 
 dotenv.config();
 
 // Init
@@ -116,7 +116,7 @@ io.on('connection', (socket) => {
 // CORS
 
 
-app.use(express.json());
+ 
 
 app.use((req, res, next) => {
   console.log(`📥 [${req.method}] ${req.url} | Body:`, req.body);
@@ -124,10 +124,8 @@ app.use((req, res, next) => {
 });
 
 
-app.use(express.json());
-
-app.use(express.urlencoded({ extended: true }));
-
+app.use(express.json({ limit: '50mb' })); 
+app.use(express.urlencoded({ limit: '50mb', extended: true }));
 // ----------------------- Routes -----------------------
 app.use('/api', userRoutes);
 

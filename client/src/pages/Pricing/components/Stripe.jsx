@@ -55,13 +55,17 @@ function StripeForm() {
   };
 
   // Format price with selected currency
-  const formatCurrency = (amount, currency) => {
-    const convertedAmount = amount * exchangeRates[currency];
-    const symbol = currencySymbols[currency];
-    if (currency === "JPY") return `${symbol}${Math.round(convertedAmount)}`;
-    if (currency === "CHF") return `${Math.round(convertedAmount * 100) / 100} ${symbol}`;
-    return `${symbol}${convertedAmount.toFixed(2)}`;
-  };
+const formatCurrency = (amount, currency) => {
+    const symbol = currencySymbols[currency] || '$';
+    
+    if (currency === 'JPY') {
+        return `${symbol}${Math.round(amount)}`;
+    } else if (currency === 'CHF') {
+        return `${amount.toFixed(2)} ${symbol}`;
+    } else {
+        return `${symbol}${amount.toFixed(2)}`;
+    }
+};
 
   const [email, setEmail] = useState("");
   const [canEditEmail, setCanEditEmail] = useState(false);
@@ -105,125 +109,172 @@ function StripeForm() {
     else if (storedName) setName(storedName);
   }, [location.state, navigate]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+const handleSubmit = async (e) => {
+  e.preventDefault();
 
-    if (!plan) {
-      setStatus("❌ No plan selected");
+  if (!plan) {
+    setStatus("❌ No plan selected");
+    return;
+  }
+
+  setLoading(true);
+  setStatus("Processing payment...");
+
+  const usdAmount = parseFloat(plan.totalCost || 0);
+  const convertedAmount = convertAmountToCurrency(usdAmount, selectedCurrency);
+  const amount = parseFloat(convertedAmount.toFixed(2));
+
+  const userId = localStorage.getItem("userId") || 1;
+  const billingAddress = `${line1}, ${city}, ${postalCode}`;
+  const discount = plan?.discountAmount || 0;
+
+  console.log("💳 Processing payment for plan:", plan.planName);
+  console.log("💰 Amount:", amount, selectedCurrency);
+
+  try {
+    // Step 1: Create payment intent
+    console.log("🔄 Step 1: Creating payment intent...");
+    const { data } = await axios.post(`${API_URL}/api/stripe/create-payment-intent`, {
+      amount,
+      email,
+      userId,
+      planName: plan.planName,
+      planType: plan.billingPeriod,
+      provider: "Stripe",
+      contacts: plan.slots || plan.contactCount || 0,
+      currency: selectedCurrency.toLowerCase(),
+    });
+
+    console.log("✅ Payment intent created:", data.transactionId);
+
+    // Step 2: Confirm payment
+    console.log("🔄 Step 2: Confirming payment...");
+    const result = await stripe.confirmCardPayment(data.clientSecret, {
+      payment_method: {
+        card: elements.getElement(CardElement),
+        billing_details: {
+          name,
+          email,
+          address: {
+            line1,
+            city,
+            country: getCountryCode(selectedCurrency),
+            postal_code: postalCode,
+          },
+        },
+      },
+    });
+
+    // Step 3: Handle result
+    if (result.error) {
+      console.error("❌ Payment error:", result.error);
+      setStatus(`❌ ${result.error.message}`);
       return;
     }
 
-    setLoading(true);
-    setStatus("Processing payment...");
+   if (result.paymentIntent.status === "succeeded") {
+  console.log("✅ Payment succeeded!");
+  setStatus("✅ Payment successful! Sending Amount...");
 
-    const usdAmount = parseFloat(plan.totalCost || 0);
-    const convertedAmount = convertAmountToCurrency(usdAmount, selectedCurrency);
-    const amount = parseFloat(convertedAmount.toFixed(2));
+  const paymentIntent = result.paymentIntent;
 
-    const userId = localStorage.getItem("userId") || 1;
-    const billingAddress = `${line1}, ${city}, ${postalCode}`;
-    const discount = plan?.discountAmount || 0;
+  // Save payment record to backend
+ await axios.post(`${API_URL}/api/stripe/save-payment`, {
+  userId,
+  name,
+  email,
+  transactionId: paymentIntent.id,
+  planName: plan.planName,
+  planType: plan.billingPeriod,
+  provider: "Stripe",
 
-    console.log("💳 Processing payment for plan:", plan.planName);
-    console.log("💰 Amount:", amount, selectedCurrency);
+  // ✅ Important: send both fields
+  emailVerificationCredits:
+    plan.verificationCredits || plan.slots || plan.contactCount || 0,
+  emailSendCredits: plan.emails || plan.emailSends || 0,
 
-    try {
-      // Step 1: Create payment intent
-      console.log("🔄 Step 1: Creating payment intent...");
-      const { data } = await axios.post(`${API_URL}/api/stripe/create-payment-intent`, {
-        amount,
-        email,
-        userId,
-        planName: plan.planName,
-        planType: plan.billingPeriod,
-        provider: "Stripe",
-        contacts: plan.slots || plan.contactCount || 0,
-        currency: selectedCurrency.toLowerCase(),
-      });
+  amount,
+  currency: selectedCurrency.toLowerCase(),
+  planPrice: amount - discount,
+  discount,
+  paymentMethod: paymentIntent.payment_method_types[0],
+  cardLast4:
+    paymentIntent.charges?.data[0]?.payment_method_details?.card?.last4 || "",
+  billingAddress,
+  paymentDate: new Date().toISOString(),
+  status: paymentIntent.status,
+});
 
-      console.log("✅ Payment intent created:", data.transactionId);
 
-      // Step 2: Confirm payment with card
-      console.log("🔄 Step 2: Confirming payment...");
-      const result = await stripe.confirmCardPayment(data.clientSecret, {
-        payment_method: {
-          card: elements.getElement(CardElement),
-          billing_details: {
-            name,
-            email,
-            address: {
-              line1,
-              city,
-              country: getCountryCode(selectedCurrency),
-              postal_code: postalCode,
-            },
-          },
-        },
-      });
+  console.log("✅ Payment saved. Invoice sent.");
 
-      // Step 3: Handle success or error
-      if (result.error) {
-        console.error("❌ Payment error:", result.error);
-        setStatus(`❌ ${result.error.message}`);
-      } else if (result.paymentIntent.status === "succeeded") {
-        console.log("✅ Payment succeeded!");
-        setStatus("✅ Payment successful! Sending invoice...");
+  // ===== Merge with previous totals =====
+  const prevEmails = parseInt(localStorage.getItem("totalEmails")) || 0;
+  const prevVerifications =
+    localStorage.getItem("emailVerificationCredits") === "Unlimited"
+      ? "Unlimited"
+      : parseInt(localStorage.getItem("emailVerificationCredits")) || 0;
 
-        const paymentIntent = result.paymentIntent;
+  const isEmailVerification =
+    plan.planType === "email-verification" ||
+    plan.pricingModel === "email-verification";
 
-        // Step 4: Save payment to backend (backend auto-sends invoice)
-        console.log("🔄 Step 3: Saving payment to backend...");
-        await axios.post(`${API_URL}/api/stripe/save-payment`, {
-          userId,
-          name,
-          email,
-          transactionId: paymentIntent.id,
-          planName: plan.planName,
-          planType: plan.billingPeriod,
-          provider: "Stripe",
-          contacts: plan.slots || plan.contactCount || 0,
-          amount,
-          currency: selectedCurrency.toLowerCase(),
-          planPrice: amount - discount,
-          discount,
-          paymentMethod: paymentIntent.payment_method_types[0],
-          cardLast4:
-            paymentIntent.charges?.data[0]?.payment_method_details?.card?.last4 || "",
-          billingAddress,
-          paymentDate: new Date().toISOString(),
-          status: paymentIntent.status,
-        });
+  // Contacts are merged into Email Verifications
+  const additionalVerifications =
+    plan.verificationCredits ||
+    plan.slots ||
+    plan.contactCount ||
+    0;
 
-        console.log("✅ Payment saved. Invoice email sent via backend.");
-        setStatus("✅ Payment successful! Invoice sent to your email.");
+  const newEmails = prevEmails + (plan.emails || plan.emailSends || 0);
+  const newVerifications =
+    prevVerifications === "Unlimited" ||
+    plan.verificationCredits === "Unlimited"
+      ? "Unlimited"
+      : prevVerifications + additionalVerifications;
 
-        // Initialize user after purchase
-        console.log("💾 Initializing user data after purchase");
-        const initSuccess = initializeUserAfterPurchase({
-          planName: plan.planName,
-          slots: plan.slots || plan.contactCount || 0,
-          contactCount: plan.slots || plan.contactCount || 0,
-          emails: plan.emails || 0,
-        });
+  // Save new totals
+  localStorage.setItem("totalEmails", newEmails);
+  localStorage.setItem("emailVerificationCredits", newVerifications);
 
-        if (!initSuccess) console.error("⚠️ Failed to initialize user data");
+  console.log("📊 Updated Totals:", {
+    "Email Verifications": newVerifications,
+    "Send Emails": newEmails,
+  });
+  // --- 🩵 Default counts for Free Plan (new users) ---
+const isNewUser = !localStorage.getItem("emailVerificationCredits");
 
-        localStorage.setItem("totalEmails", plan.emails || 0);
-        localStorage.removeItem("pendingUpgradePlan");
-        sessionStorage.removeItem("pendingUpgradePlan");
+if (isNewUser && (plan.planName?.toLowerCase() === "free")) {
+  console.log("🆕 Initializing default Free Plan counts");
+  localStorage.setItem("emailVerificationCredits", 50);
+  localStorage.setItem("totalEmails", 50);
+}
 
-        setTimeout(() => {
-          console.log("🔄 Redirecting to dashboard...");
-          window.location.href = "/dashboard";
-        }, 3000);
-      }
-    } catch (error) {
-      console.error("❌ Error during payment process:", error);
-      setStatus(`❌ Something went wrong: ${error.message}`);
-    } finally {
-      setLoading(false);
-    }
-  };
+
+  // Initialize after purchase
+  initializeUserAfterPurchase({
+    planName: plan.planName,
+    emails: newEmails,
+    verifications: newVerifications,
+  });
+
+  localStorage.removeItem("pendingUpgradePlan");
+  sessionStorage.removeItem("pendingUpgradePlan");
+
+  setStatus("✅ Payment successful! Redirecting to Dashboard...");
+  setTimeout(() => {
+    window.location.href = "/dashboard";
+  }, 3000);
+}
+
+  } catch (error) {
+    console.error("❌ Error during payment process:", error);
+    setStatus(`❌ Something went wrong: ${error.message}`);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   const getCountryCode = (currency) => {
     const countryMap = {
@@ -282,7 +333,9 @@ function StripeForm() {
                 <p className="text-slate-400 text-sm">
                   {plan.slots || plan.contactCount || 0} contacts
                 </p>
-                <p className="text-slate-400 text-sm">{plan.emails || 0} emails/mo</p>
+                <p className="text-slate-400 text-sm">
+                  {(plan.emails ?? plan.emailSends ?? 0).toLocaleString()} emails/mo
+                </p>
                 <p className="text-slate-400 text-sm">{plan.billingPeriod}</p>
               </div>
             </div>

@@ -151,7 +151,7 @@ function App() {
             <Route path="/verify-email" element={<ProtectedRoute><VerifyEmail /></ProtectedRoute>} />
             
             {/* Multimedia Campaigns */}
-            <Route path="/MultimediaCampaign" element={<ProtectedRoute><MultimediaCampaign /></ProtectedRoute>} />
+            <Route path="/MultimediaCampaigns" element={<ProtectedRoute><MultimediaCampaign /></ProtectedRoute>} />
             <Route path="/whatsapp" element={<ProtectedRoute><WhatsappCampaign /></ProtectedRoute>} />
             <Route path="/sms" element={<ProtectedRoute><SMScampaign /></ProtectedRoute>} />
             <Route path="/texteditor" element={<ProtectedRoute><CampaignTextEditor /></ProtectedRoute>} />

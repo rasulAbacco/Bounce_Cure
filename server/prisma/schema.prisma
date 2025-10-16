@@ -23,8 +23,8 @@ model User {
   // New fields
   plan               String  @default("Free")
   hasPurchasedBefore Boolean @default(false)
-  contactLimit       Int     @default(500)
-  emailLimit         Int     @default(1000)
+  contactLimit       Int     @default(50)
+  emailLimit         Int     @default(50)
 
   // Relations (leave them as-is)
   apiKeys             ApiKey[]
@@ -422,15 +422,19 @@ model MmsRecipient {
 }
 
 model Payment {
-  id              Int      @id @default(autoincrement())
-  userId          Int
-  email           String
-  name            String
-  transactionId   String   @unique
-  planName        String
-  planType        String
-  provider        String
-  contacts        Int
+  id                       Int    @id @default(autoincrement())
+  userId                   Int
+  email                    String
+  name                     String
+  // ✅ New fields replacing old "contacts"
+  emailVerificationCredits Int    @default(0)
+  emailSendCredits         Int    @default(0)
+
+  transactionId String @unique
+  planName      String
+  planType      String
+  provider      String
+
   amount          Float
   currency        String
   planPrice       Float
@@ -439,13 +443,13 @@ model Payment {
   cardLast4       String?
   billingAddress  String?
   paymentDate     DateTime
-  nextPaymentDate DateTime
+  nextPaymentDate DateTime?
   status          String
-  notified        Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  notified        Boolean   @default(false)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
-  // Relation to User model
+  // ✅ Relation to User model
   User User @relation(fields: [userId], references: [id])
 }
 
