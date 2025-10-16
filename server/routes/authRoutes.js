@@ -16,6 +16,9 @@ import {
     verify2FA,
     verifyAuth,
     testEmail,
+    createSession,
+    logoutSession,
+    logoutAllSessions
 } from '../controllers/authController.js';
 
 import {
@@ -24,6 +27,7 @@ import {
     uploadProfileImage,
     getMe,
     getProfileImage,
+    getPlanLimit,
 } from '../controllers/userController.js';
 
 import { protect } from '../middleware/authMiddleware.js';
@@ -59,6 +63,21 @@ router.post('/auth/send-verification-email', verifyAuth, sendVerificationEmail);
 // Test route (optionally protect if desired)
 router.get('/test-email', testEmail);
 router.post("/google", googleAuth); // 👈 new route
+// authRoutes.js
+router.get("/plan-limit", protect, getPlanLimit);
+
+// ✅ Active sessions
+router.get("/active-sessions", protect, getActiveSessions);
+
+// ✅ Create session (usually called after login)
+router.post("/sessions", protect, createSession);
+
+// ✅ Logout a specific session
+router.delete("/sessions/:id", protect, logoutSession);
+
+// ✅ Logout all sessions
+router.delete("/sessions", protect, logoutAllSessions);
+
 
 // Uncomment if you want to enable login logs endpoint
 // router.get('/login-logs', protect, getLoginLogs);

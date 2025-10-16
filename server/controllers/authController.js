@@ -5,10 +5,7 @@ import { PrismaClient } from "@prisma/client";
 
 import { prisma } from "../prisma/prismaClient.js";
 import sendEmail from '../utils/emailService.js';
-import { generateOTP } from "../utils/generateOTP.js";
-import { generateQRCode } from "../utils/generateQRCode.js";
-import speakeasy from 'speakeasy'; // for TOTP 2FA
- 
+
 
 // Signup
 export const signup = async (req, res) => {
@@ -156,28 +153,76 @@ export const getLoginLogs = async (req, res) => {
 
 // Send verification email
 export const sendVerificationEmail = async (req, res) => {
-  const { email } = req.user;  // user email from JWT
-  const token = jwt.sign({ email }, process.env.JWT_SECRET, { expiresIn: '15m' });
-  const link = `${process.env.BASE_URL}/verify-email?token=${token}`;
+    try {
+        // req.user comes from JWT (id + email)
+        const { id, email } = req.user;
 
-  try {
-    await sendEmail({
-      to: email,
-      subject: "Verify your account",
-      html: `<p>Click to verify:</p><a href="${link}">${link}</a>`
-    });
+        if (!email) {
+            return res.status(400).json({ success: false, message: "User email not found in token" });
+        }
 
-    res.json({ success: true, message: "Verification email sent!" });
-  } catch (err) {
-    console.error("Email send error:", err);
-    res.status(500).json({ success: false, message: err.message });
-  }
+        // Fetch full user details
+        const user = await prisma.user.findUnique({
+            where: { id },
+            select: { firstName: true, lastName: true, email: true },
+        });
+
+        if (!user) {
+            return res.status(404).json({ success: false, message: "User not found" });
+        }
+
+        const token = jwt.sign({ email: user.email }, process.env.JWT_SECRET, { expiresIn: "15m" });
+        const verificationLink = `${process.env.BACKEND_URL}/api/auth/verify-email?token=${token}`;
+
+        const htmlContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Verify Your Email - BounceCure</title>
+      </head>
+      <body style="font-family:Arial,sans-serif;background-color:#f6f9fc;padding:0;margin:0;">
+        <div style="max-width:600px;margin:40px auto;background:#fff;border-radius:10px;overflow:hidden;box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+          <div style="background:linear-gradient(135deg,#4f46e5,#3b82f6);color:#fff;padding:24px;text-align:center;">
+            <h1 style="margin:0;font-size:24px;">Verify Your Email</h1>
+          </div>
+          <div style="padding:32px;text-align:left;">
+            <h2 style="color:#111827;">Hi ${user.firstName || ''} ${user.lastName || ''},</h2>
+            <p style="color:#4b5563;font-size:15px;">Welcome to <strong>BounceCure</strong>! To complete your registration, please verify your email address by clicking the button below.</p>
+            <a href="${verificationLink}" style="display:inline-block;margin-top:25px;padding:12px 28px;background:linear-gradient(135deg,#3b82f6,#2563eb);color:white;text-decoration:none;border-radius:8px;font-weight:600;">Verify My Email</a>
+            <p style="margin-top:20px;font-size:13px;color:#6b7280;">If you did not create a BounceCure account, please ignore this email.</p>
+          </div>
+          <div style="background-color:#f9fafb;padding:20px;text-align:center;font-size:12px;color:#6b7280;">
+            © ${new Date().getFullYear()} BounceCure. All rights reserved.
+          </div>
+        </div>
+      </body>
+      </html>
+    `;
+
+        await sendEmail({
+            to: user.email,
+            subject: "Verify your BounceCure account",
+            html: htmlContent,
+        });
+
+        console.log(`✅ Verification email sent to ${user.email}`);
+
+        res.status(200).json({
+            success: true,
+            message: "Verification email sent successfully!",
+        });
+    } catch (err) {
+        console.error("❌ Email send error:", err);
+        res.status(500).json({ success: false, message: "Failed to send verification email." });
+    }
 };
 
 
-
-
-// Verify email
+/**
+ * Verify user email via token in query
+ */
 export const verifyEmail = async (req, res) => {
     const { token } = req.query;
 
@@ -190,21 +235,26 @@ export const verifyEmail = async (req, res) => {
         const email = decoded?.email;
 
         if (!email) {
-            return res.status(400).send("Invalid token payload.");
+            return res.status(400).send("Invalid verification token payload.");
         }
 
-        await prisma.user.update({
+        // Update user status
+        const updatedUser = await prisma.user.updateMany({
             where: { email },
             data: { isVerified: true },
         });
 
-        // ✅ Redirect to frontend success page
+        if (updatedUser.count === 0) {
+            console.warn("No user found for email:", email);
+            return res.redirect(`${process.env.FRONTEND_URL}/email-verification-failed`);
+        }
+
+        console.log(`✅ Email verified successfully for ${email}`);
+
+        // Redirect to frontend success page
         res.redirect(`${process.env.FRONTEND_URL}/email-verified`);
-
     } catch (error) {
-        console.error("Email verification error:", error.message || error);
-
-        // ❌ Redirect to error page
+        console.error("❌ Email verification error:", error.message || error);
         res.redirect(`${process.env.FRONTEND_URL}/email-verification-failed`);
     }
 };
@@ -298,9 +348,9 @@ export const enable2FA = async (req, res) => {
         });
 
         console.log(`✅ 2FA OTP sent to: ${user.email}`);
-        res.status(200).json({ 
-            success: true, 
-            message: 'OTP sent to your email successfully' 
+        res.status(200).json({
+            success: true,
+            message: 'OTP sent to your email successfully'
         });
 
     } catch (error) {
@@ -348,9 +398,9 @@ export const verify2FA = async (req, res) => {
         await prisma.oTPCode.deleteMany({ where: { userId } });
 
         console.log(`✅ 2FA enabled for user: ${user.email}`);
-        res.json({ 
-            success: true, 
-            message: '2FA enabled successfully' 
+        res.json({
+            success: true,
+            message: '2FA enabled successfully'
         });
 
     } catch (err) {
@@ -383,9 +433,9 @@ export const disable2FA = async (req, res) => {
         await prisma.oTPCode.deleteMany({ where: { userId } });
 
         console.log(`✅ 2FA disabled for user: ${user.email}`);
-        res.json({ 
-            success: true, 
-            message: '2FA disabled successfully' 
+        res.json({
+            success: true,
+            message: '2FA disabled successfully'
         });
 
     } catch (error) {
@@ -399,7 +449,7 @@ export const getUserProfile = async (req, res) => {
     try {
         const userId = req.user.id;
 
-        const user = await prisma.user.findUnique({ 
+        const user = await prisma.user.findUnique({
             where: { id: userId },
             select: {
                 id: true,
@@ -493,40 +543,125 @@ export const getActiveSessions = async (req, res) => {
     }
 };
 
+// server/controllers/authController.js
+
+// server/controllers/authController.js
+
 export const createSession = async (req, res) => {
     try {
         if (!req.user) return res.status(401).json({ message: "Unauthorized" });
 
         const { device, ipAddress } = req.body;
+        const userId = req.user.id;
 
-        // fetch all sessions of this user
-        const existingSessions = await prisma.session.findMany({
-            where: { userId: req.user.id },
-            orderBy: { createdAt: "asc" }, // oldest first
+        // 🧾 Step 1: Fetch user's latest active payment plan
+        const payment = await prisma.payment.findFirst({
+            where: { userId, status: "success" },
+            orderBy: { paymentDate: "desc" },
         });
 
-        if (existingSessions.length >= 3) {
-            // delete the oldest one
-            await prisma.session.delete({
-                where: { id: existingSessions[0].id },
+        // Default plan limit
+        let maxSessions = 1;
+        let planName = "Free";
+
+        if (payment) {
+            planName = payment.planName?.toLowerCase() || "free";
+
+            switch (planName) {
+                case "essential":
+                    maxSessions = 3;
+                    break;
+                case "standard":
+                case "standard plan":
+                    maxSessions = 5;
+                    break;
+                case "premium":
+                case "premium plan":
+                    maxSessions = Infinity; // unlimited
+                    break;
+                default:
+                    maxSessions = 1;
+            }
+        }
+
+        // 🧮 Step 2: Count current active sessions
+        const activeCount = await prisma.session.count({ where: { userId } });
+
+        // 🚫 Step 3: Block login if limit reached
+        if (maxSessions !== Infinity && activeCount >= maxSessions) {
+            console.warn(`❌ Login denied: user ${userId} exceeded session limit (${activeCount}/${maxSessions})`);
+
+            return res.status(403).json({
+                success: false,
+                message: `You have reached your session limit (${maxSessions}). Please log out from another device.`,
             });
         }
 
-        // create new session
+        // ✅ Step 4: Create new session
         const newSession = await prisma.session.create({
             data: {
-                userId: req.user.id,
+                userId,
                 device: device || "Unknown Device",
                 ipAddress: ipAddress || "N/A",
             },
         });
 
-        res.status(201).json({ success: true, data: newSession });
+        console.log(
+            `✅ New session created for user ${userId} (${device || "Unknown"}) | Plan: ${planName}`
+        );
+
+        res.status(201).json({
+            success: true,
+            data: newSession,
+            message: `Session created successfully (${activeCount + 1}/${maxSessions === Infinity ? "Unlimited" : maxSessions})`,
+        });
     } catch (err) {
         console.error("Error creating session:", err);
         res.status(500).json({ success: false, message: "Internal server error" });
     }
 };
+
+
+// server/controllers/authController.js
+
+// Logout (delete) a specific session by ID
+export const logoutSession = async (req, res) => {
+    try {
+        const { id } = req.params;
+        const userId = req.user.id;
+
+        // Check if session belongs to the user
+        const session = await prisma.session.findUnique({ where: { id: parseInt(id) } });
+
+        if (!session || session.userId !== userId) {
+            return res.status(404).json({ success: false, message: "Session not found" });
+        }
+
+        await prisma.session.delete({ where: { id: session.id } });
+
+        console.log(`🟡 Session ${id} logged out for user ${userId}`);
+        res.json({ success: true, message: "Session logged out successfully" });
+    } catch (err) {
+        console.error("Logout session error:", err);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
+// Logout all sessions for the current user
+export const logoutAllSessions = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        await prisma.session.deleteMany({ where: { userId } });
+
+        console.log(`🔴 All sessions logged out for user ${userId}`);
+        res.json({ success: true, message: "All sessions logged out successfully" });
+    } catch (err) {
+        console.error("Logout all sessions error:", err);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+};
+
+
 
 
 
