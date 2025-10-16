@@ -61,7 +61,7 @@ import upiRoutes from "./routes/upi.js";
 import bodyParser from "body-parser";
 // ENV setup
 import customRoutes from "./routes/customRoutes.js";
-
+import upiRoutes from './routes/upi.js'; 
 dotenv.config();
 
 // Init
@@ -119,7 +119,7 @@ io.on('connection', (socket) => {
 // CORS
 
 
-app.use(express.json());
+ 
 
 app.use((req, res, next) => {
   console.log(`📥 [${req.method}] ${req.url} | Body:`, req.body);

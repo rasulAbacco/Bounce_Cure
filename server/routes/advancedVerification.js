@@ -182,7 +182,7 @@ class AdvancedVerifier {
   }
 
   // Wait for batch completion with polling
-  async waitForBatchCompletion(batchId, maxAttempts = 12, interval = 5000) {
+async waitForBatchCompletion(batchId, maxAttempts = 30, interval = 10000) {
     let attempts = 0;
     while (attempts < maxAttempts) {
       const status = await this.getBatchStatusWithMailsSo(batchId);

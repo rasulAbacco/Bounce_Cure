@@ -176,7 +176,7 @@ const EmailVerificationPage = () => {
                     <p className="text-gray-300 mb-8 text-lg max-w-2xl mx-auto">
                         Join thousands of businesses using our platform to maintain clean email lists and improve campaign performance.
                     </p>
-                    <Link to="/login" className="bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-bold py-4 px-8 rounded-2xl hover:from-amber-400 hover:to-yellow-400 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/30">
+                    <Link to="/pricing" className="bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-bold py-4 px-8 rounded-2xl hover:from-amber-400 hover:to-yellow-400 transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-amber-500/30">
                         Get Started Free
                     </Link>
                 </section>

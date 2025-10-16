@@ -10,8 +10,8 @@ export const PLAN_FEATURES = {
     automation: false,
     analytics: true,
     verification: false,
-    maxContacts: 500,
-    maxEmails: 1000,
+    maxContacts: 50,
+    maxEmails: 50,
   },
   Essentials: {
     crm: false,

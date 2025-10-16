@@ -29,7 +29,7 @@ const Sidebar = ({ isOpen, toggleSidebar, pageName }) => {
         { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/dashboard', requiresCRM: false },
         { id: 'CRM', label: 'CRM', icon: Users, path: '/contacts', requiresCRM: true },
         { id: 'builder', label: 'Email Campaign', icon: PenTool, path: '/email-campaign', requiresCRM: false },
-        { id: 'multimedia', label: 'Multimedia Campaigns', icon: Wrench, path: '/MultimediaCampaign', requiresCRM: false },
+        { id: 'multimedia', label: 'Multimedia Campaigns', icon: Wrench, path: '/MultimediaCampaigns', requiresCRM: false },
         { id: 'automation', label: 'Automation', icon: Zap, path: '/automation', requiresCRM: false },
         { id: 'analytics', label: 'Analytics', icon: BarChart3, path: '/analytics', requiresCRM: false },
         { id: 'verification', label: 'Email Verification', icon: UserCheck, path: '/verification', requiresCRM: false },

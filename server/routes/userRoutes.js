@@ -48,8 +48,8 @@ router.post("/signup", async (req, res) => {
         password: hashedPassword,
         plan: "Free",
         hasPurchasedBefore: false,
-        contactLimit: 500,
-        emailLimit: 1000
+        contactLimit: 50,
+        emailLimit: 50
       },
     });
 
