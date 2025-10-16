@@ -1,132 +1,84 @@
 // server/services/notificationService.js
 import { prisma } from "../prisma/prismaClient.js";
+import nodemailer from "nodemailer";
 
-export async function sendNotification(userId, { subject, message }) {
-  return prisma.notification.create({
-    data: {
-      userId,
-      subject,
-      message,
-      read: false,
-    },
-  });
+/**
+ * Send in-app and/or email notification.
+ * If userId is null, only email is sent.
+ */
+export async function sendNotification(userId, { subject, message, to }) {
+  try {
+    // ✅ In-app notification (only if userId exists)
+    if (userId) {
+      await prisma.inAppNotification.create({
+        data: {
+          userId,
+          subject,
+          message,
+          read: false,
+        },
+      });
+      console.log(`📩 In-app notification created for user ${userId}`);
+    } else {
+      console.log("⚠️ Skipping in-app notification (no valid userId)");
+    }
+
+    // ✅ Email notification (only if 'to' is provided)
+    if (to) {
+      const transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.SMTP_EMAIL,
+          pass: process.env.SMTP_PASSWORD,
+        },
+      });
+
+      await transporter.sendMail({
+        from: `"Bounce Cure" <${process.env.SMTP_EMAIL}>`,
+        to,
+        subject,
+        html: `<p>${message}</p>`,
+      });
+
+      console.log(`📧 Email sent to ${to}`);
+    }
+  } catch (err) {
+    console.error("❌ sendNotification error:", err);
+  }
 }
 
+/**
+ * Get all in-app notifications for a user
+ */
 export async function getUserNotifications(userId) {
-  return prisma.notification.findMany({
-    where: { userId },
-    orderBy: { createdAt: "desc" },
-  });
+  try {
+    return await prisma.inAppNotification.findMany({
+      where: { userId },
+      orderBy: { createdAt: "desc" },
+    });
+  } catch (err) {
+    console.error("❌ getUserNotifications error:", err);
+    return [];
+  }
 }
 
+/**
+ * Mark one notification as read
+ */
 export async function markNotificationAsRead(id, userId) {
-  const notification = await prisma.notification.findFirst({
-    where: { id, userId },
-  });
+  try {
+    const notification = await prisma.inAppNotification.findFirst({
+      where: { id, userId },
+    });
 
-  if (!notification) return null;
+    if (!notification) return null;
 
-  return prisma.notification.update({
-    where: { id },
-    data: { read: true },
-  });
+    return await prisma.inAppNotification.update({
+      where: { id },
+      data: { read: true },
+    });
+  } catch (err) {
+    console.error("❌ markNotificationAsRead error:", err);
+    return null;
+  }
 }
-
-
-// // services/notificationService.js
-// import { Resend } from "resend";
-// import { PrismaClient } from "@prisma/client";
-// import twilio from "twilio";
-
-// const prisma = new PrismaClient();
-
-// // Resend (Email)
-// const resend = new Resend(process.env.RESEND_API_KEY);
-
-// // Twilio (SMS)
-// const twilioClient = twilio(
-//   process.env.TWILIO_SID,
-//   process.env.TWILIO_AUTH_TOKEN
-// );
-
-// /**
-//  * Send notification via email, SMS, and in-app
-//  */
-// export async function sendNotification(userId, { subject, message }) {
-//   const settings = await prisma.notificationSetting.findUnique({
-//     where: { userId },
-//   });
-
-//   const user = await prisma.user.findUnique({ where: { id: userId } });
-
-//   if (!settings) return;
-
-//   // ---- EMAIL ----
-//   if (settings.email && user?.email) {
-//     await resend.emails.send({
-//       from: "no-reply@yourapp.com",
-//       to: user.email,
-//       subject,
-//       html: `<p>${message}</p>`,
-//     });
-//   }
-
-//   // ---- SMS ----
-//   if (settings.sms && user?.phone) {
-//     await twilioClient.messages.create({
-//       body: message,
-//       from: process.env.TWILIO_PHONE_NUMBER,
-//       to: user.phone,
-//     });
-//   }
-
-//   // ---- IN-APP ----
-//   await createInAppNotification(userId, subject, message);
-// }
-
-// /**
-//  * Create an in-app notification only
-//  */
-// export async function createInAppNotification(userId, title, message) {
-//   try {
-//     const notification = await prisma.inAppNotification.create({
-//       data: {
-//         userId,
-//         title,
-//         message,
-//         read: false,
-//       },
-//     });
-//     return notification;
-//   } catch (error) {
-//     console.error("Error creating in-app notification:", error);
-//     throw error;
-//   }
-// }
-
-// /**
-//  * Get all notifications for a user
-//  */
-// export async function getUserNotifications(userId) {
-//   return prisma.inAppNotification.findMany({
-//     where: { userId },
-//     orderBy: { createdAt: "desc" },
-//   });
-// }
-
-// /**
-//  * Mark notification as read
-//  */
-// export async function markNotificationAsRead(notificationId) {
-//   return prisma.inAppNotification.update({
-//     where: { id: notificationId },
-//     data: { read: true },
-//   });
-// }
-
-// export default {
-//   sendNotification,
-//   createInAppNotification,
-//   getUserNotifications,
-//   markNotificationAsRead,
-// };

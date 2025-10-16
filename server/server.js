@@ -58,6 +58,9 @@ import creditcardRoutes from './routes/creditcard.js';
 import contactRoutes from './routes/ContactUs.js';
 import userRoutes from './routes/user.js';
 import upiRoutes from "./routes/upi.js";
+import bodyParser from "body-parser";
+
+
 // ENV setup
 dotenv.config();
 
@@ -123,10 +126,11 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
-app.use(express.json());
-
-app.use(express.urlencoded({ extended: true }));
+app.use(bodyParser.json({ limit: "50mb" }));
+app.use(bodyParser.urlencoded({ limit: "50mb", extended: true }));
 
 // ----------------------- Routes -----------------------
 app.use('/api', userRoutes);

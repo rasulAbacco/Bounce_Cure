@@ -132,10 +132,10 @@ const UserAuthentication = () => {
               <ChangePassword />
             </div>
             <div className="space-y-8">
-              <Settings />
               <TwoFactorAuth />
               <SecurityLogs />
               <ActiveSessions />
+              <Settings />
               <div className="mt-16 text-center ">
                 <div className="inline-block bg-black/20 border border-white/5 rounded-xl p-6">
                   <h3 className="text-lg font-semibold text-white mb-2">Need Help?</h3>
