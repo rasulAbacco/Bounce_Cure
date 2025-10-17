@@ -62,6 +62,8 @@ import bodyParser from "body-parser";
 import multimediaCampaignRoutes from "./routes/multimediaCampaign.js";
 
 // ENV setup
+import customRoutes from "./routes/customRoutes.js";
+
 dotenv.config();
 
 // Init
@@ -192,6 +194,7 @@ app.use("/api/multimedia-campaign", multimediaCampaignRoutes);
 app.get("/", (req, res) => res.send("Twilio SMS/WhatsApp API Running"));
 
    
+app.use("/api/custom", customRoutes);
 
 
 
@@ -274,4 +277,6 @@ app.get('/verify-email', async (req, res) => {
     console.error("Email verification error:", error);
     res.status(500).send('An error occurred during email verification');
   }
+
+
 });

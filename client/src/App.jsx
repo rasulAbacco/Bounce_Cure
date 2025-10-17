@@ -64,13 +64,14 @@ import CampaignTextEditor from './pages/Campaign/Components/Editor/CampaignTextE
 import PrivacyPolicy from './pages/PrivacyPolicy';
 
 import OAuthOutlookCallback from './components/inbox/OAuthOutlookCallback';
-
+import ScrollToTop from './components/ScrollToTop';
 
 function App() {
   return (
     <UserProvider>
       <NotificationProvider>
         <Router>
+           <ScrollToTop /> 
           <Toaster
             position="top-right"
             containerStyle={{
@@ -100,13 +101,14 @@ function App() {
             <Route path="/features" element={<Features />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/pricing" element={<Pricing />} />
-            <Route path="/services/email-verification" element={<FreeValidation />} />
-            <Route path="/services/integrations" element={<IntegrationPage />} />
+            <Route path="/services/email-campaign" element={<FreeValidation />} />
+            <Route path="/services/crm" element={<IntegrationPage />} />
+            <Route path="/services/email-verification" element={ <BulkVerification /> } />
             <Route path="/refund-policy" element={<RefundPolicy />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-and-conditions" element={<TermsConditions />} />
             <Route path="/faq" element={<FaqSection />} />
-            <Route path="/WatsupCampaign" element={<WatsupCampaign />} />
+            <Route path="/MultiMediaCampaign" element={<WatsupCampaign />} />
             <Route path="/smscampaign" element={<SMSCampaign />} />
             
             {/* ==================== AUTH ROUTES ==================== */}
@@ -135,7 +137,6 @@ function App() {
             <Route path="/support" element={<ProtectedRoute><Support /></ProtectedRoute>} />
             <Route path='/pricingdash' element={<ProtectedRoute><PricingDash /></ProtectedRoute>} />
             <Route path='/phoneValidation' element={<ProtectedRoute><PhoneValidation /></ProtectedRoute>} />
-            <Route path="/services/bulk-verification" element={<ProtectedRoute><BulkVerification /></ProtectedRoute>} />
             
             {/* Campaign Routes */}
             <Route path='/new-campaign' element={<ProtectedRoute><NewCampaignWindow /></ProtectedRoute>} />

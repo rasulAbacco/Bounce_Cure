@@ -3,29 +3,11 @@ import { Menu, X, Mail, RefreshCw, CheckCircle } from "lucide-react";
 import {
   FaEnvelope,
   FaListAlt,
-  FaPlug,
-  FaInstagram,
-  FaWhatsapp,
-  FaFacebook,
-  FaLinkedin,
-  FaYoutube,
-  FaSms,
-  FaGoogle,
   FaAt,
-  FaPlus,
-  FaBullhorn,
-  FaBroom,
-  FaCompressAlt
 } from "react-icons/fa";
-import { RiTwitterXFill } from "react-icons/ri";
 import { Link, useNavigate } from "react-router-dom";
-import { AtSign } from "lucide-react";
-import { CheckSquare, ShieldCheck, FileCheck } from "lucide-react";
-import { CopyMinus, Layers } from "lucide-react";
-import { Trash2, Eraser, Scissors } from "lucide-react";
-import { ListPlus, Send, Users } from "lucide-react";
-import { PlusCircle, Database, ListPlus as ListPlusIcon } from "lucide-react";
-import { HeartPulse, Cross, Activity } from "lucide-react";
+import { CopyMinus, ShieldCheck, Eraser,Send, Users } from "lucide-react";
+import { Database, ListPlus as ListPlusIcon } from "lucide-react";
 
 // Bouncing Face Logo Component
 const CubeLogo = () => {
@@ -173,37 +155,53 @@ const Navbar = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [multimediaOpen, setMultimediaOpen] = useState(false);
+
   const links = [
     { name: "Home", to: "/" },
     { name: "About", to: "/about" },
     { name: "Features", to: "/features" },
     { name: "Services", to: "/services" },
     { name: "Pricing", to: "/pricing" },
-    { name: "Multimedia", to: "/WatsupCampaign" },
+    { name: "Multimedia", to: "/MultiMediaCampaign" },
     { name: "Contact", to: "/contact" },
 
   ];
   const services = [
-    { name: "Email Verification", icon: <FaEnvelope />, to: "/services/email-verification" },
-    { name: "Bulk Verification", icon: <FaListAlt />, to: "/services/bulk-verification" },
+    { name: "Email Campaign", icon: <FaEnvelope />, to: "/services/email-campaign" },
+    { name: "Email Verification", icon: <CheckCircle />, to: "/services/email-verification" },
+    { name: "CRM", icon: <Users />, to: "/services/crm" },
    ];
-  // const multimedia = [
-  //   { name: "WhatsApp Campaign", icon: <FaWhatsapp />, to: "/WatsupCampaign" },
-  //   { name: "SMS Campaign", icon: <FaSms />, to: "/SMScampaign" },
-  //   { name: "Facebook Campaign", icon: <FaFacebook />, to: "/WatsupCampaign" },
-  //   { name: "Instagram Campaign", icon: <FaInstagram />, to: "/WatsupCampaign" },
-  //   { name: "Twitter Campaign", icon: <RiTwitterXFill />, to: "/WatsupCampaign" },
-  //   { name: "LinkedIn Campaign", icon: <FaLinkedin />, to: "/WatsupCampaign" },
-  //   { name: "YouTube Ads", icon: <FaYoutube />, to: "/WatsupCampaign" },
-  //   { name: "Google Ads", icon: <FaGoogle />, to: "/WatsupCampaign" },
-  // ];
+ 
   const handleLogoClick = (e) => {
     e.preventDefault();
     navigate('/');
   };
+
+    const servicesRef = React.useRef(null);
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (servicesRef.current && !servicesRef.current.contains(event.target)) {
+        setServicesOpen(false);
+      }
+    }
+
+    function handleScroll() {
+      setServicesOpen(false);
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    window.addEventListener("scroll", handleScroll);
+
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   return (
     <nav className="fixed w-full z-50 bg-black/90 backdrop-blur-lg border-b border-white/10 py-3">
-      <style jsx global>{`
+      <style >{`
         .nav-link { 
           position: relative; 
           color: white; 
@@ -448,7 +446,7 @@ const Navbar = () => {
           {links.map((link) => {
             if (link.name === "Services") {
               return (
-                <div key={link.name} className="relative group">
+                <div key={link.name} ref={servicesRef} className="relative group">
                   <button
                     onClick={() => setServicesOpen(!servicesOpen)}
                     className="nav-link flex items-center cursor-pointer"
@@ -464,19 +462,20 @@ const Navbar = () => {
                     </svg>
                   </button>
                   {servicesOpen && (
-                    <div className="absolute top-full left-0 mt-2 bg-black backdrop-blur-lg rounded-lg shadow-lg py-2 w-64 border border-white/10 max-h-96 overflow-y-auto">
-                      {services.map((item) => (
-                        <Link
-                          key={item.name}
-                          to={item.to}
-                          className="flex items-center px-2 py-2 text-white hover:text-[#c2831f] rounded-lg"
-                        >
-                          <span className="mr-2">{item.icon}</span>
-                          {item.name}
-                        </Link>
-                      ))}
-                    </div>
-                  )}
+                      <div className="absolute top-full left-0 mt-2 bg-black backdrop-blur-lg rounded-lg shadow-lg py-2 w-64 border border-white/10 max-h-96 overflow-y-auto">
+                        {services.map((item) => (
+                          <Link
+                            key={item.name}
+                            to={item.to}
+                            className="flex items-center px-2 py-2 text-white hover:text-[#c2831f] rounded-lg"
+                          >
+                            <span className="mr-2">{item.icon}</span>
+                            {item.name}
+                          </Link>
+                        ))}
+                      </div>
+                    )}
+
                 </div>
               );
             }  

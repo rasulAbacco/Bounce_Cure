@@ -95,7 +95,7 @@ const WatsupCampaign = () => {
               Multi Media Campaigns
             </h1>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto mb-8">
-              Connect with your audience directly through our WhatsApp marketing
+              Connect with your audience directly through our Multi Media marketing
               campaigns. Personalized messages that drive engagement and conversions.
             </p>
             <div className="w-24 h-1 bg-gradient-to-r from-[#c2831f] to-yellow-500 mx-auto"></div>
@@ -183,7 +183,7 @@ const WatsupCampaign = () => {
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
               <button
-                className="bg-[#c2831f] hover:bg-[#a66a1a] text-white font-bold py-3 px-8 rounded-lg transition-colors"
+                className="bg-[#c2831f] hover:bg-[#a66a1a] text-white font-bold py-3 px-8 rounded-lg transition-colors cursor-pointer"
                 onClick={() => navigate("/login")}
               >
                 Get Started

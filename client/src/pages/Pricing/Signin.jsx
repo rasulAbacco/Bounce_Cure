@@ -40,19 +40,20 @@ const Signin = () => {
     };
 
     // Format price with selected currency
-    const formatPrice = (price, currency) => {
-        const convertedPrice = price * exchangeRates[currency];
-        const symbol = currencySymbols[currency];
-        
-        // Special handling for JPY (no decimals) and CHF (symbol after)
-        if (currency === 'JPY') {
-            return `${symbol}${Math.round(convertedPrice)}`;
-        } else if (currency === 'CHF') {
-            return `${Math.round(convertedPrice * 100) / 100} ${symbol}`;
-        } else {
-            return `${symbol}${convertedPrice.toFixed(2)}`;
-        }
-    };
+// Format price (already converted from Pricing.jsx)
+const formatPrice = (price, currency) => {
+    const symbol = currencySymbols[currency] || '$';
+
+    // The price is already converted in Pricing.jsx, so don’t convert again
+    if (currency === 'JPY') {
+        return `${symbol}${Math.round(price)}`;
+    } else if (currency === 'CHF') {
+        return `${price.toFixed(2)} ${symbol}`;
+    } else {
+        return `${symbol}${price.toFixed(2)}`;
+    }
+};
+
 
     const [formData, setFormData] = useState({
         email: "",
@@ -177,8 +178,8 @@ const Signin = () => {
     }, []);
 
     return (
-        <PageLayout>
-            <div className="min-h-screen mt-[5%] sm:mt-0 flex flex-col md:flex-row w-full">
+         
+            <div className="min-h-screen bg-black mt-[5%] sm:mt-0 flex flex-col md:flex-row w-full">
                 {/* Animated Background Elements */}
                 <div className="absolute inset-0 overflow-hidden">
                     <div className="absolute -top-40 -right-40 w-80 h-80 bg-white rounded-full mix-blend-difference filter blur-xl opacity-3 animate-pulse"></div>
@@ -399,7 +400,7 @@ const Signin = () => {
                     </div>
                 </div>
             </div>
-        </PageLayout>
+        
     );
 };
 

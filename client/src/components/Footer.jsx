@@ -15,7 +15,7 @@ const Footer = () => {
 
   return (
     <div className="">
-      <style jsx>{`
+      <style>{`
         @keyframes float {
           0% {
             transform: translate(0, 0);

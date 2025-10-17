@@ -3,6 +3,7 @@ import { Shield, Lock, Database, Users, FileText, Mail, AlertCircle, Eye, UserCh
 import Navbar from '../components/Navbar';
 import Footer from '../components/Footer';
 import { Link } from 'react-router-dom';
+import PageLayout from '../components/PageLayout';
 
 
 export default function PrivacyPolicy() {
@@ -171,10 +172,8 @@ export default function PrivacyPolicy() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Navigation */}
-      <Navbar />
-
+    <PageLayout>
+    <div className="min-h-screen text-white">
       {/* Hero Landing Section */}
       <section className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-b from-yellow-900/10 to-black"></div>
@@ -315,9 +314,7 @@ export default function PrivacyPolicy() {
           </div>
         </div>
       </section>
-
-      {/* Footer */}
-       <Footer/>
     </div>
+    </PageLayout>
   );
 }
