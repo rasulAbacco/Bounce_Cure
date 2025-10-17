@@ -65,6 +65,7 @@ import PrivacyPolicy from './pages/PrivacyPolicy';
 
 import OAuthOutlookCallback from './components/inbox/OAuthOutlookCallback';
 import ScrollToTop from './components/ScrollToTop';
+import TwilioSetupPage from './pages/Multimedia/TwilioSetupPage';
 
 function App() {
   return (
@@ -151,12 +152,13 @@ function App() {
             <Route path="/verify-email" element={<ProtectedRoute><VerifyEmail /></ProtectedRoute>} />
             
             {/* Multimedia Campaigns */}
-            <Route path="/MultimediaCampaign" element={<ProtectedRoute><MultimediaCampaign /></ProtectedRoute>} />
+            <Route path="/MultimediaCampaigns" element={<ProtectedRoute><MultimediaCampaign /></ProtectedRoute>} />
             <Route path="/whatsapp" element={<ProtectedRoute><WhatsappCampaign /></ProtectedRoute>} />
             <Route path="/sms" element={<ProtectedRoute><SMScampaign /></ProtectedRoute>} />
             <Route path="/texteditor" element={<ProtectedRoute><CampaignTextEditor /></ProtectedRoute>} />
 
             <Route path="/oauth/outlook/callback" element={<OAuthOutlookCallback />} />
+            <Route path="/twilio-setup" element={<TwilioSetupPage />} />
 
           
             

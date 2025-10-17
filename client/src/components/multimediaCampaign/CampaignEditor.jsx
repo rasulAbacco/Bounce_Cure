@@ -25,8 +25,7 @@ export default function CampaignEditor({ channel = "sms" }) {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
-                    "Authorization": import.meta.env.VITE_TWILIO_AUTH_HEADER ||
-                        "Basic QUNhZDY0NzczYjEyNGNjMjQ3ZjUzODEzYWMxNWUxMGM1MToyN2YwZDc3YmJhY2JmNGVhNTkwOTcwMzRiNTZhMzIzYQ=="
+                    "Authorization": `Bearer ${localStorage.getItem("token")}`,
                 },
                 body: JSON.stringify({
                     channel,

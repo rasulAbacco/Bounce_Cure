@@ -1,139 +1,71 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   MessageCircle,
   Send,
-  Users,
-  BarChart3,
   Settings,
   Image,
   Video,
   FileText,
   Plus,
-  Edit,
-  Trash2,
   Eye,
   X,
-  ArrowRight,
 } from "lucide-react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { useNavigate } from "react-router-dom";
 
 function MultimediaCampaign() {
   const [activeTab, setActiveTab] = useState("whatsapp");
+  const [campaigns, setCampaigns] = useState({ whatsapp: [], sms: [] });
+  const [loading, setLoading] = useState(true);
   const [showNewCampaignModal, setShowNewCampaignModal] = useState(false);
-  const [isSending, setIsSending] = useState(false);
-  const [messageResult, setMessageResult] = useState(null);
-  const [recipientsText, setRecipientsText] = useState("");
   const navigate = useNavigate();
 
-  // Dummy campaign stats (for UI only)
-  const [campaigns, setCampaigns] = useState({
-    whatsapp: [
-      {
-        id: 1,
-        name: "WhatsApp Demo Campaign",
-        status: "active",
-        sent: 245,
-        delivered: 220,
-        opened: 180,
-        clicked: 60,
-        mediaType: "image",
-        lastSent: "2 hours ago",
-      },
-    ],
-    sms: [
-      {
-        id: 2,
-        name: "SMS Demo Campaign",
-        status: "active",
-        sent: 1200,
-        delivered: 1100,
-        opened: 950,
-        clicked: 200,
-        mediaType: "text",
-        lastSent: "1 day ago",
-      },
-    ],
-  });
-
-  // 🟢 Send campaign using backend Twilio API
-  const sendCampaignNow = async (type) => {
-    setIsSending(true);
-    setMessageResult(null);
-
-    try {
-      // Parse user-entered recipients
-      const recipients = recipientsText
-        .split(/[\n, ]+/)
-        .map((num) => num.trim())
-        .filter((num) => num.length > 0);
-
-      if (recipients.length === 0) {
-        alert("Please enter at least one recipient number");
-        setIsSending(false);
-        return;
-      }
-
-      const message =
-        type === "whatsapp"
-          ? "🔥 WhatsApp campaign test from Twilio integration!"
-          : "📢 SMS campaign test from Twilio integration!";
-
-      console.log("API URL:", `${import.meta.env.VITE_API_URL}/multimedia-campaign/send`);
-      console.log("Sending to:", recipients);
-
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/multimedia-campaign/send`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": "Basic QUNhZDY0NzczYjEyNGNjMjQ3ZjUzODEzYWMxNWUxMGM1MToyN2YwZDc3YmJhY2JmNGVhNTkwOTcwMzRiNTZhMzIzYQ=="
-        },
-        body: JSON.stringify({ channel: type, recipients, message }),
-      });
-
-
-      const data = await res.json();
-      console.log("Response:", data);
-
-      if (res.ok) {
-        setMessageResult({
-          success: true,
-          message: `✅ ${type.toUpperCase()} campaign sent successfully!`,
-          details: data,
+  // 🧩 Fetch all campaigns for logged-in user
+  useEffect(() => {
+    const fetchCampaigns = async () => {
+      try {
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/multimedia-campaign/history`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+        const data = await res.json();
+        setCampaigns({
+          whatsapp: data.whatsappCampaigns || [],
+          sms: data.smsCampaigns || [],
         });
-      } else {
-        setMessageResult({
-          success: false,
-          message: `❌ Failed to send ${type.toUpperCase()} campaign`,
-          details: data,
-        });
+      } catch (err) {
+        console.error("Failed to fetch campaigns:", err);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error("Error:", error);
-      setMessageResult({
-        success: false,
-        message: `⚠️ Error sending ${type.toUpperCase()} campaign`,
-        details: { error: error.message },
-      });
-    } finally {
-      setIsSending(false);
-    }
+    };
+    fetchCampaigns();
+  }, []);
+
+  // 📊 Analytics calculator
+  const getAnalytics = (list) => {
+    const total = list.length;
+    const sent = list.filter((c) => c.status === "sent").length;
+    const scheduled = list.filter((c) => c.status === "scheduled").length;
+    const failed = list.filter((c) =>
+      c.recipients.some((r) => r.status === "failed")
+    ).length;
+
+    return {
+      total,
+      sent,
+      scheduled,
+      failed,
+      successRate: total ? Math.round((sent / total) * 100) : 0,
+    };
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "active":
-        return "bg-green-600";
-      case "scheduled":
-        return "bg-blue-600";
-      case "completed":
-        return "bg-gray-600";
-      case "paused":
-        return "bg-yellow-600";
-      default:
-        return "bg-gray-600";
-    }
-  };
+  const currentCampaigns = campaigns[activeTab];
+  const stats = getAnalytics(currentCampaigns);
 
   const getMediaIcon = (type) => {
     switch (type) {
@@ -146,93 +78,13 @@ function MultimediaCampaign() {
     }
   };
 
+  // ✅ New Campaign Navigation Handler
   const handleNewCampaign = (type) => {
     setShowNewCampaignModal(false);
     navigate(type === "whatsapp" ? "/whatsapp" : "/sms");
   };
 
-  const CampaignCard = ({ campaign, type }) => (
-    <div className="bg-gray-900 border border-gray-800 rounded-xl p-6 hover:border-[#c2831f] transition-all duration-300 hover:shadow-lg hover:shadow-[#c2831f]/20">
-      <div className="flex justify-between items-start mb-4">
-        <div className="flex items-center gap-3">
-          {getMediaIcon(campaign.mediaType)}
-          <h3 className="text-lg font-semibold text-white">{campaign.name}</h3>
-          <span
-            className={`px-3 py-1 rounded-full text-xs font-medium text-white ${getStatusColor(
-              campaign.status
-            )}`}
-          >
-            {campaign.status}
-          </span>
-        </div>
-        <div className="flex gap-2">
-          <button className="p-2 text-gray-400 hover:text-[#c2831f] hover:bg-gray-800 rounded-lg transition-colors">
-            <Eye className="w-4 h-4" />
-          </button>
-          <button className="p-2 text-gray-400 hover:text-[#c2831f] hover:bg-gray-800 rounded-lg transition-colors">
-            <Edit className="w-4 h-4" />
-          </button>
-          <button className="p-2 text-gray-400 hover:text-red-400 hover:bg-gray-800 rounded-lg transition-colors">
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-        <div className="text-center">
-          <div className="text-2xl font-bold text-[#c2831f]">
-            {campaign.sent.toLocaleString()}
-          </div>
-          <div className="text-sm text-gray-400">Sent</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-green-400">
-            {campaign.delivered.toLocaleString()}
-          </div>
-          <div className="text-sm text-gray-400">Delivered</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-blue-400">
-            {campaign.opened.toLocaleString()}
-          </div>
-          <div className="text-sm text-gray-400">Opened</div>
-        </div>
-        <div className="text-center">
-          <div className="text-2xl font-bold text-purple-400">
-            {campaign.clicked.toLocaleString()}
-          </div>
-          <div className="text-sm text-gray-400">Clicked</div>
-        </div>
-      </div>
-
-      {/* Recipients Input */}
-      <div className="mt-4">
-        <label className="block text-gray-300 mb-2">Recipients</label>
-        <textarea
-          className="w-full p-2 rounded-lg bg-gray-800 border border-gray-700 text-gray-100"
-          placeholder="Enter phone numbers separated by commas or new lines (e.g. +919876543210, +911234567890)"
-          rows={3}
-          value={recipientsText}
-          onChange={(e) => setRecipientsText(e.target.value)}
-        />
-      </div>
-
-      {/* Send Button */}
-      <div className="mt-4 flex justify-end">
-        <button
-          onClick={() => sendCampaignNow(type)}
-          disabled={isSending || recipientsText.trim() === ""}
-          className={`px-4 py-2 ${isSending ? "bg-gray-500" : "bg-[#c2831f] hover:bg-[#a66f1a]"
-            } text-white rounded-lg transition-colors flex items-center gap-2`}
-        >
-          <Send className="w-4 h-4" />
-          {isSending ? "Sending..." : "Send Campaign"}
-        </button>
-      </div>
-    </div>
-  );
-
+  // ✅ Modal for New Campaign
   const NewCampaignModal = () => (
     <div className="fixed inset-0 backdrop-blur-sm bg-black/50 flex items-center justify-center z-50">
       <div className="bg-gray-900 border border-gray-800 rounded-2xl p-8 max-w-2xl w-full mx-4">
@@ -279,73 +131,148 @@ function MultimediaCampaign() {
 
   return (
     <DashboardLayout>
-      <div className="min-h-screen bg-black text-white mt-16">
-        <div className="p-8">
-          <div className="flex justify-between items-center mb-8">
-            <div>
-              <h1 className="text-3xl font-bold text-[#c2831f] mb-2">
-                Multimedia Campaigns
-              </h1>
-              <p className="text-gray-400">
-                Manage your WhatsApp and SMS marketing campaigns
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <button className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                Settings
-              </button>
-              <button
-                onClick={() => setShowNewCampaignModal(true)}
-                className="px-6 py-3 bg-[#c2831f] hover:bg-[#a66f1a] text-white rounded-lg flex items-center gap-2 font-semibold"
-              >
-                <Plus className="w-5 h-5" />
-                New Campaign
-              </button>
-            </div>
+      <div className="min-h-screen bg-black text-white mt-16 p-8">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-[#c2831f] mb-2">
+              Multimedia Campaigns
+            </h1>
+            <p className="text-gray-400">
+              Manage, analyze, and create WhatsApp & SMS marketing campaigns
+            </p>
           </div>
-
-          {/* Tabs */}
-          <div className="flex space-x-1 bg-gray-800 p-1 rounded-lg border border-gray-700 mb-6">
+          <div className="flex gap-3">
             <button
-              onClick={() => setActiveTab("whatsapp")}
-              className={`flex-1 px-6 py-3 rounded-md flex items-center justify-center gap-2 ${activeTab === "whatsapp"
-                  ? "bg-gray-600 text-white shadow-lg"
-                  : "text-gray-400 hover:text-white hover:bg-gray-700"
-                }`}
+              onClick={() => navigate("/twilio-setup")}
+              className="px-6 py-3 bg-gray-800 hover:bg-gray-700 text-white rounded-lg flex items-center gap-2"
             >
-              <MessageCircle className="w-5 h-5" />
-              WhatsApp Campaigns
+              <Settings className="w-5 h-5" />
+              Twilio Settings
             </button>
+
             <button
-              onClick={() => setActiveTab("sms")}
-              className={`flex-1 px-6 py-3 rounded-md flex items-center justify-center gap-2 ${activeTab === "sms"
-                  ? "bg-gray-600 text-white shadow-lg"
-                  : "text-gray-400 hover:text-white hover:bg-gray-700"
-                }`}
+              onClick={() => setShowNewCampaignModal(true)}
+              className="px-6 py-3 bg-[#c2831f] hover:bg-[#a66f1a] text-white rounded-lg flex items-center gap-2 font-semibold"
             >
-              <Send className="w-5 h-5" />
-              SMS Campaigns
+              <Plus className="w-5 h-5" />
+              New Campaign
             </button>
           </div>
+        </div>
 
-          {/* Campaign Cards */}
-          <div className="space-y-6">
-            {campaigns[activeTab].map((campaign) => (
-              <CampaignCard key={campaign.id} campaign={campaign} type={activeTab} />
-            ))}
+        {/* Tabs */}
+        <div className="flex space-x-1 bg-gray-800 p-1 rounded-lg border border-gray-700 mb-6">
+          <button
+            onClick={() => setActiveTab("whatsapp")}
+            className={`flex-1 px-6 py-3 rounded-md flex items-center justify-center gap-2 ${activeTab === "whatsapp"
+                ? "bg-gray-600 text-white shadow-lg"
+                : "text-gray-400 hover:text-white hover:bg-gray-700"
+              }`}
+          >
+            <MessageCircle className="w-5 h-5" />
+            WhatsApp Campaigns
+          </button>
+          <button
+            onClick={() => setActiveTab("sms")}
+            className={`flex-1 px-6 py-3 rounded-md flex items-center justify-center gap-2 ${activeTab === "sms"
+                ? "bg-gray-600 text-white shadow-lg"
+                : "text-gray-400 hover:text-white hover:bg-gray-700"
+              }`}
+          >
+            <Send className="w-5 h-5" />
+            SMS Campaigns
+          </button>
+        </div>
+
+        {/* Analytics Section */}
+        {loading ? (
+          <p className="text-gray-400">Loading analytics...</p>
+        ) : (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+            <div className="bg-gray-900 p-4 rounded-lg border border-gray-700 text-center">
+              <div className="text-2xl font-bold text-[#c2831f]">
+                {stats.total}
+              </div>
+              <div className="text-sm text-gray-400">Total Campaigns</div>
+            </div>
+            <div className="bg-gray-900 p-4 rounded-lg border border-gray-700 text-center">
+              <div className="text-2xl font-bold text-green-400">
+                {stats.sent}
+              </div>
+              <div className="text-sm text-gray-400">Sent</div>
+            </div>
+            <div className="bg-gray-900 p-4 rounded-lg border border-gray-700 text-center">
+              <div className="text-2xl font-bold text-blue-400">
+                {stats.scheduled}
+              </div>
+              <div className="text-sm text-gray-400">Scheduled</div>
+            </div>
+            <div className="bg-gray-900 p-4 rounded-lg border border-gray-700 text-center">
+              <div className="text-2xl font-bold text-red-400">
+                {stats.failed}
+              </div>
+              <div className="text-sm text-gray-400">Failed</div>
+            </div>
           </div>
+        )}
 
-          {/* API Response */}
-          {messageResult && (
-            <div
-              className={`mt-8 p-4 rounded-lg ${messageResult.success ? "bg-green-900/40" : "bg-red-900/40"
-                } border border-gray-700`}
-            >
-              <p className="font-semibold mb-2">{messageResult.message}</p>
-              <pre className="text-sm text-gray-300 overflow-x-auto">
-                {JSON.stringify(messageResult.details, null, 2)}
-              </pre>
+        {/* Campaign History Table */}
+        <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
+          <h2 className="text-xl font-semibold mb-4 text-[#c2831f]">
+            {activeTab === "whatsapp" ? "WhatsApp" : "SMS"} Campaign History
+          </h2>
+
+          {currentCampaigns.length === 0 ? (
+            <p className="text-gray-500">No campaigns found.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-gray-700 text-gray-400">
+                    <th className="py-2 px-4">Name</th>
+                    <th className="py-2 px-4">Message</th>
+                    <th className="py-2 px-4">Recipients</th>
+                    <th className="py-2 px-4">Status</th>
+                    <th className="py-2 px-4">Created At</th>
+                    <th className="py-2 px-4">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {currentCampaigns.map((c) => (
+                    <tr key={c.id} className="border-b border-gray-800">
+                      <td className="py-2 px-4">{c.name}</td>
+                      <td className="py-2 px-4 truncate max-w-xs">
+                        {c.message}
+                      </td>
+                      <td className="py-2 px-4">{c.recipients.length}</td>
+                      <td
+                        className={`py-2 px-4 font-semibold ${c.status === "sent"
+                            ? "text-green-400"
+                            : c.status === "scheduled"
+                              ? "text-blue-400"
+                              : "text-red-400"
+                          }`}
+                      >
+                        {c.status}
+                      </td>
+                      <td className="py-2 px-4">
+                        {new Date(c.createdAt).toLocaleString()}
+                      </td>
+                      <td className="py-2 px-4">
+                        <button
+                          onClick={() =>
+                            alert(JSON.stringify(c.recipients, null, 2))
+                          }
+                          className="text-[#c2831f] hover:underline flex items-center gap-1"
+                        >
+                          <Eye className="w-4 h-4" /> View Recipients
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           )}
         </div>
