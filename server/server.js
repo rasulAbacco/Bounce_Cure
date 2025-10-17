@@ -59,7 +59,7 @@ import contactRoutes from './routes/ContactUs.js';
 import userRoutes from './routes/user.js';
 import upiRoutes from "./routes/upi.js";
 import bodyParser from "body-parser";
-
+import multimediaCampaignRoutes from "./routes/multimediaCampaign.js";
 
 // ENV setup
 dotenv.config();
@@ -185,8 +185,12 @@ app.use("/api/campaigncontacts", protect, campaignContactsRoutes);
 app.use("/api/campaigns", protect, campaignsRoutes);
 app.use("/api/verified-emails", protect, verifiedEmailsRouter);
 app.use('/api/analytics', protect, analyticsRouter);
-
 app.use('/api/contact', contactRoutes);
+
+app.use("/api/multimedia-campaign", multimediaCampaignRoutes);
+
+app.get("/", (req, res) => res.send("Twilio SMS/WhatsApp API Running"));
+
    
 
 
