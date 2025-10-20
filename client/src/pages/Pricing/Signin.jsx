@@ -112,8 +112,9 @@ const Signin = () => {
                         contactLimit: data.user.contactLimit || 500,
                         emailLimit: data.user.emailLimit || 1000
                     });
-                    
-                    // Store user info in localStorage
+
+                    // ✅ Store userId in localStorage for Stripe usage
+                    localStorage.setItem("userId", data.user.id);
                     localStorage.setItem("userName", data.user.name || "");
                     localStorage.setItem("userEmail", data.user.email || "");
                     localStorage.setItem("userPlan", data.user.plan || "Free");
@@ -121,6 +122,7 @@ const Signin = () => {
                     localStorage.setItem("contactLimit", (data.user.contactLimit || 500).toString());
                     localStorage.setItem("emailLimit", (data.user.emailLimit || 1000).toString());
                 }
+
                 
                 toast.success("Login successful! 🎉");
                 console.log("Token saved, redirecting to:", from);

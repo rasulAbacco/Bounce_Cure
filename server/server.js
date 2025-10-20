@@ -72,7 +72,6 @@ import chatbotRouter from "./routes/chatbot.js";
 
 
 
-import upiRoutes from './routes/upi.js'; 
 dotenv.config();
 
 // Init

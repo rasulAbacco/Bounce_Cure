@@ -8,9 +8,9 @@ const router = express.Router();
 const SG_BASE = "https://api.sendgrid.com/v3";
 
 function sgHeaders() {
-    if (!process.env.SENDGRID_USER_API_KEY) throw new Error("Missing SENDGRID_USER_API_KEY env var");
+    if (!process.env.SENDGRID_API_KEY) throw new Error("Missing SENDGRID_API_KEY env var");
     return {
-        Authorization: `Bearer ${process.env.SENDGRID_USER_API_KEY}`,
+        Authorization: `Bearer ${process.env.SENDGRID_API_KEY}`,
         "Content-Type": "application/json",
     };
 }

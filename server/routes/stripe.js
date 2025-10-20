@@ -147,6 +147,15 @@ router.post("/save-payment", async (req, res) => {
       nextPaymentDate: new Date(nextPaymentDate),
       status: status || "succeeded",
     };
+    // const userIdInt = parseInt(userId, 10);
+    const userExists = await prisma.user.findUnique({ where: { id: userIdInt } });
+
+    if (!userExists) {
+      console.error(`❌ No user found with id: ${userIdInt}`);
+      return res.status(400).json({ error: `User with ID ${userIdInt} does not exist.` });
+    }
+
+
 
     // ✅ Save payment in DB
     const payment = await prisma.payment.create({ data: paymentData });
