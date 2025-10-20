@@ -31,6 +31,18 @@ useEffect(() => {
   }
 }, []);
 
+useEffect(() => {
+  const syncCredits = () => {
+    setCredits({
+      emails: parseInt(localStorage.getItem("totalEmails")) || 0,
+      verifications: parseInt(localStorage.getItem("emailVerificationCredits")) || 0,
+    });
+  };
+  window.addEventListener("storage", syncCredits);
+  return () => window.removeEventListener("storage", syncCredits);
+}, []);
+
+
   // ===== Load totals =====
   const totalEmails = parseInt(localStorage.getItem("totalEmails")) || 0;
   const totalVerifications =

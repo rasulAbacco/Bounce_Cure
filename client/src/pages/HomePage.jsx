@@ -808,10 +808,7 @@ const renderMultimedia = () => (
             </div>
           </div>
         </div>
-        
-        <button className="w-full p-2 bg-[#c2831f] hover:bg-[#d4a040] text-white rounded-lg transition-all text-sm">
-          View SMS Analytics
-        </button>
+         
       </div>
     </div>
 
@@ -911,7 +908,7 @@ const renderMultimedia = () => (
         </div>
       </div>
 
-      <Link to="/login" className="group inline-flex items-center px-4 py-2 w-full justify-center bg-[#c2831f] hover:bg-[#d4a040] text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg mt-auto text-sm">
+      <Link to="/MultiMediaCampaign" className="group inline-flex items-center px-4 py-2 w-full justify-center bg-[#c2831f] hover:bg-[#d4a040] text-white font-semibold rounded-lg transition-all duration-200 transform hover:scale-105 shadow-lg mt-auto text-sm">
         Manage All Campaigns
         <ArrowRight className="ml-1 h-4 w-4 group-hover:translate-x-1 transition-transform" />
       </Link>

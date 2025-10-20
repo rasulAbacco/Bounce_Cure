@@ -171,13 +171,38 @@ const ChatBot = () => {
     return "I’m not sure about that. Try asking about pricing, features, company details, or say hello!";
   };
 
-  const sendMessage = () => {
-    if (!input.trim()) return;
-    const userMsg = { sender: "user", text: input };
-    const botReply = { sender: "bot", text: findAnswer(input) };
-    setMessages(prev => [...prev, userMsg, botReply]);
-    setInput("");
-  };
+ const sendMessage = async () => {
+  if (!input.trim()) return;
+
+  const userMsg = { sender: "user", text: input };
+  setMessages(prev => [...prev, userMsg]);
+
+  try {
+    const response = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": `Bearer YOUR_OPENAI_API_KEY`
+      },
+      body: JSON.stringify({
+        model: "gpt-3.5-turbo",
+        messages: [
+          { role: "system", content: "You are BounceCure AI Assistant, helpful and professional." },
+          { role: "user", content: input }
+        ],
+        temperature: 0.7
+      })
+    });
+
+    const data = await response.json();
+    const botText = data.choices[0].message.content;
+    const botReply = { sender: "bot", text: botText };
+    setMessages(prev => [...prev, botReply]);
+  } catch (err) {
+    console.error(err);
+  }
+};
+
 
   useEffect(() => {
     if (messagesEndRef.current) {

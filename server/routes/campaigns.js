@@ -162,6 +162,31 @@ router.post("/send", async (req, res) => {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
+    // ✅ CHECK EMAIL SEND CREDITS BEFORE SENDING
+    const latestPayment = await prisma.payment.findFirst({
+      where: { userId: req.user.id },
+      orderBy: { paymentDate: "desc" },
+    });
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { emailLimit: true, plan: true },
+    });
+
+    const availableCredits = latestPayment?.emailSendCredits ?? user?.emailLimit ?? 0;
+    const requiredCredits = recipients.length;
+
+    console.log(`📧 User ${req.user.id} - Available: ${availableCredits}, Required: ${requiredCredits}`);
+
+    if (availableCredits < requiredCredits) {
+      return res.status(403).json({
+        error: "Insufficient email send credits",
+        available: availableCredits,
+        required: requiredCredits,
+        creditLimitReached: true,
+      });
+    }
+
     // Check if sender is verified
     const sender = await prisma.verifiedSender.findFirst({
       where: { email: fromEmail.toLowerCase() },
@@ -183,7 +208,7 @@ router.post("/send", async (req, res) => {
     const htmlContent = generateHtmlFromCanvas(canvasData, subject, fromName, fromEmail);
     const plainTextContent = generatePlainTextFromCanvas(canvasData, subject, fromName, fromEmail);
 
-    // ✅ Save campaign with userId - START WITH ACTUAL COUNT
+    // Save campaign
     const campaign = await prisma.campaign.create({
       data: {
         userId: req.user.id,
@@ -191,8 +216,8 @@ router.post("/send", async (req, res) => {
         subject,
         fromEmail,
         fromName,
-        sentCount: recipients.length,      // Total attempted
-        deliveredCount: 0,                 // Updated by webhook
+        sentCount: recipients.length,
+        deliveredCount: 0,
         openCount: 0,
         clickCount: 0,
         conversionCount: 0,
@@ -202,8 +227,20 @@ router.post("/send", async (req, res) => {
 
     const results = { success: [], failed: [] };
     let deliveredCount = 0;
+    let actualSentCount = 0;
 
     for (const recipient of recipients) {
+      // ✅ STOP SENDING IF CREDITS RUN OUT MID-CAMPAIGN
+      if (actualSentCount >= availableCredits) {
+        console.log(`⚠️ Credit limit reached. Stopping at ${actualSentCount} emails.`);
+        results.failed.push({
+          email: recipient.email,
+          error: "Credit limit reached",
+          timestamp: new Date().toISOString(),
+        });
+        continue;
+      }
+
       const msg = {
         to: recipient.email,
         from: { name: fromName, email: fromEmail },
@@ -229,17 +266,17 @@ router.post("/send", async (req, res) => {
       try {
         await sgMail.send(msg);
         deliveredCount++;
+        actualSentCount++;
         results.success.push({ 
           email: recipient.email, 
           timestamp: new Date().toISOString() 
         });
 
-        // ✅ CREATE "delivered" EVENT (not "sent")
         await prisma.campaignEvent.create({
           data: {
             campaignId: campaign.id,
             userId: req.user.id,
-            type: "delivered", // ✅ Changed from "sent" to "delivered"
+            type: "delivered",
             email: recipient.email,
           },
         });
@@ -252,7 +289,6 @@ router.post("/send", async (req, res) => {
           timestamp: new Date().toISOString() 
         });
 
-        // ✅ CREATE "failed" EVENT
         await prisma.campaignEvent.create({
           data: {
             campaignId: campaign.id,
@@ -263,18 +299,33 @@ router.post("/send", async (req, res) => {
         });
       }
 
-      // Prevent rate-limiting
       await new Promise((resolve) => setTimeout(resolve, 200));
     }
 
-    // ✅ NO NEED TO UPDATE - sentCount already set correctly
-    console.log(`Campaign ${campaign.id}: Sent=${recipients.length}, Delivered=${deliveredCount}, Failed=${results.failed.length}`);
+    // ✅ DEDUCT CREDITS AFTER SUCCESSFUL SENDS
+    const newCredits = availableCredits - actualSentCount;
+    
+    if (latestPayment) {
+      await prisma.payment.update({
+        where: { id: latestPayment.id },
+        data: { emailSendCredits: Math.max(0, newCredits) },
+      });
+    }
+
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { emailLimit: Math.max(0, newCredits) },
+    });
+
+    console.log(`✅ Campaign ${campaign.id}: Sent=${actualSentCount}, Delivered=${deliveredCount}, Failed=${results.failed.length}`);
+    console.log(`📊 Remaining credits: ${newCredits}`);
 
     return res.status(200).json({
       message: `Sent: ${results.success.length}, Failed: ${results.failed.length}`,
       campaignId: campaign.id,
       recipientsCount: recipients.length,
       deliveredCount: deliveredCount,
+      remainingCredits: newCredits,
       results,
     });
   } catch (error) {
@@ -336,5 +387,37 @@ router.delete("/:id", async (req, res) => {
     res.status(500).json({ error: "Failed to delete campaign" });
   }
 });
+
+// ✅ GET USER'S REMAINING CREDITS
+router.get("/credits", protect, async (req, res) => {
+  try {
+    const latestPayment = await prisma.payment.findFirst({
+      where: { userId: req.user.id },
+      orderBy: { paymentDate: "desc" },
+    });
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { emailLimit: true, contactLimit: true, plan: true },
+    });
+
+    const emailSendCredits =
+      latestPayment?.emailSendCredits ?? user?.emailLimit ?? 50;
+
+    const emailVerificationCredits =
+      latestPayment?.emailVerificationCredits ?? user?.contactLimit ?? 50;
+
+    res.json({
+      success: true,
+      emailSendCredits,
+      emailVerificationCredits,
+      plan: user?.plan || "Free",
+    });
+  } catch (error) {
+    console.error("❌ Error fetching credits:", error);
+    res.status(500).json({ error: "Failed to fetch credits" });
+  }
+});
+
 
 export { router };

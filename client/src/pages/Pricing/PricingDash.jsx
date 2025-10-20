@@ -349,6 +349,7 @@ const PricingDash = () => {
   const perContactRates = {
     essentials: {
       500: 0.05,
+      1000:0.05,
       2500: 0.05,
       5000: 0.05,
       10000: 0.04,
@@ -359,6 +360,7 @@ const PricingDash = () => {
     },
     standard: {
       500: 0.08,
+      1000: 0.08,
       2500: 0.07,
       5000: 0.07,
       10000: 0.06,
@@ -369,6 +371,7 @@ const PricingDash = () => {
     },
     premium: {
       500: 0.10,
+      1000: 0.10,
       2500: 0.08,
       5000: 0.08,
       10000: 0.07,
@@ -381,6 +384,7 @@ const PricingDash = () => {
 
   const contactTiers = [
     { value: 500, label: "500" },
+    { value: 1000, label: "1000" },
     { value: 2500, label: "2,500" },
     { value: 5000, label: "5,000" },
     { value: 10000, label: "10,000" },
@@ -525,11 +529,25 @@ const PricingDash = () => {
 
   const isPlanAvailable = (planName) => selectedContacts <= getPlanContactLimit(planName);
 
-  const calculateEmailSends = (plan, contacts) =>
-    plan.name === "Free" ? 50 : contacts * plan.emailSendsPerContact;
+  // FIXED: Updated calculateEmailSends to account for billing period
+  const calculateEmailSends = (plan, contacts) => {
+    if (plan.name === "Free") return 50;
+    
+    const multiplier = 
+      pricingType === "yearly" ? 12 : 
+      pricingType === "quarterly" ? 3 : 1;
+      
+    return contacts * plan.emailSendsPerContact * multiplier;
+  };
   
-  const calculateEmailValidations = (plan, contacts) =>
-    contacts * plan.emailValidationPerContact;
+  // FIXED: Updated calculateEmailValidations to account for billing period
+  const calculateEmailValidations = (plan, contacts) => {
+    const multiplier = 
+      pricingType === "yearly" ? 12 : 
+      pricingType === "quarterly" ? 3 : 1;
+      
+    return contacts * plan.emailValidationPerContact * multiplier;
+  };
 
   const calculatePrice = (plan, contacts) => {
     if (plan.name === "Free") return 0;
@@ -550,7 +568,15 @@ const PricingDash = () => {
     else if (contacts <= 40000) rate = rates[40000];
     else rate = rates[50000];
     
-    return contacts * rate;
+    // Monthly price per contact
+    const monthlyPrice = contacts * rate;
+    
+    // Apply billing period multiplier
+    const multiplier = 
+      pricingType === "yearly" ? 12 : 
+      pricingType === "quarterly" ? 3 : 1;
+      
+    return monthlyPrice * multiplier;
   };
 
   const calculateDiscountedPrice = (fullPrice, isNewCustomer) => {
@@ -561,7 +587,10 @@ const PricingDash = () => {
     const isLoggedIn = !!localStorage.getItem("authToken");
     const hasPurchasedBefore = localStorage.getItem("hasPurchasedBefore") === "true";
     
-    const monthlyFullPrice = parseFloat(calculatePrice(plan, contacts));
+    const monthlyFullPrice = parseFloat(calculatePrice(plan, contacts)) / (
+      pricingType === "yearly" ? 12 : 
+      pricingType === "quarterly" ? 3 : 1
+    );
     const isNewCustomer = !hasPurchasedBefore;
     const monthlyPrice = calculateDiscountedPrice(monthlyFullPrice, isNewCustomer);
     
@@ -571,6 +600,7 @@ const PricingDash = () => {
     const price = monthlyPrice * multiplier;
     const originalPrice = monthlyFullPrice * multiplier;
 
+    // FIXED: Use updated calculateEmailSends and calculateEmailValidations functions
     const emailSendLimit = calculateEmailSends(plan, contacts);
     const emailValidationLimit = calculateEmailValidations(plan, contacts);
 
@@ -690,7 +720,10 @@ const PricingDash = () => {
           {/* Plan Cards */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {plans.map((plan) => {
-              const monthlyFullPrice = parseFloat(calculatePrice(plan, selectedContacts));
+              const monthlyFullPrice = parseFloat(calculatePrice(plan, selectedContacts)) / (
+                pricingType === "yearly" ? 12 : 
+                pricingType === "quarterly" ? 3 : 1
+              );
               const multiplier = 
                 pricingType === "yearly" ? 12 : 
                 pricingType === "quarterly" ? 3 : 1;
@@ -698,6 +731,10 @@ const PricingDash = () => {
               const planAvailable = isPlanAvailable(plan.name);
               const isNewCustomer = !localStorage.getItem("hasPurchasedBefore");
               const discountedPrice = calculateDiscountedPrice(monthlyFullPrice, isNewCustomer) * multiplier;
+
+              // FIXED: Calculate email sends and validations using the updated functions
+              const emailSends = calculateEmailSends(plan, selectedContacts);
+              const emailValidations = calculateEmailValidations(plan, selectedContacts);
 
               return (
                 <div
@@ -744,7 +781,7 @@ const PricingDash = () => {
                           Email Sends:{" "}
                           {plan.name === "Free"
                             ? "50"
-                            : `${selectedContacts.toLocaleString()} `}
+                            : `${emailSends.toLocaleString()} `}
                         </span>
                       </div>
 
@@ -773,11 +810,11 @@ const PricingDash = () => {
                       )}
                     </li>
 
-
+                    {/* FIXED: Display the calculated email validations */}
                     {plan.emailValidationPerContact > 0 && (
                       <li className="flex items-center gap-2">
                         <Check size={16} /> Email Validations:{" "}
-                        {`${selectedContacts.toLocaleString()}  `}
+                        {`${emailValidations.toLocaleString()}  `}
                       </li>
                     )}
 

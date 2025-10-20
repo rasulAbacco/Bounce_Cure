@@ -253,13 +253,19 @@ const Pricing = () => {
     const periodPriceConverted = parseFloat(convertPrice(periodPriceUSD).replace(/,/g, ''));
     const originalPeriodPriceConverted = parseFloat(convertPrice(originalPeriodPriceUSD).replace(/,/g, ''));
     
-    // Calculate email send limit based on plan type and contact count
+    // FIXED: Calculate email send limit based on plan type, contact count, and billing period
     let emailSendLimit;
     if (planType === 'free') {
       emailSendLimit = planData.emailLimit;
     } else {
-      emailSendLimit = contactCount * planData.emailMultiplier;
+      // Multiply by billing period months for quarterly/yearly plans
+      emailSendLimit = contactCount * planData.emailMultiplier * periodInfo.months;
     }
+
+    // FIXED: Calculate email validation limit based on plan type, contact count, and billing period
+    const emailValidationLimit = planType === 'free' 
+      ? 0 
+      : contactCount * (planData.emailValidationMultiplier || 0) * periodInfo.months;
 
     // Build plan object - Fixed version
     const planDetails = {
@@ -283,6 +289,7 @@ const Pricing = () => {
 
       // --- Plan details ---
       emails: emailSendLimit,
+      emailValidations: emailValidationLimit, // FIXED: Added email validations
       features: planData.features,
       slots: contactCount,
       contactCount: contactCount,
@@ -446,8 +453,15 @@ const Pricing = () => {
     const planContactLimit = getPlanContactLimit(planKey);
     const planAvailable = isPlanAvailable(planKey);
     
-    const emailSendLimit = planKey === 'free' ? plan.emailLimit : contactCount * plan.emailMultiplier;
-    const emailValidationLimit = planKey === 'free' ? 0 : contactCount * (plan.emailValidationMultiplier || 0);
+    // FIXED: Calculate email send limit based on plan type, contact count, and billing period
+    const emailSendLimit = planKey === 'free' 
+      ? plan.emailLimit 
+      : contactCount * plan.emailMultiplier * periodInfo.months;
+    
+    // FIXED: Calculate email validation limit based on plan type, contact count, and billing period
+    const emailValidationLimit = planKey === 'free' 
+      ? 0 
+      : contactCount * (plan.emailValidationMultiplier || 0) * periodInfo.months;
     
     return (
       <div className={`relative bg-gray-900 rounded-2xl border-2 ${
@@ -514,7 +528,7 @@ const Pricing = () => {
             <div className="flex justify-between items-center mb-2">
               <span className="text-sm text-gray-400">Email Sending:</span>
               <span className="text-sm font-semibold text-white">
-                {planKey === 'free' ? plan.emailLimit.toLocaleString() : contactCount.toLocaleString()} emails
+                {emailSendLimit.toLocaleString()} emails
               </span>
             </div>
 

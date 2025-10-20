@@ -59,9 +59,10 @@ import contactRoutes from './routes/ContactUs.js';
 import userRoutes from './routes/user.js';
 import upiRoutes from "./routes/upi.js";
 import bodyParser from "body-parser";
+
 // ENV setup
 import customRoutes from "./routes/customRoutes.js";
-import upiRoutes from './routes/upi.js'; 
+
 dotenv.config();
 
 // Init

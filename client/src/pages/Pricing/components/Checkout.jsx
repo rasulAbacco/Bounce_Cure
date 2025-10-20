@@ -3,7 +3,6 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { CreditCard, Wallet, Shield, CheckCircle, Users, Mail } from 'lucide-react';
 
-
 export default function Checkout() {
     const navigate = useNavigate();
     const location = useLocation();
@@ -38,19 +37,18 @@ export default function Checkout() {
         CHF: 'CHF'
     };
 
-// Format price (already converted from previous step)
-const formatCurrency = (amount, currency) => {
-    const symbol = currencySymbols[currency] || '$';
-    
-    if (currency === 'JPY') {
-        return `${symbol}${Math.round(amount)}`;
-    } else if (currency === 'CHF') {
-        return `${amount.toFixed(2)} ${symbol}`;
-    } else {
-        return `${symbol}${amount.toFixed(2)}`;
-    }
-};
-
+    // Format price (already converted from previous step)
+    const formatCurrency = (amount, currency) => {
+        const symbol = currencySymbols[currency] || '$';
+        
+        if (currency === 'JPY') {
+            return `${symbol}${Math.round(amount)}`;
+        } else if (currency === 'CHF') {
+            return `${amount.toFixed(2)} ${symbol}`;
+        } else {
+            return `${symbol}${amount.toFixed(2)}`;
+        }
+    };
 
     const [selectedPayment, setSelectedPayment] = useState("stripe");
     const [plan, setPlan] = useState(null);
@@ -58,44 +56,41 @@ const formatCurrency = (amount, currency) => {
     const [isNewUser, setIsNewUser] = useState(true);
     const [selectedCurrency, setSelectedCurrency] = useState("USD");
 
-useEffect(() => {
-    const incomingPlan = location.state?.plan;
+    useEffect(() => {
+        const incomingPlan = location.state?.plan;
 
-    if (incomingPlan) {
-        setPlan(incomingPlan);
-        setIsNewUser(incomingPlan.isNewUser !== false);
-        // ✅ safer currency fallback
-        setSelectedCurrency(
-            incomingPlan.currency ??
-            localStorage.getItem("selectedCurrency") ??
-            "USD"
-        );
-    } else {
-        const storedPlan = localStorage.getItem("pendingUpgradePlan");
-        if (storedPlan) {
-            const parsedPlan = JSON.parse(storedPlan);
-            setPlan(parsedPlan);
-            setIsNewUser(parsedPlan.isNewUser !== false);
+        if (incomingPlan) {
+            setPlan(incomingPlan);
+            setIsNewUser(incomingPlan.isNewUser !== false);
             setSelectedCurrency(
-                parsedPlan.currency ??
+                incomingPlan.currency ??
                 localStorage.getItem("selectedCurrency") ??
                 "USD"
             );
         } else {
-            navigate("/pricing");
+            const storedPlan = localStorage.getItem("pendingUpgradePlan");
+            if (storedPlan) {
+                const parsedPlan = JSON.parse(storedPlan);
+                setPlan(parsedPlan);
+                setIsNewUser(parsedPlan.isNewUser !== false);
+                setSelectedCurrency(
+                    parsedPlan.currency ??
+                    localStorage.getItem("selectedCurrency") ??
+                    "USD"
+                );
+            } else {
+                navigate("/pricing");
+            }
         }
-    }
 
-    const userEmail =
-        localStorage.getItem("userEmail") || sessionStorage.getItem("userEmail");
-    if (userEmail) {
-        setEmail(userEmail);
-    }
-}, [location.state, navigate]);
-
+        const userEmail =
+            localStorage.getItem("userEmail") || sessionStorage.getItem("userEmail");
+        if (userEmail) {
+            setEmail(userEmail);
+        }
+    }, [location.state, navigate]);
 
     // Payment logic
-    // ✅ Correct handlePay function
     const handlePay = () => {
         if (!plan) return;
 
@@ -122,8 +117,6 @@ useEffect(() => {
                 },
             });
         } else if (selectedPayment === "UPI") {
-            
-            // ✅ Navigate to new UPI page
             navigate("/upi", {
                 state: {
                     plan: updatedPlan,
@@ -137,7 +130,6 @@ useEffect(() => {
         }
     };
 
-
     // Helper functions
     const getOriginalPrice = () => Number(plan?.originalBasePrice || 0);
     const getDiscountAmount = () => (isNewUser ? Number(plan?.discountAmount || 0) : 0);
@@ -147,7 +139,6 @@ useEffect(() => {
     };
     const getTaxAmount = () => getDiscountedPrice() * 0.1;
     const getTotalAmount = () => getDiscountedPrice() + getTaxAmount();
-
 
     // Payment methods - conditionally show UPI only for INR
     const paymentMethods = [
@@ -159,6 +150,25 @@ useEffect(() => {
     if (selectedCurrency === "INR") {
         paymentMethods.push({ id: "UPI", name: "UPI", icon: Wallet });
     }
+
+    // FIXED: Display email sends and validations with proper billing period context
+    const getDisplayEmailSends = () => {
+        if (!plan) return 0;
+        return plan.emailSends || plan.emails || 0;
+    };
+
+    const getDisplayEmailValidations = () => {
+        if (!plan) return 0;
+        return plan.emailValidations || 0;
+    };
+
+    const getBillingPeriodLabel = () => {
+        if (!plan) return 'month';
+        const period = plan.billingPeriod?.toLowerCase();
+        if (period === 'yearly') return 'year';
+        if (period === 'quarterly') return 'quarter';
+        return 'month';
+    };
 
     return (
         <div className="min-h-screen bg-black text-white relative overflow-hidden">
@@ -233,9 +243,6 @@ useEffect(() => {
                                     );
                                 })}
                             </div>
-
-                           
-
                         </div>
 
                         <div className="bg-blue-950/30 border border-blue-800/30 text-blue-300 p-4 rounded-xl flex items-start gap-3">
@@ -267,17 +274,32 @@ useEffect(() => {
                                                 <Users size={16} className="text-blue-400 mr-2" />
                                                 <span className="text-sm text-slate-300">Contacts:</span>
                                             </div>
-                                            <span className="font-semibold text-white">{plan.slots?.toLocaleString() || '0'}</span>
+                                            <span className="font-semibold text-white">{plan.slots?.toLocaleString() || plan.contactCount?.toLocaleString() || '0'}</span>
                                         </div>
-                                        <div className="flex items-center justify-between">
+                                        
+                                        {/* FIXED: Show email sends with proper period label */}
+                                        <div className="flex items-center justify-between mb-3">
                                             <div className="flex items-center">
                                                 <Mail size={16} className="text-purple-400 mr-2" />
                                                 <span className="text-sm text-slate-300">Email Sends:</span>
                                             </div>
                                             <span className="font-semibold text-white">
-                                                {(plan.emails ?? plan.emailSends ?? 0).toLocaleString()}/mo
+                                                {getDisplayEmailSends().toLocaleString()}/{getBillingPeriodLabel()}
                                             </span>
                                         </div>
+
+                                        {/* FIXED: Show email validations if available */}
+                                        {plan.emailValidations > 0 && (
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center">
+                                                    <Shield size={16} className="text-green-400 mr-2" />
+                                                    <span className="text-sm text-slate-300">Email Validations:</span>
+                                                </div>
+                                                <span className="font-semibold text-white">
+                                                    {getDisplayEmailValidations().toLocaleString()}/{getBillingPeriodLabel()}
+                                                </span>
+                                            </div>
+                                        )}
                                     </div>
 
                                     <div className="h-px bg-gradient-to-r from-transparent via-slate-700 to-transparent my-4"></div>
@@ -290,7 +312,7 @@ useEffect(() => {
                                         <>
                                             <div className="flex justify-between text-green-400">
                                                 <span>Discounts (50% off for 12 months):</span>
-                                                <span>– {formatCurrency(getDiscountAmount(), selectedCurrency)}</span>
+                                                <span>− {formatCurrency(getDiscountAmount(), selectedCurrency)}</span>
                                             </div>
                                             <div className="bg-green-950/30 border border-green-800/30 text-green-300 p-3 rounded-lg mt-4">
                                                 <p className="text-sm font-medium">

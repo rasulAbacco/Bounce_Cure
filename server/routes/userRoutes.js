@@ -4,6 +4,7 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { protect } from "../middleware/authMiddleware.js";
+import { ensureFreePlan } from "../utils/autoFreePlan.js";
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -41,15 +42,15 @@ router.post("/signup", async (req, res) => {
 
     // Save to DB with default plan info
     const newUser = await prisma.user.create({
-      data: { 
-        firstName, 
-        lastName, 
-        email, 
+      data: {
+        firstName,
+        lastName,
+        email,
         password: hashedPassword,
         plan: "Free",
         hasPurchasedBefore: false,
         contactLimit: 50,
-        emailLimit: 50
+        emailLimit: 50,
       },
     });
 
@@ -67,7 +68,7 @@ router.post("/signup", async (req, res) => {
         plan: newUser.plan,
         hasPurchasedBefore: newUser.hasPurchasedBefore,
         contactLimit: newUser.contactLimit,
-        emailLimit: newUser.emailLimit
+        emailLimit: newUser.emailLimit,
       },
     });
   } catch (error) {
@@ -84,22 +85,35 @@ router.post("/signup", async (req, res) => {
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
+
     if (!email || !password) {
-      return res.status(400).json({ message: "Email and password are required" });
+      return res
+        .status(400)
+        .json({ message: "Email and password are required" });
     }
 
+    // 1️⃣ Find user
     const user = await prisma.user.findUnique({ where: { email } });
     if (!user) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // 2️⃣ Verify password
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       return res.status(401).json({ message: "Invalid credentials" });
     }
 
+    // 3️⃣ Generate token
+    // 3️⃣ Generate token
     const token = generateToken(user);
 
+    // 4️⃣ Ensure user has free plan record if none exists
+    console.log("🔍 Running ensureFreePlan for:", user.email);
+    await ensureFreePlan(user);
+
+
+    // 5️⃣ Send response
     res.json({
       message: "Login successful",
       token,
@@ -111,12 +125,15 @@ router.post("/login", async (req, res) => {
         plan: user.plan,
         hasPurchasedBefore: user.hasPurchasedBefore,
         contactLimit: user.contactLimit,
-        emailLimit: user.emailLimit
+        emailLimit: user.emailLimit,
       },
     });
   } catch (error) {
-    console.error("Login error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("❌ Login error:", error);
+    res.status(500).json({
+      message: "Internal server error",
+      details: error.message,
+    });
   }
 });
 
@@ -129,15 +146,15 @@ router.post("/login", async (req, res) => {
 router.put("/plan", protect, async (req, res) => {
   try {
     const { planName, contactLimit, emailLimit } = req.body;
-    
+
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
       data: {
         plan: planName,
         hasPurchasedBefore: true,
         contactLimit: contactLimit,
-        emailLimit: emailLimit
-      }
+        emailLimit: emailLimit,
+      },
     });
 
     res.json({
@@ -147,15 +164,14 @@ router.put("/plan", protect, async (req, res) => {
         plan: updatedUser.plan,
         hasPurchasedBefore: updatedUser.hasPurchasedBefore,
         contactLimit: updatedUser.contactLimit,
-        emailLimit: updatedUser.emailLimit
-      }
+        emailLimit: updatedUser.emailLimit,
+      },
     });
   } catch (error) {
     console.error("Plan update error:", error);
     res.status(500).json({ message: "Internal server error" });
   }
 });
-
 
 /**
  * -------------------------
@@ -166,7 +182,13 @@ router.get("/me", protect, async (req, res) => {
   try {
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
-      select: { id: true, firstName: true, lastName: true, email: true, createdAt: true },
+      select: {
+        id: true,
+        firstName: true,
+        lastName: true,
+        email: true,
+        createdAt: true,
+      },
     });
 
     if (!user) {
@@ -184,62 +206,75 @@ router.get("/me", protect, async (req, res) => {
 });
 
 
+router.get("/credits", protect, async (req, res) => {
+  try {
+    // 1️⃣ Get latest payment (if user has purchased any)
+    const latestPayment = await prisma.payment.findFirst({
+      where: { userId: req.user.id },
+      orderBy: { paymentDate: "desc" },
+    });
+
+    // 2️⃣ Get user (for free/default plan fallback)
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: {
+        id: true,
+        emailLimit: true,
+        contactLimit: true,
+        plan: true,
+      },
+    });
+
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+
+    // 3️⃣ Return live credits
+    const emailSendCredits =
+      latestPayment?.emailSendCredits ??
+      user.emailLimit ??
+      50;
+
+    const emailVerificationCredits =
+      latestPayment?.emailVerificationCredits ??
+      user.contactLimit ??
+      50;
+
+    res.json({
+      plan: user.plan,
+      emailSendCredits,
+      emailVerificationCredits,
+    });
+  } catch (error) {
+    console.error("Error fetching credits:", error);
+    res.status(500).json({ error: "Failed to fetch credits" });
+  }
+});
+
+/**
+ * PUT /api/users/update-credits
+ * Deduct credits after campaign send
+ */
+router.put("/update-credits", protect, async (req, res) => {
+  try {
+    const { usedCredits } = req.body;
+    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+
+    if (!user) return res.status(404).json({ error: "User not found" });
+
+    const newEmailLimit = Math.max(0, (user.emailLimit || 0) - usedCredits);
+
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { emailLimit: newEmailLimit },
+    });
+
+    res.json({ success: true, remainingCredits: newEmailLimit });
+  } catch (error) {
+    console.error("Error updating credits:", error);
+    res.status(500).json({ error: "Failed to update credits" });
+  }
+});
+
+
 export default router;
-
-// //server/routes/userRoutes.js
-// import express from "express";
-// import { PrismaClient } from "@prisma/client";
-// import bcrypt from "bcryptjs";
-// import jwt from "jsonwebtoken";
-
-// const router = express.Router();
-// const prisma = new PrismaClient();
-
-// router.post("/signup", async (req, res) => {
-//   try {
-//     const { firstName, lastName, email, password } = req.body;
-
-//     if (!firstName || !lastName || !email || !password) {
-//       return res.status(400).json({ message: "All fields are required" });
-//     }
-
-//     // Check if user exists
-//     const existing = await prisma.user.findUnique({ where: { email } });
-//     if (existing) {
-//       return res.status(400).json({ message: "Email already registered" });
-//     }
-
-//     // Hash password
-//     const hashedPassword = await bcrypt.hash(password, 10);
-
-//     // Save to DB
-//     const newUser = await prisma.user.create({
-//       data: { firstName, lastName, email, password: hashedPassword },
-//     });
-
-//     // Generate JWT
-//     const token = jwt.sign(
-//       { id: newUser.id, email: newUser.email },
-//       process.env.JWT_SECRET,
-//       { expiresIn: "1d" } // 1 day validity
-//     );
-
-//     // Return token + user
-//     res.status(201).json({
-//       message: "User created successfully",
-//       token,
-//       user: {
-//         id: newUser.id,
-//         firstName: newUser.firstName,
-//         lastName: newUser.lastName,
-//         email: newUser.email,
-//       },
-//     });
-//   } catch (error) {
-//     console.error("Signup error:", error);
-//     res.status(500).json({ message: "Internal server error" });
-//   }
-// });
-
-
-// export default router;
