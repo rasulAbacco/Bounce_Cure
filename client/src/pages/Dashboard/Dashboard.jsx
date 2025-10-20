@@ -155,25 +155,26 @@ const Dashboard = () => {
 
 
   // ======== Greeting ========
-  useEffect(() => {
-    const updateGreeting = () => {
-      const usaTime = new Date().toLocaleString("en-US", { timeZone: "America/New_York" });
-      const currentHour = new Date(usaTime).getHours();
+useEffect(() => {
+  const updateGreeting = () => {
+    const currentHour = new Date().getHours(); // <-- uses system local time
 
-      if (currentHour >= 5 && currentHour < 12) {
-        setGreeting("Good Morning");
-      } else if (currentHour >= 12 && currentHour < 17) {
-        setGreeting("Good Afternoon");
-      } else {
-        setGreeting("Good Evening");
-      }
-    };
+    if (currentHour >= 5 && currentHour < 12) {
+      setGreeting("Good Morning");
+    } else if (currentHour >= 12 && currentHour < 17) {
+      setGreeting("Good Afternoon");
+    } else {
+      setGreeting("Good Evening");
+    }
+  };
 
-    updateGreeting();
-    const interval = setInterval(updateGreeting, 60 * 1000);
+  updateGreeting();
+  const interval = setInterval(updateGreeting, 60 * 1000); // update every minute
 
-    return () => clearInterval(interval);
-  }, []);
+  return () => clearInterval(interval);
+}, []);
+
+
   // ======== Performance Data for Chart ========
   const performanceData = useMemo(() => {
     const map = new Map();
@@ -477,55 +478,6 @@ const Dashboard = () => {
             </div>
 
           </div>
-
-          {/* Performance Chart */}
-        <div className="max-w-7xl mx-auto p-6 space-y-8">
-          {/* Performance Over Time Chart */}
-          <div className="bg-gray-900 border border-gray-800 p-6 rounded-2xl hover:bg-gray-800 transition-all">
-            <h2 className="text-lg font-semibold text-white mb-4">
-              Performance Over Time
-            </h2>
-            <ResponsiveContainer width="100%" height={300}>
-              <AreaChart data={performanceData}>
-                <defs>
-                  <linearGradient id="colorOpen" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#c2831f" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#c2831f" stopOpacity={0} />
-                  </linearGradient>
-                  <linearGradient id="colorClick" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#a66f1a" stopOpacity={0.8} />
-                    <stop offset="95%" stopColor="#a66f1a" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <XAxis dataKey="date" stroke="#6b7280" />
-                <YAxis stroke="#6b7280" />
-                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
-                <Tooltip
-                  contentStyle={{
-                    background: "rgba(31, 41, 55, 0.9)",
-                    border: "none",
-                    borderRadius: "8px",
-                    color: "#fff",
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="openRate"
-                  stroke="#c2831f"
-                  fillOpacity={1}
-                  fill="url(#colorOpen)"
-                />
-                <Area
-                  type="monotone"
-                  dataKey="clickRate"
-                  stroke="#a66f1a"
-                  fillOpacity={1}
-                  fill="url(#colorClick)"
-                />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
 
           {/* Campaign Table */}
           <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:bg-gray-800 transition-all">

@@ -3,7 +3,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements, useStripe, useElements, CardElement } from "@stripe/react-stripe-js";
 import { useLocation, useNavigate } from "react-router-dom";
 import axios from "axios";
-import { Shield, Lock, CheckCircle, AlertCircle, MapPin } from "lucide-react";
+import { Shield, Lock, CheckCircle, AlertCircle, MapPin, Mail } from "lucide-react";
 import { initializeUserAfterPurchase } from "../../../utils/PlanAccessControl";
 
 const API_URL = import.meta.env.VITE_VRI_URL;
@@ -55,7 +55,7 @@ function StripeForm() {
   };
 
   // Format price with selected currency
-const formatCurrency = (amount, currency) => {
+  const formatCurrency = (amount, currency) => {
     const symbol = currencySymbols[currency] || '$';
     
     if (currency === 'JPY') {
@@ -65,7 +65,7 @@ const formatCurrency = (amount, currency) => {
     } else {
         return `${symbol}${amount.toFixed(2)}`;
     }
-};
+  };
 
   const [email, setEmail] = useState("");
   const [canEditEmail, setCanEditEmail] = useState(false);
@@ -132,8 +132,8 @@ const handleSubmit = async (e) => {
   console.log("💰 Amount:", amount, selectedCurrency);
 
   try {
-    // Step 1: Create payment intent
-    console.log("🔄 Step 1: Creating payment intent...");
+    // Step 1: Create Stripe Payment Intent
+    console.log("📄 Step 1: Creating payment intent...");
     const { data } = await axios.post(`${API_URL}/api/stripe/create-payment-intent`, {
       amount,
       email,
@@ -147,8 +147,8 @@ const handleSubmit = async (e) => {
 
     console.log("✅ Payment intent created:", data.transactionId);
 
-    // Step 2: Confirm payment
-    console.log("🔄 Step 2: Confirming payment...");
+    // Step 2: Confirm payment with Stripe
+    console.log("📄 Step 2: Confirming payment...");
     const result = await stripe.confirmCardPayment(data.clientSecret, {
       payment_method: {
         card: elements.getElement(CardElement),
@@ -172,101 +172,111 @@ const handleSubmit = async (e) => {
       return;
     }
 
-   if (result.paymentIntent.status === "succeeded") {
-  console.log("✅ Payment succeeded!");
-  setStatus("✅ Payment successful! Sending Amount...");
+    if (result.paymentIntent.status === "succeeded") {
+      console.log("✅ Payment succeeded!");
+      setStatus("✅ Payment successful! Saving payment...");
 
-  const paymentIntent = result.paymentIntent;
+      const paymentIntent = result.paymentIntent;
 
-  // Save payment record to backend
- await axios.post(`${API_URL}/api/stripe/save-payment`, {
-  userId,
-  name,
-  email,
-  transactionId: paymentIntent.id,
-  planName: plan.planName,
-  planType: plan.billingPeriod,
-  provider: "Stripe",
+      // ✅ Save payment to backend
+      await axios.post(`${API_URL}/api/stripe/save-payment`, {
+        userId,
+        name,
+        email,
+        transactionId: paymentIntent.id,
+        planName: plan.planName,
+        planType: plan.billingPeriod,
+        provider: "Stripe",
 
-  // ✅ Important: send both fields
-  emailVerificationCredits:
-    plan.verificationCredits || plan.slots || plan.contactCount || 0,
-  emailSendCredits: plan.emails || plan.emailSends || 0,
+        // ✅ Include credits purchased
+        emailVerificationCredits:
+          plan.verificationCredits || plan.emailValidations || plan.slots || plan.contactCount || 0,
+        emailSendCredits: plan.emails || plan.emailSends || 0,
 
-  amount,
-  currency: selectedCurrency.toLowerCase(),
-  planPrice: amount - discount,
-  discount,
-  paymentMethod: paymentIntent.payment_method_types[0],
-  cardLast4:
-    paymentIntent.charges?.data[0]?.payment_method_details?.card?.last4 || "",
-  billingAddress,
-  paymentDate: new Date().toISOString(),
-  status: paymentIntent.status,
-});
+        amount,
+        currency: selectedCurrency.toLowerCase(),
+        planPrice: amount - discount,
+        discount,
+        paymentMethod: paymentIntent.payment_method_types[0],
+        cardLast4:
+          paymentIntent.charges?.data[0]?.payment_method_details?.card?.last4 || "",
+        billingAddress,
+        paymentDate: new Date().toISOString(),
+        status: paymentIntent.status,
+      });
 
+      console.log("✅ Payment saved successfully in backend.");
 
-  console.log("✅ Payment saved. Invoice sent.");
+      // ===== Merge with previous totals =====
+      const prevEmails = parseInt(localStorage.getItem("totalEmails")) || 0;
+      const prevVerifications =
+        localStorage.getItem("emailVerificationCredits") === "Unlimited"
+          ? "Unlimited"
+          : parseInt(localStorage.getItem("emailVerificationCredits")) || 0;
 
-  // ===== Merge with previous totals =====
-  const prevEmails = parseInt(localStorage.getItem("totalEmails")) || 0;
-  const prevVerifications =
-    localStorage.getItem("emailVerificationCredits") === "Unlimited"
-      ? "Unlimited"
-      : parseInt(localStorage.getItem("emailVerificationCredits")) || 0;
+      const additionalVerifications =
+        plan.emailValidations || plan.verificationCredits || 0;
+      const additionalEmails = plan.emailSends || plan.emails || 0;
 
-  const isEmailVerification =
-    plan.planType === "email-verification" ||
-    plan.pricingModel === "email-verification";
+      const newEmails = prevEmails + additionalEmails;
+      const newVerifications =
+        prevVerifications === "Unlimited" ||
+        plan.verificationCredits === "Unlimited"
+          ? "Unlimited"
+          : prevVerifications + additionalVerifications;
 
-  // Contacts are merged into Email Verifications
-  const additionalVerifications =
-    plan.verificationCredits ||
-    plan.slots ||
-    plan.contactCount ||
-    0;
+      // ✅ Save updated totals to localStorage
+      localStorage.setItem("totalEmails", newEmails);
+      localStorage.setItem("emailVerificationCredits", newVerifications);
 
-  const newEmails = prevEmails + (plan.emails || plan.emailSends || 0);
-  const newVerifications =
-    prevVerifications === "Unlimited" ||
-    plan.verificationCredits === "Unlimited"
-      ? "Unlimited"
-      : prevVerifications + additionalVerifications;
+      console.log("📊 Updated Totals:", {
+        "Email Verifications": newVerifications,
+        "Send Emails": newEmails,
+      });
 
-  // Save new totals
-  localStorage.setItem("totalEmails", newEmails);
-  localStorage.setItem("emailVerificationCredits", newVerifications);
+      // --- 🩵 Default counts for Free Plan ---
+      const isNewUser = !localStorage.getItem("emailVerificationCredits");
 
-  console.log("📊 Updated Totals:", {
-    "Email Verifications": newVerifications,
-    "Send Emails": newEmails,
-  });
-  // --- 🩵 Default counts for Free Plan (new users) ---
-const isNewUser = !localStorage.getItem("emailVerificationCredits");
+      if (isNewUser && plan.planName?.toLowerCase() === "free") {
+        console.log("🆕 Initializing default Free Plan counts");
+        localStorage.setItem("emailVerificationCredits", 50);
+        localStorage.setItem("totalEmails", 50);
+      }
 
-if (isNewUser && (plan.planName?.toLowerCase() === "free")) {
-  console.log("🆕 Initializing default Free Plan counts");
-  localStorage.setItem("emailVerificationCredits", 50);
-  localStorage.setItem("totalEmails", 50);
-}
+      // ✅ Initialize user state after purchase
+      initializeUserAfterPurchase({
+        planName: plan.planName,
+        emails: newEmails,
+        verifications: newVerifications,
+      });
 
+      // ✅ Update backend user plan (important fix)
+      try {
+        await axios.put(
+          `${API_URL}/api/users/plan`,
+          {
+            planName: plan.planName,
+            contactLimit: newVerifications,
+            emailLimit: newEmails,
+          },
+          {
+            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
+          }
+        );
+        console.log("✅ User plan updated successfully in backend");
+      } catch (err) {
+        console.error("⚠️ Failed to update user plan:", err.message);
+      }
 
-  // Initialize after purchase
-  initializeUserAfterPurchase({
-    planName: plan.planName,
-    emails: newEmails,
-    verifications: newVerifications,
-  });
+      // ✅ Cleanup
+      localStorage.removeItem("pendingUpgradePlan");
+      sessionStorage.removeItem("pendingUpgradePlan");
 
-  localStorage.removeItem("pendingUpgradePlan");
-  sessionStorage.removeItem("pendingUpgradePlan");
-
-  setStatus("✅ Payment successful! Redirecting to Dashboard...");
-  setTimeout(() => {
-    window.location.href = "/dashboard";
-  }, 3000);
-}
-
+      setStatus("✅ Payment successful! Redirecting to Dashboard...");
+      setTimeout(() => {
+        window.location.href = "/dashboard";
+      }, 3000);
+    }
   } catch (error) {
     console.error("❌ Error during payment process:", error);
     setStatus(`❌ Something went wrong: ${error.message}`);
@@ -291,6 +301,15 @@ if (isNewUser && (plan.planName?.toLowerCase() === "free")) {
       CHF: "CH",
     };
     return countryMap[currency] || "US";
+  };
+
+  // FIXED: Helper to get billing period label
+  const getBillingPeriodLabel = () => {
+    if (!plan) return 'month';
+    const period = plan.billingPeriod?.toLowerCase();
+    if (period === 'yearly') return 'year';
+    if (period === 'quarterly') return 'quarter';
+    return 'month';
   };
 
   return (
@@ -333,10 +352,19 @@ if (isNewUser && (plan.planName?.toLowerCase() === "free")) {
                 <p className="text-slate-400 text-sm">
                   {plan.slots || plan.contactCount || 0} contacts
                 </p>
+                {/* FIXED: Show email sends with billing period */}
                 <p className="text-slate-400 text-sm">
-                  {(plan.emails ?? plan.emailSends ?? 0).toLocaleString()} emails/mo
+                  <Mail size={14} className="inline mr-1" />
+                  {(plan.emails ?? plan.emailSends ?? 0).toLocaleString()} sends/{getBillingPeriodLabel()}
                 </p>
-                <p className="text-slate-400 text-sm">{plan.billingPeriod}</p>
+                {/* FIXED: Show email validations if available */}
+                {plan.emailValidations > 0 && (
+                  <p className="text-slate-400 text-sm">
+                    <Shield size={14} className="inline mr-1" />
+                    {plan.emailValidations.toLocaleString()} validations/{getBillingPeriodLabel()}
+                  </p>
+                )}
+                <p className="text-slate-400 text-sm capitalize">{plan.billingPeriod}</p>
               </div>
             </div>
           </div>

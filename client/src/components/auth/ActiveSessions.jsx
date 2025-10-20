@@ -97,7 +97,7 @@ const ActiveSessions = () => {
     return (
         <div className="relative group">
             <div className="absolute -inset-0.5 bg-gradient-to-r from-white/20 to-gray-400/20 rounded-2xl blur opacity-30 group-hover:opacity-50 transition duration-1000"></div>
-            <div className="relative bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl">
+            <div className="relative bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl h-100 overflow-y-auto">
                 {/* Header */}
                 <div className="flex items-center gap-3 mb-4">
                     <div className="p-2 bg-white/5 rounded-lg backdrop-blur-sm">

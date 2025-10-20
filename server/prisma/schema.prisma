@@ -25,8 +25,8 @@ model User {
   // New fields
   plan               String  @default("Free")
   hasPurchasedBefore Boolean @default(false)
-  contactLimit       Int     @default(50)
-  emailLimit         Int     @default(50)
+  contactLimit       Int     @default(500)
+  emailLimit         Int     @default(1000)
 
   // Relations (leave them as-is)
   apiKeys             ApiKey[]
@@ -191,7 +191,7 @@ model Contact {
   priority  String? // vip, subscriber, new, etc.
   last      String?
   userId    Int?
-  user      User?    @relation(fields: [userId], references: [id])
+  user      User?    @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   replies   Reply[]
@@ -206,8 +206,8 @@ model Task {
   status   String
   priority String
   notes    String?
-  userId   Int?
-  user     User?    @relation(fields: [userId], references: [id])
+  userId   Int
+  user     User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 model Deal {
@@ -219,7 +219,7 @@ model Deal {
   closing   DateTime
   status    String
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
@@ -316,7 +316,7 @@ model Lead {
   score     Int
   last      String
   userId    Int
-  user      User     @relation(fields: [userId], references: [id])
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
 }
 
@@ -327,7 +327,7 @@ model List {
   email        String
   phone        String
   userId       Int
-  user         User     @relation(fields: [userId], references: [id])
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt    DateTime @default(now())
   uploadedFile Bytes?
 }
@@ -342,7 +342,7 @@ model Order {
   status    String
   date      String
   userId    Int
-  user      User    @relation(fields: [userId], references: [id])
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   timestamp BigInt  @default(0) @db.BigInt
   deleted   Boolean @default(false)
 }
@@ -359,7 +359,7 @@ model VerificationBatch {
   createdAt        DateTime      @default(now())
   results          BatchResult[]
   userId           Int // ✅ Required
-  user             User          @relation(fields: [userId], references: [id])
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([createdAt])
 }
@@ -383,7 +383,7 @@ model BatchResult {
   error          String?
   createdAt      DateTime          @default(now())
   userId         Int // ✅ Required
-  user           User              @relation(fields: [userId], references: [id])
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
   batch          VerificationBatch @relation(fields: [batchId], references: [id], onDelete: Cascade)
 
   @@index([email])
@@ -407,7 +407,7 @@ model Verification {
   error          String?
   createdAt      DateTime @default(now())
   userId         Int
-  user           User     @relation(fields: [userId], references: [id])
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([userId, email]) // ✅ Add this
 }
@@ -571,7 +571,7 @@ model VerifiedSender {
   updatedAt        DateTime  @updatedAt
 
   userId Int
-  user   User @relation(fields: [userId], references: [id])
+  user   User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([email, userId])
   @@index([userId])

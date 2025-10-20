@@ -30,291 +30,329 @@ function isExampleOrFakeEmail(email) { /* ... */ }
 function firstEmailInObject(row) { /* ... */ }
 
 // ------ Single verify ------
+// ------ Single verify ------
+// ------ Single verify ------
+
+
+
+// ===================================================
+// SINGLE EMAIL VERIFICATION
+// ===================================================
 router.post("/verify-single", async (req, res) => {
-  const { email } = req.body || {};
-  const smtpCheck = (req.body?.smtpCheck ?? req.query?.smtpCheck ?? false) === true;
+const { email } = req.body || {};
+const userId = req.user?.id;
 
-  if (!email) return res.status(400).json({ error: "Email is required" });
 
-  const userId = req.user?.id; // 👈 Get user ID from token
-  if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-  try {
-    const result = await verifier.verify(email, { smtpCheck: Boolean(smtpCheck) });
 
-    console.log("[/verify-single] Verification result:", JSON.stringify(result, null, 2)); // ✅ Log full result
+if (!userId) return res.status(401).json({ error: "Unauthorized" });
+if (!email) return res.status(400).json({ error: "Email is required" });
 
-    try {
-      await prisma.verification.upsert({
-        where: {
-          userId_email: {
-            userId: req.user.id,
-            email: result.email
-          }
-        },
-        update: {
-          status: result.status,
-          score: result.score ?? 0,
-          syntax_valid: result.syntax_valid ?? false,
-          domain_valid: result.domain_valid ?? false,
-          mailbox_exists: result.mailbox_exists ?? false,
-          catch_all: result.catch_all ?? false,
-          disposable: result.disposable ?? false,
-          role_based: result.role_based ?? false,
-          greylisted: result.greylisted ?? false,
-          mx: Array.isArray(result.mx) ? result.mx : [result.mx],
-          error: result.error || null,
-          userId
-        },
-        create: {
-          email: result.email,
-          status: result.status,
-          score: result.score ?? 0,
-          syntax_valid: result.syntax_valid ?? false,
-          domain_valid: result.domain_valid ?? false,
-          mailbox_exists: result.mailbox_exists ?? false,
-          catch_all: result.catch_all ?? false,
-          disposable: result.disposable ?? false,
-          role_based: result.role_based ?? false,
-          greylisted: result.greylisted ?? false,
-          mx: Array.isArray(result.mx) ? result.mx : [result.mx],
-          error: result.error || null,
-          userId
-        }
-      });
-    } catch (dbErr) {
-      console.error("[DB] Upsert error (verification):", dbErr.message);
-    }
 
-    return res.json(result);
-  } catch (err) {
-    console.error("[/verify-single] ERROR:", err);
-    return res.status(500).json({ error: "Verification error", details: err.message });
-  }
 
+
+try {
+// ✅ Fetch user info
+const user = await prisma.user.findUnique({
+where: { id: userId },
+select: { email: true, firstName: true, lastName: true, contactLimit: true },
+});
+
+// ✅ Find latest payment
+let latest = await prisma.payment.findFirst({
+  where: { userId },
+  orderBy: { paymentDate: "desc" },
+});
+
+// ✅ Auto-create free trial payment if none exists
+if (!latest) {
+  const fullName =
+    `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "Free Trial User";
+
+  latest = await prisma.payment.create({
+    data: {
+      userId,
+      email: user?.email || "unknown@example.com",
+      name: fullName,
+      emailVerificationCredits: 50,
+      emailSendCredits: 0,
+      transactionId: `FREE-${Date.now()}`,
+      planName: "Free Trial",
+      planType: "Trial",
+      provider: "System",
+      amount: 0,
+      currency: "USD",
+      planPrice: 0,
+      discount: 0,
+      paymentMethod: "System",
+      cardLast4: null,
+      billingAddress: null,
+      paymentDate: new Date(),
+      nextPaymentDate: null,
+      status: "active",
+      notified: false,
+    },
+  });
+  console.log(`🆕 Created free trial payment record for user ${userId}`);
+}
+
+// ✅ Combine user + payment credits
+let credits = Math.max(
+  latest?.emailVerificationCredits ?? 0,
+  user?.contactLimit ?? 0
+);
+
+if (credits < 1) {
+  return res.status(403).json({
+    error: "You’ve used all your verification credits. Please purchase more credits.",
+  });
+}
+
+// ✅ Deduct 1 credit from both user & payment
+const remaining = Math.max(credits - 1, 0);
+await prisma.payment.update({
+  where: { id: latest.id },
+  data: { emailVerificationCredits: remaining },
+});
+await prisma.user.update({
+  where: { id: userId },
+  data: { contactLimit: remaining },
+});
+
+// ✅ Verify email
+const result = await verifier.verify(email, { smtpCheck: true });
+
+// ✅ Save verification result
+await prisma.verification.upsert({
+  where: { userId_email: { userId, email: result.email } },
+  update: result,
+  create: { ...result, userId },
+});
+
+res.json(result);
+
+
+
+
+} catch (err) {
+console.error("verify-single error:", err);
+res.status(500).json({ error: "Verification error", details: err.message });
+}
 });
 
 
-// ------ Bulk verify ------
 
+
+// ===================================================
+// BULK VERIFICATION
+// ===================================================
 router.post("/verify-bulk", async (req, res) => {
-  const { emails } = req.body || {};
-  const smtpCheck = (req.body?.smtpCheck ?? req.query?.smtpCheck ?? false) === true;
+const { emails } = req.body || {};
+const userId = req.user?.id;
 
-  const userId = req.user?.id;
-  if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-  console.log(`[/verify-bulk] Received ${emails?.length || 0} emails, smtpCheck=${smtpCheck}`);
 
-  if (!emails || !Array.isArray(emails) || emails.length === 0) {
-    return res.status(400).json({ error: "Emails array is required" });
-  }
 
-  try {
-    const chunkSize = 500;
-    const emailChunks = [];
-    for (let i = 0; i < emails.length; i += chunkSize) {
-      emailChunks.push(emails.slice(i, i + chunkSize));
-    }
+if (!userId) return res.status(401).json({ error: "Unauthorized" });
+if (!emails?.length) return res.status(400).json({ error: "Emails are required" });
 
-    const allResults = [];
-    let totalSummary = {
-      total: emails.length,
-      validCount: 0,
-      invalidCount: 0,
-      riskyCount: 0,
-      disposable: 0,
-      role_based: 0,
-      catch_all: 0,
-      greylisted: 0,
-    };
 
-    for (let i = 0; i < emailChunks.length; i++) {
-      const batchId = await verifier.createBatchWithMailsSo(emailChunks[i]);
-      const batchResults = await verifier.waitForBatchCompletion(batchId);
 
-      batchResults.forEach((r) => {
-        allResults.push(r);
 
-        if (r.status === "valid") totalSummary.validCount++;
-        else if (r.status === "invalid") totalSummary.invalidCount++;
-        else totalSummary.riskyCount++;
+try {
+const user = await prisma.user.findUnique({
+where: { id: userId },
+select: { contactLimit: true },
+});
+const latest = await prisma.payment.findFirst({
+where: { userId },
+orderBy: { paymentDate: "desc" },
+});
 
-        if (r.disposable) totalSummary.disposable++;
-        if (r.role_based) totalSummary.role_based++;
-        if (r.catch_all) totalSummary.catch_all++;
-        if (r.greylisted) totalSummary.greylisted++;
-      });
-    }
+// ✅ Combine credits
+let credits = Math.max(
+  latest?.emailVerificationCredits ?? 0,
+  user?.contactLimit ?? 0
+);
 
-    // ✅ Save batch in DB with userId
-    const batch = await prisma.verificationBatch.create({
-      data: {
-        source: "bulk",
-        name: "Manual Bulk Upload",
-        includeOnlyValid: false,
-        userId, // ✅ associate batch with user
-        total: totalSummary.total,
-        validCount: totalSummary.validCount,
-        invalidCount: totalSummary.invalidCount,
-        riskyCount: totalSummary.riskyCount,
-        results: {
-          create: allResults.map((r) => {
-            let mxValue = r.mx;
+if (credits < emails.length) {
+  return res.status(403).json({
+    error: "Not enough verification credits. Please purchase more credits.",
+  });
+}
 
-            if (Array.isArray(mxValue)) {
-              mxValue = mxValue.length > 0 ? mxValue[0] : null;
-            } else if (typeof mxValue !== "string" && mxValue !== null) {
-              mxValue = null;
-            }
+// ✅ Deduct used credits
+const remaining = Math.max(credits - emails.length, 0);
+await prisma.payment.update({
+  where: { id: latest.id },
+  data: { emailVerificationCredits: remaining },
+});
+await prisma.user.update({
+  where: { id: userId },
+  data: { contactLimit: remaining },
+});
 
-            return {
-              email: r.email,
-              status: r.status || "unknown",
-              score: r.score ?? 0,
-              syntax_valid: r.syntax_valid ?? false,
-              domain_valid: r.domain_valid ?? false,
-              mailbox_exists: r.mailbox_exists ?? false,
-              catch_all: r.catch_all ?? false,
-              disposable: r.disposable ?? false,
-              role_based: r.role_based ?? false,
-              greylisted: r.greylisted ?? false,
-              free_provider: r.free_provider ?? null,
-              provider: r.provider ?? null,
-              mx: mxValue,
-              error: r.error || null,
-              userId, // ✅ associate each result with user
-            };
-          }),
-        },
-      },
-      include: { results: false },
-    });
+// ✅ Process verification
+const results = [];
+for (const email of emails) {
+  const r = await verifier.verify(email, { smtpCheck: true });
+  results.push(r);
+}
 
-    return res.json({ batchId: batch.id, summary: totalSummary, results: allResults });
-  } catch (err) {
-    console.error("[/verify-bulk] ERROR", err);
-    return res.status(500).json({ error: "Bulk verification failed", details: err.message });
-  }
+// ✅ Save batch
+const batch = await prisma.verificationBatch.create({
+  data: {
+    source: "bulk",
+    userId,
+    total: results.length,
+    results: { create: results.map((r) => ({ ...r, userId })) },
+  },
+});
+
+res.json({ success: true, batchId: batch.id, results });
+
+
+
+
+} catch (err) {
+console.error("verify-bulk error:", err);
+res.status(500).json({ error: "Bulk verification failed", details: err.message });
+}
 });
 
 
 
 
-// ------ Manual paste verify ------
-
+// ===================================================
+// MANUAL VERIFY (Paste multiple emails)
+// ===================================================
 router.post("/verify-manual", async (req, res) => {
-  const { text, includeOnlyValid = false, maxRich = false, name = "manual_paste" } = req.body || {};
-  const userId = req.user?.id;
+const { text } = req.body || {};
+const userId = req.user?.id;
 
-  if (!userId) return res.status(401).json({ error: "Unauthorized" });
 
-  if (!text || typeof text !== "string") {
-    return res.status(400).json({ error: "Text is required" });
-  }
 
-  try {
-    const emails = text
-      .split(/\s|,|;/)
-      .map(e => e.trim().toLowerCase())
-      .filter(e => /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(e));
 
-    const unique = [...new Set(emails)].filter(Boolean);
-    const filtered = unique.filter(e => !isExampleOrFakeEmail(e));
+if (!userId) return res.status(401).json({ error: "Unauthorized" });
+if (!text) return res.status(400).json({ error: "Text is required" });
 
-    if (!filtered.length) {
-      return res.status(400).json({ error: "No valid (non-fake) emails found." });
-    }
 
-    const CHUNK_SIZE = 500;
-    const CONCURRENCY_LIMIT = 40;
-    const limit = pLimit(CONCURRENCY_LIMIT);
 
-    const chunks = [];
-    for (let i = 0; i < filtered.length; i += CHUNK_SIZE) {
-      chunks.push(filtered.slice(i, i + CHUNK_SIZE));
-    }
 
-    let results = [];
-    let summary = { total: filtered.length, valid: 0, invalid: 0, risky: 0 };
+const emails = text.split(/\s|,|;/).filter((e) => e.includes("@"));
 
-    const verifyEmail = (email) =>
-      limit(async () => {
-        try {
-          const r = await verifier.verify(email, { smtpCheck: true, maxRich });
-          if (includeOnlyValid && r.status !== "valid") return null;
-          return r;
-        } catch (err) {
-          console.error("[manual verify] SMTP error for", email, err.message);
-          return { email, status: "invalid", score: 0, error: err.message };
-        }
-      });
 
-    for (const chunk of chunks) {
-      const chunkResults = await Promise.all(chunk.map(email => verifyEmail(email)));
-      const filteredResults = chunkResults.filter(r => r !== null);
 
-      filteredResults.forEach(r => {
-        results.push(r);
-        summary[r.status] = (summary[r.status] || 0) + 1;
-      });
-    }
 
-    // ✅ Save the batch with userId
-    const batch = await prisma.verificationBatch.create({
-      data: {
-        source: "manual",
-        name,
-        includeOnlyValid,
-        total: summary.total,
-        validCount: summary.valid,
-        invalidCount: summary.invalid,
-        riskyCount: summary.risky,
-        userId, // ✅ Attach userId here
-        results: {
-          create: results.map(r => {
-            let mxValue = r.mx;
-            if (Array.isArray(mxValue)) {
-              mxValue = mxValue.length > 0 ? mxValue[0] : null;
-            } else if (typeof mxValue !== 'string' && mxValue !== null) {
-              mxValue = null;
-            }
+try {
+const user = await prisma.user.findUnique({
+where: { id: userId },
+select: { email: true, firstName: true, lastName: true, contactLimit: true },
+});
+let latest = await prisma.payment.findFirst({
+where: { userId },
+orderBy: { paymentDate: "desc" },
+});
 
-            return {
-              email: r.email,
-              status: r.status || "unknown",
-              score: r.score ?? 0,
-              syntax_valid: r.syntax_valid ?? false,
-              domain_valid: r.domain_valid ?? false,
-              mailbox_exists: r.mailbox_exists ?? false,
-              catch_all: r.catch_all ?? false,
-              disposable: r.disposable ?? false,
-              role_based: r.role_based ?? false,
-              greylisted: r.greylisted ?? false,
-              mx: mxValue,
-              error: r.error || null,
-              userId // ✅ Also associate each result with user
-            };
-          }),
-        },
-      },
-      include: { results: false },
-    });
+// ✅ Auto-create free trial if missing
+if (!latest) {
+  const fullName =
+    `${user?.firstName || ""} ${user?.lastName || ""}`.trim() || "Free Trial User";
 
-    return res.json({
-      batchId: batch.id,
-      summary: {
-        total: summary.total,
-        validCount: summary.valid,
-        invalidCount: summary.invalid,
-        riskyCount: summary.risky,
-      },
-      results,
-    });
-  } catch (err) {
-    console.error("[/verify-manual] ERROR", err);
-    return res.status(500).json({ error: "Manual verification failed", details: err.message });
-  }
+  latest = await prisma.payment.create({
+    data: {
+      userId,
+      email: user?.email || "unknown@example.com",
+      name: fullName,
+      emailVerificationCredits: 50,
+      emailSendCredits: 0,
+      transactionId: `FREE-${Date.now()}`,
+      planName: "Free Trial",
+      planType: "Trial",
+      provider: "System",
+      amount: 0,
+      currency: "USD",
+      planPrice: 0,
+      discount: 0,
+      paymentMethod: "System",
+      paymentDate: new Date(),
+      status: "active",
+    },
+  });
+  console.log(`🆕 Created free trial payment record for user ${userId}`);
+}
+
+// ✅ Combine user + payment credits
+let credits = Math.max(
+  latest.emailVerificationCredits ?? 0,
+  user?.contactLimit ?? 0
+);
+
+if (credits < emails.length) {
+  return res.status(403).json({
+    error: "Not enough verification credits. Please purchase more credits.",
+  });
+}
+
+// ✅ Deduct used credits
+const remaining = Math.max(credits - emails.length, 0);
+await prisma.payment.update({
+  where: { id: latest.id },
+  data: { emailVerificationCredits: remaining },
+});
+await prisma.user.update({
+  where: { id: userId },
+  data: { contactLimit: remaining },
+});
+
+// ✅ Process verification
+const results = [];
+for (const e of emails) {
+  const r = await verifier.verify(e, { smtpCheck: true });
+  results.push(r);
+}
+
+// ✅ Count valid, invalid, risky
+const validCount = results.filter((r) => r.status === "valid").length;
+const invalidCount = results.filter((r) => r.status === "invalid").length;
+const riskyCount = results.filter((r) => r.status === "risky").length;
+
+// ✅ Save batch (convert mx to string)
+await prisma.verificationBatch.create({
+  data: {
+    source: "manual",
+    userId,
+    total: results.length,
+    validCount,
+    invalidCount,
+    riskyCount,
+    includeOnlyValid: false,
+    results: {
+      create: results.map((r) => ({
+        ...r,
+        userId,
+        mx: Array.isArray(r.mx) ? r.mx.join(", ") : r.mx ?? null,
+      })),
+    },
+  },
+});
+
+res.json({
+  success: true,
+  results,
+  summary: { total: results.length, validCount, invalidCount, riskyCount },
+});
+
+
+
+
+} catch (err) {
+console.error("verify-manual error:", err);
+res.status(500).json({
+error: "Manual verification failed",
+details: err.message,
+});
+}
 });
 
 

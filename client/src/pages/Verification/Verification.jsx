@@ -101,169 +101,185 @@ const Verification = () => {
     loadManual();
   }, []);
 
-  // ---------------- Single verify ----------------
-  const verifySingle = async () => {
-    const token = localStorage.getItem("token");
-
-    if (!singleEmail?.trim()) return alert("Please enter an email");
-    setLoadingSingle(true);
+  useEffect(() => {
+  const fetchCredits = async () => {
     try {
-      const res = await axios.post(
-        `${VRI_URL}/verification/verify-single`,
-        { email: singleEmail.trim() },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${VRI_URL}/api/users/credits`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
 
-      const result = res.data?.email ? res.data : res.data?.result || res.data;
-      setSingleResult(result);
-      setSingleHistory((p) => [result, ...p]);
+      if (res.data) {
+        const { emailVerificationCredits } = res.data;
+        localStorage.setItem("emailVerificationCredits", emailVerificationCredits);
+        window.dispatchEvent(new Event("storage"));
+      }
     } catch (err) {
-      console.error("Single verify error", err?.response?.data || err?.message || err);
-      alert("Single verification failed: " + (err?.response?.data?.error || err?.message || "Unknown"));
-    } finally {
-      setSingleEmail("");
-      setLoadingSingle(false);
+      console.error("Failed to fetch credits:", err.message);
     }
   };
 
-  // ---------------- Bulk Upload ----------------
-  const handleBulkUpload = async (e) => {
-    const token = localStorage.getItem("token");
-    const file = e.target.files?.[0];
-    if (!file) return;
+  fetchCredits();
+}, []);
 
-    setLoadingBulk(true);
-    setBulkProgress(5);
 
-    try {
-      const reader = new FileReader();
-      reader.onload = async (event) => {
-        const content = event.target.result;
-        const emails = content
-          .split(/\r?\n/)
-          .map((line) => line.trim())
-          .filter((line) => line)
-          .slice(0, 1000);
+ // ---------------- Single verify ----------------
+const verifySingle = async () => {
+  const token = localStorage.getItem("token");
 
-        if (emails.length === 0) {
-          alert("No valid emails found in the file.");
-          setLoadingBulk(false);
-          return;
-        }
+  if (!singleEmail?.trim()) return alert("Please enter an email");
+  setLoadingSingle(true);
+  try {
+    const res = await axios.post(
+      `${VRI_URL}/verification/verify-single`,
+      { email: singleEmail.trim() },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
 
-        try {
-          const res = await axios.post(
-            `${VRI_URL}/verification/verify-bulk`,
-            { emails },
-            {
-              headers: {
-                "Content-Type": "application/json",
-                Authorization: `Bearer ${token}`,
-              },
-            }
-          );
+    const result = res.data?.email ? res.data : res.data?.result || res.data;
+    setSingleResult(result);
+    setSingleHistory((p) => [result, ...p]);
 
-          const data = res.data;
-
-          const newBatch = {
-            id: data.batchId,
-            name: `Bulk Upload ${new Date().toLocaleString()}`,
-            timestamp: new Date().toLocaleString(),
-            results: data.results || [],
-            summary: data.summary || {
-              total: emails.length,
-              validCount: 0,
-              invalidCount: 0,
-              riskyCount: 0,
-            },
-          };
-
-          setBulkHistory((prev) => [newBatch, ...prev]);
-          setViewingBulkId(newBatch.id);
-        } catch (err) {
-          console.error("Bulk upload error", err);
-          alert("Bulk verification failed: " + (err.response?.data?.error || err.message));
-        } finally {
-          setLoadingBulk(false);
-        }
-      };
-
-      reader.readAsText(file);
-    } catch (err) {
-      console.error("File reading error", err);
-      alert("Error reading file");
-      setLoadingBulk(false);
+    // ✅ Deduct 1 credit locally
+    const current = parseInt(localStorage.getItem("emailVerificationCredits")) || 0;
+    const newCount = Math.max(current - 1, 0);
+    localStorage.setItem("emailVerificationCredits", newCount);
+    window.dispatchEvent(new Event("storage"));
+  } catch (err) {
+    if (err.response?.status === 403) {
+      alert("You’ve used all your verification credits. Please purchase more credits.");
+    } else {
+      alert("Single verification failed: " + (err?.message || "Unknown"));
     }
-  };
+  } finally {
+    setSingleEmail("");
+    setLoadingSingle(false);
+  }
+};
 
-  // ---------------- Manual verify ----------------
-  const verifyManual = async () => {
-    const token = localStorage.getItem("token");
+// ---------------- Bulk Upload ----------------
+const handleBulkUpload = async (e) => {
+  const token = localStorage.getItem("token");
+  const file = e.target.files?.[0];
+  if (!file) return;
 
-    if (!pasteText?.trim()) return alert("Paste emails or text first");
-    setLoadingManual(true);
-    try {
-      const res = await axios.post(
-        `${VRI_URL}/verification/verify-manual`,
-        {
-          text: pasteText,
-          includeOnlyValid,
-          name: `manual_${Date.now()}`,
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
-      );
+  setLoadingBulk(true);
+  try {
+    const reader = new FileReader();
+    reader.onload = async (event) => {
+      const emails = event.target.result
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter((line) => line)
+        .slice(0, 1000);
 
-      let newBatch = null;
-      if (res.data?.batchId) {
-        newBatch = {
-          id: res.data.batchId,
-          name: res.data.name || "Manual Paste",
-          timestamp: new Date().toLocaleString(),
-          results: res.data.results || [],
-          summary: res.data.summary || {
-            total: (res.data.results || []).length,
-            validCount: (res.data.results || []).filter((r) => r.status === "valid").length,
-            invalidCount: (res.data.results || []).filter((r) => r.status === "invalid").length,
-            riskyCount: (res.data.results || []).filter((r) => r.status === "risky").length,
-          },
-        };
-      } else if (res.data?.id) {
-        newBatch = {
-          id: res.data.id,
-          name: res.data.name || "Manual Paste",
-          timestamp: new Date(res.data.createdAt).toLocaleString(),
-          results: res.data.results || [],
-          summary: {
-            total: res.data.total ?? (res.data.results || []).length,
-            validCount: res.data.validCount ?? (res.data.results || []).filter((r) => r.status === "valid").length,
-            invalidCount: res.data.invalidCount ?? (res.data.results || []).filter((r) => r.status === "invalid").length,
-            riskyCount: res.data.riskyCount ?? (res.data.results || []).filter((r) => r.status === "risky").length,
-          },
-        };
-      } else {
-        newBatch = {
-          id: Date.now(),
-          name: "Manual Paste",
-          timestamp: new Date().toLocaleString(),
-          results: res.data.results || [],
-          summary: res.data.summary || { total: (res.data.results || []).length },
-        };
+      if (emails.length === 0) {
+        alert("No valid emails found in the file.");
+        setLoadingBulk(false);
+        return;
       }
 
-      setManualHistory((p) => [newBatch, ...p]);
-      setViewingManualId(newBatch.id);
-      setPasteText("");
-    } catch (err) {
-      console.error("Manual verify error", err?.response?.data || err?.message || err);
-      alert("Manual verification failed: " + (err?.response?.data?.error || err?.message || "Unknown"));
-    } finally {
-      setLoadingManual(false);
+      // ✅ Check local credits first
+      const current = parseInt(localStorage.getItem("emailVerificationCredits")) || 0;
+      if (emails.length > current) {
+        alert("Not enough verification credits. Please purchase more credits.");
+        setLoadingBulk(false);
+        return;
+      }
+
+      const res = await axios.post(
+        `${VRI_URL}/verification/verify-bulk`,
+        { emails },
+        { headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` } }
+      );
+
+      const data = res.data;
+
+      // ✅ Deduct credits locally
+      const newCount = Math.max(current - emails.length, 0);
+      localStorage.setItem("emailVerificationCredits", newCount);
+      window.dispatchEvent(new Event("storage"));
+
+      const newBatch = {
+        id: data.batchId,
+        name: `Bulk Upload ${new Date().toLocaleString()}`,
+        timestamp: new Date().toLocaleString(),
+        results: data.results || [],
+        summary: data.summary || {
+          total: emails.length,
+          validCount: 0,
+          invalidCount: 0,
+          riskyCount: 0,
+        },
+      };
+
+      setBulkHistory((prev) => [newBatch, ...prev]);
+      setViewingBulkId(newBatch.id);
+    };
+    reader.readAsText(file);
+  } catch (err) {
+    if (err.response?.status === 403) {
+      alert("Verification credits exceeded. Please purchase more credits.");
+    } else {
+      alert("Bulk verification failed: " + (err.message || "Unknown"));
     }
-  };
+  } finally {
+    setLoadingBulk(false);
+  }
+};
+
+// ---------------- Manual verify ----------------
+const verifyManual = async () => {
+  const token = localStorage.getItem("token");
+
+  if (!pasteText?.trim()) return alert("Paste emails or text first");
+  setLoadingManual(true);
+  try {
+    const emails = pasteText
+      .split(/\s|,|;/)
+      .map((e) => e.trim())
+      .filter((e) => e.includes("@"));
+
+    // ✅ Check local credits
+    const current = parseInt(localStorage.getItem("emailVerificationCredits")) || 0;
+    if (emails.length > current) {
+      alert("Not enough verification credits. Please purchase more credits.");
+      setLoadingManual(false);
+      return;
+    }
+
+    const res = await axios.post(
+      `${VRI_URL}/verification/verify-manual`,
+      { text: pasteText },
+      { headers: { Authorization: `Bearer ${token}` } }
+    );
+
+    // ✅ Deduct locally
+    const newCount = Math.max(current - emails.length, 0);
+    localStorage.setItem("emailVerificationCredits", newCount);
+    window.dispatchEvent(new Event("storage"));
+
+    // ✅ Add new batch
+    const newBatch = {
+      id: res.data.batchId || Date.now(),
+      name: "Manual Paste",
+      timestamp: new Date().toLocaleString(),
+      results: res.data.results || [],
+      summary: res.data.summary || { total: emails.length },
+    };
+    setManualHistory((p) => [newBatch, ...p]);
+    setViewingManualId(newBatch.id);
+    setPasteText("");
+  } catch (err) {
+    if (err.response?.status === 403) {
+      alert("Verification credits exceeded. Please purchase more credits.");
+    } else {
+      alert("Manual verification failed: " + (err.message || "Unknown"));
+    }
+  } finally {
+    setLoadingManual(false);
+  }
+};
 
 
   // ---------------- Utilities ----------------
@@ -319,6 +335,13 @@ const Verification = () => {
   return (
     <DashboardLayout>
       <div className="max-w-6xl mx-auto px-4 py-8 text-gray-200 mt-[5%]">
+              {/* ✅ Show remaining credits */}
+      <div className="text-center mb-6">
+        <p className="text-lg text-yellow-400 font-semibold">
+          Remaining Credits: {localStorage.getItem("emailVerificationCredits") || 0}
+        </p>
+      </div>
+
         {/* Tabs */}
         <div className="flex justify-center gap-4 mb-8">
           {["single", "bulk", "manual"].map((t) => (
