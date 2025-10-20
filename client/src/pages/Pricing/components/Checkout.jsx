@@ -38,20 +38,19 @@ export default function Checkout() {
         CHF: 'CHF'
     };
 
-    // Format price with selected currency
-    const formatCurrency = (amount, currency) => {
-        const convertedAmount = amount * exchangeRates[currency];
-        const symbol = currencySymbols[currency];
+// Format price (already converted from previous step)
+const formatCurrency = (amount, currency) => {
+    const symbol = currencySymbols[currency] || '$';
+    
+    if (currency === 'JPY') {
+        return `${symbol}${Math.round(amount)}`;
+    } else if (currency === 'CHF') {
+        return `${amount.toFixed(2)} ${symbol}`;
+    } else {
+        return `${symbol}${amount.toFixed(2)}`;
+    }
+};
 
-        // Special handling for JPY (no decimals) and CHF (symbol after)
-        if (currency === 'JPY') {
-            return `${symbol}${Math.round(convertedAmount)}`;
-        } else if (currency === 'CHF') {
-            return `${Math.round(convertedAmount * 100) / 100} ${symbol}`;
-        } else {
-            return `${symbol}${convertedAmount.toFixed(2)}`;
-        }
-    };
 
     const [selectedPayment, setSelectedPayment] = useState("stripe");
     const [plan, setPlan] = useState(null);
@@ -59,29 +58,41 @@ export default function Checkout() {
     const [isNewUser, setIsNewUser] = useState(true);
     const [selectedCurrency, setSelectedCurrency] = useState("USD");
 
-    useEffect(() => {
-        const incomingPlan = location.state?.plan;
-        if (incomingPlan) {
-            setPlan(incomingPlan);
-            setIsNewUser(incomingPlan.isNewUser !== false);
-            setSelectedCurrency(incomingPlan.currency || "USD");
-        } else {
-            const storedPlan = localStorage.getItem("pendingUpgradePlan");
-            if (storedPlan) {
-                const parsedPlan = JSON.parse(storedPlan);
-                setPlan(parsedPlan);
-                setIsNewUser(parsedPlan.isNewUser !== false);
-                setSelectedCurrency(parsedPlan.currency || "USD");
-            } else {
-                navigate("/pricing");
-            }
-        }
+useEffect(() => {
+    const incomingPlan = location.state?.plan;
 
-        const userEmail = localStorage.getItem("userEmail") || sessionStorage.getItem("userEmail");
-        if (userEmail) {
-            setEmail(userEmail);
+    if (incomingPlan) {
+        setPlan(incomingPlan);
+        setIsNewUser(incomingPlan.isNewUser !== false);
+        // ✅ safer currency fallback
+        setSelectedCurrency(
+            incomingPlan.currency ??
+            localStorage.getItem("selectedCurrency") ??
+            "USD"
+        );
+    } else {
+        const storedPlan = localStorage.getItem("pendingUpgradePlan");
+        if (storedPlan) {
+            const parsedPlan = JSON.parse(storedPlan);
+            setPlan(parsedPlan);
+            setIsNewUser(parsedPlan.isNewUser !== false);
+            setSelectedCurrency(
+                parsedPlan.currency ??
+                localStorage.getItem("selectedCurrency") ??
+                "USD"
+            );
+        } else {
+            navigate("/pricing");
         }
-    }, [location.state, navigate]);
+    }
+
+    const userEmail =
+        localStorage.getItem("userEmail") || sessionStorage.getItem("userEmail");
+    if (userEmail) {
+        setEmail(userEmail);
+    }
+}, [location.state, navigate]);
+
 
     // Payment logic
     // ✅ Correct handlePay function
@@ -92,6 +103,7 @@ export default function Checkout() {
             ...plan,
             totalCost: getTotalAmount(),
         };
+        localStorage.setItem("selectedCurrency", selectedCurrency);
 
         if (selectedPayment === "stripe") {
             navigate("/stripe", {
@@ -110,6 +122,7 @@ export default function Checkout() {
                 },
             });
         } else if (selectedPayment === "UPI") {
+            
             // ✅ Navigate to new UPI page
             navigate("/upi", {
                 state: {
@@ -128,9 +141,13 @@ export default function Checkout() {
     // Helper functions
     const getOriginalPrice = () => Number(plan?.originalBasePrice || 0);
     const getDiscountAmount = () => (isNewUser ? Number(plan?.discountAmount || 0) : 0);
-    const getDiscountedPrice = () => getOriginalPrice() - getDiscountAmount();
+    const getDiscountedPrice = () => {
+        const price = getOriginalPrice() - getDiscountAmount();
+        return price < 0 ? 0 : price;
+    };
     const getTaxAmount = () => getDiscountedPrice() * 0.1;
     const getTotalAmount = () => getDiscountedPrice() + getTaxAmount();
+
 
     // Payment methods - conditionally show UPI only for INR
     const paymentMethods = [
@@ -257,7 +274,9 @@ export default function Checkout() {
                                                 <Mail size={16} className="text-purple-400 mr-2" />
                                                 <span className="text-sm text-slate-300">Email Sends:</span>
                                             </div>
-                                            <span className="font-semibold text-white">{plan.emails?.toLocaleString() || '0'}/mo</span>
+                                            <span className="font-semibold text-white">
+                                                {(plan.emails ?? plan.emailSends ?? 0).toLocaleString()}/mo
+                                            </span>
                                         </div>
                                     </div>
 

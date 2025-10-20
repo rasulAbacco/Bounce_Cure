@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Check, X, ChevronDown, ChevronUp, Gift, Users, TrendingUp, Star, ArrowRight, Phone, Mail, Zap, BarChart, Globe, Shield, Smartphone, Package, Target, Send, Layout } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import PageLayout from "../components/PageLayout"; // Adjust path as needed
+import PricingEmailVerifi from "./PricingEmailVerifi"
+
 const Pricing = () => {
   const [billingPeriod, setBillingPeriod] = useState('monthly');
   const [contactCount, setContactCount] = useState(500);
@@ -9,7 +11,8 @@ const Pricing = () => {
   const [showComparison, setShowComparison] = useState(false);
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
-  
+  const [showEmailVerify, setShowEmailVerify] = useState(false);
+
   // Navigation hook
   const navigate = useNavigate();
 
@@ -50,9 +53,36 @@ const Pricing = () => {
 
   // Per-contact pricing rates as per image
   const perContactRates = {
-    essentials: { 500: 0.05, 2500: 0.05, 5000: 0.05, 10000: 0.04, 20000: 0.04, 30000: 0.03, 40000: 0.03, 50000: 0.03 },
-    standard: { 500: 0.08, 2500: 0.07, 5000: 0.07, 10000: 0.07, 20000: 0.07, 30000: 0.07, 40000: 0.07, 50000: 0.07 },
-    premium: { 500: 0.10, 2500: 0.09, 5000: 0.08, 10000: 0.07, 20000: 0.07, 30000: 0.06, 40000: 0.06, 50000: 0.06 }
+    essentials: {
+      500: 0.05,
+      2500: 0.05,
+      5000: 0.05,
+      10000: 0.04,
+      20000: 0.04,
+      30000: 0.03,
+      40000: 0.03,
+      50000: 0.03
+    },
+    standard: {
+      500: 0.08,
+      2500: 0.07,
+      5000: 0.07,
+      10000: 0.06,
+      20000: 0.06,
+      30000: 0.05,
+      40000: 0.05,
+      50000: 0.04
+    },
+    premium: {
+      500: 0.10,
+      2500: 0.08,
+      5000: 0.08,
+      10000: 0.07,
+      20000: 0.07,
+      30000: 0.06,
+      40000: 0.06,
+      50000: 0.05
+    }
   };
 
   const contactTiers = [
@@ -137,16 +167,11 @@ const Pricing = () => {
   // Function to get plan-specific contact limit
   const getPlanContactLimit = (planType) => {
     switch(planType) {
-      case 'free':
-        return 500;
-      case 'essentials':
-        return 5000;
-      case 'standard':
-        return 100000;
-      case 'premium':
-        return Infinity;
-      default:
-        return contactCount;
+      case 'free': return 500;
+      case 'essentials': return 150000;
+      case 'standard': return 150000;  // updated
+      case 'premium': return Infinity;
+      default: return contactCount;
     }
   };
 
@@ -236,34 +261,47 @@ const Pricing = () => {
       emailSendLimit = contactCount * planData.emailMultiplier;
     }
 
-    // Build plan object
+    // Build plan object - Fixed version
     const planDetails = {
       planName: planName,
       planType: planType,
-      basePrice: baseMonthlyPriceConverted,
+
+      // --- Pricing consistency ---
+      originalBasePrice: originalPeriodPriceConverted,   // full price before discount
+      basePrice: periodPriceConverted,                   // discounted price user pays
+      discountAmount: originalPeriodPriceConverted * 0.5, // 50% savings
+
+      // --- Billing & totals ---
       periodPrice: periodPriceConverted,
       originalPeriodPrice: originalPeriodPriceConverted,
       billingPeriod: periodInfo.label.toLowerCase(),
       billingMonths: periodInfo.months,
-      emails: emailSendLimit,
-      features: planData.features,
-      slots: contactCount,
-      selectedIntegrations: [],
-      additionalSlotsCost: 0,
-      integrationCosts: 0,
-      discount: 0.5,
       subtotal: periodPriceConverted,
       taxRate: 0.1,
       tax: periodPriceConverted * 0.1,
       totalCost: periodPriceConverted * 1.1,
+
+      // --- Plan details ---
+      emails: emailSendLimit,
+      features: planData.features,
+      slots: contactCount,
       contactCount: contactCount,
+
+      // --- Misc ---
+      selectedIntegrations: [],
+      additionalSlotsCost: 0,
+      integrationCosts: 0,
+      discount: 0.5,
+      discountApplied: true,
+      isNewUser: true,
+
+      // --- Currency info ---
       currency: selectedCurrency,
       currencySymbol: getCurrencySymbol(),
+
+      // --- Source tracking ---
       isFromPricingDash: false,
       pricingModel: "multiplier",
-      discountApplied: true,
-      discountAmount: baseMonthlyPriceConverted,
-      isNewUser: true
     };
 
     localStorage.setItem("pendingUpgradePlan", JSON.stringify(planDetails));
@@ -292,23 +330,21 @@ const Pricing = () => {
       { label: 'Marketing Automation Flows', value: 'Included' },
     ],
     essentials: [
-      { label: 'Marketing Automation Flows', value: 'Up to 4 flow steps' },
       { label: 'Email Sending', value: 'Only email sending' },
+      { label: 'Marketing Automation Flows', value: 'Up to 4 flow steps' }
     ],
     standard: [
-    
-      { label: 'Marketing Automation Flows', value: 'Up to 200 flow steps' },
       { label: 'Email Sending', value: 'Included' },
       { label: 'Email Validation', value: 'Included' },
+      { label: 'Marketing Automation Flows', value: 'Up to 200 flow steps' }
     ],
     premium: [
-       
-      { label: 'Marketing Automation Flows', value: 'Up to 200 flow steps' },
       { label: 'Email Sending', value: 'Included' },
       { label: 'Email Validation', value: 'Included' },
       { label: 'SMS+ Whatsapp Campaign', value: 'Included' },
       { label: 'CRM', value: 'CRM access' },
-      { label: 'Premium Migration Services', value: 'Contact Sales' }
+      { label: 'Premium Migration Services', value: 'Contact Sales' },
+      { label: 'Marketing Automation Flows', value: 'Up to 200 flow steps' }
     ]
   };
 
@@ -318,14 +354,8 @@ const Pricing = () => {
       icon: Mail,
       features: [
         { name: 'Email Scheduling', free: false, essentials: true, standard: true, premium: true },
-        { name: 'A/B Testing', free: false, essentials: 'Limited', standard: true, premium: true },
         { name: 'Custom Templates', free: false, essentials: false, standard: true, premium: true },
         { name: 'Dynamic Content', free: false, essentials: false, standard: true, premium: true },
-        { name: 'Multivariate Testing', free: false, essentials: false, standard: false, premium: true },
-        { name: 'Send Time Optimization', free: false, essentials: false, standard: true, premium: true },
-        { name: 'Comparative Reporting', free: false, essentials: false, standard: true, premium: true },
-        { name: 'Predictive Segmentation', free: false, essentials: false, standard: true, premium: true },
-        { name: 'Behavioral Targeting', free: false, essentials: false, standard: true, premium: true },
         { name: 'Advanced Insights', free: false, essentials: false, standard: true, premium: true }
       ]
     },
@@ -333,13 +363,11 @@ const Pricing = () => {
       name: 'Contacts & Audience',
       icon: Users,
       features: [
-        { name: 'Contacts', free: 'Up to 500', essentials: 'Up to 5,000', standard: 'Up to 100,000', premium: 'Unlimited' },
-        { name: 'Audiences', free: '1', essentials: '1', standard: '1', premium: 'Multiple' },
-        { name: 'Tags', free: true, essentials: true, standard: true, premium: true },
+        { name: 'Audiences', free: '1', essentials: '3', standard: '5', premium: 'Multiple' },
+        { name: 'Tags', free: false, essentials: false, standard: false, premium: true },
         { name: 'Basic Segmentation', free: true, essentials: true, standard: true, premium: true },
         { name: 'Advanced Segmentation', free: false, essentials: false, standard: true, premium: true },
         { name: 'Contact Scoring', free: false, essentials: false, standard: true, premium: true },
-        { name: 'Purchase Likelihood', free: false, essentials: false, standard: true, premium: true },
         { name: 'Customer Lifetime Value', free: false, essentials: false, standard: true, premium: true }
       ]
     },
@@ -353,8 +381,6 @@ const Pricing = () => {
         { name: 'Custom-coded Templates', free: false, essentials: false, standard: true, premium: true },
         { name: 'Content Optimizer', free: false, essentials: false, standard: true, premium: true },
         { name: 'Dynamic Content', free: false, essentials: false, standard: true, premium: true },
-        { name: 'Landing Pages', free: true, essentials: true, standard: true, premium: true },
-        { name: 'Forms & Sign-up Forms', free: true, essentials: true, standard: true, premium: true }
       ]
     },
     {
@@ -362,12 +388,7 @@ const Pricing = () => {
       icon: Zap,
       features: [
         { name: 'Email Automation', free: 'Basic', essentials: true, standard: true, premium: true },
-        { name: 'Customer Journeys', free: 'Basic', essentials: true, standard: true, premium: true },
         { name: 'Automation Triggers', free: 'Limited', essentials: true, standard: true, premium: true },
-        { name: 'Behavioral Targeting', free: false, essentials: false, standard: true, premium: true },
-        { name: 'Conditional Logic', free: false, essentials: 'Limited', standard: true, premium: true },
-        { name: 'Advanced Journeys', free: false, essentials: false, standard: true, premium: true },
-        { name: 'Journey Reporting', free: 'Basic', essentials: true, standard: true, premium: true }
       ]
     },
     {
@@ -378,10 +399,6 @@ const Pricing = () => {
         { name: 'Advanced Reporting', free: false, essentials: false, standard: true, premium: true },
         { name: 'Campaign Performance', free: true, essentials: true, standard: true, premium: true },
         { name: 'Click Map', free: true, essentials: true, standard: true, premium: true },
-        { name: 'Industry Benchmarking', free: true, essentials: true, standard: true, premium: true },
-        { name: 'A/B Testing Results', free: false, essentials: 'Limited', standard: true, premium: true },
-        { name: 'Advanced A/B Testing', free: false, essentials: false, standard: true, premium: true },
-        { name: 'Purchase Likelihood', free: false, essentials: false, standard: true, premium: true },
         { name: 'Content Optimizer', free: false, essentials: false, standard: true, premium: true },
         { name: 'Campaign Manager', free: false, essentials: false, standard: true, premium: true }
       ]
@@ -419,12 +436,11 @@ const Pricing = () => {
     const monthlyPriceUSD = planKey === 'free' ? 0 : pricing[planKey];
     const periodInfo = billingPeriods[billingPeriod];
     
-  // Apply 50% discount correctly
-  const originalMonthlyUSD = monthlyPriceUSD;
-  const discountedMonthlyUSD = originalMonthlyUSD * 0.5;
-  const periodPriceUSD = calculatePrice(discountedMonthlyUSD);
-  const originalPeriodPriceUSD = calculatePrice(originalMonthlyUSD);
-
+    // Apply 50% discount correctly
+    const originalMonthlyUSD = monthlyPriceUSD;
+    const discountedMonthlyUSD = originalMonthlyUSD * 0.5;
+    const periodPriceUSD = calculatePrice(discountedMonthlyUSD);
+    const originalPeriodPriceUSD = calculatePrice(originalMonthlyUSD);
     
     const Icon = plan.icon;
     const planContactLimit = getPlanContactLimit(planKey);
@@ -474,13 +490,12 @@ const Pricing = () => {
                     {formatPrice(periodPriceUSD)}
                     <span className="text-lg text-gray-300 font-normal">/{periodInfo.displayText}</span>
                   </div>
-                  
                 </div>
                 <div className="ml-0 sm:ml-2 flex flex-wrap gap-2 mt-2 sm:mt-0">
-                    <div className="text-green-500 font-bold text-[13px] bg-green-500/10 px-2 py-1 rounded">
-                      50% OFF
-                    </div>
+                  <div className="text-green-500 font-bold text-[13px] bg-green-500/10 px-2 py-1 rounded">
+                    50% OFF
                   </div>
+                </div>
                 <div className="text-sm text-gray-400 mt-2">
                   {formatPrice(getPerContactRate(planKey, contactCount))} per contact
                 </div>
@@ -547,215 +562,256 @@ const Pricing = () => {
 
   return (
     <PageLayout>
-    <div className="min-h-screen text-white">
-
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
-        <div className="text-center mb-8 sm:mb-12 mt-15">
-          <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 py-5 text-[#c2831f]">
-            Pricing Plans
-          </h1>
-          <p className="text-lg sm:text-xl text-gray-300 max-w-3xl mx-auto px-4">
-            Choose the plan that fits your business needs. All plans include powerful email marketing, automation, and analytics.
-          </p>
-        </div>
-
-        {/* Billing Period Selector */}
-        <div className="max-w-md mx-auto mb-8">
-          <div className="bg-gray-800 rounded-xl p-1 flex gap-1">
-            {Object.entries(billingPeriods).map(([key, period]) => (
-              <button
-                key={key}
-                onClick={() => setBillingPeriod(key)}
-                className={`flex-1 py-3 px-4 rounded-lg font-semibold transition-all ${
-                  billingPeriod === key
-                    ? 'bg-[#c2831f] text-white'
-                    : 'text-gray-300 hover:text-white'
-                }`}
-              >
-                <div className="text-sm">{period.label}</div>
-              </button>
-            ))}
-          </div>
-        </div>
-
-        <div className="max-w-4xl mx-auto mb-8 px-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Contact Count Selector */}
-            <div>
-              <label className="block text-center text-sm font-medium text-gray-300 mb-3">
-                Number of Contacts
-              </label>
-              <div className="relative">
-                <select 
-                  value={contactCount}
-                  onChange={(e) => setContactCount(Number(e.target.value))}
-                  className="w-full bg-gray-800 border-2 border-gray-700 rounded-xl px-4 py-3 text-white appearance-none cursor-pointer focus:border-[#c2831f] focus:outline-none"
-                >
-                  {contactTiers.map(tier => (
-                    <option key={tier.value} value={tier.value}>
-                      {tier.label} contacts
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-              </div>
-              {contactCount > 500 && (
-                <p className="text-sm text-yellow-400 mt-2 text-center">
-                  Free plan is not available for more than 500 contacts
-                </p>
-              )}
-            </div>
-
-            {/* Currency Selector */}
-            <div>
-              <label className="block text-center text-sm font-medium text-gray-300 mb-3">
-                Select Your Currency
-              </label>
-              <div className="relative">
-                <select 
-                  value={selectedCurrency}
-                  onChange={(e) => setSelectedCurrency(e.target.value)}
-                  className="w-full bg-gray-800 border-2 border-gray-700 rounded-xl px-4 py-3 text-white appearance-none cursor-pointer focus:border-[#c2831f] focus:outline-none"
-                >
-                  {Object.entries(currencyRates).map(([code, data]) => (
-                    <option key={code} value={code}>
-                      {data.symbol} {code} - {data.name}
-                    </option>
-                  ))}
-                </select>
-                <Globe className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-          {Object.entries(plans).map(([key, plan]) => (
-            <PlanCard key={key} planKey={key} plan={plan} />
-          ))}
-        </div>
-
-        <div className="text-center mb-12">
-          <button
-            onClick={() => setShowComparison(!showComparison)}
-            className="inline-flex items-center px-8 py-4 bg-gray-800 border-2 border-gray-700 text-white rounded-xl font-semibold hover:bg-gray-700 transition-all"
-          >
-            {showComparison ? 'Hide' : 'Compare'} All Features
-            {showComparison ? <ChevronUp className="ml-2 w-5 h-5" /> : <ChevronDown className="ml-2 w-5 h-5" />}
-          </button>
-        </div>
-
-        {showComparison && (
-          <div className="bg-gray-900 rounded-2xl border-2 border-gray-800 overflow-hidden mb-16">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-800">
-                  <tr>
-                    <th className="text-left p-4 font-semibold text-gray-300 sticky left-0 bg-gray-800 z-10 min-w-[200px]">Features</th>
-                    <th className="p-4 font-semibold text-center min-w-[150px]">
-                      <div className="flex items-center justify-center">
-                        <Gift className="w-5 h-5 text-green-400 mr-2" />
-                        Free
-                      </div>
-                      <span className="text-xs text-gray-400 block mt-1">Up to 500 contacts</span>
-                    </th>
-                    <th className="p-4 font-semibold text-center min-w-[150px]">
-                      <div className="flex items-center justify-center">
-                        <Users className="w-5 h-5 text-blue-400 mr-2" />
-                        Essentials
-                      </div>
-                      <span className="text-xs text-gray-400 block mt-1">Up to 5,000 contacts</span>
-                    </th>
-                    <th className="p-4 font-semibold text-center min-w-[150px] bg-[#c2831f]/10">
-                      <div className="flex items-center justify-center">
-                        <TrendingUp className="w-5 h-5 text-[#c2831f] mr-2" />
-                        Standard
-                      </div>
-                      <span className="text-xs bg-[#c2831f] text-white px-2 py-0.5 rounded-full mt-1 inline-block">
-                        Best value
-                      </span>
-                      <span className="text-xs text-gray-300 block mt-1">Up to 100,000 contacts</span>
-                    </th>
-                    <th className="p-4 font-semibold text-center min-w-[150px]">
-                      <div className="flex items-center justify-center">
-                        <Star className="w-5 h-5 text-purple-400 mr-2" />
-                        Premium
-                      </div>
-                      <span className="text-xs text-gray-400 block mt-1">Unlimited contacts</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {featureCategories.map((category, categoryIdx) => (
-                    <React.Fragment key={category.name}>
-                      <tr className="bg-gray-800 border-t-2 border-gray-700">
-                        <td 
-                          colSpan={5} 
-                          className="p-4 sticky left-0 z-10 bg-gray-800"
-                        >
-                          <div className="flex items-center">
-                            <category.icon className="w-5 h-5 text-[#c2831f] mr-3" />
-                            <span className="font-semibold text-lg text-white">{category.name}</span>
-                          </div>
-                        </td>
-                      </tr>
-                      {category.features.map((feature, featureIdx) => (
-                        <tr 
-                          key={featureIdx} 
-                          className={`border-t border-gray-700 hover:bg-gray-800 transition-colors ${
-                            featureIdx % 2 === 0 ? 'bg-gray-900' : ''
-                          }`}
-                        >
-                          <td className="p-4 text-gray-300 sticky left-0 bg-inherit z-10">
-                            {feature.name}
-                          </td>
-                          <td className="p-4 text-center">{renderFeatureValue(feature.free)}</td>
-                          <td className="p-4 text-center">{renderFeatureValue(feature.essentials)}</td>
-                          <td className="p-4 text-center bg-[#c2831f]/5">{renderFeatureValue(feature.standard)}</td>
-                          <td className="p-4 text-center">{renderFeatureValue(feature.premium)}</td>
-                        </tr>
-                      ))}
-                    </React.Fragment>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        <div className="bg-gradient-to-r from-[#c2831f]/20 via-[#c2831f]/30 to-[#c2831f]/20 rounded-2xl border-2 border-[#c2831f]/50 p-8 sm:p-12 mb-16">
-          <div className="max-w-3xl mx-auto text-center">
-            <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-[#c2831f]">Ready to Get Started?</h2>
-            <p className="text-gray-200 mb-8 text-lg">
-              Join thousands of businesses using our platform to grow their audience and increase revenue with powerful email marketing tools.
+      <div className="min-h-screen text-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
+          <div className="text-center mb-8 sm:mb-12 mt-15">
+            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 py-5 text-[#c2831f]">
+              Pricing Plans
+            </h1>
+            <p className="text-lg sm:text-xl text-gray-300 max-w-3xl mx-auto px-4">
+              Choose the plan that fits your business needs. All plans include powerful email marketing, automation, and analytics.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button 
-                onClick={() => handlePlanSelection("Standard", "standard")}
-                className="px-8 py-4 bg-[#c2831f] text-white rounded-xl font-semibold hover:bg-[#d0a042] transition-all flex items-center justify-center"
-              >
-                Buy Now
-                <ArrowRight className="w-5 h-5 ml-2" />
-              </button>
-              <Link 
-                to="/login"
-                className="px-8 py-4 bg-gray-800 border-2 border-gray-700 text-white rounded-xl font-semibold hover:bg-gray-700 transition-all flex items-center justify-center"
-              >
-                Sign Up Free
-              </Link>
-            </div>
           </div>
-        </div>
 
-        <div className="mt-12 text-center text-xs text-gray-500 max-w-4xl mx-auto space-y-2">
-          <p>*Terms and conditions apply. Statistics based on platform user data.</p>
-          <p>Prices may vary globally depending on your region and selected currency.</p>
-          <p>Currency conversions are approximate and based on current exchange rates.</p>
-          <p>Selected currency: {selectedCurrency} {currencyRates[selectedCurrency].symbol}</p>
+          {/* Conditional Rendering: Show Email Verify OR Standard Plans */}
+          {showEmailVerify ? (
+            <PricingEmailVerifi 
+              selectedCurrency={selectedCurrency}
+              currencyRates={currencyRates}
+              onClose={() => setShowEmailVerify(false)}
+              navigate={navigate}
+            />
+          ) : (
+            <>
+              {/* Billing Period Toggle */}
+             {/* 🔄 Billing Period Toggle + Email Verification Button (side by side) */}
+            <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-8">
+
+              {/* Billing Period Toggle */}
+              <div className="flex justify-center">
+                <div className="bg-gray-800 rounded-xl p-1 inline-flex gap-7">
+                  {Object.entries(billingPeriods).map(([key, period]) => (
+                    <button
+                      key={key}
+                      onClick={() => setBillingPeriod(key)}
+                      className={`py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${
+                        billingPeriod === key
+                          ? "bg-[#c2831f] text-white shadow-md shadow-[#c2831f]/30"
+                          : "text-gray-300 hover:text-white hover:bg-gray-700/40"
+                      }`}
+                    >
+                      <span className="text-sm">{period.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Email Verification Plans Button (Right side) */}
+              <button
+                onClick={() => setShowEmailVerify(true)}
+                className="inline-flex items-center gap-2 text-sm font-semibold text-white 
+                           bg-[#c2831f] px-6 py-3 rounded-xl 
+                          border-2 border-yellow-600 hover:from-blue-500 hover:to-blue-400 
+                          hover:shadow-lg hover:shadow-yellow-500/30 transition-all duration-200"
+              >
+                <Shield className="w-4 h-4" />
+                Email Verification Plans
+                <ArrowRight className="w-4 h-4" />
+              </button>
+            </div>
+
+
+              {/* Contact Count and Currency Selectors */}
+              <div className="max-w-4xl mx-auto mb-8 px-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {/* Contact Count Selector */}
+                  <div>
+                    <label className="block text-center text-sm font-medium text-gray-300 mb-3">
+                      Number of Contacts
+                    </label>
+                    <div className="relative">
+                      <select 
+                        value={contactCount}
+                        onChange={(e) => setContactCount(Number(e.target.value))}
+                        className="w-full bg-gray-800 border-2 border-gray-700 rounded-xl px-4 py-3 text-white appearance-none cursor-pointer focus:border-[#c2831f] focus:outline-none"
+                      >
+                        {contactTiers.map(tier => (
+                          <option key={tier.value} value={tier.value}>
+                            {tier.label} contacts
+                          </option>
+                        ))}
+                      </select>
+                      <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                    </div>
+                    {contactCount > 500 && (
+                      <p className="text-sm text-yellow-400 mt-2 text-center">
+                        Free plan is not available for more than 500 contacts
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Currency Selector */}
+                  <div>
+                    <label className="block text-center text-sm font-medium text-gray-300 mb-3">
+                      Select Your Currency
+                    </label>
+                    <div className="relative">
+                      <select 
+                        value={selectedCurrency}
+                        onChange={(e) => setSelectedCurrency(e.target.value)}
+                        className="w-full bg-gray-800 border-2 border-gray-700 rounded-xl px-4 py-3 text-white appearance-none cursor-pointer focus:border-[#c2831f] focus:outline-none"
+                      >
+                        {Object.entries(currencyRates).map(([code, data]) => (
+                          <option key={code} value={code}>
+                            {data.symbol} {code} - {data.name}
+                          </option>
+                        ))}
+                      </select>
+                      <Globe className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Plan Cards */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+                {Object.entries(plans).map(([key, plan]) => (
+                  <PlanCard key={key} planKey={key} plan={plan} />
+                ))}
+              </div>
+
+              {/* Compare All Features Button */}
+              <div className="text-center mb-12">
+                <button
+                  onClick={() => setShowComparison(!showComparison)}
+                  className="inline-flex items-center px-8 py-4 bg-gray-800 border-2 border-gray-700 text-white rounded-xl font-semibold hover:bg-gray-700 transition-all"
+                >
+                  {showComparison ? 'Hide' : 'Compare'} All Features
+                  {showComparison ? <ChevronUp className="ml-2 w-5 h-5" /> : <ChevronDown className="ml-2 w-5 h-5" />}
+                </button>
+              </div>
+
+              {/* Feature Comparison Table */}
+              {showComparison && (
+                <div className="bg-gray-900 rounded-2xl border-2 border-gray-800 overflow-hidden mb-16">
+                  <div className="overflow-x-auto overflow-y-auto max-h-[100vh] relative border-1 border-[#c2831f]">
+                    <table className="w-full border-collapse">
+                      <thead className="bg-gray-800 sticky top-0 z-30">
+                        <tr>
+                          <th className="text-left p-4 font-semibold text-gray-300 sticky left-0 bg-gray-800 z-40 min-w-[200px]">
+                            Features
+                          </th>
+                          <th className="p-4 font-semibold text-center min-w-[150px]"> 
+                            <div className="flex items-center justify-center">
+                              <Gift className="w-5 h-5 text-green-400 mr-2" />
+                              Free
+                            </div>
+                          </th>
+                          <th className="p-4 font-semibold text-center min-w-[150px]">
+                            <div className="flex items-center justify-center">
+                              <Users className="w-5 h-5 text-blue-400 mr-2" />
+                              Essentials
+                            </div>
+                          </th>
+                          <th className="p-4 font-semibold text-center min-w-[150px] bg-[#c2831f]/10">
+                            <div className="flex items-center justify-center">
+                              <TrendingUp className="w-5 h-5 text-[#c2831f] mr-2" />
+                              Standard
+                              <span className="text-xs bg-[#c2831f] text-white px-2 py-0.5 ml-2 rounded-full inline-block">
+                                Best value
+                              </span>
+                            </div>
+                          </th>
+                          <th className="p-4 font-semibold text-center min-w-[150px]">
+                            <div className="flex items-center justify-center">
+                              <Star className="w-5 h-5 text-purple-400 mr-2" />
+                              Premium
+                            </div>
+                          </th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {featureCategories.map((category) => (
+                          <React.Fragment key={category.name}>
+                            <tr className="bg-gray-800 border-t-2 border-gray-700">
+                              <td
+                                colSpan={5}
+                                className="p-4 sticky left-0 z-20 bg-gray-800"
+                              >
+                                <div className="flex items-center">
+                                  <category.icon className="w-5 h-5 text-[#c2831f] mr-3" />
+                                  <span className="font-semibold text-lg text-white">
+                                    {category.name}
+                                  </span>
+                                </div>
+                              </td>
+                            </tr>
+
+                            {category.features.map((feature, featureIdx) => (
+                              <tr
+                                key={featureIdx}
+                                className={`border-t border-gray-700 hover:bg-gray-800 transition-colors ${
+                                  featureIdx % 2 === 0 ? "bg-gray-900" : ""
+                                }`}
+                              >
+                                <td className="p-4 text-gray-300 sticky left-0 bg-inherit z-10">
+                                  {feature.name}
+                                </td>
+                                <td className="p-4 text-center">{renderFeatureValue(feature.free)}</td>
+                                <td className="p-4 text-center">{renderFeatureValue(feature.essentials)}</td>
+                                <td className="p-4 text-center bg-[#c2831f]/5">
+                                  {renderFeatureValue(feature.standard)}
+                                </td>
+                                <td className="p-4 text-center">{renderFeatureValue(feature.premium)}</td>
+                              </tr>
+                            ))}
+                          </React.Fragment>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* CTA Section */}
+              <div className="bg-gradient-to-r from-[#c2831f]/20 via-[#c2831f]/30 to-[#c2831f]/20 rounded-2xl border-2 border-[#c2831f]/50 p-8 sm:p-12 mb-16">
+                <div className="max-w-3xl mx-auto text-center">
+                  <h2 className="text-3xl sm:text-4xl font-bold mb-4 text-[#c2831f]">Ready to Get Started?</h2>
+                  <p className="text-gray-200 mb-8 text-lg">
+                    Join thousands of businesses using our platform to grow their audience and increase revenue with powerful email marketing tools.
+                  </p>
+                  <div className="flex flex-col sm:flex-row justify-center gap-4">
+                    <button 
+                      onClick={() => handlePlanSelection("Standard", "standard")}
+                      className="px-8 py-4 bg-[#c2831f] text-white rounded-xl font-semibold hover:bg-[#d0a042] transition-all flex items-center justify-center"
+                    >
+                      Buy Now
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </button>
+                    <Link 
+                      to="/login"
+                      className="px-8 py-4 bg-gray-800 border-2 border-gray-700 text-white rounded-xl font-semibold hover:bg-gray-700 transition-all flex items-center justify-center"
+                    >
+                      Sign Up Free
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Footer Disclaimer */}
+          <div className="mt-12 text-center text-xs text-gray-500 max-w-4xl mx-auto space-y-2 hide">
+            <p>*Terms and conditions apply. Statistics based on platform user data.</p>
+            <p>Prices may vary globally depending on your region and selected currency.</p>
+            <p>Currency conversions are approximate and based on current exchange rates.</p>
+            <p>Selected currency: {selectedCurrency} {currencyRates[selectedCurrency].symbol}</p>
+          </div>
+          
+     
         </div>
       </div>
-      
-    </div>
     </PageLayout>
   );
 };
