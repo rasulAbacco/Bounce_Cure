@@ -83,92 +83,69 @@ router.post("/save-payment", async (req, res) => {
       status,
     } = req.body;
 
-    // 🧩 Validate required fields
+    // Validate required fields
     if (!name || !amount || !planName || !email || !transactionId || !userId) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // 🔢 Convert userId to integer
+    // Convert userId to integer
     const userIdInt = parseInt(userId, 10);
     if (isNaN(userIdInt)) {
       return res.status(400).json({ error: "Invalid userId format" });
     }
 
-    // 🗓️ Dates
+    // Safe defaults and type conversions
     const paymentDateObj = paymentDate ? new Date(paymentDate) : new Date();
     const nextPaymentDate = getNextPaymentDate(paymentDateObj, planType);
+    
+  const paymentData = {
+    userId: userIdInt,
+    name,
+    email,
+    transactionId,
+    planName,
+    planType,
+    provider,
 
-    // 🧠 Extract credits safely with robust fallback
-    const emailVerificationCredits = Number(
-      req.body.emailVerificationCredits ||
-      req.body.verificationCredits ||
-      req.body.emailValidations ||
-      req.body.slots ||
-      req.body.contacts ||
-      0
-    );
+    // ✅ New credit fields
+    emailVerificationCredits: 
+        Number(req.body.emailVerificationCredits || req.body.contacts || 0),
+    emailSendCredits:
+      Number(req.body.emailSendCredits || req.body.emails || 0),
 
-    const emailSendCredits = Number(
-      req.body.emailSendCredits ||
-      req.body.emails ||
-      req.body.emailSends ||
-      req.body.sendEmails ||
-      req.body.emailLimit ||
-      0
-    );
+    amount: Number(amount),
+    currency: currency || "usd",
+    planPrice: Number(planPrice) || Number(amount),
+    discount: Number(discount) || 0,
+    paymentMethod: paymentMethod || "card",
+    cardLast4: cardLast4 || "",
+    billingAddress: billingAddress || "",
+    paymentDate: paymentDateObj,
+    nextPaymentDate: new Date(nextPaymentDate),
+    status: status || "succeeded",
+  };
 
-    // 🪵 Debug log (you can remove later)
-    console.log("💳 Saving payment credits:", {
-      planName,
-      userId: userIdInt,
-      emailSendCredits,
-      emailVerificationCredits,
-    });
 
-    // 💾 Prepare payment data
-    const paymentData = {
-      userId: userIdInt,
-      name,
-      email,
-      transactionId,
-      planName,
-      planType,
-      provider,
-      emailVerificationCredits,
-      emailSendCredits,
-      amount: Number(amount),
-      currency: currency || "usd",
-      planPrice: Number(planPrice) || Number(amount),
-      discount: Number(discount) || 0,
-      paymentMethod: paymentMethod || "card",
-      cardLast4: cardLast4 || "",
-      billingAddress: billingAddress || "",
-      paymentDate: paymentDateObj,
-      nextPaymentDate: new Date(nextPaymentDate),
-      status: status || "succeeded",
-    };
-
-    // ✅ Save payment in DB
+    // Save payment in database
     const payment = await prisma.payment.create({ data: paymentData });
-
-    // ✅ Update user credit limits
     await prisma.user.update({
       where: { id: userIdInt },
       data: {
         plan: planName,
         hasPurchasedBefore: true,
-        contactLimit: emailVerificationCredits,
-        emailLimit: emailSendCredits,
+        contactLimit: paymentData.emailVerificationCredits,
+        emailLimit: paymentData.emailSendCredits,
       },
     });
 
-    // 🧾 Generate invoice PDFs
+
+    // Generate invoice PDF
     const pdfBuffer = await generateInvoice(payment);
     const pdfBuffers = await generatePrintingInvoice(payment);
-    if (!pdfBuffer || !pdfBuffers)
-      throw new Error("Invoice PDF generation failed");
+    if (!pdfBuffer) throw new Error("Invoice PDF generation failed");
+    if (!pdfBuffers) throw new Error("Printing Invoice PDF generation failed");
 
-    // 📩 Prepare email content
+    // Prepare HTML email
     const html = invoiceEmailTemplate({
       transactionId: payment.transactionId,
       planName: payment.planName,
@@ -176,7 +153,8 @@ router.post("/save-payment", async (req, res) => {
       currency: payment.currency?.toUpperCase() || "USD",
     });
 
-    // ✉️ Send invoice email
+
+    // Send invoice email
     await sendInvoiceEmail({
       to: payment.email,
       subject: `Invoice ${payment.transactionId} - ${payment.planName}`,
@@ -186,18 +164,12 @@ router.post("/save-payment", async (req, res) => {
       fileName: `invoice-${payment.transactionId}.pdf`,
     });
 
-    // ✅ Response
-    res.json({
-      success: true,
-      message: "Payment and credits saved successfully",
-      payment,
-    });
+    res.json(payment);
 
   } catch (err) {
-    console.error("❌ Error saving payment:", err);
+    console.error("Error saving payment:", err);
     res.status(500).json({ error: err.message });
   }
 });
-
 
 export default router;
