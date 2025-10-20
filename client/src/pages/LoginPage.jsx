@@ -73,6 +73,7 @@ const ModernLogin = () => {
             if (res.ok && data.token) {
                 localStorage.setItem("token", data.token);
                 if (data.user) {
+                    localStorage.setItem("userId", data.user.id);
                     localStorage.setItem("userName", data.user.name || "");
                     localStorage.setItem("userEmail", data.user.email || "");
                 }

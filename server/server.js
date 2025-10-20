@@ -70,9 +70,6 @@ import smsRoutes from "./routes/smsCampaign.js";
 import customRoutes from "./routes/customRoutes.js";
 import chatbotRouter from "./routes/chatbot.js";
 
-
-
- 
 dotenv.config();
 
 // Init

@@ -347,8 +347,15 @@ export default function CampaignBuilder() {
     if (!email) return;
 
     try {
+      const token = getAuthToken();
+      const headers = { 'Content-Type': 'application/json' };
+      if (token) headers['Authorization'] = `Bearer ${token}`;
 
-      const response = await fetch(`${API_URL}/api/senders/check/${encodeURIComponent(email)}`);
+      const response = await fetch(
+        `${API_URL}/api/senders/check/${encodeURIComponent(email)}`,
+        { headers }
+      );
+
       const contentType = response.headers.get("content-type");
       if (!contentType || !contentType.includes("application/json")) {
         const errorText = await response.text();
@@ -362,8 +369,8 @@ export default function CampaignBuilder() {
         ...prev,
         [email]: {
           isVerified: data.isVerified || false,
-          verifiedAt: data.record?.verifiedAt,   // include if backend adds it
-          fromName: data.record?.fromName        // include if backend adds it
+          verifiedAt: data.record?.verifiedAt,
+          fromName: data.record?.fromName
         }
       }));
     } catch (error) {

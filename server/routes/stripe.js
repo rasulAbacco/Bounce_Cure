@@ -97,36 +97,67 @@ router.post("/save-payment", async (req, res) => {
     // Safe defaults and type conversions
     const paymentDateObj = paymentDate ? new Date(paymentDate) : new Date();
     const nextPaymentDate = getNextPaymentDate(paymentDateObj, planType);
-    
-  const paymentData = {
-    userId: userIdInt,
-    name,
-    email,
-    transactionId,
-    planName,
-    planType,
-    provider,
 
-    // ✅ New credit fields
-    emailVerificationCredits: 
-        Number(req.body.emailVerificationCredits || req.body.contacts || 0),
-    emailSendCredits:
-      Number(req.body.emailSendCredits || req.body.emails || 0),
+    // 🧠 Extract credits safely with robust fallback
+    const emailVerificationCredits = Number(
+      req.body.emailVerificationCredits ||
+      req.body.verificationCredits ||
+      req.body.emailValidations ||
+      req.body.slots ||
+      req.body.contacts ||
+      0
+    );
 
-    amount: Number(amount),
-    currency: currency || "usd",
-    planPrice: Number(planPrice) || Number(amount),
-    discount: Number(discount) || 0,
-    paymentMethod: paymentMethod || "card",
-    cardLast4: cardLast4 || "",
-    billingAddress: billingAddress || "",
-    paymentDate: paymentDateObj,
-    nextPaymentDate: new Date(nextPaymentDate),
-    status: status || "succeeded",
-  };
+    const emailSendCredits = Number(
+      req.body.emailSendCredits ||
+      req.body.emails ||
+      req.body.emailSends ||
+      req.body.sendEmails ||
+      req.body.emailLimit ||
+      0
+    );
+
+    // 🪵 Debug log (you can remove later)
+    console.log("💳 Saving payment credits:", {
+      planName,
+      userId: userIdInt,
+      emailSendCredits,
+      emailVerificationCredits,
+    });
+
+    // 💾 Prepare payment data
+    const paymentData = {
+      userId: userIdInt,
+      name,
+      email,
+      transactionId,
+      planName,
+      planType,
+      provider,
+      emailVerificationCredits,
+      emailSendCredits,
+      amount: Number(amount),
+      currency: currency || "usd",
+      planPrice: Number(planPrice) || Number(amount),
+      discount: Number(discount) || 0,
+      paymentMethod: paymentMethod || "card",
+      cardLast4: cardLast4 || "",
+      billingAddress: billingAddress || "",
+      paymentDate: paymentDateObj,
+      nextPaymentDate: new Date(nextPaymentDate),
+      status: status || "succeeded",
+    };
+    // const userIdInt = parseInt(userId, 10);
+    const userExists = await prisma.user.findUnique({ where: { id: userIdInt } });
+
+    if (!userExists) {
+      console.error(`❌ No user found with id: ${userIdInt}`);
+      return res.status(400).json({ error: `User with ID ${userIdInt} does not exist.` });
+    }
 
 
-    // Save payment in database
+
+    // ✅ Save payment in DB
     const payment = await prisma.payment.create({ data: paymentData });
     await prisma.user.update({
       where: { id: userIdInt },
