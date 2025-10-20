@@ -67,6 +67,9 @@ import smsRoutes from "./routes/smsCampaign.js";
 
 // ENV setup
 import customRoutes from "./routes/customRoutes.js";
+import chatbotRouter from "./routes/chatbot.js";
+
+
 
 dotenv.config();
 
@@ -197,7 +200,7 @@ app.use("/api/multimedia-campaign", multimediaCampaignRoutes);
 app.use("/api/twilio", twilioRoutes);
 app.use("/api/whatsapp", whatsappRoutes);
 app.use("/api/sms", smsRoutes);
-
+app.use("/api/chatbot", chatbotRouter);
 
 
 app.get("/", (req, res) => res.send("Twilio SMS/WhatsApp API Running"));
