@@ -1,9 +1,10 @@
 // src/pages/Pricing/PricingDash.jsx
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { CircleCheckBig, CircleDot, User, Mail, Headphones, Check, X, Shield, ArrowLeft, ArrowRight } from "lucide-react";
+import { CircleCheckBig, CircleDot, User, Mail, Headphones, Check, X, Shield, ArrowLeft, ArrowRight, MessageSquare, Phone } from "lucide-react";
 import DashboardLayout from "../../components/DashboardLayout";
 import { setUserPlan } from "../../utils/PlanAccessControl";
+import MultiMediaPricing from "./MultiMediaPricing";
 
 // Email Verification Plans Component (Updated to match PricingEmailVerifi.jsx)
 const EmailValidationPlans = ({ selectedCurrency: propCurrency, currencyRates, onClose, navigate }) => {
@@ -278,6 +279,7 @@ const PricingDash = () => {
   const [selectedContacts, setSelectedContacts] = useState(500);
   const [selectedCurrency, setSelectedCurrency] = useState("USD");
   const [showEmailVerification, setShowEmailVerification] = useState(false);
+  const [showMultiMedia, setShowMultiMedia] = useState(false);
 
   // Currency exchange rates (relative to USD)
   const exchangeRates = {
@@ -326,6 +328,22 @@ const PricingDash = () => {
             selectedCurrency={selectedCurrency}
             currencyRates={currencyRates}
             onClose={() => setShowEmailVerification(false)}
+            navigate={navigate}
+          />
+        </div>
+      </DashboardLayout>
+    );
+  }
+
+  // If showing multimedia pricing page, render it
+  if (showMultiMedia) {
+    return (
+      <DashboardLayout>
+        <div className="mt-20">
+          <MultiMediaPricing 
+            selectedCurrency={selectedCurrency}
+            currencyRates={currencyRates}
+            onClose={() => setShowMultiMedia(false)}
             navigate={navigate}
           />
         </div>
@@ -398,18 +416,7 @@ const PricingDash = () => {
   ];
 
   const plans = [
-    { 
-      name: "Free", 
-      tagline: "Easily create email campaigns and learn more about your customers", 
-      basePrice: 0, 
-      users: 1, 
-      support: "Basic Support", 
-      contactLimit: 50, 
-      emailSendsPerContact: 0, 
-      emailValidationPerContact: 0,
-      hasWhatsApp: false,
-      hasCRM: false
-    },
+    
     { 
       name: "Essentials", 
       tagline: "Send the right content at the right time with testing and scheduling features", 
@@ -444,8 +451,6 @@ const PricingDash = () => {
       contactLimit: Infinity,
       emailSendsPerContact: 1,
       emailValidationPerContact: 1,
-      hasWhatsApp: true,
-      hasSMS: true,
       hasCRM: true,
       isDiscounted: true 
     },
@@ -683,7 +688,7 @@ const PricingDash = () => {
             </div>
           </div>
 
-          {/* Monthly / Quarterly / Yearly Toggle + Email Verification Button */}
+          {/* Monthly / Quarterly / Yearly Toggle + Email Verification + Multi-Media Buttons */}
           <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-20">
             {/* Toggle Buttons */}
             <div className="inline-flex rounded-md shadow-sm overflow-hidden border border-gray-700">
@@ -708,17 +713,28 @@ const PricingDash = () => {
             {/* Email Verification Button */}
             <button
               onClick={() => setShowEmailVerification(true)}
-              className="inline-flex items-center gap-3 bg-gradient-to-r from-[#c2831f] to-[#dba743]
+              className="inline-flex items-center gap-3 bg-[#c2831f]
                         text-black px-4 py-3 rounded-xl font-semibold text-lg
                         hover:shadow-lg hover:shadow-[#c2831f]/50 transition-all hover:scale-105"
             >
               <Shield className="w-6 h-6" />
               Email Verification Plans
             </button>
+
+            {/* Multi-Media SMS/WhatsApp Button */}
+            <button
+              onClick={() => setShowMultiMedia(true)}
+              className="inline-flex items-center gap-3 bg-[#c2831f]
+                        text-black px-4 py-3 rounded-xl font-semibold text-lg
+                        hover:shadow-lg hover:shadow-blue-500/50 transition-all hover:scale-105"
+            >
+              <MessageSquare className="w-6 h-6" />
+              Multi Media Campigns
+            </button>
           </div>
 
           {/* Plan Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {plans.map((plan) => {
               const monthlyFullPrice = parseFloat(calculatePrice(plan, selectedContacts)) / (
                 pricingType === "yearly" ? 12 : 
