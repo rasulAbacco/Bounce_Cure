@@ -21,3 +21,14 @@ body {
   padding-left: 1.25rem;
   padding-right: 1.25rem;
 }
+
+/* ✅ Custom text selection color */
+::selection {
+  background-color: #bd7a0f; /* highlight color */
+  color: #ffffff; /* text color when highlighted */
+}
+
+::-moz-selection {
+  background-color: #bd7a0f;
+  color: #ffffff;
+}

@@ -255,26 +255,29 @@ router.get("/credits", protect, async (req, res) => {
  * PUT /api/users/update-credits
  * Deduct credits after campaign send
  */
+// ✅ PUT /api/users/update-credits
 router.put("/update-credits", protect, async (req, res) => {
   try {
-    const { usedCredits } = req.body;
-    const user = await prisma.user.findUnique({ where: { id: req.user.id } });
+    const { emailLimit } = req.body;
 
-    if (!user) return res.status(404).json({ error: "User not found" });
-
-    const newEmailLimit = Math.max(0, (user.emailLimit || 0) - usedCredits);
-
-    await prisma.user.update({
+    const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
-      data: { emailLimit: newEmailLimit },
+      data: { emailLimit: Number(emailLimit) },
     });
 
-    res.json({ success: true, remainingCredits: newEmailLimit });
+    // Also update latest payment record for consistency
+    await prisma.payment.updateMany({
+      where: { userId: req.user.id },
+      data: { emailSendCredits: Number(emailLimit) },
+    });
+
+    res.json({ success: true, remaining: emailLimit });
   } catch (error) {
-    console.error("Error updating credits:", error);
+    console.error("Update credits error:", error);
     res.status(500).json({ error: "Failed to update credits" });
   }
 });
+
 
 
 export default router;
