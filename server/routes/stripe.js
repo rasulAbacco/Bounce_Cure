@@ -96,18 +96,18 @@ router.post("/save-payment", async (req, res) => {
       status,
     } = req.body;
 
-    // 🧩 Validate required fields
+    // Validate required fields
     if (!name || !amount || !planName || !email || !transactionId || !userId) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
-    // 🔢 Convert userId to integer
+    // Convert userId to integer
     const userIdInt = parseInt(userId, 10);
     if (isNaN(userIdInt)) {
       return res.status(400).json({ error: "Invalid userId format" });
     }
 
-    // 🗓️ Dates
+    // Safe defaults and type conversions
     const paymentDateObj = paymentDate ? new Date(paymentDate) : new Date();
     const nextPaymentDate = getNextPaymentDate(paymentDateObj, planType);
 
@@ -172,25 +172,24 @@ router.post("/save-payment", async (req, res) => {
 
     // ✅ Save payment in DB
     const payment = await prisma.payment.create({ data: paymentData });
-
-    // ✅ Update user credit limits
     await prisma.user.update({
       where: { id: userIdInt },
       data: {
         plan: planName,
         hasPurchasedBefore: true,
-        contactLimit: emailVerificationCredits,
-        emailLimit: emailSendCredits,
+        contactLimit: paymentData.emailVerificationCredits,
+        emailLimit: paymentData.emailSendCredits,
       },
     });
 
-    // 🧾 Generate invoice PDFs
+
+    // Generate invoice PDF
     const pdfBuffer = await generateInvoice(payment);
     const pdfBuffers = await generatePrintingInvoice(payment);
-    if (!pdfBuffer || !pdfBuffers)
-      throw new Error("Invoice PDF generation failed");
+    if (!pdfBuffer) throw new Error("Invoice PDF generation failed");
+    if (!pdfBuffers) throw new Error("Printing Invoice PDF generation failed");
 
-    // 📩 Prepare email content
+    // Prepare HTML email
     const html = invoiceEmailTemplate({
       transactionId: payment.transactionId,
       planName: payment.planName,
@@ -198,7 +197,8 @@ router.post("/save-payment", async (req, res) => {
       currency: payment.currency?.toUpperCase() || "USD",
     });
 
-    // ✉️ Send invoice email
+
+    // Send invoice email
     await sendInvoiceEmail({
       to: payment.email,
       subject: `Invoice ${payment.transactionId} - ${payment.planName}`,
@@ -208,18 +208,12 @@ router.post("/save-payment", async (req, res) => {
       fileName: `invoice-${payment.transactionId}.pdf`,
     });
 
-    // ✅ Response
-    res.json({
-      success: true,
-      message: "Payment and credits saved successfully",
-      payment,
-    });
+    res.json(payment);
 
   } catch (err) {
-    console.error("❌ Error saving payment:", err);
+    console.error("Error saving payment:", err);
     res.status(500).json({ error: err.message });
   }
 });
-
 
 export default router;

@@ -6,7 +6,7 @@ import {
   FileText, Palette, Check, Clock, Calendar, Shield, AlertCircle,
   Mail, RefreshCw, CreditCard, AlertTriangle
 } from "lucide-react";
-
+import CreateSendGridSender from "../../../components/CreateSendGridSender.jsx";
 const API_URL = import.meta.env.VITE_VRI_URL;
 
 const steps = [
@@ -273,6 +273,8 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
 
   return (
     <div className="h-full bg-gray-100 overflow-auto">
+    
+
       {/* Email Body */}
       <div className="max-w-2xl mx-auto my-6">
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
@@ -294,6 +296,7 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
     </div>
   );
 }
+
 
 export default function CampaignBuilder() {
   const location = useLocation();
@@ -334,12 +337,6 @@ export default function CampaignBuilder() {
   // const [verifiedEmails, setVerifiedEmails] = useState([]);
   const [verificationOption, setVerificationOption] = useState('preverified'); // 'preverified' or 'custom'
   const [authError, setAuthError] = useState(false);
-
-  // ✅ NEW STATE FOR CREDITS
-  const [emailCredits, setEmailCredits] = useState(0);
-  const [isLoadingCredits, setIsLoadingCredits] = useState(true);
-  const [creditError, setCreditError] = useState(null);
-  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
 
   // Helper function to get auth token
   const getAuthToken = () => {
@@ -486,6 +483,7 @@ export default function CampaignBuilder() {
       });
     }
   };
+const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
 
   const handleSendCampaign = async () => {
     setIsSending(true);
@@ -520,54 +518,41 @@ export default function CampaignBuilder() {
           .filter(c => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email));
       }
 
-      if (recipientsList.length === 0) {
-        setSendStatus({ success: false, message: "No valid recipients found." });
-        setIsSending(false);
-        return;
-      }
+const handleSendCampaign = async () => {
+  setIsSending(true);
+  try {
+    // --- fetch contacts and build recipientsList (same as before) ---
+    const token = getAuthToken();
+    const headers = { "Content-Type": "application/json" };
+    if (token) headers["Authorization"] = `Bearer ${token}`;
 
-      // ✅ Check credits before sending
-      if (recipientsList.length > emailCredits) {
-        setSendStatus({
-          success: false,
-          message: `❌ Insufficient credits. You need ${recipientsList.length} credits but only have ${emailCredits}.`,
-          creditLimitReached: true,
-        });
-        setIsSending(false);
-        return;
-      }
+    const contactsResponse = await fetch(`${API_URL}/api/campaigncontacts`, { headers });
+    if (!contactsResponse.ok) throw new Error("Failed to fetch contacts");
+    const contactsData = await contactsResponse.json();
 
-      // Split recipients into batches of 1000
-      const batches = chunkArray(recipientsList, 1000);
-      let allResults = { success: [], failed: [] };
-      let usedCredits = 0;
+    let recipientsList = [];
+    if (formData.recipients === "all-subscribers") {
+      recipientsList = contactsData;
+    } else if (formData.recipients === "new-customers") {
+      recipientsList = contactsData.filter(c => c.type === "new-customer");
+    } else if (formData.recipients === "vip-clients") {
+      recipientsList = contactsData.filter(c => c.type === "vip-client");
+    } else if (formData.recipients === "manual") {
+      recipientsList = (formData.manualEmails || "")
+        .split(/[\n,]+/)
+        .map(email => ({ email: email.trim() }))
+        .filter(c => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email));
+    } else if (formData.recipients === "file") {
+      recipientsList = (formData.bulkFileEmails || [])
+        .map(email => ({ email }))
+        .filter(c => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(c.email));
+    }
 
-      for (let i = 0; i < batches.length; i++) {
-        setSendStatus({
-          success: null,
-          message: `📤 Sending batch ${i + 1} of ${batches.length}...`
-        });
-        setBatchProgress({ current: i + 1, total: batches.length });
-
-        const payload = {
-          campaignName: formData.subject,
-          subject: formData.subject,
-          fromEmail: formData.fromEmail,
-          fromName: formData.fromName,
-          recipients: batches[i],
-          canvasData: canvasPages[0].elements,
-        };
-
-        const url =
-          formData.scheduleType === "immediate"
-            ? `${API_URL}/api/campaigns/send`
-            : `${API_URL}/api/automation/send`;
-
-        const response = await fetch(url, {
-          method: "POST",
-          headers,
-          body: JSON.stringify(payload),
-        });
+    if (recipientsList.length === 0) {
+      setSendStatus({ success: false, message: "No valid recipients found." });
+      setIsSending(false);
+      return;
+    }
 
         let data;
         try {
@@ -619,24 +604,47 @@ export default function CampaignBuilder() {
 
       // ✅ Refresh credits after sending
 
-      setSendStatus({
-        success: allResults.failed.length === 0,
-        message: `✅ Campaign finished. Sent: ${allResults.success.length}, Failed: ${allResults.failed.length}.`,
-        results: allResults,
+      const response = await fetch(url, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(payload),
       });
 
-      setTimeout(() => {
-        navigate(formData.scheduleType === 'immediate' ? "/analytics" : "/automation");
-      }, 2000);
 
-    } catch (err) {
-      console.error("❌ Error sending campaign:", err);
-      setSendStatus({ success: false, message: `Error: ${err.message}` });
-    } finally {
-      setIsSending(false);
-      setBatchProgress({ current: 0, total: 0 });
+      const data = await response.json();
+      if (response.ok) {
+        allResults.success.push(...(data.results?.success || []));
+        allResults.failed.push(...(data.results?.failed || []));
+      } else {
+        allResults.failed.push(...(data.results?.failed || []));
+      }
+
+      // Small pause to avoid hitting SendGrid limits
+      await new Promise(r => setTimeout(r, 2000));
     }
-  };
+
+    // ✅ Final combined result
+    // Final summary
+    setSendStatus({
+      success: allResults.failed.length === 0,
+      message: `✅ Campaign finished. Sent: ${allResults.success.length}, Failed: ${allResults.failed.length}`,
+      results: allResults,
+    });
+
+    // 👇 Add this navigation logic
+    if (formData.scheduleType === 'immediate') {
+      navigate("/analytics", { state: { fromEmail: formData.fromEmail } });
+    } else {
+      navigate("/automation");
+    }
+
+
+  } catch (err) {
+    setSendStatus({ success: false, message: `Error: ${err.message}` });
+  } finally {
+    setIsSending(false);
+  }
+};
 
 
   // Get minimum date for scheduling (current date + 5 minutes)
@@ -680,18 +688,6 @@ export default function CampaignBuilder() {
 
           {/* ✅ CREDIT DISPLAY IN HEADER */}
           <div className="flex items-center space-x-4">
-            <div className="flex items-center gap-2 px-4 py-2 bg-gray-900 rounded-lg border border-gray-700">
-              <CreditCard size={18} className="text-[#c2831f]" />
-              <span className="text-sm text-gray-400">Email Credits:</span>
-              {isLoadingCredits ? (
-                <span className="text-white">Loading...</span>
-              ) : (
-                <span className={`font-bold ${emailCredits > 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {emailCredits}
-                </span>
-              )}
-            </div>
-
             <button
               onClick={() => navigate("/texteditor")}
               className="px-4 py-2 text-gray-100 hover:bg-[#c2831f] rounded-md cursor-pointer"
@@ -713,15 +709,13 @@ export default function CampaignBuilder() {
                 !completedSteps.includes("setup") ||
                 !completedSteps.includes("template") ||
                 !completedSteps.includes("schedule") ||
-                isSending ||
-                !hasEnoughCredits()
+                isSending
               }
               className={`flex items-center gap-2 px-4 py-2 rounded-md text-white ${!completedSteps.includes("recipients") ||
                 !completedSteps.includes("setup") ||
                 !completedSteps.includes("template") ||
                 !completedSteps.includes("schedule") ||
-                isSending ||
-                !hasEnoughCredits()
+                isSending
                 ? "bg-gray-800 cursor-not-allowed"
                 : "bg-[#c2831f] hover:bg-[#d09025]"
                 }`}
@@ -729,11 +723,9 @@ export default function CampaignBuilder() {
               {formData.scheduleType === 'immediate' ? <Send size={16} /> : <Calendar size={16} />}
               {isSending
                 ? "Processing..."
-                : !hasEnoughCredits()
-                  ? "Insufficient Credits"
-                  : formData.scheduleType === 'immediate'
-                    ? "Send Now"
-                    : "Schedule Campaign"
+                : formData.scheduleType === 'immediate'
+                  ? "Send Now"
+                  : "Schedule Campaign"
               }
             </button>
           </div>
@@ -893,6 +885,12 @@ export default function CampaignBuilder() {
                               onChange={handleChange}
                             >
                               <option value="">Select an option</option>
+                              {/* <option value="all-subscribers">
+                                All Subscribers
+                              </option>
+                              <option value="new-customers">
+                                New Customers
+                              </option> */}
                               <option value="manual">
                                 Manual (paste emails)
                               </option>
@@ -1315,10 +1313,6 @@ export default function CampaignBuilder() {
                                   {formData.recipients === "vip-clients" &&
                                     `VIP Clients (${contacts.filter((c) => c.type === "vip-client").length
                                     } contacts)`}
-                                  {formData.recipients === "manual" &&
-                                    `Manual Entry (${getRecipientCount()} contacts)`}
-                                  {formData.recipients === "file" &&
-                                    `File Upload (${getRecipientCount()} contacts)`}
                                   {!formData.recipients && "Not selected"}
                                 </span>
                               </div>
@@ -1389,21 +1383,23 @@ export default function CampaignBuilder() {
                             </div>
                           )}
 
-                          {batchProgress.total > 0 && (
-                            <div className="mt-2">
-                              <div className="w-full bg-gray-700 rounded-full h-2">
-                                <div
-                                  className="bg-[#c2831f] h-2 rounded-full transition-all"
-                                  style={{ width: `${(batchProgress.current / batchProgress.total) * 100}%` }}
-                                />
+                            {batchProgress.total > 0 && (
+                              <div className="mt-2">
+                                <div className="w-full bg-gray-700 rounded-full h-2">
+                                  <div
+                                    className="bg-[#c2831f] h-2 rounded-full transition-all"
+                                    style={{ width: `${(batchProgress.current / batchProgress.total) * 100}%` }}
+                                  />
+                                </div>
+                                <p className="text-xs text-gray-400 mt-1">
+                                  Batch {batchProgress.current} of {batchProgress.total}
+                                </p>
                               </div>
-                              <p className="text-xs text-gray-400 mt-1">
-                                Batch {batchProgress.current} of {batchProgress.total}
-                              </p>
-                            </div>
-                          )}
+                            )}
+
                         </div>
                       )}
+
                     </div>
                   )}
                 </div>
@@ -1433,7 +1429,6 @@ export default function CampaignBuilder() {
               )}
             </div>
           </div>
-
           <div className="flex-1 overflow-auto p-4">
             <div className="bg-gray-800 rounded-lg border border-gray-700 h-full overflow-auto">
               <ErrorBoundary>
@@ -1446,7 +1441,6 @@ export default function CampaignBuilder() {
               </ErrorBoundary>
             </div>
           </div>
-
           <div className="p-4 border-t border-gray-800">
             <button
               onClick={handleSendCampaign}
@@ -1455,15 +1449,13 @@ export default function CampaignBuilder() {
                 !completedSteps.includes("setup") ||
                 !completedSteps.includes("template") ||
                 !completedSteps.includes("schedule") ||
-                isSending ||
-                !hasEnoughCredits()
+                isSending
               }
               className={`w-full flex items-center justify-center gap-2 py-3 rounded-md text-white ${!completedSteps.includes("recipients") ||
                 !completedSteps.includes("setup") ||
                 !completedSteps.includes("template") ||
                 !completedSteps.includes("schedule") ||
-                isSending ||
-                !hasEnoughCredits()
+                isSending
                 ? "bg-gray-800 cursor-not-allowed"
                 : "bg-[#c2831f] hover:bg-[#d09025]"
                 }`}
@@ -1471,28 +1463,11 @@ export default function CampaignBuilder() {
               {formData.scheduleType === 'immediate' ? <Send size={16} /> : <Calendar size={16} />}
               {isSending
                 ? "Processing..."
-                : !hasEnoughCredits()
-                  ? "Insufficient Credits"
-                  : formData.scheduleType === 'immediate'
-                    ? "Send Now"
-                    : "Schedule Campaign"
+                : formData.scheduleType === 'immediate'
+                  ? "Send Now"
+                  : "Schedule Campaign"
               }
             </button>
-
-            {/* ✅ CREDIT WARNING IN FOOTER */}
-            {!hasEnoughCredits() && getRecipientCount() > 0 && (
-              <div className="mt-3 p-3 bg-red-900/30 border border-red-700 rounded-md">
-                <p className="text-red-400 text-sm text-center">
-                  Need {getRecipientCount() - emailCredits} more credits
-                </p>
-                <a
-                  href="/pricing"
-                  className="block text-center text-white text-sm mt-2 underline"
-                >
-                  Buy Credits
-                </a>
-              </div>
-            )}
           </div>
         </div>
       </div>
