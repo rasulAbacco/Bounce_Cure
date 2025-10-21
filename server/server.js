@@ -71,6 +71,8 @@ import customRoutes from "./routes/customRoutes.js";
 import chatbotRouter from "./routes/chatbot.js";
 import verifiFrontendRoutes from "./routes/verifiFrontend.js";
 
+import campaignUserMails from "./routes/campaignUserMails.js";
+
 dotenv.config();
 
 // Init
@@ -211,6 +213,8 @@ app.use("/api/custom", customRoutes);
 initSocket(io);
 
 app.use("/api/senders", sendgridSendersRouter);
+
+app.use("/api/sender", campaignUserMails);
 
 // Root route
 app.get('/', (req, res) => {

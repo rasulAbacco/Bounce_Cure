@@ -47,28 +47,23 @@ const ModernLogin = () => {
 
     // add this function in the component
     const handleGoogleCredential = async (response) => {
-        console.log("handleGoogleCredential called:", response);
+        console.log("🟢 Google sign-in credential received:", response);
 
         if (!response?.credential) {
             toast.error("Google sign-in failed: no credential returned");
             return;
         }
 
-        // Print token in console for verification
-        console.log("Google ID Token:", response.credential);
-
         try {
-            console.log("🟢 Google ID Token received:", response.credential?.slice(0, 25) + "...");
-
             const res = await fetch(`${API_URL}/auth/google`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                credentials: "include", // ✅ important for CORS cookies
+                credentials: "include",
                 body: JSON.stringify({ idToken: response.credential }),
             });
 
             const data = await res.json().catch(() => ({}));
-            console.log("Backend response:", data);
+            console.log("📦 Google backend response:", data);
 
             if (res.ok && data.token) {
                 localStorage.setItem("token", data.token);
@@ -77,17 +72,42 @@ const ModernLogin = () => {
                     localStorage.setItem("userName", data.user.name || "");
                     localStorage.setItem("userEmail", data.user.email || "");
                 }
+
+                // ✅ Fetch plan info after Google login
+                if (data.user?.id) {
+                    console.log("🔍 Fetching plan for Google user:", data.user.id);
+                    try {
+                        const planRes = await fetch(`${API_URL}/user/${data.user.id}/plan`);
+                        const planData = await planRes.json();
+                        console.log("📊 Google user plan fetched:", planData);
+
+                        localStorage.setItem("planName", planData.planName || "Free");
+                        localStorage.setItem(
+                            "emailVerificationCredits",
+                            planData.emailVerificationCredits ?? 50
+                        );
+                        localStorage.setItem(
+                            "totalEmails",
+                            planData.emailSendCredits ?? 50
+                        );
+                    } catch (err) {
+                        console.error("⚠️ Failed to fetch Google user plan:", err);
+                    }
+                }
+
                 toast.success("Signed in with Google ✔️");
                 navigate("/dashboard");
-                window.location.reload();
+                setTimeout(() => window.location.reload(), 500);
             } else {
+                console.warn("⚠️ Google login failed:", data.message);
                 toast.error(data.message || "Google sign-in failed");
             }
         } catch (err) {
-            console.error("Google sign-in error:", err);
+            console.error("🔥 Google sign-in error:", err);
             toast.error("Google sign-in error");
         }
     };
+
 
 
     const navigate = useNavigate();
@@ -103,53 +123,75 @@ const ModernLogin = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        console.log("Login submitted:", formData);
+        console.log("🚀 Login submitted:", formData);
 
         try {
             const res = await fetch(`${API_URL}/auth/login`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData)
+                body: JSON.stringify(formData),
             });
 
             const data = await res.json().catch(err => {
-                console.error("JSON parse error:", err);
+                console.error("❌ JSON parse error:", err);
                 return {};
             });
 
-            console.log("Response data:", data);
-            console.log("Status code:", res.status);
+            console.log("📦 Backend login response:", data);
+            console.log("📡 Status code:", res.status);
 
             if (res.ok && data.token) {
-                // Store token securely (localStorage for now)
+                // Save basic user + token
                 localStorage.setItem("token", data.token);
-
                 if (data.user) {
+                    localStorage.setItem("userId", data.user.id);
                     localStorage.setItem("userName", data.user.name || "");
                     localStorage.setItem("userEmail", data.user.email || "");
                 }
 
-                // Optional: store user info
-                if (data.user) {
-                    if (data.token) {
-                        localStorage.setItem("token", data.token); // ✅ Save token here
+                // ✅ Fetch user's plan details from backend
+                if (data.user?.id) {
+                    console.log("🔍 Fetching plan for user ID:", data.user.id);
+                    try {
+                        const planRes = await fetch(`${API_URL}/user/${data.user.id}/plan`);
+                        const planData = await planRes.json();
+                        console.log("📊 User plan fetched:", planData);
+
+                        // Save plan details in localStorage
+                        localStorage.setItem("planName", planData.planName || "Free");
+                        localStorage.setItem(
+                            "emailVerificationCredits",
+                            planData.emailVerificationCredits ?? 50
+                        );
+                        localStorage.setItem(
+                            "totalEmails",
+                            planData.emailSendCredits ?? 50
+                        );
+                    } catch (err) {
+                        console.error("⚠️ Failed to fetch plan info:", err);
                     }
+                } else {
+                    console.warn("⚠️ No user ID found in login response");
                 }
+
                 toast.success("Login successful 🎉");
-                console.log("Token saved, redirecting to dashboard...");
                 navigate("/dashboard");
-                window.location.reload();
+
+                // ✅ Reload to refresh context + navbar
+                setTimeout(() => {
+                    window.location.reload();
+                }, 500);
             } else {
-                // Clear any old token to avoid using stale credentials
+                console.warn("⚠️ Login failed:", data.message);
                 localStorage.removeItem("token");
                 toast.error(data.message || "Login failed");
             }
-
         } catch (err) {
-            console.error("Error:", err);
+            console.error("🔥 Login error:", err);
             toast.error("Something went wrong!");
         }
     };
+
 
 
 
