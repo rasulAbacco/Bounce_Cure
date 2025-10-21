@@ -69,6 +69,7 @@ import smsRoutes from "./routes/smsCampaign.js";
 // ENV setup
 import customRoutes from "./routes/customRoutes.js";
 import chatbotRouter from "./routes/chatbot.js";
+import verifiFrontendRoutes from "./routes/verifiFrontend.js";
 
 dotenv.config();
 
@@ -197,7 +198,8 @@ app.use("/api/twilio", twilioRoutes);
 app.use("/api/whatsapp", whatsappRoutes);
 app.use("/api/sms", smsRoutes);
 app.use("/api/chatbot", chatbotRouter);
-
+// public verification route (no auth)
+app.use("/api/verifi-frontend", verifiFrontendRoutes);
 
 app.get("/", (req, res) => res.send("Twilio SMS/WhatsApp API Running"));
 

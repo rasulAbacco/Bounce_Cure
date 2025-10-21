@@ -343,114 +343,148 @@ export default function CampaignBuilder() {
   };
 
   // Check email verification status
-  const checkEmailVerification = async (email) => {
-    if (!email) return;
+const checkEmailVerification = async (email) => {
 
-    try {
-      const token = getAuthToken();
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
+  if (!email) return;
+  try {
 
-      const response = await fetch(
-        `${API_URL}/api/senders/check/${encodeURIComponent(email)}`,
-        { headers }
-      );
+    const token = getAuthToken();
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const response = await fetch(
 
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const errorText = await response.text();
-        throw new Error(`Server returned non-JSON response: ${errorText.substring(0, 100)}...`);
-      }
+      `${API_URL}/api/senders/check/${encodeURIComponent(email)}`,
 
-      const data = await response.json();
-      console.log("Check verification response:", data);
+      { headers }
 
-      setEmailVerificationStatus(prev => ({
-        ...prev,
-        [email]: {
-          isVerified: data.isVerified || false,
-          verifiedAt: data.record?.verifiedAt,
-          fromName: data.record?.fromName
-        }
-      }));
-    } catch (error) {
-      console.error("Error checking email verification:", error);
-      setEmailVerificationStatus(prev => ({
-        ...prev,
-        [email]: { isVerified: false }
-      }));
+    );
+ 
+    const contentType = response.headers.get("content-type");
+
+    if (!contentType || !contentType.includes("application/json")) {
+      const errorText = await response.text();
+      throw new Error(`Server returned non-JSON response: ${errorText.substring(0, 100)}...`);
+
     }
-  };
+ 
+    const data = await response.json();
+    console.log("Check verification response:", data);
+
+    setEmailVerificationStatus(prev => ({
+
+      ...prev,
+
+      [email]: {
+
+        isVerified: data.isVerified || false,
+        verifiedAt: data.record?.verifiedAt,
+        fromName: data.record?.fromName
+      }
+    }));
+
+  } catch (error) {
+
+    console.error("Error checking email verification:", error);
+
+    setEmailVerificationStatus(prev => ({
+      ...prev,
+      [email]: { isVerified: false }
+    }));
+  }
+};
 
 
   // Send verification email
-  const sendVerificationEmail = async (email, fromName) => {
-    setIsVerifying(true);
+const sendVerificationEmail = async (email, fromName) => {
+  setIsVerifying(true);
+
+  try {
+    const token = getAuthToken();
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+
+    const response = await fetch(`${API_URL}/api/senders/create`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({ email, name: fromName }),
+    });
+
+    // 🔹 Handle no response
+    if (!response) {
+      throw new Error("No response from server. Check if backend is running.");
+    }
+
+    // 🔹 Parse JSON safely
+    let data;
     try {
-      const token = getAuthToken();
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${API_URL}/api/senders/create`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ email, name: fromName })
-      });
-
-      if (!response) {
-        throw new Error("Unable to connect to the server. Please check if the backend is running.");
-      }
-
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const errorText = await response.text();
-        throw new Error(`Server returned non-JSON response: ${errorText.substring(0, 100)}...`);
-      }
-
-      const data = await response.json();
-
-     if (response.ok) {
-  setVerificationSent(true);
-  alert(
-    `Verification email sent to ${email}. Please check your inbox and click the verification link.`
-  );
-  setTimeout(() => checkEmailVerification(email), 2000);
-
-  // ✅ Auto-select the email after verification
-} else {
-  // Instead of raw error, check if it's duplicate sender
-  if (data.errors && data.errors[0]?.message.includes("same nickname")) {
-    alert("This sender email is already registered. Please check your verified senders.");
-    // Optionally trigger a status re-check
-        setTimeout(() => checkEmailVerification(email), 2000);
-      } else {
-        alert(data.error || "Failed to send verification email");
-      }
+      data = await response.json();
+    } catch (err) {
+      const text = await response.text();
+      throw new Error(
+        `Server returned non-JSON response: ${text.substring(0, 100)}...`
+      );
     }
 
-    } finally {
-      setIsVerifying(false);
-    }
-  };
+    // 🔹 Handle success
+    if (response.ok) {
+      setVerificationSent(true);
+      alert(
+        `✅ Verification email sent to ${email}. Please check your inbox and click the verification link.`
+      );
 
+      // Recheck status after a short delay
+      setTimeout(() => checkEmailVerification(email), 2000);
+      return;
+    }
+
+    // 🔹 Handle specific SendGrid or backend errors
+    const errorMessage =
+      data?.error ||
+      data?.details?.errors?.[0]?.message ||
+      data?.details?.message ||
+      "Unknown error occurred while creating sender.";
+
+    if (errorMessage.includes("same nickname")) {
+      alert(
+        "⚠️ This sender email is already registered. Checking verification status..."
+      );
+      setTimeout(() => checkEmailVerification(email), 2000);
+    } else if (errorMessage.includes("access forbidden")) {
+      alert(
+        "🚫 SendGrid API key is missing required permissions (scopes). Please update API key permissions in SendGrid."
+      );
+    } else if (response.status === 500) {
+      alert("❌ Server error occurred. Please check backend logs for details.");
+    } else if (response.status === 401) {
+      alert("🔒 Unauthorized. Please log in again.");
+    } else {
+      alert(`❌ ${errorMessage}`);
+    }
+  } catch (err) {
+    console.error("sendVerificationEmail error:", err);
+    alert(`⚠️ Network or server error: ${err.message}`);
+  } finally {
+    setIsVerifying(false);
+  }
+};
+
+
+  // Fetch verified emails on component mount
   // Fetch verified emails on component mount
   useEffect(() => {
     const fetchVerifiedEmails = async () => {
       try {
-        const token = getAuthToken(); // 👈 Make sure this returns your token (e.g., from localStorage)
+        const token = getAuthToken();
 
         const response = await fetch(`${API_URL}/api/senders/verified`, {
           method: "GET",
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`, // 👈 Add token here
+            'Authorization': `Bearer ${token}`,
           },
-          credentials: 'include' // 👈 Optional: needed if using cookies for auth
+          credentials: 'include'
         });
 
         const contentType = response.headers.get("content-type");
@@ -462,15 +496,25 @@ export default function CampaignBuilder() {
         if (response.ok) {
           const data = await response.json();
           console.log("Fetched verified emails:", data);
-          setVerifiedEmails(data);
+          
+          // Handle both old array format and new object format
+          let emailsArray = [];
+          if (Array.isArray(data)) {
+            emailsArray = data;
+          } else if (data.verifiedSenders && Array.isArray(data.verifiedSenders)) {
+            emailsArray = data.verifiedSenders;
+          }
+          
+          setVerifiedEmails(emailsArray);
 
           // If there are no pre-verified emails, switch to custom option
-          if (data.length === 0) {
+          if (emailsArray.length === 0) {
             setVerificationOption('custom');
           }
         } else {
           const errorData = await response.json();
           console.error("Failed to fetch verified emails:", errorData);
+          setVerificationOption('custom');
         }
       } catch (error) {
         console.error("Error fetching verified emails:", error);
@@ -607,15 +651,16 @@ const chunkArray = (arr, size) => {
 const handleSendCampaign = async () => {
   setIsSending(true);
   try {
-    // --- fetch contacts and build recipientsList (same as before) ---
     const token = getAuthToken();
     const headers = { "Content-Type": "application/json" };
     if (token) headers["Authorization"] = `Bearer ${token}`;
 
+    // ✅ Fetch contacts
     const contactsResponse = await fetch(`${API_URL}/api/campaigncontacts`, { headers });
     if (!contactsResponse.ok) throw new Error("Failed to fetch contacts");
     const contactsData = await contactsResponse.json();
 
+    // ✅ Prepare recipients
     let recipientsList = [];
     if (formData.recipients === "all-subscribers") {
       recipientsList = contactsData;
@@ -635,86 +680,80 @@ const handleSendCampaign = async () => {
     }
 
     if (recipientsList.length === 0) {
-      setSendStatus({ success: false, message: "No valid recipients found." });
+      alert("No valid recipients found.");
       setIsSending(false);
       return;
     }
 
-    // ✅ Split into batches of 1000
-    const batches = chunkArray(recipientsList, 1000);
-    let allResults = { success: [], failed: [] };
+    // ✅ Step 1: Fetch available email send credits
+    const creditsRes = await fetch(`${API_URL}/api/users/credits`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!creditsRes.ok) throw new Error("Failed to fetch user credits");
+    const creditsData = await creditsRes.json();
 
-    for (let i = 0; i < batches.length; i++) {
-      // Show progress while sending
-      setSendStatus({
-        success: null,
-        message: `📤 Sending batch ${i + 1} of ${batches.length}...`
-      });
+    const availableCredits = creditsData.emailLimit || 0;
+    const requiredCredits = recipientsList.length;
 
-      const payload = {
-      campaignName: formData.subject,
-      subject: formData.subject,
-      fromEmail: formData.fromEmail,
-      fromName: formData.fromName,
-      recipients: batches[i],
-      canvasData: canvasPages[0].elements,
-      scheduleType: formData.scheduleType,
-      scheduledDate: formData.scheduledDate,
-      scheduledTime: formData.scheduledTime,
-      timezone: formData.timezone,
-      recurringFrequency: formData.recurringFrequency,
-      recurringDays: formData.recurringDays,
-      recurringEndDate: formData.recurringEndDate || null,
-    };
-
-
-      // 👇 Decide endpoint based on scheduleType
-      const url =
-        formData.scheduleType === "immediate"
-          ? `${API_URL}/api/campaigns/send`
-          : `${API_URL}/api/automation/send`;
-
-      const response = await fetch(url, {
-        method: "POST",
-        headers,
-        body: JSON.stringify(payload),
-      });
-
-
-      const data = await response.json();
-      if (response.ok) {
-        allResults.success.push(...(data.results?.success || []));
-        allResults.failed.push(...(data.results?.failed || []));
-      } else {
-        allResults.failed.push(...(data.results?.failed || []));
-      }
-
-      // Small pause to avoid hitting SendGrid limits
-      await new Promise(r => setTimeout(r, 2000));
+    if (availableCredits < requiredCredits) {
+      alert(
+        `You only have ${availableCredits} email send credits, but this campaign requires ${requiredCredits}. Please purchase more credits.`
+      );
+      setIsSending(false);
+      return;
     }
 
-    // ✅ Final combined result
-    // Final summary
-    setSendStatus({
-      success: allResults.failed.length === 0,
-      message: `✅ Campaign finished. Sent: ${allResults.success.length}, Failed: ${allResults.failed.length}`,
-      results: allResults,
+    // ✅ Step 2: Send campaign
+    const sendRes = await fetch(`${API_URL}/api/campaigns/send`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify({
+        recipients: recipientsList.map(r => r.email),
+        fromEmail: formData.fromEmail,
+        fromName: formData.fromName,
+        subject: formData.subject,
+        canvasData: canvasPages[canvasActivePage]?.elements || [],
+      }),
     });
 
-    // 👇 Add this navigation logic
-    if (formData.scheduleType === 'immediate') {
-      navigate("/analytics", { state: { fromEmail: formData.fromEmail } });
-    } else {
-      navigate("/automation");
+    const sendData = await sendRes.json();
+
+    if (!sendRes.ok) {
+      if (sendData.creditLimitReached) {
+        alert("You have insufficient email send credits. Please purchase more credits.");
+      } else {
+        alert(sendData.error || "Failed to send campaign.");
+      }
+      setIsSending(false);
+      return;
     }
 
+    // ✅ Step 3: Deduct credits both locally and on backend
+    const newRemainingCredits = Math.max(availableCredits - requiredCredits, 0);
 
-  } catch (err) {
-    setSendStatus({ success: false, message: `Error: ${err.message}` });
+    // --- Update backend user's credit balance ---
+    await fetch(`${API_URL}/api/users/update-credits`, {
+      method: "PUT",
+      headers,
+      body: JSON.stringify({ emailLimit: newRemainingCredits }),
+    }).catch(err => console.warn("Backend credit update failed:", err));
+
+    // --- Update frontend (localStorage) ---
+    localStorage.setItem("totalEmails", newRemainingCredits);
+    window.dispatchEvent(new Event("storage"));
+
+    // ✅ Step 4: Success UI
+    setSendStatus({ success: true, message: "Campaign sent successfully!" });
+    alert(`✅ Campaign sent successfully to ${recipientsList.length} recipients!`);
+  } catch (error) {
+    console.error("❌ Error sending campaign:", error);
+    setSendStatus({ success: false, message: error.message });
+    alert("Something went wrong while sending the campaign.");
   } finally {
     setIsSending(false);
   }
 };
+
 
 
   // Get minimum date for scheduling (current date + 5 minutes)

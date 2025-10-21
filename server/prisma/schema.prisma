@@ -412,6 +412,27 @@ model Verification {
   @@unique([userId, email]) // ✅ Add this
 }
 
+model FrontendVerification {
+  id             Int      @id @default(autoincrement())
+  email          String
+  status         String
+  score          Int?
+  syntax_valid   Boolean?
+  domain_valid   Boolean
+  mailbox_exists Boolean?
+  catch_all      Boolean?
+  disposable     Boolean
+  role_based     Boolean
+  greylisted     Boolean
+  free_provider  Boolean?
+  provider       String?
+  mx             String[]
+  error          String?
+  ip             String?
+  source         String?
+  createdAt      DateTime @default(now())
+}
+
 model MmsCampaign {
   id         Int            @id @default(autoincrement())
   name       String
