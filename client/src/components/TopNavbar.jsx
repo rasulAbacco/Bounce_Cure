@@ -1,62 +1,87 @@
-import React, { useState, useContext,useEffect  } from "react";
+import React, { useState, useContext, useEffect } from "react";
 import { Bell, Menu, LogOut, User } from "lucide-react";
 import { Link, useNavigate } from "react-router-dom";
 import { UserContext } from "./UserContext";
 import { useNotificationContext } from "./NotificationContext";
-import { getCurrentPlanFeatures } from "../utils/PlanAccessControl";
 
 const TopNavbar = ({ toggleSidebar, pageName }) => {
-  const { preferences, allNotifications, markAsRead, deleteNotification } =
-    useNotificationContext();
+  const { preferences, allNotifications, deleteNotification } = useNotificationContext();
   const [showProfileMenu, setShowProfileMenu] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [credits, setCredits] = useState({ emails: 0, verifications: 0 });
   const { user, setUser } = useContext(UserContext);
   const navigate = useNavigate();
 
+  // 🩵 Fetch plan from backend
+  const fetchPlan = async (userId) => {
+    try {
+      console.log("🚀 Fetching plan from backend for userId:", userId);
+      const res = await fetch(`/api/user/${userId}/plan`);
+      const data = await res.json();
+      console.log("📦 Plan response data:", data);
 
-  // 🩵 Initialize Free Plan defaults if missing
-useEffect(() => {
-  const planName =
-    localStorage.getItem("planName") ||
-    localStorage.getItem("userPlan") ||
-    "Free";
+      const planName = data.planName || "Free";
+      const verificationCredits = data.emailVerificationCredits ?? 50;
+      const sendCredits = data.emailSendCredits ?? 50;
 
-  const hasVerifications = localStorage.getItem("emailVerificationCredits");
-  const hasEmails = localStorage.getItem("totalEmails");
+      console.log("🎯 Parsed plan details:", { planName, verificationCredits, sendCredits });
 
-  if (!hasVerifications && planName.toLowerCase() === "free") {
-    console.log("🆕 Setting default Free Plan counts...");
-    localStorage.setItem("emailVerificationCredits", 50);
-    localStorage.setItem("totalEmails", 50);
-  }
-}, []);
+      localStorage.setItem("planName", planName);
+      localStorage.setItem("emailVerificationCredits", verificationCredits);
+      localStorage.setItem("totalEmails", sendCredits);
 
-useEffect(() => {
-  const syncCredits = () => {
-    setCredits({
-      emails: parseInt(localStorage.getItem("totalEmails")) || 0,
-      verifications: parseInt(localStorage.getItem("emailVerificationCredits")) || 0,
-    });
+      setCredits({
+        verifications: verificationCredits,
+        emails: sendCredits,
+      });
+
+      setUser((prev) => {
+        console.log("🧠 Updating user context:", { ...prev, plan: planName });
+        return { ...prev, plan: planName };
+      });
+    } catch (err) {
+      console.error("❌ Failed to fetch user plan:", err);
+    }
   };
-  window.addEventListener("storage", syncCredits);
-  return () => window.removeEventListener("storage", syncCredits);
-}, []);
 
+  // 🩵 Fetch plan on mount (only if user is logged in)
+  useEffect(() => {
+    if (user?.id) {
+      fetchPlan(user.id);
+    } else {
+      // If no user, ensure default Free plan values
+      const planName =
+        localStorage.getItem("planName") || "Free";
+      const verifications =
+        parseInt(localStorage.getItem("emailVerificationCredits")) || 50;
+      const emails = parseInt(localStorage.getItem("totalEmails")) || 50;
 
-  // ===== Load totals =====
-  const totalEmails = parseInt(localStorage.getItem("totalEmails")) || 0;
-  const totalVerifications =
-    localStorage.getItem("emailVerificationCredits") === "Unlimited"
-      ? "Unlimited"
-      : parseInt(localStorage.getItem("emailVerificationCredits")) || 0;
+      setUser((prev) => ({ ...prev, plan: planName }));
+      setCredits({ verifications, emails });
+    }
+  }, [user?.id]);
 
+  // 🩵 Sync credits across tabs
+  useEffect(() => {
+    const syncCredits = () => {
+      setCredits({
+        emails: parseInt(localStorage.getItem("totalEmails")) || 0,
+        verifications:
+          parseInt(localStorage.getItem("emailVerificationCredits")) || 0,
+      });
+    };
+    window.addEventListener("storage", syncCredits);
+    return () => window.removeEventListener("storage", syncCredits);
+  }, []);
+
+  // ===== Notifications =====
   const notifications = allNotifications.filter((n) => preferences[n.type]);
   const unreadCount = notifications.filter((n) => n.unread).length;
 
   const handleLogout = () => {
     if (window.confirm("Are you sure you want to log out?")) {
       localStorage.clear();
-      setUser({ name: "", email: "", profileImage: "" });
+      setUser({ name: "", email: "", profileImage: "", plan: "Free" });
       navigate("/");
     }
   };
@@ -67,7 +92,6 @@ useEffect(() => {
     }
   };
 
-  
   return (
     <div className="relative">
       <nav className="fixed top-0 left-0 right-0 bg-white/5 backdrop-blur-lg border-b border-white/10 px-4 sm:px-6 py-3 flex items-center justify-between z-50">
@@ -86,26 +110,22 @@ useEffect(() => {
 
         {/* Right */}
         <div className="flex items-center space-x-3 sm:space-x-4">
-          {/* Totals Display */}
+          {/* Plan and Credits */}
           <div className="flex flex-wrap items-center gap-2 mt-1">
             <span className="text-xs bg-[#c2831f] text-black px-2 py-0.5 rounded-full font-medium">
               {user.plan || "Free"} Plan
             </span>
 
             <span className="text-xs text-gray-400">
-              {totalVerifications
-                ? totalVerifications === "Unlimited"
-                  ? "Unlimited Email Verifications"
-                  : `${totalVerifications} Email Verifications`
-                : "0 Email Verifications"}
+              {credits.verifications === "Unlimited"
+                ? "Unlimited Email Verifications"
+                : `${credits.verifications} Email Verifications`}
             </span>
 
             <span className="text-xs text-gray-400">
-              {totalEmails
-                ? totalEmails === "Unlimited"
-                  ? "Unlimited Send Emails"
-                  : `${totalEmails} Send Emails`
-                : "0 Send Emails"}
+              {credits.emails === "Unlimited"
+                ? "Unlimited Send Emails"
+                : `${credits.emails} Send Emails`}
             </span>
           </div>
 
@@ -140,9 +160,8 @@ useEffect(() => {
                     notifications.map((n) => (
                       <div
                         key={n.id}
-                        className={`p-3 border-b border-white/5 hover:bg-white/5 ${
-                          n.unread ? "bg-blue-900/20" : ""
-                        }`}
+                        className={`p-3 border-b border-white/5 hover:bg-white/5 ${n.unread ? "bg-blue-900/20" : ""
+                          }`}
                       >
                         <p className="text-sm text-white">{n.message}</p>
                         <p className="text-xs text-gray-400 mt-1">{n.time}</p>

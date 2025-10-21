@@ -18,6 +18,8 @@ import {
   XCircle, Shield, X
 } from "lucide-react";
 import Templets from "./Templets";
+import VerifyCampaignMailForm from "./VerifyCampaignMailForm";
+
 
 const API_URL = import.meta.env.VITE_VRI_URL || "http://localhost:5000";
 
@@ -443,6 +445,17 @@ const Dashboard = () => {
             <FileText size={18} />
             Templates
           </button>
+          <button
+            onClick={() => setActiveTab("verifyformails")}
+            className={`flex items-center gap-2 px-6 py-3 font-medium transition-colors ${
+              activeTab === "verifyformails" 
+                ? "bg-[#e2971f] text-black rounded-t-lg" 
+                : "text-gray-400 hover:text-white"
+            }`}
+          >
+            <Mail size={18} />
+            Verify Campaign Mails
+          </button>
         </div>
       </div>
 
@@ -729,6 +742,11 @@ const Dashboard = () => {
         {activeTab === "templates" && (
           <Templets />
         )}
+
+        {activeTab === "verifyformails" && (
+  <VerifyCampaignMailForm />
+)}
+
       </div>
     </div>
   );

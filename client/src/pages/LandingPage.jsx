@@ -1,5 +1,6 @@
 import React from 'react';
 import { Mail, Send, Zap, Globe, Shield, Cpu, CheckCircle, MailOpen, } from 'lucide-react';
+import { Link } from 'react-router-dom';
 
 const LandingPage = () => {
   return (
@@ -70,13 +71,15 @@ const LandingPage = () => {
               </div>
 
               <div className="flex justify-center lg:justify-start">
+                <Link to="/login">
                 <button
                   className="bg-[#c2831f] hover:bg-[#a06d1a] cursor-pointer text-black font-bold py-4 px-8 rounded-lg transition-all duration-300 transform hover:scale-105 hover:shadow-2xl animate-fade-in-up flex items-center space-x-2 group"
                   style={{ animationDelay: '0.8s' }}
                 >
                   <span>Sign up for Free</span>
                   <Send className="w-5 h-5 group-hover:translate-x-1 transition-transform " />
-                </button>
+                  </button>
+                </Link>
               </div>
             </div>
           </div>

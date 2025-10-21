@@ -19,15 +19,28 @@ stripe.customers.list({ limit: 1 })
 /**
  * Utility: Get next payment date from plan type
  */
+/**
+ * 🧮 Utility: Get next payment date based on plan type
+ * - Handles both "month" / "monthly" and "year" / "yearly"
+ */
 export const getNextPaymentDate = (currentDate, planType) => {
   const date = new Date(currentDate);
-  if (planType === "month") {
+
+  const normalizedType = planType?.toLowerCase() || "";
+
+  if (["month", "monthly"].includes(normalizedType)) {
     date.setMonth(date.getMonth() + 1);
-  } else if (planType === "year") {
+  } else if (["year", "yearly", "annual", "annually"].includes(normalizedType)) {
     date.setFullYear(date.getFullYear() + 1);
+  } else {
+    // Default to +1 month for unknown plan types
+    console.warn(`⚠️ Unknown planType "${planType}", defaulting to +1 month`);
+    date.setMonth(date.getMonth() + 1);
   }
+
   return date.toISOString();
 };
+
 
 /**
  * Create Stripe Payment Intent

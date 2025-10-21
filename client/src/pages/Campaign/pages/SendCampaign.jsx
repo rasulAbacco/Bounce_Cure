@@ -3,7 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   CheckCircle, ChevronDown, ChevronUp, Send, Users, Settings,
-  FileText, Palette, Check, Clock, Calendar, Shield, AlertCircle, 
+  FileText, Palette, Check, Clock, Calendar, Shield, AlertCircle,
   Mail, RefreshCw, CreditCard, AlertTriangle
 } from "lucide-react";
 
@@ -151,7 +151,7 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
               lineHeight: '1.6',
               margin: '12px 0',
             }}
-            dangerouslySetInnerHTML={{ __html: element.content || 'Paragraph text' }}
+              dangerouslySetInnerHTML={{ __html: element.content || 'Paragraph text' }}
             />
           );
 
@@ -279,7 +279,7 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
           <div className="p-8">
             {sortedElements.map(element => renderEmailElement(element))}
           </div>
-          
+
           {/* Email Footer */}
           <div className="bg-gray-50 px-8 py-6 border-t border-gray-200 text-center text-sm text-gray-600">
             <p>© 2025 {formData.fromName || 'Your Company'}. All rights reserved.</p>
@@ -328,10 +328,10 @@ export default function CampaignBuilder() {
   const [canvasZoomLevel, setCanvasZoomLevel] = useState(0.6);
 
   // NEW STATE VARIABLES
-  const [emailVerificationStatus, setEmailVerificationStatus] = useState({});
-  const [isVerifying, setIsVerifying] = useState(false);
-  const [verificationSent, setVerificationSent] = useState(false);
-  const [verifiedEmails, setVerifiedEmails] = useState([]);
+  // const [emailVerificationStatus, setEmailVerificationStatus] = useState({});
+  // const [isVerifying, setIsVerifying] = useState(false);
+  // const [verificationSent, setVerificationSent] = useState(false);
+  // const [verifiedEmails, setVerifiedEmails] = useState([]);
   const [verificationOption, setVerificationOption] = useState('preverified'); // 'preverified' or 'custom'
   const [authError, setAuthError] = useState(false);
 
@@ -346,41 +346,6 @@ export default function CampaignBuilder() {
     return localStorage.getItem('token');
   };
 
-  // ✅ FETCH EMAIL CREDITS ON MOUNT
-  useEffect(() => {
-    fetchEmailCredits();
-  }, []);
-
- const fetchEmailCredits = async () => {
-  setIsLoadingCredits(true);
-  try {
-    const token = getAuthToken();
-    const response = await fetch(`${API_URL}/api/users/credits`, {
-      headers: {
-        'Authorization': `Bearer ${token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`Failed to fetch credits: ${errorText}`);
-    }
-
-    const data = await response.json();
-    console.log("📊 User Credits Fetched:", data);
-
-    // ✅ Store send credits
-    setEmailCredits(data.emailSendCredits ?? 0);
-
-  } catch (error) {
-    console.error("❌ Error fetching email credits:", error);
-    setCreditError("Unable to load email credits");
-    setEmailCredits(0);
-  } finally {
-    setIsLoadingCredits(false);
-  }
-};
 
 
   // ✅ CALCULATE RECIPIENT COUNT
@@ -416,145 +381,6 @@ export default function CampaignBuilder() {
     return result;
   };
 
-  // Check email verification status
-  const checkEmailVerification = async (email) => {
-    if (!email) return;
-
-    try {
-      const token = getAuthToken();
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-
-      const response = await fetch(
-        `${API_URL}/api/senders/check/${encodeURIComponent(email)}`,
-        { headers }
-      );
-
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const errorText = await response.text();
-        throw new Error(`Server returned non-JSON response: ${errorText.substring(0, 100)}...`);
-      }
-
-      const data = await response.json();
-      console.log("Check verification response:", data);
-
-      setEmailVerificationStatus(prev => ({
-        ...prev,
-        [email]: {
-          isVerified: data.isVerified || false,
-          verifiedAt: data.record?.verifiedAt,
-          fromName: data.record?.fromName
-        }
-      }));
-    } catch (error) {
-      console.error("Error checking email verification:", error);
-      setEmailVerificationStatus(prev => ({
-        ...prev,
-        [email]: { isVerified: false }
-      }));
-    }
-  };
-
-
-  // Send verification email
-  const sendVerificationEmail = async (email, fromName) => {
-    setIsVerifying(true);
-    try {
-      const token = getAuthToken();
-      const headers = {
-        'Content-Type': 'application/json',
-      };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await fetch(`${API_URL}/api/senders/create`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ email, name: fromName })
-      });
-
-      if (!response) {
-        throw new Error("Unable to connect to the server. Please check if the backend is running.");
-      }
-
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const errorText = await response.text();
-        throw new Error(`Server returned non-JSON response: ${errorText.substring(0, 100)}...`);
-      }
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setVerificationSent(true);
-        alert(
-          `Verification email sent to ${email}. Please check your inbox and click the verification link.`
-        );
-        setTimeout(() => checkEmailVerification(email), 2000);
-      } else {
-        if (data.errors && data.errors[0]?.message.includes("same nickname")) {
-          alert("This sender email is already registered. Please check your verified senders.");
-          setTimeout(() => checkEmailVerification(email), 2000);
-        } else {
-          alert(data.error || "Failed to send verification email");
-        }
-      }
-    } finally {
-      setIsVerifying(false);
-    }
-  };
-
-  // Fetch verified emails on component mount
-  useEffect(() => {
-    const fetchVerifiedEmails = async () => {
-      try {
-        const token = getAuthToken();
-
-        const response = await fetch(`${API_URL}/api/senders/verified`, {
-          method: "GET",
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-          },
-          credentials: 'include'
-        });
-
-        const contentType = response.headers.get("content-type");
-        if (!contentType || !contentType.includes("application/json")) {
-          const errorText = await response.text();
-          throw new Error(`Server returned non-JSON response: ${errorText.substring(0, 100)}...`);
-        }
-
-        if (response.ok) {
-          const data = await response.json();
-          console.log("Fetched verified emails:", data);
-          setVerifiedEmails(data);
-
-          if (data.length === 0) {
-            setVerificationOption('custom');
-          }
-        } else {
-          const errorData = await response.json();
-          console.error("Failed to fetch verified emails:", errorData);
-        }
-      } catch (error) {
-        console.error("Error fetching verified emails:", error);
-        setVerificationOption('custom');
-      }
-    };
-    fetchVerifiedEmails();
-  }, []);
-
-  // Check verification when email changes (only for custom option)
-  useEffect(() => {
-    if (formData.fromEmail && verificationOption === 'custom') {
-      checkEmailVerification(formData.fromEmail);
-    }
-  }, [formData.fromEmail, verificationOption]);
-
   // Your existing useEffect hooks...
   useEffect(() => {
     if (location.state?.canvasData) {
@@ -578,7 +404,7 @@ export default function CampaignBuilder() {
       const headers = {
         'Content-Type': 'application/json',
       };
-      
+
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
@@ -586,7 +412,7 @@ export default function CampaignBuilder() {
       const response = await fetch(`${API_URL}/api/campaigncontacts`, {
         headers
       });
-      
+
       if (response.status === 401) {
         setAuthError(true);
         console.error("Authentication error: Please log in again");
@@ -665,7 +491,7 @@ export default function CampaignBuilder() {
     setIsSending(true);
     try {
       const token = getAuthToken();
-      const headers = { 
+      const headers = {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       };
@@ -743,9 +569,29 @@ export default function CampaignBuilder() {
           body: JSON.stringify(payload),
         });
 
-        const data = await response.json();
+        let data;
+        try {
+          data = await response.json();
+        } catch (err) {
+          data = null;
+        }
 
-        if (data.creditLimitReached) {
+        if (!response.ok) {
+          // if server returned a structured error, show it
+          const errMsg = data?.error || data?.message || `Server returned ${response.status}`;
+          setSendStatus({ success: false, message: `Error sending batch ${i + 1}: ${errMsg}` });
+          // push the server results.failed if present, otherwise mark this batch failed
+          if (data?.results?.failed?.length) {
+            allResults.failed.push(...data.results.failed);
+          } else {
+            allResults.failed.push(...(payload.recipients || []).map(r => ({ email: r.email || r, error: errMsg })));
+          }
+          // stop sending further batches
+          break;
+        }
+
+        // handle success
+        if (data?.creditLimitReached) {
           setSendStatus({
             success: false,
             message: `❌ ${data.error}. Available: ${data.available}, Required: ${data.required}`,
@@ -759,21 +605,19 @@ export default function CampaignBuilder() {
           allResults.failed.push(...(data.results?.failed || []));
           usedCredits += batches[i].length;
 
-          // ✅ Deduct credits in backend
+          // update backend credits
           await fetch(`${API_URL}/api/users/update-credits`, {
             method: "PUT",
             headers,
             body: JSON.stringify({ usedCredits: batches[i].length }),
           });
-        } else {
-          allResults.failed.push(...(data.results?.failed || []));
         }
+
 
         await new Promise(r => setTimeout(r, 2000));
       }
 
       // ✅ Refresh credits after sending
-      await fetchEmailCredits();
 
       setSendStatus({
         success: allResults.failed.length === 0,
@@ -833,7 +677,7 @@ export default function CampaignBuilder() {
       <header className="bg-black border-b border-gray-800 px-6 py-4">
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-bold text-white">Send Campaign</h1>
-          
+
           {/* ✅ CREDIT DISPLAY IN HEADER */}
           <div className="flex items-center space-x-4">
             <div className="flex items-center gap-2 px-4 py-2 bg-gray-900 rounded-lg border border-gray-700">
@@ -854,7 +698,7 @@ export default function CampaignBuilder() {
             >
               Text Editor Page
             </button>
-          
+
             <button
               onClick={() => navigate("/all-templates")}
               className="px-4 py-2 text-gray-100 hover:bg-[#c2831f] rounded-md cursor-pointer"
@@ -872,8 +716,7 @@ export default function CampaignBuilder() {
                 isSending ||
                 !hasEnoughCredits()
               }
-              className={`flex items-center gap-2 px-4 py-2 rounded-md text-white ${
-                !completedSteps.includes("recipients") ||
+              className={`flex items-center gap-2 px-4 py-2 rounded-md text-white ${!completedSteps.includes("recipients") ||
                 !completedSteps.includes("setup") ||
                 !completedSteps.includes("template") ||
                 !completedSteps.includes("schedule") ||
@@ -881,7 +724,7 @@ export default function CampaignBuilder() {
                 !hasEnoughCredits()
                 ? "bg-gray-800 cursor-not-allowed"
                 : "bg-[#c2831f] hover:bg-[#d09025]"
-              }`}
+                }`}
             >
               {formData.scheduleType === 'immediate' ? <Send size={16} /> : <Calendar size={16} />}
               {isSending
@@ -896,7 +739,7 @@ export default function CampaignBuilder() {
           </div>
         </div>
       </header>
-      
+
       <div className="flex flex-1 overflow-hidden">
         {/* Sidebar - Step Tracker */}
         <div className="w-64 bg-black border-r border-gray-800 p-6 overflow-y-auto">
@@ -952,18 +795,17 @@ export default function CampaignBuilder() {
             </div>
           </div>
         </div>
-        
+
         {/* Main Content */}
         <div className="flex-1 overflow-y-auto p-6 bg-black">
           <div className="max-w-3xl mx-auto">
-            
+
             {/* ✅ CREDIT WARNING BANNER */}
             {!isLoadingCredits && getRecipientCount() > 0 && (
-              <div className={`mb-6 p-4 rounded-lg border ${
-                hasEnoughCredits()
-                  ? "bg-green-900/20 border-green-700 text-green-400"
-                  : "bg-red-900/20 border-red-700 text-red-400"
-              }`}>
+              <div className={`mb-6 p-4 rounded-lg border ${hasEnoughCredits()
+                ? "bg-green-900/20 border-green-700 text-green-400"
+                : "bg-red-900/20 border-red-700 text-red-400"
+                }`}>
                 <div className="flex items-start gap-3">
                   {hasEnoughCredits() ? (
                     <CheckCircle size={20} className="mt-0.5" />
@@ -977,7 +819,7 @@ export default function CampaignBuilder() {
                         : "❌ Insufficient Credits"}
                     </p>
                     <p className="text-sm mt-1">
-                      Recipients: <strong>{getRecipientCount()}</strong> | 
+                      Recipients: <strong>{getRecipientCount()}</strong> |
                       Available Credits: <strong>{emailCredits}</strong>
                       {!hasEnoughCredits() && (
                         <span className="block mt-2">
@@ -1094,11 +936,10 @@ export default function CampaignBuilder() {
 
                             {/* ✅ CREDIT CHECK WARNING FOR RECIPIENTS */}
                             {getRecipientCount() > 0 && (
-                              <div className={`mt-4 p-3 rounded-md ${
-                                getRecipientCount() <= emailCredits
-                                  ? "bg-blue-900/30 border border-blue-700"
-                                  : "bg-red-900/30 border border-red-700"
-                              }`}>
+                              <div className={`mt-4 p-3 rounded-md ${getRecipientCount() <= emailCredits
+                                ? "bg-blue-900/30 border border-blue-700"
+                                : "bg-red-900/30 border border-red-700"
+                                }`}>
                                 <div className="flex items-center gap-2">
                                   <CreditCard size={16} />
                                   <span className="text-sm">
@@ -1112,12 +953,67 @@ export default function CampaignBuilder() {
                               </div>
                             )}
                           </div>
-                          
+
                           <button
                             onClick={() => markComplete(id)}
                             disabled={!formData.recipients || getRecipientCount() === 0}
-                            className={`mt-2 px-4 py-2 rounded-md ${
-                              !formData.recipients || getRecipientCount() === 0
+                            className={`mt-2 px-4 py-2 rounded-md ${!formData.recipients || getRecipientCount() === 0
+                              ? "bg-gray-700 cursor-not-allowed"
+                              : "bg-[#c2831f] hover:bg-[#d09025] text-white"
+                              }`}
+                          >
+                            Save and Continue
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Keep all other existing steps (setup, template, design, schedule, confirm) */}
+                      {id === "setup" && (
+                        <div className="space-y-4">
+                          <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">
+                              From Email Address
+                            </label>
+                            <input
+                              type="email"
+                              name="fromEmail"
+                              required
+                              value={formData.fromEmail}
+                              onChange={handleChange}
+                              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
+                              placeholder="Enter verified sender email"
+                            />
+                            <p className="text-xs text-gray-400 mt-2">
+                              ⚠️ Only verified emails can be used.{" "}
+                              <a
+                                href="/verifyformails"
+                                className="text-[#c2831f] underline hover:text-[#d09025]"
+                              >
+                                Click here to request verification
+                              </a>
+                            </p>
+                          </div>
+
+                          <div>
+                            <label className="block text-sm font-medium text-gray-300 mb-1">
+                              From Name
+                            </label>
+                            <input
+                              type="text"
+                              name="fromName"
+                              required
+                              value={formData.fromName}
+                              onChange={handleChange}
+                              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
+                              placeholder="Your sender name"
+                            />
+                          </div>
+
+                          {/* Save Button */}
+                          <button
+                            onClick={() => markComplete(id)}
+                            disabled={!formData.fromEmail || !formData.fromName}
+                            className={`mt-4 px-4 py-2 rounded-md ${!formData.fromEmail || !formData.fromName
                                 ? "bg-gray-700 cursor-not-allowed"
                                 : "bg-[#c2831f] hover:bg-[#d09025] text-white"
                               }`}
@@ -1126,221 +1022,8 @@ export default function CampaignBuilder() {
                           </button>
                         </div>
                       )}
-                      
-                      {/* Keep all other existing steps (setup, template, design, schedule, confirm) */}
-                      {id === "setup" && (
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1">
-                              From name
-                            </label>
-                            <input
-                              name="fromName"
-                              type="text"
-                              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
-                              value={formData.fromName}
-                              onChange={handleChange}
-                              placeholder="Enter sender name"
-                              disabled={verificationOption === 'preverified'}
-                            />
-                          </div>
 
-                          <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1">
-                              From email address
-                            </label>
 
-                            {/* Verification Options */}
-                            <div className="flex space-x-4 mb-3">
-                              <label className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name="verificationOption"
-                                  value="preverified"
-                                  checked={verificationOption === 'preverified'}
-                                  onChange={() => setVerificationOption('preverified')}
-                                  className="mr-2 accent-[#c2831f]"
-                                />
-                                <span className="text-white">Use pre-verified email</span>
-                              </label>
-                              <label className="flex items-center">
-                                <input
-                                  type="radio"
-                                  name="verificationOption"
-                                  value="custom"
-                                  checked={verificationOption === 'custom'}
-                                  onChange={() => setVerificationOption('custom')}
-                                  className="mr-2 accent-[#c2831f]"
-                                />
-                                <span className="text-white">Use custom email</span>
-                              </label>
-                            </div>
-
-                            {/* Option 1: Pre-verified dropdown */}
-                            {verificationOption === 'preverified' && (
-                              <div>
-                                <select
-                                  className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
-                                  value={formData.fromEmail}
-                                  onChange={async (e) => {
-                                    const selectedEmail = verifiedEmails.find(
-                                      (email) => email.email === e.target.value
-                                    );
-                                    if (selectedEmail) {
-                                      setFormData((prev) => ({
-                                        ...prev,
-                                        fromEmail: selectedEmail.email,
-                                        fromName: selectedEmail.fromName,
-                                      }));
-
-                                      // 🔍 Call backend to check latest verification status
-                                      await checkEmailVerification(selectedEmail.email);
-                                    }
-                                  }}
-                                >
-                                  <option value="">Select a pre-verified email</option>
-                                  {verifiedEmails.map((email) => (
-                                    <option key={email.id} value={email.email}>
-                                      {email.fromName} &lt;{email.email}&gt;
-                                    </option>
-                                  ))}
-                                </select>
-
-                                {verifiedEmails.length === 0 && (
-                                  <div className="mt-2 text-yellow-400 text-sm">
-                                    No pre-verified emails available. Please verify a custom email.
-                                  </div>
-                                )}
-                              </div>
-                            )}
-
-                            {/* Option 2: Custom email input and verification */}
-                            {verificationOption === 'custom' && (
-                              <div className="space-y-2">
-                                <div className="relative">
-                                  <input
-                                    name="fromEmail"
-                                    type="email"
-                                    className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 pr-10 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
-                                    value={formData.fromEmail}
-                                    onChange={handleChange}
-                                    placeholder="Enter sender email"
-                                  />
-                                  {formData.fromEmail && emailVerificationStatus[formData.fromEmail] && (
-                                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                                      {emailVerificationStatus[formData.fromEmail].isVerified ? (
-                                        <Shield className="w-5 h-5 text-green-500" />
-                                      ) : (
-                                        <AlertCircle className="w-5 h-5 text-yellow-500" />
-                                      )}
-                                    </div>
-                                  )}
-                                </div>
-
-                                {/* Verification status and button for custom email */}
-                                {formData.fromEmail && emailVerificationStatus[formData.fromEmail] && (
-                                  <div className={`p-3 rounded-md border ${emailVerificationStatus[formData.fromEmail].isVerified
-                                    ? "bg-green-900/30 border-green-600 text-green-400"
-                                    : "bg-yellow-900/30 border-yellow-600 text-yellow-400"
-                                    }`}>
-                                    <div className="flex items-center justify-between">
-                                      <div className="flex items-center space-x-2">
-                                        {emailVerificationStatus[formData.fromEmail].isVerified ? (
-                                          <Shield className="w-4 h-4" />
-                                        ) : (
-                                          <AlertCircle className="w-4 h-4" />
-                                        )}
-                                        <span className="text-sm font-medium">
-                                          {emailVerificationStatus[formData.fromEmail].isVerified
-                                            ? "Email Verified"
-                                            : "Email Not Verified"}
-                                        </span>
-                                      </div>
-
-                                      {!emailVerificationStatus[formData.fromEmail].isVerified && (
-                                        <button
-                                          onClick={() => sendVerificationEmail(formData.fromEmail, formData.fromName)}
-                                          disabled={!formData.fromName || isVerifying}
-                                          className="flex items-center space-x-1 px-3 py-1 bg-[#c2831f] hover:bg-[#d09025] text-white text-sm rounded-md disabled:bg-gray-600 disabled:cursor-not-allowed"
-                                        >
-                                          {isVerifying ? (
-                                            <>
-                                              <RefreshCw className="w-3 h-3 animate-spin" />
-                                              <span>Sending...</span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <Mail className="w-3 h-3" />
-                                              <span>Verify</span>
-                                            </>
-                                          )}
-                                        </button>
-                                      )}
-                                    </div>
-
-                                    <p className="text-xs mt-2">
-                                      {emailVerificationStatus[formData.fromEmail].isVerified
-                                        ? `Verified on ${new Date(emailVerificationStatus[formData.fromEmail].verifiedAt).toLocaleDateString()}`
-                                        : "You must verify this email before sending campaigns. Click 'Verify' to receive a verification email."}
-                                    </p>
-                                  </div>
-                                )}
-
-                                {/* Verification instructions for custom email */}
-                                {!formData.fromEmail && (
-                                  <div className="bg-blue-900/30 border border-blue-600 rounded-md p-3">
-                                    <div className="flex items-start space-x-2">
-                                      <Shield className="w-4 h-4 text-blue-400 mt-0.5" />
-                                      <div>
-                                        <p className="text-blue-400 text-sm font-medium">Email Verification Required</p>
-                                        <p className="text-blue-300 text-xs mt-1">
-                                          All sender emails must be verified before sending campaigns. Enter your email and name above, then click 'Verify' to receive a verification link.
-                                        </p>
-                                      </div>
-                                    </div>
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1">
-                              Email subject
-                            </label>
-                            <input
-                              name="subject"
-                              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
-                              value={formData.subject}
-                              onChange={handleChange}
-                              placeholder="Enter subject"
-                            />
-                          </div>
-
-                          <button
-                            onClick={() => markComplete(id)}
-                            disabled={
-                              !formData.fromName ||
-                              !formData.fromEmail ||
-                              !formData.subject ||
-                              (verificationOption === 'custom' && !emailVerificationStatus[formData.fromEmail]?.isVerified)
-                            }
-                            className={`mt-2 px-4 py-2 rounded-md ${!formData.fromName ||
-                              !formData.fromEmail ||
-                              !formData.subject ||
-                              (verificationOption === 'custom' && !emailVerificationStatus[formData.fromEmail]?.isVerified)
-                              ? "bg-gray-700 cursor-not-allowed"
-                              : "bg-[#c2831f] hover:bg-[#d09025] text-white"
-                              }`}
-                          >
-                            {(verificationOption === 'custom' && !emailVerificationStatus[formData.fromEmail]?.isVerified && formData.fromEmail)
-                              ? "Email verification required"
-                              : "Save and Continue"
-                            }
-                          </button>
-                        </div>
-                      )}
-                      
                       {id === "template" && (
                         <div className="space-y-4">
                           <label className="block text-sm font-medium text-gray-300 mb-3">
@@ -1373,7 +1056,7 @@ export default function CampaignBuilder() {
                           </div>
                         </div>
                       )}
-                      
+
                       {id === "design" && (
                         <div className="space-y-4">
                           <label className="block text-sm font-medium text-gray-300 mb-1">
@@ -1394,7 +1077,7 @@ export default function CampaignBuilder() {
                           </div>
                         </div>
                       )}
-                      
+
                       {id === "schedule" && (
                         <div className="space-y-4">
                           <div>
@@ -1602,7 +1285,7 @@ export default function CampaignBuilder() {
                           </button>
                         </div>
                       )}
-                      
+
                       {id === "confirm" && (
                         <div className="space-y-6">
                           <div className="bg-gray-800 p-4 rounded-lg border border-gray-700">
@@ -1682,7 +1365,7 @@ export default function CampaignBuilder() {
                                     } starting ${formData.scheduledDate}`}
                                 </span>
                               </div>
-                              
+
                               {/* Credit info in confirm step */}
                               <div className="flex">
                                 <span className="w-32 text-gray-400">
@@ -1696,13 +1379,12 @@ export default function CampaignBuilder() {
                           </div>
 
                           {sendStatus && (
-                            <div className={`mt-4 p-3 rounded ${
-                              sendStatus.success
-                                ? "bg-green-900/30 text-green-400"
-                                : sendStatus.creditLimitReached
-                                  ? "bg-red-900/30 text-red-400"
-                                  : "bg-yellow-900/30 text-yellow-400"
-                            }`}>
+                            <div className={`mt-4 p-3 rounded ${sendStatus.success
+                              ? "bg-green-900/30 text-green-400"
+                              : sendStatus.creditLimitReached
+                                ? "bg-red-900/30 text-red-400"
+                                : "bg-yellow-900/30 text-yellow-400"
+                              }`}>
                               {sendStatus.message}
                             </div>
                           )}
@@ -1729,12 +1411,12 @@ export default function CampaignBuilder() {
             })}
           </div>
         </div>
-        
+
         {/* Preview Section */}
         <div className="w-[500px] border-l border-gray-800 bg-gray-900 flex flex-col">
           <div className="p-4 border-b border-gray-800">
             <h3 className="font-bold text-lg">Email Preview</h3>
-            
+
             {/* ✅ CREDIT STATUS IN PREVIEW */}
             <div className="mt-3 p-3 bg-gray-800 rounded-md">
               <div className="flex items-center justify-between text-sm">
@@ -1776,8 +1458,7 @@ export default function CampaignBuilder() {
                 isSending ||
                 !hasEnoughCredits()
               }
-              className={`w-full flex items-center justify-center gap-2 py-3 rounded-md text-white ${
-                !completedSteps.includes("recipients") ||
+              className={`w-full flex items-center justify-center gap-2 py-3 rounded-md text-white ${!completedSteps.includes("recipients") ||
                 !completedSteps.includes("setup") ||
                 !completedSteps.includes("template") ||
                 !completedSteps.includes("schedule") ||
@@ -1785,7 +1466,7 @@ export default function CampaignBuilder() {
                 !hasEnoughCredits()
                 ? "bg-gray-800 cursor-not-allowed"
                 : "bg-[#c2831f] hover:bg-[#d09025]"
-              }`}
+                }`}
             >
               {formData.scheduleType === 'immediate' ? <Send size={16} /> : <Calendar size={16} />}
               {isSending
