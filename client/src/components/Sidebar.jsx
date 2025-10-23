@@ -17,10 +17,9 @@ const Sidebar = ({ isOpen, toggleSidebar, pageName }) => {
     useEffect(() => {
         // Function to check CRM access based on user plan
         const checkCrmAccess = () => {
-            const access = user.plan === 'Standard' || user.plan === 'Premium';
+            const access = user.plan === 'Premium'; // ✅ Only Premium users can access CRM
             setCrmAccess(access);
         };
-
         // Load on mount and when user plan changes
         checkCrmAccess();
     }, [user.plan]);

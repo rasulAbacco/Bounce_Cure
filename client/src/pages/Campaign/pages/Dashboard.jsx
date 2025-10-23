@@ -1,17 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import {
-  ResponsiveContainer,
-  BarChart,
-  Bar,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  Legend,
-} from "recharts";
-import {
-  Mail, Send, Calendar, Activity, TrendingUp,
+  Mail, Send, Calendar, Activity,
   MousePointer, BarChart3, RefreshCw, AlertTriangle,
   LayoutDashboard, FileText, Clock, Users, CheckCircle,
   Zap, Filter, Search, Eye, Pause, PlayCircle, MoreVertical,
@@ -75,93 +65,124 @@ const Dashboard = () => {
     }
   };
 
-  // ✅ Fetch analytics data with proper campaign enrichment
+  // Fetch analytics data (Total Sent, Campaigns, Recent Campaigns)
   const fetchAnalyticsData = async () => {
     try {
-      const token = localStorage.getItem("token") || "demo-token";
-      
-      // Fetch SendGrid summary - this has the correct metrics
-      const summaryRes = await fetch(`${API_URL}/api/analytics/sendgrid/summary`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (summaryRes.ok) {
-        const summaryData = await summaryRes.json();
-        console.log('✅ Summary Data:', summaryData);
-        setSgSummary(summaryData);
+      const token = localStorage.getItem("token");
+      const [summaryRes, campaignsRes] = await Promise.all([
+        fetch(`${API_URL}/api/analytics/sendgrid/summary`, {
+          headers: { Authorization: `Bearer ${token}` },
+        }),
+        fetch(`${API_URL}/api/analytics/sendgrid/campaigns`, {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+      ]);
+
+      const summaryData = await summaryRes.json();
+      const campaignsData = await campaignsRes.json();
+
+      setSgSummary(summaryData);
+      if (Array.isArray(campaignsData.campaigns)) {
+        setCampaigns(campaignsData.campaigns);
       } else {
-        console.error('❌ Summary fetch failed:', summaryRes.status);
-      }
-      
-      // Fetch campaigns with analytics - includes deliveredCount
-      const campaignsRes = await fetch(`${API_URL}/api/analytics/sendgrid/campaigns`, {
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-      });
-      if (campaignsRes.ok) {
-        const campaignsData = await campaignsRes.json();
-        console.log('✅ Campaigns Data:', campaignsData);
-        // Handle both array and object with campaigns property
-        const campaignsList = Array.isArray(campaignsData) 
-          ? campaignsData 
-          : (campaignsData.campaigns || []);
-        console.log('✅ Processed Campaigns List:', campaignsList);
-        setCampaigns(campaignsList);
-      } else {
-        console.error('❌ Campaigns fetch failed:', campaignsRes.status);
+        setCampaigns([]);
       }
     } catch (err) {
-      console.error("❌ Error fetching analytics data:", err);
+      console.error("Error fetching analytics data:", err);
       setError("Failed to fetch analytics data");
     }
   };
 
-  // Fetch automation data
+
+  // ✅ Unified Automation Data Fetch (Scheduled Campaigns + Stats + Logs)
   const fetchAutomationData = async () => {
     try {
       const token = localStorage.getItem("token") || "demo-token";
-      
-      // Fetch automation stats
+
+      // --- Fetch stats (optional summary data) ---
       const statsRes = await fetch(`${API_URL}/api/automation/stats`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       if (statsRes.ok) {
         const statsData = await statsRes.json();
         setAutomationStats(statsData);
+      } else {
+        console.warn("⚠️ Failed to fetch automation stats:", statsRes.status);
       }
-      
-      // Fetch scheduled campaigns
-      const scheduledRes = await fetch(`${API_URL}/api/automation/scheduled`, {
+
+      // --- Fetch scheduled campaigns ---
+      const scheduledRes = await fetch(`${API_URL}/api/automation-logs/scheduled`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       if (scheduledRes.ok) {
         const scheduledData = await scheduledRes.json();
-        setScheduledCampaigns(scheduledData);
+
+        // ✅ Consistent with Automation.jsx (backend returns array directly)
+        const scheduledList = Array.isArray(scheduledData)
+          ? scheduledData
+          : scheduledData?.data || [];
+
+        setScheduledCampaigns(scheduledList);
+
+        // --- Derive metrics ---
+        const scheduledCount = scheduledList.filter(
+          (c) => c.status === "scheduled"
+        ).length;
+
+        const totalRecipients = scheduledList.reduce(
+          (sum, c) => sum + (c.recipients || c.sentCount || 0),
+          0
+        );
+
+        setAutomationStats((prev) => ({
+          ...prev,
+          scheduled: scheduledCount,
+          totalRecipients,
+        }));
+      } else {
+        console.error("❌ Failed to fetch scheduled campaigns:", scheduledRes.status);
+        setScheduledCampaigns([]);
       }
-      
-      // Fetch automation logs
+
+      // --- Fetch automation logs (optional) ---
       const logsRes = await fetch(`${API_URL}/api/automation/logs`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       if (logsRes.ok) {
         const logsData = await logsRes.json();
         setAutomationLogs(logsData);
+      } else {
+        console.warn("⚠️ Failed to fetch automation logs:", logsRes.status);
       }
-      
-      // Check sender verification
+
+      // --- Check sender verification ---
       const verificationRes = await fetch(`${API_URL}/api/automation/sender/verification`, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
       if (verificationRes.ok) {
         const verificationData = await verificationRes.json();
         setSenderVerified(verificationData.verified);
+      } else {
+        console.warn("⚠️ Sender verification fetch failed:", verificationRes.status);
       }
+
     } catch (err) {
-      console.error("Error fetching automation data:", err);
+      console.error("❌ Error fetching automation data:", err);
       setError("Failed to fetch automation data");
+      setScheduledCampaigns([]);
+      setAutomationLogs([]);
     }
   };
+
+
+
 
   // Handle campaign actions
   const handleCampaignAction = async (campaignId, action) => {
@@ -218,45 +239,35 @@ const Dashboard = () => {
 
   const safeCampaigns = Array.isArray(campaigns) ? campaigns : [];
 
-  // ✅ Calculate metrics - use sgSummary if available, otherwise calculate from campaigns
-  const totalSent = sgSummary?.processed || safeCampaigns.reduce((sum, c) => sum + (c.sentCount || 0), 0);
-  const totalDelivered = sgSummary?.delivered || safeCampaigns.reduce((sum, c) => sum + (c.deliveredCount || 0), 0);
-  const totalOpens = sgSummary?.opens || safeCampaigns.reduce((sum, c) => sum + (c.openCount || 0), 0);
-  const totalClicks = sgSummary?.clicks || safeCampaigns.reduce((sum, c) => sum + (c.clickCount || 0), 0);
-  const totalConversions = sgSummary?.conversions || safeCampaigns.reduce((sum, c) => sum + (c.conversionCount || 0), 0);
-  
-  // ✅ Calculate rates based on delivered emails (same as Analytics page)
-  const openRate = sgSummary?.openRate || (totalDelivered > 0 ? Math.round((totalOpens / totalDelivered) * 100) : 0);
-  const clickRate = sgSummary?.clickRate || (totalDelivered > 0 ? Math.round((totalClicks / totalDelivered) * 100) : 0);
-  const conversionRate = sgSummary?.conversionRate || (totalDelivered > 0 ? Math.round((totalConversions / totalDelivered) * 100) : 0);
-  
-  console.log('📊 Dashboard Metrics:', {
-    sgSummary,
-    totalSent,
-    totalDelivered,
-    totalOpens,
-    totalClicks,
-    totalConversions,
-    openRate,
-    clickRate,
-    conversionRate,
-    campaignsCount: safeCampaigns.length
-  });
+// ✅ Calculate basic metrics (from Analytics data)
+const totalSent =
+  sgSummary?.processed && sgSummary?.processed > 0
+    ? sgSummary.processed
+    : safeCampaigns.reduce((sum, c) => sum + (c.sentCount || 0), 0);
 
-  // Top performers chart data - use the enriched campaign data
-  const topPerformersData = [...safeCampaigns]
-    .sort((a, b) => (b.openRate || 0) - (a.openRate || 0))
-    .slice(0, 5)
-    .map(c => ({
-      name: c.name?.length > 15 ? c.name.substring(0, 15) + '...' : (c.name || 'Unnamed'),
-      openRate: c.openRate || 0,
-      clickRate: c.clickRate || 0,
-      conversionRate: c.conversionRate || 0,
-    }));
+const totalDelivered =
+  sgSummary?.delivered && sgSummary?.delivered > 0
+    ? sgSummary.delivered
+    : safeCampaigns.reduce((sum, c) => sum + (c.deliveredCount || 0), 0);
+
+// ✅ Calculate scheduled metrics (from Automation data)
+const totalScheduledCampaigns = scheduledCampaigns.filter(
+  (c) => c.status === "scheduled"
+).length;
+
+const totalScheduledMails = scheduledCampaigns
+  .filter((c) => c.status === "scheduled")
+  .reduce((sum, c) => sum + (c.recipients || c.sentCount || 0), 0);
+
 
   // Recent campaigns
   const recentCampaigns = [...safeCampaigns]
     .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
+    .slice(0, 5);
+
+  // Recent scheduled campaigns
+  const recentScheduledCampaigns = [...scheduledCampaigns]
+    .sort((a, b) => new Date(b.scheduledDateTime || 0) - new Date(a.scheduledDateTime || 0))
     .slice(0, 5);
 
   // Filter all campaigns
@@ -468,45 +479,39 @@ const Dashboard = () => {
 
         {activeTab === "dashboard" && (
           <>
-            {/* ✅ Updated Stats Cards with accurate metrics */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+            {/* Enhanced Stats Cards - Including Automation Stats */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
               {[
-                {
-                  title: "Total Sent",
-                  value: totalSent.toLocaleString(),
-                  icon: <Send size={20} />,
-                  color: "bg-blue-500",
-                  subtitle: `${totalDelivered.toLocaleString()} delivered`
-                },
-                { 
-                  title: "Opens", 
-                  value: totalOpens.toLocaleString(), 
-                  icon: <BarChart3 size={20} />, 
-                  color: "bg-[#e2971f]",
-                  subtitle: `${openRate}% rate`
-                },
-                {
-                  title: "Clicks",
-                  value: totalClicks.toLocaleString(),
-                  icon: <MousePointer size={20} />,
-                  color: "bg-[#60a5fa]",
-                  subtitle: `${clickRate}% rate`
-                },
-                {
-                  title: "Conversions",
-                  value: totalConversions.toLocaleString(),
-                  icon: <TrendingUp size={20} />,
-                  color: "bg-[#8b5cf6]",
-                  subtitle: `${conversionRate}% rate`
-                },
-                {
-                  title: "Campaigns",
-                  value: safeCampaigns.length.toLocaleString(),
-                  icon: <Mail size={20} />,
-                  color: "bg-green-500",
-                  subtitle: `${automationStats.scheduled || 0} scheduled`
-                },
-              ].map((stat, idx) => (
+  {
+    title: "Total Sent",
+    value: totalSent.toLocaleString(),
+    icon: <Send size={20} />,
+    color: "bg-blue-500",
+    subtitle: `${totalDelivered.toLocaleString()} delivered`,
+  },
+  {
+    title: "Campaigns",
+    value: campaigns.length.toLocaleString(),
+    icon: <Mail size={20} />,
+    color: "bg-green-500",
+    subtitle: "Active campaigns",
+  },
+  {
+    title: "Scheduled Campaigns",
+    value: totalScheduledCampaigns.toLocaleString(),
+    icon: <Calendar size={20} />,
+    color: "bg-purple-500",
+    subtitle: "Currently scheduled",
+  },
+  {
+    title: "Scheduled Mails",
+    value: totalScheduledMails.toLocaleString(),
+    icon: <Clock size={20} />,
+    color: "bg-cyan-500",
+    subtitle: "Total recipients",
+  },
+]
+.map((stat, idx) => (
                 <div
                   key={idx}
                   className="bg-[#0a0a0a] border border-gray-700 p-6 rounded-xl shadow-lg transition-all duration-200 hover:border-gray-500"
@@ -515,9 +520,7 @@ const Dashboard = () => {
                     <div>
                       <h3 className="text-sm text-gray-400 mb-1">{stat.title}</h3>
                       <p className="text-3xl font-bold text-white">{stat.value}</p>
-                      {stat.subtitle && (
-                        <p className="text-xs text-gray-500 mt-1">{stat.subtitle}</p>
-                      )}
+                      
                     </div>
                     <div className={`p-3 rounded-full ${stat.color} bg-opacity-20`}>{stat.icon}</div>
                   </div>
@@ -525,35 +528,10 @@ const Dashboard = () => {
               ))}
             </div>
 
-            {/* Main Content Grid */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Top Performing Campaigns Chart */}
-              <div className="bg-[#0a0a0a] border border-gray-800 p-6 rounded-2xl shadow-lg">
-                <h2 className="text-lg font-semibold text-white mb-4">Top Performing Campaigns</h2>
-                {topPerformersData.length > 0 ? (
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={topPerformersData} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
-                      <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                      <XAxis dataKey="name" stroke="#888" angle={-15} textAnchor="end" height={80} />
-                      <YAxis stroke="#888" />
-                      <Tooltip
-                        contentStyle={{ backgroundColor: "#1a1a1a", border: "1px solid #444", color: "#fff" }}
-                        labelStyle={{ color: "#e2971f" }}
-                        formatter={(value) => [`${value}%`, '']}
-                      />
-                      <Legend />
-                      <Bar dataKey="openRate" fill="#e2971f" name="Open Rate %" radius={[8, 8, 0, 0]} />
-                      <Bar dataKey="clickRate" fill="#60a5fa" name="Click Rate %" radius={[8, 8, 0, 0]} />
-                      <Bar dataKey="conversionRate" fill="#8b5cf6" name="Conversion Rate %" radius={[8, 8, 0, 0]} />
-                    </BarChart>
-                  </ResponsiveContainer>
-                ) : (
-                  <p className="text-gray-400 text-center py-10">No campaign data available</p>
-                )}
-              </div>
-
+            {/* Two Column Layout - Recent Campaigns & Scheduled Campaigns */}
+            <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
               {/* Recent Campaigns */}
-              <div className="bg-[#0a0a0a] border border-gray-800 p-6 rounded-2xl shadow-lg">
+              {/* <div className="bg-[#0a0a0a] border border-gray-800 p-6 rounded-2xl shadow-lg">
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="text-lg font-semibold text-white">Recent Campaigns</h3>
                   <Activity className="text-[#e2971f]" size={20} />
@@ -574,13 +552,10 @@ const Dashboard = () => {
                         <div className="flex items-center justify-between text-sm">
                           <div className="flex gap-4">
                             <span className="text-gray-400">
-                              Opens: <span className="text-[#e2971f] font-semibold">{campaign.openRate || 0}%</span>
+                              Sent: <span className="text-[#e2971f] font-semibold">{campaign.sentCount || 0}</span>
                             </span>
                             <span className="text-gray-400">
-                              Clicks: <span className="text-blue-400 font-semibold">{campaign.clickRate || 0}%</span>
-                            </span>
-                            <span className="text-gray-400">
-                              Conv: <span className="text-purple-400 font-semibold">{campaign.conversionRate || 0}%</span>
+                              Delivered: <span className="text-blue-400 font-semibold">{campaign.deliveredCount || 0}</span>
                             </span>
                           </div>
                         </div>
@@ -590,34 +565,50 @@ const Dashboard = () => {
                     <p className="text-gray-400 text-center py-8">No campaigns yet</p>
                   )}
                 </div>
-              </div>
-            </div>
+              </div> */}
 
-            {/* Recent Activity */}
-            <div className="bg-[#0a0a0a] border border-gray-800 p-6 rounded-2xl shadow-lg">
-              <h3 className="text-lg font-semibold text-white mb-4">Recent Activity</h3>
-              <div className="space-y-4 max-h-80 overflow-y-auto">
-                {automationLogs.length > 0 ? (
-                  automationLogs.slice(0, 10).map((log) => (
-                    <div key={log.id} className="flex items-start space-x-3 p-3 bg-gray-900 rounded-lg">
-                      <div className={`p-2 rounded-lg ${getStatusColor(log.status)}`}>
-                        {getStatusIcon(log.status)}
+              {/* Scheduled Campaigns List */}
+              <div className="bg-[#0a0a0a] border border-gray-800 p-6 rounded-2xl shadow-lg">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-lg font-semibold text-white">Scheduled Campaigns</h3>
+                  <Calendar className="text-purple-400" size={20} />
+                </div>
+                <div className="space-y-3 max-h-80 overflow-y-auto">
+                  {recentScheduledCampaigns.length > 0 ? (
+                    recentScheduledCampaigns.map((campaign) => (
+                      <div key={campaign.id} className="p-4 bg-gray-900 rounded-lg hover:bg-gray-800 transition-colors border border-gray-800">
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-white font-medium truncate">{campaign.campaignName || 'Unnamed Campaign'}</p>
+                            <p className="text-sm text-gray-400">
+                              {campaign.scheduledDateTime ? formatDateTime(campaign.scheduledDateTime) : 'N/A'}
+                            </p>
+                          </div>
+                          <div className={`p-2 rounded-lg ${getStatusColor(campaign.status)}`}>
+                            {getStatusIcon(campaign.status)}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <div className="flex gap-4">
+                            <span className="text-gray-400">
+                              Recipients: <span className="text-purple-400 font-semibold">{campaign.recipients || 0}</span>
+                            </span>
+                            {campaign.recurringFrequency && (
+                              <span className="text-gray-400">
+                                <span className="text-cyan-400 font-semibold">{campaign.recurringFrequency}</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-white font-medium">{log.campaignName || 'Unnamed Campaign'}</p>
-                        <p className="text-sm text-gray-400">{log.message || 'No details'}</p>
-                        {log.details && (
-                          <p className="text-xs text-gray-500 mt-1">{log.details}</p>
-                        )}
-                      </div>
-                      <span className="text-xs text-gray-500">
-                        {formatDateTime(log.createdAt)}
-                      </span>
+                    ))
+                  ) : (
+                    <div className="text-center py-8">
+                      <Clock className="mx-auto text-gray-600 mb-2" size={32} />
+                      <p className="text-gray-400">No scheduled campaigns</p>
                     </div>
-                  ))
-                ) : (
-                  <p className="text-gray-400 text-center py-8">No recent activity</p>
-                )}
+                  )}
+                </div>
               </div>
             </div>
           </>
@@ -679,6 +670,12 @@ const Dashboard = () => {
                       </div>
                       <div className="flex items-center gap-3">
                         <div className="relative">
+                          <button
+                            onClick={() => setShowActionMenu(showActionMenu === campaign.id ? null : campaign.id)}
+                            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
+                          >
+                            <MoreVertical size={18} className="text-gray-400" />
+                          </button>
                           {showActionMenu === campaign.id && (
                             <div className="absolute right-0 top-full mt-1 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
                               <div className="py-1">
@@ -744,9 +741,8 @@ const Dashboard = () => {
         )}
 
         {activeTab === "verifyformails" && (
-  <VerifyCampaignMailForm />
-)}
-
+          <VerifyCampaignMailForm />
+        )}
       </div>
     </div>
   );

@@ -104,10 +104,12 @@ const totalSent =
   (sgSummary?.processed && sgSummary?.processed > 0)
     ? sgSummary.processed
     : campaigns.reduce((sum, c) => sum + (c.sentCount || 0), 0);
-  const delivered = sgSummary?.delivered || campaigns.reduce((sum, c) => sum + (c.deliveredCount || 0), 0);
-  const totalOpens = sgSummary?.opens || campaigns.reduce((sum, c) => sum + (c.openCount || 0), 0);
-  const totalClicks = sgSummary?.clicks || campaigns.reduce((sum, c) => sum + (c.clickCount || 0), 0);
-  const totalConversions = sgSummary?.conversions || campaigns.reduce((sum, c) => sum + (c.conversionCount || 0), 0);
+    const totalCampaigns = campaigns.length;
+
+  // const delivered = sgSummary?.delivered || campaigns.reduce((sum, c) => sum + (c.deliveredCount || 0), 0);
+  // const totalOpens = sgSummary?.opens || campaigns.reduce((sum, c) => sum + (c.openCount || 0), 0);
+  // const totalClicks = sgSummary?.clicks || campaigns.reduce((sum, c) => sum + (c.clickCount || 0), 0);
+  // const totalConversions = sgSummary?.conversions || campaigns.reduce((sum, c) => sum + (c.conversionCount || 0), 0);
 
   // Chart data
   const trendData = campaigns
@@ -194,13 +196,14 @@ const totalSent =
         {error && <div className="bg-red-500 text-white p-3 rounded-lg">{error}</div>}
 
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-2 gap-4">
           {[
             { title: "Total Sent", value: totalSent.toLocaleString(), icon: <Users size={20} />, color: "bg-blue-500" },
-            { title: "Delivered", value: delivered.toLocaleString(), icon: <Users size={20} />, color: "bg-green-500" },
-            { title: "Opens", value: totalOpens.toLocaleString(), icon: <BarChart3 size={20} />, color: "bg-[#c2831f]" },
-            { title: "Clicks", value: totalClicks.toLocaleString(), icon: <MousePointer size={20} />, color: "bg-[#60a5fa]" },
-            { title: "Conversions", value: totalConversions.toLocaleString(), icon: <TrendingUp size={20} />, color: "bg-[#8b5cf6]" },
+            { title: "Total Campaigns", value: totalCampaigns.toLocaleString(), icon: <BarChart3 size={20} />, color: "bg-[#c2831f]" },
+            // { title: "Delivered", value: delivered.toLocaleString(), icon: <Users size={20} />, color: "bg-green-500" },
+            // { title: "Opens", value: totalOpens.toLocaleString(), icon: <BarChart3 size={20} />, color: "bg-[#c2831f]" },
+            // { title: "Clicks", value: totalClicks.toLocaleString(), icon: <MousePointer size={20} />, color: "bg-[#60a5fa]" },
+            // { title: "Conversions", value: totalConversions.toLocaleString(), icon: <TrendingUp size={20} />, color: "bg-[#8b5cf6]" },
           ].map((stat, idx) => (
             <div
               key={idx}
@@ -218,7 +221,7 @@ const totalSent =
         </div>
 
         {/* Engagement Over Time (Count) */}
-        <div className="bg-[#0a0a0a] border border-gray-800 p-6 rounded-2xl shadow-lg">
+        {/* <div className="bg-[#0a0a0a] border border-gray-800 p-6 rounded-2xl shadow-lg">
           <h2 className="text-lg font-semibold text-[#c2831f] mb-4">Engagement Over Time (Count)</h2>
           {loading ? (
             <div className="flex items-center justify-center py-10">
@@ -243,10 +246,10 @@ const totalSent =
           ) : (
             <p className="text-gray-400 text-center py-10">No campaign data available for charts. Create your first campaign to see analytics.</p>
           )}
-        </div>
+        </div> */}
 
         {/* Engagement Rates Over Time (%) */}
-        <div className="bg-[#0a0a0a] border border-gray-800 p-6 rounded-2xl shadow-lg">
+        {/* <div className="bg-[#0a0a0a] border border-gray-800 p-6 rounded-2xl shadow-lg">
           <h2 className="text-lg font-semibold text-[#c2831f] mb-4">Engagement Rates Over Time (%)</h2>
           {loading ? (
             <div className="flex items-center justify-center py-10">
@@ -272,7 +275,7 @@ const totalSent =
           ) : (
             <p className="text-gray-400 text-center py-10">No campaign data available for charts. Create your first campaign to see analytics.</p>
           )}
-        </div>
+        </div> */}
 
         {/* Campaign Table */}
         <div className="bg-[#0a0a0a] border border-gray-800 p-6 rounded-2xl shadow-lg overflow-x-auto">
@@ -290,11 +293,7 @@ const totalSent =
                   <tr className="border-b border-gray-700 text-gray-400">
                     <th className="py-3 px-4">Campaign Name</th>
                     <th className="py-3 px-4">Sent</th>
-                    <th className="py-3 px-4">Delivered</th>
-                    <th className="py-3 px-4">Open Rate</th>
-                    <th className="py-3 px-4">Click Rate</th>
-                    <th className="py-3 px-4">Conversion Rate</th>
-                    <th className="py-3 px-4">Action</th>
+                    <th className="py-3 px-4">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -302,40 +301,7 @@ const totalSent =
                     <tr key={row.id} className="border-b border-gray-800 hover:bg-gray-900 transition-colors">
                       <td className="py-3 px-4 font-medium">{row.name}</td>
                       <td className="py-3 px-4">{row.sent.toLocaleString()}</td>
-                      <td className="py-3 px-4">{row.delivered.toLocaleString()}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <span className="min-w-[35px] font-semibold text-[#c2831f]">{row.openRate}%</span>
-                          <div className="w-20 bg-gray-700 rounded-full h-2">
-                            <div
-                              className="bg-[#c2831f] h-2 rounded-full transition-all"
-                              style={{ width: `${Math.min(row.openRate, 100)}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <span className="min-w-[35px] font-semibold text-[#60a5fa]">{row.clickRate}%</span>
-                          <div className="w-20 bg-gray-700 rounded-full h-2">
-                            <div
-                              className="bg-[#60a5fa] h-2 rounded-full transition-all"
-                              style={{ width: `${Math.min(row.clickRate, 100)}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center gap-2">
-                          <span className="min-w-[35px] font-semibold text-[#8b5cf6]">{row.conversionRate}%</span>
-                          <div className="w-20 bg-gray-700 rounded-full h-2">
-                            <div
-                              className="bg-[#8b5cf6] h-2 rounded-full transition-all"
-                              style={{ width: `${Math.min(row.conversionRate, 100)}%` }}
-                            ></div>
-                          </div>
-                        </div>
-                      </td>
+                       
                       <td className="py-3 px-4">
                         <button
                           onClick={() => handleDelete(row.id)}

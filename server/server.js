@@ -42,7 +42,7 @@ import { router as verifiedEmailsRouter } from './routes/verifiedEmails.js';
 import verifiedEmailsRouters from "./routes/userMailVerify.js"; // if actually used
 import sendgridSendersRouter from "./routes/sendgridSenders.js";
 import { router as analyticsRouter } from './routes/analytics.js';
-
+import automationLogs from "./routes/automationLogs.js";
 // Services
 import { startEmailScheduler } from "./services/imapScheduler.js";
 import { initSocket } from "./services/socketService.js";
@@ -72,6 +72,7 @@ import chatbotRouter from "./routes/chatbot.js";
 import verifiFrontendRoutes from "./routes/verifiFrontend.js";
 
 import campaignUserMails from "./routes/campaignUserMails.js";
+import { startCampaignScheduler } from "./services/campaignScheduler.js";
 
 dotenv.config();
 
@@ -207,7 +208,7 @@ app.get("/", (req, res) => res.send("Twilio SMS/WhatsApp API Running"));
 
 app.use("/api/custom", customRoutes);
 
-
+app.use("/api/automation-logs", protect, automationLogs);
 
 // Socket service
 initSocket(io);
@@ -215,6 +216,8 @@ initSocket(io);
 app.use("/api/senders", sendgridSendersRouter);
 
 app.use("/api/sender", campaignUserMails);
+
+startCampaignScheduler();
 
 // Root route
 app.get('/', (req, res) => {
