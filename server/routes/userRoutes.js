@@ -1,64 +1,104 @@
-// server/routes/userRoutes.js
 import express from "express";
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { protect } from "../middleware/authMiddleware.js";
-import { ensureFreePlan } from "../utils/autoFreePlan.js";
 
 const router = express.Router();
 const prisma = new PrismaClient();
 
-// Helper: generate JWT
+// Helper: Generate JWT token
 const generateToken = (user) => {
   return jwt.sign(
     { id: user.id, email: user.email },
     process.env.JWT_SECRET,
-    { expiresIn: "1d" } // 1 day validity
+    { expiresIn: "1d" }
   );
 };
 
 /**
- * -------------------------
+ * ==============================
  *  POST /api/users/signup
- * -------------------------
+ * ==============================
+ * New users get a free plan + 50/50 credits
+ */
+/**
+ * ==============================
+ *  POST /api/users/signup
+ * ==============================
+ * New users get a free plan + 50/50 credits
  */
 router.post("/signup", async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
 
+    // 1️⃣ Validate required fields
     if (!firstName || !lastName || !email || !password) {
       return res.status(400).json({ message: "All fields are required" });
     }
 
-    // Check if user exists
-    const existing = await prisma.user.findUnique({ where: { email } });
-    if (existing) {
+    // 2️⃣ Check if user already exists
+    const existingUser = await prisma.user.findUnique({ where: { email } });
+    if (existingUser) {
       return res.status(400).json({ message: "Email already registered" });
     }
 
-    // Hash password
+    // 3️⃣ Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Save to DB with default plan info
+    // 4️⃣ Create new user with Free Plan (50/50 credits)
     const newUser = await prisma.user.create({
       data: {
         firstName,
         lastName,
         email,
         password: hashedPassword,
-        plan: "Free",
+        plan: "free",
         hasPurchasedBefore: false,
         contactLimit: 50,
         emailLimit: 50,
       },
     });
 
-    // Generate token
+    console.log(`✅ User created: ID=${newUser.id}, Email=${email}`);
+
+    // 5️⃣ Create Payment record for Free Plan - WITHOUT try-catch so errors are visible
+    const paymentData = {
+      userId: newUser.id,
+      name: `${firstName} ${lastName}`,
+      email: email,
+      transactionId: `FREE-${Date.now()}-${newUser.id}`,
+      planName: "free",
+      planType: "free",
+      provider: "system",
+      emailVerificationCredits: 50,
+      emailSendCredits: 50,
+      amount: 0,
+      currency: "usd",
+      planPrice: 0,
+      discount: 0,
+      paymentMethod: "system",
+      cardLast4: "",
+      billingAddress: "",
+      paymentDate: new Date(),
+      nextPaymentDate: new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000), // 100 years from now
+      status: "succeeded",
+    };
+
+    console.log("💳 Attempting to create payment record:", paymentData);
+
+    const freePayment = await prisma.payment.create({
+      data: paymentData,
+    });
+
+    console.log(`✅ Payment record created: ID=${freePayment.id}, Transaction=${freePayment.transactionId}`);
+
+    // 6️⃣ Generate JWT token
     const token = generateToken(newUser);
 
+    // 7️⃣ Return success response
     res.status(201).json({
-      message: "User created successfully",
+      message: "User created successfully with Free Plan",
       token,
       user: {
         id: newUser.id,
@@ -66,30 +106,51 @@ router.post("/signup", async (req, res) => {
         lastName: newUser.lastName,
         email: newUser.email,
         plan: newUser.plan,
-        hasPurchasedBefore: newUser.hasPurchasedBefore,
         contactLimit: newUser.contactLimit,
         emailLimit: newUser.emailLimit,
+        hasPurchasedBefore: newUser.hasPurchasedBefore,
+      },
+      credits: {
+        emailVerificationCredits: 50,
+        emailSendCredits: 50,
+      },
+      paymentRecord: {
+        id: freePayment.id,
+        transactionId: freePayment.transactionId,
       },
     });
   } catch (error) {
-    console.error("Signup error:", error);
-    res.status(500).json({ message: "Internal server error" });
+    console.error("❌ SIGNUP ERROR:", error);
+    console.error("Error details:", {
+      message: error.message,
+      code: error.code,
+      meta: error.meta,
+    });
+
+    // If user was created but payment failed, log it
+    if (error.message?.includes("payment")) {
+      console.error("⚠️ User was created but payment record failed!");
+    }
+
+    res.status(500).json({
+      message: "Internal server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined,
+    });
   }
 });
 
 /**
- * -------------------------
+ * ==============================
  *  POST /api/users/login
- * -------------------------
+ * ==============================
+ * Existing users keep previous credits, no reset
  */
 router.post("/login", async (req, res) => {
   try {
     const { email, password } = req.body;
 
     if (!email || !password) {
-      return res
-        .status(400)
-        .json({ message: "Email and password are required" });
+      return res.status(400).json({ message: "Email and password are required" });
     }
 
     // 1️⃣ Find user
@@ -105,15 +166,43 @@ router.post("/login", async (req, res) => {
     }
 
     // 3️⃣ Generate token
-    // 3️⃣ Generate token
     const token = generateToken(user);
 
-    // 4️⃣ Ensure user has free plan record if none exists
-    console.log("🔍 Running ensureFreePlan for:", user.email);
-    await ensureFreePlan(user);
+    // 4️⃣ Get latest payment
+    let latestPayment = await prisma.payment.findFirst({
+      where: { userId: user.id },
+      orderBy: { paymentDate: "desc" },
+    });
 
+    // 5️⃣ If payment record missing (edge case), recreate with current credits
+    if (!latestPayment) {
+      latestPayment = await prisma.payment.create({
+        data: {
+          userId: user.id,
+          name: `${user.firstName} ${user.lastName}`,
+          email: user.email,
+          transactionId: `RESTORE-${Date.now()}`,
+          planName: user.plan || "free",
+          planType: user.plan || "free",
+          provider: "system",
+          emailVerificationCredits: user.contactLimit ?? 0,
+          emailSendCredits: user.emailLimit ?? 0,
+          amount: 0,
+          currency: "usd",
+          planPrice: 0,
+          discount: 0,
+          paymentMethod: "none",
+          paymentDate: new Date(),
+          nextPaymentDate: new Date(
+            new Date().setFullYear(new Date().getFullYear() + 100)
+          ),
+          status: "succeeded",
+        },
+      });
+      console.log(`🧾 Restored missing payment for existing user ${user.email}`);
+    }
 
-    // 5️⃣ Send response
+    // 6️⃣ Respond with actual credits (no reset)
     res.json({
       message: "Login successful",
       token,
@@ -123,19 +212,23 @@ router.post("/login", async (req, res) => {
         lastName: user.lastName,
         email: user.email,
         plan: user.plan,
-        hasPurchasedBefore: user.hasPurchasedBefore,
         contactLimit: user.contactLimit,
         emailLimit: user.emailLimit,
+        hasPurchasedBefore: user.hasPurchasedBefore,
+      },
+      credits: {
+        emailSendCredits: latestPayment.emailSendCredits,
+        emailVerificationCredits: latestPayment.emailVerificationCredits,
       },
     });
   } catch (error) {
     console.error("❌ Login error:", error);
-    res.status(500).json({
-      message: "Internal server error",
-      details: error.message,
-    });
+    res.status(500).json({ message: "Internal server error" });
   }
 });
+
+
+
 
 /**
  * -------------------------
