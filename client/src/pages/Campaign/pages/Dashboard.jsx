@@ -668,54 +668,7 @@ const totalScheduledMails = scheduledCampaigns
                           )}
                         </div>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <button
-                            onClick={() => setShowActionMenu(showActionMenu === campaign.id ? null : campaign.id)}
-                            className="p-2 hover:bg-gray-700 rounded-lg transition-colors"
-                          >
-                            <MoreVertical size={18} className="text-gray-400" />
-                          </button>
-                          {showActionMenu === campaign.id && (
-                            <div className="absolute right-0 top-full mt-1 w-48 bg-gray-800 border border-gray-700 rounded-lg shadow-lg z-10">
-                              <div className="py-1">
-                                <button
-                                  onClick={() => console.log('View campaign')}
-                                  className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 flex items-center gap-2"
-                                >
-                                  <Eye size={14} />
-                                  View Details
-                                </button>
-                                {campaign.status === 'scheduled' && (
-                                  <button
-                                    onClick={() => handleCampaignAction(campaign.id, 'pause')}
-                                    className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 flex items-center gap-2"
-                                  >
-                                    <Pause size={14} />
-                                    Pause
-                                  </button>
-                                )}
-                                {campaign.status === 'paused' && (
-                                  <button
-                                    onClick={() => handleCampaignAction(campaign.id, 'resume')}
-                                    className="w-full px-4 py-2 text-left text-gray-300 hover:bg-gray-700 flex items-center gap-2"
-                                  >
-                                    <PlayCircle size={14} />
-                                    Resume
-                                  </button>
-                                )}
-                                <button
-                                  onClick={() => handleCampaignAction(campaign.id, 'delete')}
-                                  className="w-full px-4 py-2 text-left text-red-400 hover:bg-gray-700 flex items-center gap-2"
-                                >
-                                  <XCircle size={14} />
-                                  Delete
-                                </button>
-                              </div>
-                            </div>
-                          )}
-                        </div>
-                      </div>
+                       
                     </div>
                   </div>
                 ))

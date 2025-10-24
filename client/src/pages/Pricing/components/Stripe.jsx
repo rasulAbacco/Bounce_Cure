@@ -366,9 +366,9 @@ function StripeForm() {
               </div>
               <div className="text-right">
                 <p className="text-blue-400 font-semibold">{plan.planName}</p>
-                <p className="text-slate-400 text-sm">
+                {/* <p className="text-slate-400 text-sm">
                   {plan.slots || plan.contactCount || 0} contacts
-                </p>
+                </p> */}
                 {/* FIXED: Show email sends with billing period */}
                 <p className="text-slate-400 text-sm">
                   <Mail size={14} className="inline mr-1" />

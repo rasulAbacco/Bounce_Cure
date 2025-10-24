@@ -206,7 +206,7 @@ app.use('/api/analytics', protect, analyticsRouter);
 app.use('/api/contact', contactRoutes);
 
 app.use("/api/multimedia-campaign", multimediaCampaignRoutes);
-app.use("/api/twilio", twilioRoutes);
+app.use("/api/twilioConfig", twilioRoutes);
 app.use("/api/whatsapp", whatsappRoutes);
 app.use("/api/sms", smsRoutes);
 app.use("/api/chatbot", chatbotRouter);

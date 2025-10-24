@@ -134,27 +134,24 @@ router.get("/credits", async (req, res) => {
     const totalEmailSendCredits = payments.reduce((sum, p) => sum + (p.emailSendCredits || 0), 0);
     const totalEmailVerificationCredits = payments.reduce((sum, p) => sum + (p.emailVerificationCredits || 0), 0);
 
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: { emailLimit: true, contactLimit: true, plan: true },
-    });
+    // ✅ Return only what’s purchased
+    const emailSendCredits = totalEmailSendCredits;
+    const emailVerificationCredits = totalEmailVerificationCredits;
 
-    const emailSendCredits = (user?.emailLimit ?? 0) + totalEmailSendCredits;
-    const emailVerificationCredits = (user?.contactLimit ?? 0) + totalEmailVerificationCredits;
-
-    console.log("✅ Aggregated Credits:", { emailSendCredits, emailVerificationCredits });
+    console.log("✅ Payment-based Credits:", { emailSendCredits, emailVerificationCredits });
 
     res.json({
       success: true,
       emailSendCredits,
       emailVerificationCredits,
-      plan: user?.plan || "Free",
+      plan: "Based on payments",
     });
   } catch (error) {
     console.error("❌ Error fetching credits:", error);
     res.status(500).json({ success: false, error: "Failed to fetch credits" });
   }
 });
+
 
 router.post("/send", async (req, res) => {
   try {
@@ -190,7 +187,7 @@ router.post("/send", async (req, res) => {
     // ==========================================================
     const payments = await prisma.payment.findMany({
       where: { userId: req.user.id, status: "succeeded" },
-      select: { emailSendCredits: true },
+      select: { id: true, emailSendCredits: true },
     });
 
     const totalPaymentCredits = payments.reduce((sum, p) => sum + (p.emailSendCredits || 0), 0);
@@ -220,31 +217,26 @@ router.post("/send", async (req, res) => {
     if (!process.env.SENDGRID_API_KEY) {
       return res.status(500).json({ error: "SendGrid API key not configured" });
     }
-
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
     // ==========================================================
     // 💾 STEP 3: Prepare Scheduled DateTime
     // ==========================================================
     let scheduledDateTime = null;
-    
+
     if (scheduleType !== "immediate" && scheduledDate && scheduledTime) {
-      // ✅ Combine date and time properly
       scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}:00`);
-      
-      // ✅ Validate scheduled time is in future
       const now = new Date();
       if (scheduledDateTime <= now) {
         return res.status(400).json({
           error: "Scheduled time must be in the future (at least 5 minutes from now)",
         });
       }
-      
       console.log(`📅 Campaign scheduled for: ${scheduledDateTime.toISOString()}`);
     }
 
     // ==========================================================
-    // 💾 STEP 4: Create Campaign Record (✅ STORING RECIPIENTS)
+    // 💾 STEP 4: Create Campaign Record
     // ==========================================================
     const campaign = await prisma.campaign.create({
       data: {
@@ -255,7 +247,7 @@ router.post("/send", async (req, res) => {
         fromName,
         scheduleType,
         designJson: JSON.stringify(canvasData || []),
-        recipientsJson: JSON.stringify(recipients), // ✅ STORE RECIPIENTS
+        recipientsJson: JSON.stringify(recipients),
         scheduledAt: scheduledDateTime,
         recurringFrequency: scheduleType === "recurring" ? recurringFrequency : null,
         recurringDays: scheduleType === "recurring" ? JSON.stringify(recurringDays || []) : null,
@@ -267,21 +259,19 @@ router.post("/send", async (req, res) => {
     console.log(`✅ Campaign ${campaign.id} created with scheduleType: ${scheduleType}`);
 
     // ==========================================================
-    // 🕒 STEP 5: If scheduled or recurring → Save and let scheduler handle it
+    // 🕒 STEP 5: If scheduled or recurring → Save only
     // ==========================================================
     if (scheduleType === "scheduled" || scheduleType === "recurring") {
-      console.log(`🕒 Campaign ${campaign.id} saved for ${scheduleType} sending`);
-      
-      // ✅ Create automation log for scheduled campaign
       await prisma.automationLog.create({
         data: {
           userId: req.user.id,
           campaignId: campaign.id,
           campaignName: emailSubject,
-          status: 'scheduled',
-          message: scheduleType === "scheduled" 
-            ? `Campaign scheduled for ${scheduledDateTime.toLocaleString()}`
-            : `Recurring campaign created (${recurringFrequency})`,
+          status: "scheduled",
+          message:
+            scheduleType === "scheduled"
+              ? `Campaign scheduled for ${scheduledDateTime.toLocaleString()}`
+              : `Recurring campaign created (${recurringFrequency})`,
         },
       });
 
@@ -289,8 +279,8 @@ router.post("/send", async (req, res) => {
         success: true,
         message:
           scheduleType === "scheduled"
-            ? `✅ Campaign scheduled for ${scheduledDate} at ${scheduledTime}. It will be sent automatically.`
-            : `✅ Recurring campaign created (${recurringFrequency}). It will be sent automatically based on your schedule.`,
+            ? `✅ Campaign scheduled for ${scheduledDate} at ${scheduledTime}.`
+            : `✅ Recurring campaign created (${recurringFrequency}).`,
         campaignId: campaign.id,
         scheduledAt: scheduledDateTime,
       });
@@ -301,7 +291,7 @@ router.post("/send", async (req, res) => {
     // ==========================================================
     const htmlContent = generateHtmlFromCanvas(canvasData, emailSubject, fromName, fromEmail);
     const plainTextContent = generatePlainTextFromCanvas(canvasData, emailSubject, fromName, fromEmail);
-    
+
     const results = { success: [], failed: [] };
     let actualSentCount = 0;
 
@@ -341,47 +331,64 @@ router.post("/send", async (req, res) => {
     }
 
     // ==========================================================
-    // 💰 STEP 7: Deduct Credits
+    // 💰 STEP 7: Deduct Credits (updated)
     // ==========================================================
-    const newUserCredits = Math.max(0, (user.emailLimit ?? 0) - actualSentCount);
+    console.log("💰 Deducting credits after campaign send...");
+    let remainingToDeduct = actualSentCount;
 
-    const latestPayment = await prisma.payment.findFirst({
+    // 1️⃣ Deduct from payments first (FIFO)
+    const succeededPayments = await prisma.payment.findMany({
       where: { userId: req.user.id, status: "succeeded" },
-      orderBy: { paymentDate: "desc" },
+      orderBy: { paymentDate: "asc" },
+      select: { id: true, emailSendCredits: true },
     });
 
-    if (latestPayment) {
-      const updatedSendCredits = Math.max(
-        0,
-        (latestPayment.emailSendCredits || 0) - actualSentCount
-      );
+    for (const p of succeededPayments) {
+      if (remainingToDeduct <= 0) break;
+      const current = p.emailSendCredits || 0;
+      const deduct = Math.min(current, remainingToDeduct);
+      const newCredit = Math.max(0, current - deduct);
+
       await prisma.payment.update({
-        where: { id: latestPayment.id },
-        data: { emailSendCredits: updatedSendCredits },
+        where: { id: p.id },
+        data: { emailSendCredits: newCredit },
       });
+
+      remainingToDeduct -= deduct;
+      console.log(`🧾 Deducted ${deduct} from payment ${p.id}, remaining: ${remainingToDeduct}`);
     }
+
+    // 2️⃣ Deduct any remaining from user.emailLimit
+    const finalUserEmailLimit = Math.max(0, (user.emailLimit ?? 0) - remainingToDeduct);
 
     await prisma.user.update({
       where: { id: req.user.id },
-      data: { emailLimit: newUserCredits },
+      data: { emailLimit: finalUserEmailLimit },
     });
 
-    // ✅ Update campaign status
+    console.log(`✅ Credits updated — user.emailLimit now ${finalUserEmailLimit}`);
+
+    // 3️⃣ Calculate remaining credits total
+    const remainingPaymentCredits = succeededPayments.reduce((sum, p) => sum + (p.emailSendCredits || 0), 0);
+    const totalRemainingCredits = remainingPaymentCredits + finalUserEmailLimit;
+
+    // ==========================================================
+    // ✅ Update campaign + logs
+    // ==========================================================
     await prisma.campaign.update({
       where: { id: campaign.id },
-      data: { 
+      data: {
         sentCount: actualSentCount,
-        status: results.failed.length === 0 ? 'sent' : 'failed'
+        status: results.failed.length === 0 ? "sent" : "failed",
       },
     });
 
-    // ✅ Create automation log
     await prisma.automationLog.create({
       data: {
         userId: req.user.id,
         campaignId: campaign.id,
         campaignName: emailSubject,
-        status: results.failed.length === 0 ? 'sent' : 'failed',
+        status: results.failed.length === 0 ? "sent" : "failed",
         message: `Campaign sent: ${results.success.length} success, ${results.failed.length} failed`,
         error: results.failed.length > 0 ? `${results.failed.length} emails failed` : null,
       },
@@ -398,7 +405,7 @@ router.post("/send", async (req, res) => {
       campaignId: campaign.id,
       results,
       creditsUsed: actualSentCount,
-      creditsRemaining: newUserCredits,
+      creditsRemaining: totalRemainingCredits,
     });
   } catch (err) {
     console.error("❌ Campaign send error:", err);
@@ -408,7 +415,9 @@ router.post("/send", async (req, res) => {
     });
   }
 });
- 
+
+
+
 router.get("/", async (req, res) => {
   try {
     const campaigns = await prisma.campaign.findMany({
@@ -446,6 +455,75 @@ router.delete("/:id", async (req, res) => {
     res.json({ message: "Campaign deleted successfully" });
   } catch {
     res.status(500).json({ error: "Failed to delete campaign" });
+  }
+});
+
+/* ==========================================================
+   ✅ VERIFY EMAIL IN SENDGRID (Check if sender is verified)
+========================================================== */
+router.post("/verify-email", async (req, res) => {
+  try {
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).json({ 
+        verified: false, 
+        error: 'Email address is required' 
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({ 
+        verified: false, 
+        error: 'Invalid email format' 
+      });
+    }
+
+    console.log(`🔍 Checking verification status for: ${email}`);
+
+    // Check SendGrid verified senders using fetch
+    const response = await fetch('https://api.sendgrid.com/v3/verified_senders', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${process.env.SENDGRID_API_KEY}`,
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (!response.ok) {
+      console.error('❌ SendGrid API error:', response.status);
+      return res.status(500).json({ 
+        verified: false, 
+        error: 'Failed to check verification status with SendGrid' 
+      });
+    }
+
+    const data = await response.json();
+    
+    // Check if email exists in verified senders list
+    const isVerified = data.results?.some(
+      sender => sender.from_email?.toLowerCase() === email.toLowerCase() && 
+                sender.verified === true
+    );
+
+    console.log(`${isVerified ? '✅' : '❌'} Email ${email} verification status: ${isVerified}`);
+
+    return res.json({ 
+      verified: isVerified,
+      email: email,
+      message: isVerified 
+        ? 'Email is verified and ready to send campaigns' 
+        : 'Email is not verified in SendGrid. Please verify it first.'
+    });
+
+  } catch (error) {
+    console.error('❌ Error verifying email:', error);
+    return res.status(500).json({ 
+      verified: false, 
+      error: 'Internal server error while checking verification' 
+    });
   }
 });
 

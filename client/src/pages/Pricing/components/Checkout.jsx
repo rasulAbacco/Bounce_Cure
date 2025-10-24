@@ -269,13 +269,13 @@ export default function Checkout() {
                                     </div>
 
                                     <div className="bg-slate-800/50 rounded-xl p-4 mb-4">
-                                        <div className="flex items-center justify-between mb-3">
+                                        {/* <div className="flex items-center justify-between mb-3">
                                             <div className="flex items-center">
                                                 <Users size={16} className="text-blue-400 mr-2" />
                                                 <span className="text-sm text-slate-300">Contacts:</span>
                                             </div>
                                             <span className="font-semibold text-white">{plan.slots?.toLocaleString() || plan.contactCount?.toLocaleString() || '0'}</span>
-                                        </div>
+                                        </div> */}
                                         
                                         {/* FIXED: Show email sends with proper period label */}
                                         <div className="flex items-center justify-between mb-3">

@@ -323,7 +323,8 @@ export default function CampaignBuilder() {
   const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
   const [credits, setCredits] = useState(0);
   const [recipientError, setRecipientError] = useState("");
-
+  const [isCheckingEmail, setIsCheckingEmail] = useState(false);
+  const [emailVerificationStatus, setEmailVerificationStatus] = useState(null);
   // Helper function to get auth token
   const getAuthToken = () => {
     return localStorage.getItem('token');
@@ -495,6 +496,48 @@ useEffect(() => {
   };
   fetchCredits();
 }, []);
+
+
+const checkEmailVerification = async (email) => {
+  if (!email || !email.includes('@')) {
+    setEmailVerificationStatus(null);
+    return;
+  }
+
+  setIsCheckingEmail(true);
+  setEmailVerificationStatus(null);
+
+  try {
+    const token = getAuthToken();
+    const response = await fetch(`${API_URL}/api/campaigns/verify-email`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ email }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      setEmailVerificationStatus(data.verified === true);
+    } else {
+      setEmailVerificationStatus(false);
+    }
+  } catch (error) {
+    console.error('Error checking email verification:', error);
+    setEmailVerificationStatus(false);
+  } finally {
+    setIsCheckingEmail(false);
+  }
+};
+
+const handleEmailBlur = (e) => {
+  if (e.target.name === 'fromEmail') {
+    checkEmailVerification(e.target.value);
+  }
+};
 
 
 // 2️⃣ Update handleSendCampaign function (around line 360):
@@ -1049,74 +1092,167 @@ const handleSendCampaign = async () => {
                         </div>
                       )}
 
-                      {id === "setup" && (
-                        <div className="space-y-4">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1">
-                              From Email Address
-                            </label>
+                    {id === "setup" && (
+                      <div className="space-y-4">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-1">
+                            From Email Address
+                          </label>
+                          <div className="relative">
                             <input
                               type="email"
                               name="fromEmail"
                               required
                               value={formData.fromEmail}
                               onChange={handleChange}
-                              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
+                              onBlur={handleEmailBlur}
+                              className={`w-full bg-gray-800 border rounded-md px-3 py-2 pr-10 focus:outline-none focus:ring-2 text-white ${
+                                emailVerificationStatus === true
+                                  ? 'border-green-500 focus:ring-green-500'
+                                  : emailVerificationStatus === false
+                                  ? 'border-red-500 focus:ring-red-500'
+                                  : 'border-gray-700 focus:ring-[#c2831f]'
+                              }`}
                               placeholder="Enter verified sender email"
                             />
+                            
+                            {/* Loading Spinner */}
+                            {isCheckingEmail && (
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                <RefreshCw className="animate-spin text-gray-400" size={18} />
+                              </div>
+                            )}
+                            
+                            {/* Verification Status Icons */}
+                            {!isCheckingEmail && emailVerificationStatus === true && (
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                <CheckCircle className="text-green-500" size={20} />
+                              </div>
+                            )}
+                            
+                            {!isCheckingEmail && emailVerificationStatus === false && (
+                              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                                <AlertCircle className="text-red-500" size={20} />
+                              </div>
+                            )}
+                          </div>
+
+                          {/* Verification Messages */}
+                          {emailVerificationStatus === true && (
+                            <div className="mt-2 p-3 bg-green-900/30 border border-green-700 rounded-md">
+                              <div className="flex items-start gap-2">
+                                <CheckCircle className="text-green-400 flex-shrink-0 mt-0.5" size={18} />
+                                <div>
+                                  <p className="text-green-400 font-medium text-sm">
+                                    Email Verified ✓
+                                  </p>
+                                  <p className="text-green-300 text-xs mt-1">
+                                    This email is verified and ready to send campaigns.
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {emailVerificationStatus === false && (
+                            <div className="mt-2 p-3 bg-red-900/30 border border-red-700 rounded-md">
+                              <div className="flex items-start gap-2">
+                                <AlertCircle className="text-red-400 flex-shrink-0 mt-0.5" size={18} />
+                                <div>
+                                  <p className="text-red-400 font-medium text-sm">
+                                    Email Not Verified ✗
+                                  </p>
+                                  <p className="text-red-300 text-xs mt-1">
+                                    This email is not verified. Only verified emails can send campaigns.{" "}
+                                    <a
+                                      href="/email-campaign"
+                                      className="text-[#c2831f] underline hover:text-[#d09025] font-medium"
+                                    >
+                                      Click here to request verification
+                                    </a>
+                                  </p>
+                                </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {!emailVerificationStatus && !isCheckingEmail && formData.fromEmail && (
                             <p className="text-xs text-gray-400 mt-2">
                               ⚠️ Only verified emails can be used.{" "}
                               <a
-                                href="/verifyformails"
+                                href="/email-campaign"
                                 className="text-[#c2831f] underline hover:text-[#d09025]"
                               >
                                 Click here to request verification
                               </a>
                             </p>
-                          </div>
-
-                          <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1">
-                              From Name
-                            </label>
-                            <input
-                              type="text"
-                              name="fromName"
-                              required
-                              value={formData.fromName}
-                              onChange={handleChange}
-                              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
-                              placeholder="Your sender name"
-                            />
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-300 mb-1">
-                              Subject Line
-                            </label>
-                            <input
-                              type="text"
-                              name="subject"
-                              required
-                              value={formData.subject}
-                              onChange={handleChange}
-                              className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
-                              placeholder="Enter your email subject"
-                            />
-                          </div>
-
-
-                          <button
-                            onClick={() => markComplete(id)}
-                            disabled={!formData.fromEmail || !formData.fromName}
-                            className={`mt-4 px-4 py-2 rounded-md ${!formData.fromEmail || !formData.fromName
-                                ? "bg-gray-700 cursor-not-allowed"
-                                : "bg-[#c2831f] hover:bg-[#d09025] text-white"
-                              }`}
-                          >
-                            Save and Continue
-                          </button>
+                          )}
                         </div>
-                      )}
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-1">
+                            From Name
+                          </label>
+                          <input
+                            type="text"
+                            name="fromName"
+                            required
+                            value={formData.fromName}
+                            onChange={handleChange}
+                            className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
+                            placeholder="Your sender name"
+                          />
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-300 mb-1">
+                            Subject Line
+                          </label>
+                          <input
+                            type="text"
+                            name="subject"
+                            required
+                            value={formData.subject}
+                            onChange={handleChange}
+                            className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
+                            placeholder="Enter your email subject"
+                          />
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            // Validate email verification before allowing to continue
+                            if (!formData.fromEmail || !formData.fromName) {
+                              return;
+                            }
+                            
+                            if (emailVerificationStatus !== true) {
+                              // Show error if email is not verified
+                              alert('Please use a verified email address. Click "Click here to request verification" to verify your email.');
+                              return;
+                            }
+                            
+                            markComplete(id);
+                          }}
+                          disabled={
+                            !formData.fromEmail || 
+                            !formData.fromName || 
+                            emailVerificationStatus !== true ||
+                            isCheckingEmail
+                          }
+                          className={`mt-4 px-4 py-2 rounded-md ${
+                            !formData.fromEmail || 
+                            !formData.fromName || 
+                            emailVerificationStatus !== true ||
+                            isCheckingEmail
+                              ? "bg-gray-700 cursor-not-allowed text-gray-400"
+                              : "bg-[#c2831f] hover:bg-[#d09025] text-white"
+                          }`}
+                        >
+                          {isCheckingEmail ? "Checking email..." : "Save and Continue"}
+                        </button>
+                      </div>
+                    )}
 
                       {id === "template" && (
                         <div className="space-y-4">
