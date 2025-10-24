@@ -137,12 +137,10 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
-  // ======== Greeting ========
 useEffect(() => {
   const updateGreeting = () => {
-    // ✅ Always get the user's current system time (auto local)
-    const currentHour = new Date().getHours(); // local system hour
-
+    const currentHour = new Date().getHours();
+    
     if (currentHour >= 5 && currentHour < 12) {
       setGreeting("Good Morning");
     } else if (currentHour >= 12 && currentHour < 17) {
@@ -151,12 +149,10 @@ useEffect(() => {
       setGreeting("Good Evening");
     }
   };
-
-  updateGreeting(); // Run immediately when page loads
-
-  // ⏱️ Update every 1 minute in case time crosses into next period
+  
+  updateGreeting();
   const interval = setInterval(updateGreeting, 60 * 1000);
-
+  
   return () => clearInterval(interval);
 }, []);
 
