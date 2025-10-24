@@ -25,8 +25,8 @@ model User {
   // New fields
   plan               String  @default("Free")
   hasPurchasedBefore Boolean @default(false)
-  contactLimit       Int     @default(500)
-  emailLimit         Int     @default(1000)
+  contactLimit       Int     @default(50)
+  emailLimit         Int     @default(50)
 
   // Relations (leave them as-is)
   apiKeys             ApiKey[]

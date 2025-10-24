@@ -29,7 +29,10 @@ const Signin = () => {
         return `${symbol}${price.toFixed(2)}`;
     };
 
-    const [formData, setFormData] = useState({ email: "", password: "" });
+    const [formData, setFormData] = useState({
+    email: localStorage.getItem("userEmail") || "",
+    password: ""
+    });
     const [focusedField, setFocusedField] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
@@ -231,6 +234,35 @@ const Signin = () => {
                             <p className="text-gray-300 text-sm sm:text-base">Access your account to purchase a premium plan</p>
                             <div className="w-12 sm:w-16 h-1 bg-white mx-auto mt-3 sm:mt-4 rounded-full"></div>
                         </div>
+
+                        {/* ✅ Plan Summary Section (shows when coming from Buy Now) */}
+                        {planDetails && (
+                            <div className="mb-6 p-4 border border-gray-800 rounded-xl bg-gray-900/70 text-center">
+                                <h2 className="text-lg font-semibold text-white">
+                                Plan Selected:{" "}
+                                <span className="text-[#c2831f]">{planDetails.planName}</span>
+                                </h2>
+
+                                <p className="text-gray-300 text-sm mt-2">
+                                Amount:{" "}
+                                <span className="text-green-400 font-medium">
+                                    {planDetails.currencySymbol || "$"}
+                                    {planDetails.basePrice
+                                    ? planDetails.basePrice.toLocaleString(undefined, {
+                                        minimumFractionDigits: 2,
+                                        maximumFractionDigits: 2,
+                                        })
+                                    : "—"}
+                                </span>
+                                {planDetails.billingPeriod &&
+                                    planDetails.billingPeriod !== "one-time" && (
+                                    <span className="text-gray-400"> / {planDetails.billingPeriod}</span>
+                                    )}
+                                </p>
+                            </div>
+                        )}
+
+
 
                         {error && (
                             <div className="bg-red-900/30 border border-red-500 rounded-lg p-4 text-red-200 text-sm mb-6">

@@ -86,17 +86,26 @@ const Dashboard = () => {
         }
 
         // Fetch all data in parallel
-        const [campaignsResponse, scheduledResponse, summaryData] = await Promise.all([
-          fetchWithAuth(`${API_URL}/api/analytics/sendgrid/campaigns`).catch(() => ({ campaigns: [] })),
-          fetchWithAuth(`${API_URL}/api/automation-logs/scheduled`).catch(() => []),
-          fetchWithAuth(`${API_URL}/api/analytics/sendgrid/summary`).catch(() => null),
-        ]);
+        const [campaignsResponse, scheduledResponse, summaryData] =
+          await Promise.all([
+            fetchWithAuth(`${API_URL}/api/analytics/sendgrid/campaigns`).catch(
+              () => ({ campaigns: [] })
+            ),
+            fetchWithAuth(`${API_URL}/api/automation-logs/scheduled`).catch(
+              () => []
+            ),
+            fetchWithAuth(`${API_URL}/api/analytics/sendgrid/summary`).catch(
+              () => null
+            ),
+          ]);
 
-        const campaignsData = Array.isArray(campaignsResponse) 
-          ? campaignsResponse 
-          : (campaignsResponse.campaigns || []);
+        const campaignsData = Array.isArray(campaignsResponse)
+          ? campaignsResponse
+          : campaignsResponse.campaigns || [];
 
-        const scheduledData = Array.isArray(scheduledResponse) ? scheduledResponse : [];
+        const scheduledData = Array.isArray(scheduledResponse)
+          ? scheduledResponse
+          : [];
 
         setCampaigns(campaignsData);
         setScheduledCampaigns(scheduledData);
@@ -104,7 +113,8 @@ const Dashboard = () => {
 
         // Calculate card metrics
         // 1. Total Sent Mails - from analytics (SendGrid summary)
-        const totalSentMails = summaryData?.processed || 
+        const totalSentMails =
+          summaryData?.processed ||
           campaignsData.reduce((sum, c) => sum + (c.sentCount || 0), 0);
 
         // 2. Total Campaigns - from analytics (all sent campaigns)
@@ -112,12 +122,12 @@ const Dashboard = () => {
 
         // 3. Total Scheduled Campaigns - from automation (status = scheduled)
         const totalScheduledCampaigns = scheduledData.filter(
-          c => c.status === "scheduled"
+          (c) => c.status === "scheduled"
         ).length;
 
         // 4. Total Scheduled Mails - sum of recipients in scheduled campaigns
         const totalScheduledMails = scheduledData
-          .filter(c => c.status === "scheduled")
+          .filter((c) => c.status === "scheduled")
           .reduce((sum, c) => sum + (c.recipients || c.sentCount || 0), 0);
 
         setCardMetrics({
@@ -126,7 +136,6 @@ const Dashboard = () => {
           totalScheduledCampaigns,
           totalScheduledMails,
         });
-
       } catch (err) {
         console.error(err);
         setError(err.message);
@@ -137,38 +146,47 @@ const Dashboard = () => {
     fetchData();
   }, []);
 
-useEffect(() => {
-  const updateGreeting = () => {
-    const currentHour = new Date().getHours();
-    
-    if (currentHour >= 5 && currentHour < 12) {
-      setGreeting("Good Morning");
-    } else if (currentHour >= 12 && currentHour < 17) {
-      setGreeting("Good Afternoon");
-    } else {
-      setGreeting("Good Evening");
-    }
-  };
-  
-  updateGreeting();
-  const interval = setInterval(updateGreeting, 60 * 1000);
-  
-  return () => clearInterval(interval);
-}, []);
+  useEffect(() => {
+    const updateGreeting = () => {
+      const currentHour = new Date().getHours();
 
+      if (currentHour >= 5 && currentHour < 12) {
+        setGreeting("Good Morning");
+      } else if (currentHour >= 12 && currentHour < 17) {
+        setGreeting("Good Afternoon");
+      } else {
+        setGreeting("Good Evening");
+      }
+    };
+
+    updateGreeting();
+    const interval = setInterval(updateGreeting, 60 * 1000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // ======== Top Performers (by sent count) ========
   const topPerformers = useMemo(() => {
     return [...campaigns]
-      .filter(c => c.sentCount > 0)
+      .filter((c) => c.sentCount > 0)
       .sort((a, b) => b.sentCount - a.sentCount)
       .slice(0, 5)
-      .map(c => ({
+      .map((c) => ({
         name: c.name || "Unnamed Campaign",
         sentCount: c.sentCount || 0,
-        openRate: c.openRate || (c.sentCount > 0 ? ((c.openCount / c.sentCount) * 100).toFixed(1) : 0),
-        clickRate: c.clickRate || (c.sentCount > 0 ? ((c.clickCount / c.sentCount) * 100).toFixed(1) : 0),
-        date: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : "Unknown",
+        openRate:
+          c.openRate ||
+          (c.sentCount > 0
+            ? ((c.openCount / c.sentCount) * 100).toFixed(1)
+            : 0),
+        clickRate:
+          c.clickRate ||
+          (c.sentCount > 0
+            ? ((c.clickCount / c.sentCount) * 100).toFixed(1)
+            : 0),
+        date: c.createdAt
+          ? new Date(c.createdAt).toLocaleDateString()
+          : "Unknown",
       }));
   }, [campaigns]);
 
@@ -177,22 +195,30 @@ useEffect(() => {
     return [...campaigns]
       .sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0))
       .slice(0, 5)
-      .map(c => ({
+      .map((c) => ({
         name: c.name || "Unnamed Campaign",
-        date: c.createdAt ? new Date(c.createdAt).toLocaleDateString() : "Unknown",
+        date: c.createdAt
+          ? new Date(c.createdAt).toLocaleDateString()
+          : "Unknown",
         status: c.status || "sent",
         sentCount: c.sentCount || 0,
-        openRate: c.openRate || (c.sentCount > 0 ? ((c.openCount / c.sentCount) * 100).toFixed(1) : 0),
+        openRate:
+          c.openRate ||
+          (c.sentCount > 0
+            ? ((c.openCount / c.sentCount) * 100).toFixed(1)
+            : 0),
       }));
   }, [campaigns]);
 
   // ======== Upcoming Events (scheduled campaigns) ========
   const upcomingEvents = useMemo(() => {
     return scheduledCampaigns
-      .filter(c => c.status === "scheduled" && c.scheduledDateTime)
-      .sort((a, b) => new Date(a.scheduledDateTime) - new Date(b.scheduledDateTime))
+      .filter((c) => c.status === "scheduled" && c.scheduledDateTime)
+      .sort(
+        (a, b) => new Date(a.scheduledDateTime) - new Date(b.scheduledDateTime)
+      )
       .slice(0, 5)
-      .map(c => ({
+      .map((c) => ({
         title: c.campaignName || "Unnamed Campaign",
         date: new Date(c.scheduledDateTime).toLocaleDateString(),
         time: new Date(c.scheduledDateTime).toLocaleTimeString([], {
@@ -206,10 +232,10 @@ useEffect(() => {
   // ======== Campaign Performance Chart Data (Top 10 by sent count) ========
   const campaignChartData = useMemo(() => {
     return [...campaigns]
-      .filter(c => c.sentCount > 0)
+      .filter((c) => c.sentCount > 0)
       .sort((a, b) => b.sentCount - a.sentCount)
       .slice(0, 10)
-      .map(c => ({
+      .map((c) => ({
         name: (c.name || "Unnamed").substring(0, 15) + "...",
         sent: c.sentCount || 0,
         opens: c.openCount || 0,
@@ -280,7 +306,9 @@ useEffect(() => {
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:bg-gray-800 transition-all group">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-gray-400 text-sm font-medium">Total Sent Mails</p>
+                  <p className="text-gray-400 text-sm font-medium">
+                    Total Sent Mails
+                  </p>
                   <p className="text-3xl font-bold text-white mt-1">
                     {cardMetrics.totalSentMails.toLocaleString()}
                   </p>
@@ -296,7 +324,9 @@ useEffect(() => {
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:bg-gray-800 transition-all group">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-gray-400 text-sm font-medium">Total Campaigns</p>
+                  <p className="text-gray-400 text-sm font-medium">
+                    Total Campaigns
+                  </p>
                   <p className="text-3xl font-bold text-white mt-1">
                     {cardMetrics.totalCampaigns.toLocaleString()}
                   </p>
@@ -312,7 +342,9 @@ useEffect(() => {
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:bg-gray-800 transition-all group">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-gray-400 text-sm font-medium">Total Scheduled Campaigns</p>
+                  <p className="text-gray-400 text-sm font-medium">
+                    Total Scheduled Campaigns
+                  </p>
                   <p className="text-3xl font-bold text-white mt-1">
                     {cardMetrics.totalScheduledCampaigns.toLocaleString()}
                   </p>
@@ -328,7 +360,9 @@ useEffect(() => {
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:bg-gray-800 transition-all group">
               <div className="flex items-center justify-between mb-4">
                 <div>
-                  <p className="text-gray-400 text-sm font-medium">Total Scheduled Mails</p>
+                  <p className="text-gray-400 text-sm font-medium">
+                    Total Scheduled Mails
+                  </p>
                   <p className="text-3xl font-bold text-white mt-1">
                     {cardMetrics.totalScheduledMails.toLocaleString()}
                   </p>
@@ -342,75 +376,99 @@ useEffect(() => {
           </div>
 
           {/* Campaign Performance Chart */}
-      
-        <div className="bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 border border-gray-700/50 rounded-3xl p-8 hover:border-gray-600/50 transition-all shadow-2xl backdrop-blur-sm">
-          <div className="flex items-center justify-between mb-8">
-            <div>
-              <h3 className="text-2xl font-bold text-white tracking-tight">Campaign Performance</h3>
-              <p className="text-gray-400 text-sm mt-2 flex items-center gap-2">
-                <span className="w-1.5 h-1.5 bg-[#c2831f] rounded-full"></span>
-                Top 10 campaigns by sent emails
-              </p>
-            </div>
-            <div className="bg-[#c2831f]/10 p-3 rounded-xl border border-[#c2831f]/20">
-              <BarChart3 className="w-6 h-6 text-[#c2831f]" />
-            </div>
-          </div>
 
-          {campaignChartData.length > 0 ? (
-            <div className="h-80 bg-black/10 rounded-2xl p-3 border border-gray-800/50 w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={campaignChartData} barSize={32}>
-                  <defs>
-                    <linearGradient id="barGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="0%" stopColor="#f39d12ff" stopOpacity={1} />
-                      <stop offset="100%" stopColor="#e9a435ff" stopOpacity={1.6} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={1.7} />
-                  <XAxis 
-                    dataKey="name" 
-                    stroke="#6B7280" 
-                    tick={{ fill: '#9CA3AF', fontSize: 11, fontWeight: 500 }}
-                    angle={-45}
-                    textAnchor="end"
-                    height={80}
-                    axisLine={{ stroke: '#374151' }}
-                  />
-                  <YAxis 
-                    stroke="#6B7280" 
-                    tick={{ fill: '#9CA3AF', fontSize: 12 }}
-                    axisLine={{ stroke: '#374151' }}
-                  />
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: "#111827",
-                      border: "1px solid #374151",
-                      borderRadius: "12px",
-                      color: "#fff",
-                      boxShadow: "0 10px 40px rgba(0, 0, 0, 0.5)",
-                    }}
-                    cursor={{ fill: 'rgba(194, 132, 31, 0.07)' }}
-                  />
-                  <Bar 
-                    dataKey="sent" 
-                    fill="url(#barGradient)" 
-                    name="Sent" 
-                    radius={[12, 12, 0, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          ) : (
-            <div className="text-center py-20 bg-black/20 rounded-2xl border border-gray-800/50">
-              <div className="bg-gray-800/50 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <BarChart3 className="w-10 h-10 text-gray-600" />
+          <div className="bg-gradient-to-br from-gray-900 via-gray-900 to-gray-800 border border-gray-700/50 rounded-3xl p-8 hover:border-gray-600/50 transition-all shadow-2xl backdrop-blur-sm">
+            <div className="flex items-center justify-between mb-8">
+              <div>
+                <h3 className="text-2xl font-bold text-white tracking-tight">
+                  Campaign Performance
+                </h3>
+                <p className="text-gray-400 text-sm mt-2 flex items-center gap-2">
+                  <span className="w-1.5 h-1.5 bg-[#c2831f] rounded-full"></span>
+                  Top 10 campaigns by sent emails
+                </p>
               </div>
-              <p className="text-gray-400 font-medium">No campaign data available</p>
-              <p className="text-gray-500 text-sm mt-2">Data will appear here once campaigns are created</p>
+              <div className="bg-[#c2831f]/10 p-3 rounded-xl border border-[#c2831f]/20">
+                <BarChart3 className="w-6 h-6 text-[#c2831f]" />
+              </div>
             </div>
-          )}
-        </div>
+
+            {campaignChartData.length > 0 ? (
+              <div className="h-80 bg-black/10 rounded-2xl p-3 border border-gray-800/50 w-full">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={campaignChartData} barSize={32}>
+                    <defs>
+                      <linearGradient
+                        id="barGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop
+                          offset="0%"
+                          stopColor="#f39d12ff"
+                          stopOpacity={1}
+                        />
+                        <stop
+                          offset="100%"
+                          stopColor="#e9a435ff"
+                          stopOpacity={1.6}
+                        />
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid
+                      strokeDasharray="3 3"
+                      stroke="#374151"
+                      opacity={1.7}
+                    />
+                    <XAxis
+                      dataKey="name"
+                      stroke="#6B7280"
+                      tick={{ fill: "#9CA3AF", fontSize: 11, fontWeight: 500 }}
+                      angle={-45}
+                      textAnchor="end"
+                      height={80}
+                      axisLine={{ stroke: "#374151" }}
+                    />
+                    <YAxis
+                      stroke="#6B7280"
+                      tick={{ fill: "#9CA3AF", fontSize: 12 }}
+                      axisLine={{ stroke: "#374151" }}
+                    />
+                    <Tooltip
+                      contentStyle={{
+                        backgroundColor: "#111827",
+                        border: "1px solid #374151",
+                        borderRadius: "12px",
+                        color: "#fff",
+                        boxShadow: "0 10px 40px rgba(0, 0, 0, 0.5)",
+                      }}
+                      cursor={{ fill: "rgba(194, 132, 31, 0.07)" }}
+                    />
+                    <Bar
+                      dataKey="sent"
+                      fill="url(#barGradient)"
+                      name="Sent"
+                      radius={[12, 12, 0, 0]}
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            ) : (
+              <div className="text-center py-20 bg-black/20 rounded-2xl border border-gray-800/50">
+                <div className="bg-gray-800/50 w-20 h-20 rounded-2xl flex items-center justify-center mx-auto mb-6">
+                  <BarChart3 className="w-10 h-10 text-gray-600" />
+                </div>
+                <p className="text-gray-400 font-medium">
+                  No campaign data available
+                </p>
+                <p className="text-gray-500 text-sm mt-2">
+                  Data will appear here once campaigns are created
+                </p>
+              </div>
+            )}
+          </div>
 
           {/* Bottom Grid */}
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-8">
@@ -420,7 +478,9 @@ useEffect(() => {
                 <h3 className="text-xl font-bold text-white">Top Performers</h3>
                 <Award className="w-5 h-5 text-[#c2831f]" />
               </div>
-              <p className="text-gray-400 text-sm mb-4">Highest sent email campaigns</p>
+              <p className="text-gray-400 text-sm mb-4">
+                Highest sent email campaigns
+              </p>
               <div className="space-y-4">
                 {topPerformers.length > 0 ? (
                   topPerformers.map((c, i) => (
@@ -461,7 +521,9 @@ useEffect(() => {
             {/* Recent Activity - 5 Most Recent */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:bg-gray-800 transition-all">
               <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white">Recent Activity</h3>
+                <h3 className="text-xl font-bold text-white">
+                  Recent Activity
+                </h3>
                 <Activity className="w-5 h-5 text-[#c2831f]" />
               </div>
               <p className="text-gray-400 text-sm mb-4">Latest 5 campaigns</p>
@@ -476,14 +538,21 @@ useEffect(() => {
                         <CheckCircle className="w-4 h-4 text-green-400" />
                       </div>
                       <div className="flex-1">
-                        <p className="text-white text-sm font-medium">{a.name}</p>
+                        <p className="text-white text-sm font-medium">
+                          {a.name}
+                        </p>
                         <div className="flex items-center gap-4 mt-2">
-                          <span className="text-gray-400 text-xs">{a.date}</span>
-                          <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(a.status)}`}>
+                          <span className="text-gray-400 text-xs">
+                            {a.date}
+                          </span>
+                          <span
+                            className={`text-xs px-2 py-1 rounded-full ${getStatusColor(
+                              a.status
+                            )}`}
+                          >
                             {a.status} : {a.sentCount}
                           </span>
                         </div>
-                         
                       </div>
                     </div>
                   ))
@@ -498,26 +567,33 @@ useEffect(() => {
 
             {/* Upcoming Events - From Automation */}
             <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 hover:bg-gray-800 transition-all">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-bold text-white">Upcoming Events</h3>
-                <Calendar className="w-5 h-5 text-[#c2831f]" />
+              <div className="flex items-center justify-between mb-6 flex-wrap gap-2">
+                <h3 className="text-xl font-bold text-white break-words">
+                  Upcoming Events
+                </h3>
+                <Calendar className="w-5 h-5 text-[#c2831f] flex-shrink-0" />
               </div>
+
               <p className="text-gray-400 text-sm mb-4">Scheduled campaigns</p>
+
               <div className="space-y-4">
                 {upcomingEvents.length > 0 ? (
                   upcomingEvents.map((e, i) => (
                     <div
                       key={i}
-                      className="flex items-center gap-4 p-4 bg-gray-800 rounded-xl hover:bg-gray-700 transition-all group"
+                      className="flex items-start sm:items-center gap-4 p-4 bg-gray-800 rounded-xl hover:bg-gray-700 transition-all group flex-wrap sm:flex-nowrap"
                     >
-                      <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center group-hover:bg-blue-500/30">
+                      <div className="w-12 h-12 bg-blue-500/20 rounded-xl flex items-center justify-center group-hover:bg-blue-500/30 flex-shrink-0">
                         <Clock className="w-6 h-6 text-blue-400" />
                       </div>
-                      <div className="flex-1">
-                        <h4 className="text-white font-medium truncate">{e.title}</h4>
-                        <div className="flex items-center gap-3 mt-1">
-                          <p className="text-gray-400 text-xs">{e.date}</p>
-                          <p className="text-gray-400 text-xs">{e.time}</p>
+
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-white font-medium break-words line-clamp-2">
+                          {e.title}
+                        </h4>
+                        <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-gray-400">
+                          <p>{e.date}</p>
+                          <p>{e.time}</p>
                         </div>
                         <p className="text-[#c2831f] text-xs mt-1">
                           {e.recipients} recipients
@@ -532,6 +608,7 @@ useEffect(() => {
                   </div>
                 )}
               </div>
+
               <Link
                 to="/automation"
                 className="block w-full mt-4 p-3 bg-gray-800 hover:bg-gray-700 rounded-xl text-white font-medium text-center transition-all border border-gray-700 hover:border-[#c2831f]"
@@ -543,8 +620,12 @@ useEffect(() => {
 
           {/* Quick Actions - Enhanced Styling */}
           <div className="bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-700 rounded-2xl p-8 hover:border-[#c2831f] transition-all">
-            <h3 className="text-2xl font-bold text-white mb-2">Quick Actions</h3>
-            <p className="text-gray-400 mb-6">Streamline your workflow with these shortcuts</p>
+            <h3 className="text-2xl font-bold text-white mb-2">
+              Quick Actions
+            </h3>
+            <p className="text-gray-400 mb-6">
+              Streamline your workflow with these shortcuts
+            </p>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Link
                 to="/email-campaign"
@@ -575,7 +656,6 @@ useEffect(() => {
                 Email Validation
               </Link>
             </div>
-          
           </div>
         </div>
       </div>

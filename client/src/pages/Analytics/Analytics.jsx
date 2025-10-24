@@ -163,33 +163,7 @@ const totalSent =
         {/* Header */}
         <div className="flex justify-between items-center relative pt-16">
           <h1 className="text-2xl font-bold text-[#c2831f]">Analytics Dashboard</h1>
-          <div className="flex items-center gap-2 relative">
-            {/* Filter Dropdown */}
-            <div className="relative">
-              <button
-                onClick={() => setShowFilter(!showFilter)}
-                className="flex items-center gap-1 px-3 py-2 border border-gray-700 rounded-lg bg-black hover:bg-gray-900"
-              >
-                <Filter size={18} /> {selectedFilter}
-              </button>
-              {showFilter && (
-                <div className="absolute right-0 mt-2 bg-white text-black rounded-lg shadow-lg z-10">
-                  {filters.map((f) => (
-                    <div
-                      key={f}
-                      className="px-4 py-2 hover:bg-gray-200 cursor-pointer"
-                      onClick={() => {
-                        setSelectedFilter(f);
-                        setShowFilter(false);
-                      }}
-                    >
-                      {f}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          </div>
+           
         </div>
 
         {/* Error */}

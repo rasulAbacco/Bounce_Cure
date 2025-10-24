@@ -19,6 +19,7 @@ function MultimediaCampaign() {
   const [loading, setLoading] = useState(true);
   const [showNewCampaignModal, setShowNewCampaignModal] = useState(false);
   const navigate = useNavigate();
+  const [isTwilioConfigured, setIsTwilioConfigured] = useState(false);
 
   // 🧩 Fetch all campaigns for logged-in user
   useEffect(() => {
@@ -45,6 +46,26 @@ function MultimediaCampaign() {
     };
     fetchCampaigns();
   }, []);
+
+  // ✅ Check Twilio configuration on page load
+useEffect(() => {
+  const checkTwilioConfig = async () => {
+    try {
+     const res = await fetch(`${import.meta.env.VITE_API_URL}/twilioConfig/check-config`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      const data = await res.json();
+      setIsTwilioConfigured(data.configured === true);
+    } catch (err) {
+      console.error("Error checking Twilio configuration:", err);
+    }
+  };
+
+  checkTwilioConfig();
+}, []);
 
   // 📊 Analytics calculator
   const getAnalytics = (list) => {
@@ -151,13 +172,20 @@ function MultimediaCampaign() {
               Twilio Settings
             </button>
 
-            <button
-              onClick={() => setShowNewCampaignModal(true)}
-              className="px-6 py-3 bg-[#c2831f] hover:bg-[#a66f1a] text-white rounded-lg flex items-center gap-2 font-semibold"
-            >
-              <Plus className="w-5 h-5" />
-              New Campaign
-            </button>
+          <button
+            onClick={() => isTwilioConfigured && setShowNewCampaignModal(true)}
+            disabled={!isTwilioConfigured}
+            className={`px-6 py-3 rounded-lg flex items-center gap-2 font-semibold transition-colors
+              ${isTwilioConfigured
+                ? "bg-[#c2831f] hover:bg-[#a66f1a] text-white cursor-pointer"
+                : "bg-gray-700 text-gray-400 cursor-not-allowed"
+              }`}
+            title={isTwilioConfigured ? "" : "Please complete Twilio Configuration first"}
+          >
+            <Plus className="w-5 h-5" />
+            New Campaign
+          </button>
+
           </div>
         </div>
 

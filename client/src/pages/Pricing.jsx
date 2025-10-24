@@ -232,106 +232,82 @@ const Pricing = () => {
   };
 
   // Handle plan selection with navigation logic
-  const handlePlanSelection = (planName, planType) => {
-    if (!isPlanAvailable(planType)) {
-      alert(`The ${planName} plan is not available for ${contactCount.toLocaleString()} contacts. Please select a different plan or reduce your contact count.`);
-      return;
-    }
+const handlePlanSelection = (planName, planType) => {
+  if (!isPlanAvailable(planType)) {
+    alert(`The ${planName} plan is not available for ${contactCount.toLocaleString()} contacts. Please select a different plan or reduce your contact count.`);
+    return;
+  }
 
-    const planData = plans[planType];
-    const pricing = getCurrentPricing();
-    const monthlyPriceUSD = planType === 'free' ? 0 : pricing[planType];
-    const periodInfo = billingPeriods[billingPeriod];
-    
-    // Calculate prices
-    const originalMonthlyPriceUSD = monthlyPriceUSD;
-    const discountedMonthlyPriceUSD = originalMonthlyPriceUSD * 0.5;
-    const periodPriceUSD = calculatePrice(monthlyPriceUSD);
-    const originalPeriodPriceUSD = originalMonthlyPriceUSD * periodInfo.months;
-    
-    // Convert to selected currency
-    const baseMonthlyPriceConverted = parseFloat(convertPrice(discountedMonthlyPriceUSD).replace(/,/g, ''));
-    const periodPriceConverted = parseFloat(convertPrice(periodPriceUSD).replace(/,/g, ''));
-    const originalPeriodPriceConverted = parseFloat(convertPrice(originalPeriodPriceUSD).replace(/,/g, ''));
-    
-    // FIXED: Calculate email send limit based on plan type, contact count, and billing period
-    let emailSendLimit;
-    if (planType === 'free') {
-      emailSendLimit = planData.emailLimit;
-    } else {
-      // Multiply by billing period months for quarterly/yearly plans
-      emailSendLimit = contactCount * planData.emailMultiplier * periodInfo.months;
-    }
+  const planData = plans[planType];
+  const pricing = getCurrentPricing();
+  const monthlyPriceUSD = planType === 'free' ? 0 : pricing[planType];
+  const periodInfo = billingPeriods[billingPeriod];
 
-    // FIXED: Calculate email validation limit based on plan type, contact count, and billing period
-    const emailValidationLimit = planType === 'free' 
-      ? 0 
-      : contactCount * (planData.emailValidationMultiplier || 0) * periodInfo.months;
+  // ✅ Detect if user is logged in (existing user)
+  const isLoggedIn = !!localStorage.getItem("authToken") || !!localStorage.getItem("userEmail");
+  const isNewUser = !isLoggedIn;
 
-    // Build plan object - Fixed version
-    const planDetails = {
-      planName: planName,
-      planType: planType,
+  // ✅ Apply 50% discount only for new users
+  const discountPercent = isNewUser ? 0.5 : 0;
+  const discountedMonthlyPriceUSD = monthlyPriceUSD * (1 - discountPercent);
+  const periodPriceUSD = calculatePrice(discountedMonthlyPriceUSD);
+  const originalPeriodPriceUSD = calculatePrice(monthlyPriceUSD);
 
-      // --- Pricing consistency ---
-      originalBasePrice: originalPeriodPriceConverted,   // full price before discount
-      basePrice: periodPriceConverted,                   // discounted price user pays
-      discountAmount: originalPeriodPriceConverted * 0.5, // 50% savings
+  // Convert to selected currency
+  const baseMonthlyPriceConverted = parseFloat(convertPrice(discountedMonthlyPriceUSD).replace(/,/g, ''));
+  const periodPriceConverted = parseFloat(convertPrice(periodPriceUSD).replace(/,/g, ''));
+  const originalPeriodPriceConverted = parseFloat(convertPrice(originalPeriodPriceUSD).replace(/,/g, ''));
 
-      // --- Billing & totals ---
-      periodPrice: periodPriceConverted,
-      originalPeriodPrice: originalPeriodPriceConverted,
-      billingPeriod: periodInfo.label.toLowerCase(),
-      billingMonths: periodInfo.months,
-      subtotal: periodPriceConverted,
-      taxRate: 0.1,
-      tax: periodPriceConverted * 0.1,
-      totalCost: periodPriceConverted * 1.1,
+  // Calculate limits
+  const emailSendLimit = planType === 'free'
+    ? planData.emailLimit
+    : contactCount * planData.emailMultiplier * periodInfo.months;
 
-      // --- Plan details ---
-      emails: emailSendLimit,
-      emailValidations: emailValidationLimit, // FIXED: Added email validations
-      features: planData.features,
-      slots: contactCount,
-      contactCount: contactCount,
+  const emailValidationLimit = planType === 'free'
+    ? 0
+    : contactCount * (planData.emailValidationMultiplier || 0) * periodInfo.months;
 
-      // --- Misc ---
-      selectedIntegrations: [],
-      additionalSlotsCost: 0,
-      integrationCosts: 0,
-      discount: 0.5,
-      discountApplied: true,
-      isNewUser: true,
-
-      // --- Currency info ---
-      currency: selectedCurrency,
-      currencySymbol: getCurrencySymbol(),
-
-      // --- Source tracking ---
-      isFromPricingDash: false,
-      pricingModel: "multiplier",
-    };
-
-    localStorage.setItem("pendingUpgradePlan", JSON.stringify(planDetails));
-    sessionStorage.setItem("pendingUpgradePlan", JSON.stringify(planDetails));
-    
-    setSelectedPlan(planDetails);
-
-    const isLoggedIn = !!localStorage.getItem("authToken");
-
-    if (!isLoggedIn) {
-      navigate("/signin", {
-        state: {
-          plan: planDetails,
-          redirectTo: "/payment",
-        },
-      });
-    } else { 
-      navigate("/payment", {
-        state: { plan: planDetails },
-      });
-    }
+  // ✅ Build final plan details
+  const planDetails = {
+    planName,
+    planType,
+    originalBasePrice: originalPeriodPriceConverted,
+    basePrice: periodPriceConverted,
+    discountAmount: originalPeriodPriceConverted * discountPercent,
+    periodPrice: periodPriceConverted,
+    originalPeriodPrice: originalPeriodPriceConverted,
+    billingPeriod: periodInfo.label.toLowerCase(),
+    billingMonths: periodInfo.months,
+    subtotal: periodPriceConverted,
+    taxRate: 0.1,
+    tax: periodPriceConverted * 0.1,
+    totalCost: periodPriceConverted * 1.1,
+    emails: emailSendLimit,
+    emailValidations: emailValidationLimit,
+    features: planData.features,
+    slots: contactCount,
+    contactCount,
+    discount: discountPercent,
+    discountApplied: isNewUser,
+    isNewUser,
+    currency: selectedCurrency,
+    currencySymbol: getCurrencySymbol(),
+    isFromPricingDash: false,
+    pricingModel: "multiplier",
   };
+
+  localStorage.setItem("pendingUpgradePlan", JSON.stringify(planDetails));
+  sessionStorage.setItem("pendingUpgradePlan", JSON.stringify(planDetails));
+
+  if (!isLoggedIn) {
+    navigate("/signin", {
+      state: { plan: planDetails, redirectTo: "/payment" },
+    });
+  } else {
+    navigate("/payment", { state: { plan: planDetails } });
+  }
+};
+
 
   const keyPlanFeatures = {
     free: [

@@ -41,4 +41,12 @@ router.get("/config", protect, async (req, res) => {
     res.json(config);
 });
 
+// ✅ Add this at the bottom of twilioConfig.js
+router.get("/check-config", protect, async (req, res) => {
+  const userId = req.user.id;
+  const config = await prisma.twilioConfig.findUnique({ where: { userId } });
+  res.json({ configured: !!config });
+});
+
+
 export default router;
