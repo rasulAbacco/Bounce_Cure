@@ -120,73 +120,200 @@ const generatePlainTextFromCanvas = (canvasData, subject, fromName, fromEmail) =
 };
 
 /* ==========================================================
-   SEND CAMPAIGN EMAIL
+   ✅ GET USER CREDITS (Accumulated from all payments)
 ========================================================== */
+router.get("/credits", async (req, res) => {
+  try {
+    console.log("📊 Fetching accumulated credits for user:", req.user.id);
+
+    const payments = await prisma.payment.findMany({
+      where: { userId: req.user.id, status: "succeeded" },
+      select: { emailSendCredits: true, emailVerificationCredits: true },
+    });
+
+    const totalEmailSendCredits = payments.reduce((sum, p) => sum + (p.emailSendCredits || 0), 0);
+    const totalEmailVerificationCredits = payments.reduce((sum, p) => sum + (p.emailVerificationCredits || 0), 0);
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { emailLimit: true, contactLimit: true, plan: true },
+    });
+
+    const emailSendCredits = (user?.emailLimit ?? 0) + totalEmailSendCredits;
+    const emailVerificationCredits = (user?.contactLimit ?? 0) + totalEmailVerificationCredits;
+
+    console.log("✅ Aggregated Credits:", { emailSendCredits, emailVerificationCredits });
+
+    res.json({
+      success: true,
+      emailSendCredits,
+      emailVerificationCredits,
+      plan: user?.plan || "Free",
+    });
+  } catch (error) {
+    console.error("❌ Error fetching credits:", error);
+    res.status(500).json({ success: false, error: "Failed to fetch credits" });
+  }
+});
+
 router.post("/send", async (req, res) => {
   try {
     console.log("📨 /api/campaigns/send called by user:", req.user?.id);
-    const { recipients, fromEmail, fromName, subject, canvasData } = req.body;
 
-    if (!Array.isArray(recipients) || recipients.length === 0)
+    const {
+      recipients,
+      fromEmail,
+      fromName,
+      subject,
+      canvasData,
+      scheduleType = "immediate",
+      scheduledDate,
+      scheduledTime,
+      timezone,
+      recurringFrequency,
+      recurringDays,
+      recurringEndDate,
+    } = req.body;
+
+    // 🧩 Basic validation
+    if (!Array.isArray(recipients) || recipients.length === 0) {
       return res.status(400).json({ error: "No recipients specified" });
-    if (!fromEmail || !fromName)
+    }
+    if (!fromEmail || !fromName) {
       return res.status(400).json({ error: "Missing sender fields (fromEmail/fromName)" });
+    }
 
     const emailSubject = subject?.trim() || "Untitled Campaign";
 
-    // Fetch credits
-    const latestPayment = await prisma.payment.findFirst({
-      where: { userId: req.user.id },
-      orderBy: { paymentDate: "desc" },
+    // ==========================================================
+    // 🧮 STEP 1: Credit Validation
+    // ==========================================================
+    const payments = await prisma.payment.findMany({
+      where: { userId: req.user.id, status: "succeeded" },
+      select: { emailSendCredits: true },
     });
+
+    const totalPaymentCredits = payments.reduce((sum, p) => sum + (p.emailSendCredits || 0), 0);
+
     const user = await prisma.user.findUnique({
       where: { id: req.user.id },
       select: { emailLimit: true, plan: true },
     });
 
-    const availableCredits = latestPayment?.emailSendCredits ?? user?.emailLimit ?? 0;
+    const availableCredits = (user?.emailLimit ?? 0) + totalPaymentCredits;
     const requiredCredits = recipients.length;
-    console.log(`📧 User ${req.user.id} - Available: ${availableCredits}, Required: ${requiredCredits}`);
+
+    console.log(`📊 Credits check - Available: ${availableCredits}, Required: ${requiredCredits}`);
 
     if (availableCredits < requiredCredits) {
       return res.status(403).json({
-        error: "Insufficient email send credits",
+        error: `Insufficient credits. You need ${requiredCredits} credits but only have ${availableCredits}.`,
         available: availableCredits,
         required: requiredCredits,
         creditLimitReached: true,
       });
     }
 
-    // ✅ Let SendGrid handle sender verification automatically
-    console.log(`📤 Sending campaign from: ${fromEmail} (${fromName})`);
-
-    if (!process.env.SENDGRID_API_KEY)
+    // ==========================================================
+    // 🧠 STEP 2: SendGrid setup
+    // ==========================================================
+    if (!process.env.SENDGRID_API_KEY) {
       return res.status(500).json({ error: "SendGrid API key not configured" });
+    }
+
     sgMail.setApiKey(process.env.SENDGRID_API_KEY);
 
-    const htmlContent = generateHtmlFromCanvas(canvasData, subject, fromName, fromEmail);
-    const plainTextContent = generatePlainTextFromCanvas(canvasData, subject, fromName, fromEmail);
+    // ==========================================================
+    // 💾 STEP 3: Prepare Scheduled DateTime
+    // ==========================================================
+    let scheduledDateTime = null;
+    
+    if (scheduleType !== "immediate" && scheduledDate && scheduledTime) {
+      // ✅ Combine date and time properly
+      scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}:00`);
+      
+      // ✅ Validate scheduled time is in future
+      const now = new Date();
+      if (scheduledDateTime <= now) {
+        return res.status(400).json({
+          error: "Scheduled time must be in the future (at least 5 minutes from now)",
+        });
+      }
+      
+      console.log(`📅 Campaign scheduled for: ${scheduledDateTime.toISOString()}`);
+    }
 
-    // Save campaign record
+    // ==========================================================
+    // 💾 STEP 4: Create Campaign Record (✅ STORING RECIPIENTS)
+    // ==========================================================
     const campaign = await prisma.campaign.create({
       data: {
         userId: req.user.id,
-        name: subject,
-        subject,
+        name: emailSubject,
+        subject: emailSubject,
         fromEmail,
         fromName,
-        sentCount: recipients.length,
+        scheduleType,
         designJson: JSON.stringify(canvasData || []),
+        recipientsJson: JSON.stringify(recipients), // ✅ STORE RECIPIENTS
+        scheduledAt: scheduledDateTime,
+        recurringFrequency: scheduleType === "recurring" ? recurringFrequency : null,
+        recurringDays: scheduleType === "recurring" ? JSON.stringify(recurringDays || []) : null,
+        recurringEndDate: scheduleType === "recurring" && recurringEndDate ? new Date(recurringEndDate) : null,
+        status: scheduleType === "immediate" ? "processing" : "scheduled",
       },
     });
 
+    console.log(`✅ Campaign ${campaign.id} created with scheduleType: ${scheduleType}`);
+
+    // ==========================================================
+    // 🕒 STEP 5: If scheduled or recurring → Save and let scheduler handle it
+    // ==========================================================
+    if (scheduleType === "scheduled" || scheduleType === "recurring") {
+      console.log(`🕒 Campaign ${campaign.id} saved for ${scheduleType} sending`);
+      
+      // ✅ Create automation log for scheduled campaign
+      await prisma.automationLog.create({
+        data: {
+          userId: req.user.id,
+          campaignId: campaign.id,
+          campaignName: emailSubject,
+          status: 'scheduled',
+          message: scheduleType === "scheduled" 
+            ? `Campaign scheduled for ${scheduledDateTime.toLocaleString()}`
+            : `Recurring campaign created (${recurringFrequency})`,
+        },
+      });
+
+      return res.status(200).json({
+        success: true,
+        message:
+          scheduleType === "scheduled"
+            ? `✅ Campaign scheduled for ${scheduledDate} at ${scheduledTime}. It will be sent automatically.`
+            : `✅ Recurring campaign created (${recurringFrequency}). It will be sent automatically based on your schedule.`,
+        campaignId: campaign.id,
+        scheduledAt: scheduledDateTime,
+      });
+    }
+
+    // ==========================================================
+    // 🚀 STEP 6: Immediate Send
+    // ==========================================================
+    const htmlContent = generateHtmlFromCanvas(canvasData, emailSubject, fromName, fromEmail);
+    const plainTextContent = generatePlainTextFromCanvas(canvasData, emailSubject, fromName, fromEmail);
+    
     const results = { success: [], failed: [] };
     let actualSentCount = 0;
+
+    console.log(`📤 Sending immediate campaign to ${recipients.length} recipients`);
 
     for (const r of recipients) {
       const toEmail = typeof r === "string" ? r : r.email;
       if (!toEmail) continue;
-      if (actualSentCount >= availableCredits) break;
+      if (actualSentCount >= availableCredits) {
+        results.failed.push({ email: toEmail, error: "Credit limit reached" });
+        break;
+      }
 
       const msg = {
         to: toEmail,
@@ -196,47 +323,92 @@ router.post("/send", async (req, res) => {
         html: htmlContent,
       };
 
-
       try {
-        await sgMail.send(msg);
-        results.success.push({ email: toEmail, timestamp: new Date().toISOString() });
-        actualSentCount++;
+        const response = await sgMail.send(msg);
+        if (response[0].statusCode >= 200 && response[0].statusCode < 300) {
+          results.success.push({ email: toEmail });
+          actualSentCount++;
+        } else {
+          results.failed.push({ email: toEmail, error: `SendGrid status ${response[0].statusCode}` });
+        }
       } catch (err) {
         const msgErr = err.response?.body?.errors?.[0]?.message || err.message || "Unknown error";
         console.error(`❌ Failed to send to ${toEmail}:`, msgErr);
         results.failed.push({ email: toEmail, error: msgErr });
       }
 
-      await new Promise((r) => setTimeout(r, 200)); // throttle slightly
+      await new Promise((r) => setTimeout(r, 200));
     }
 
-    const newCredits = Math.max(0, availableCredits - actualSentCount);
-    if (latestPayment)
-      await prisma.payment.update({
-        where: { id: latestPayment.id },
-        data: { emailSendCredits: newCredits },
-      });
-    await prisma.user.update({
-      where: { id: req.user.id },
-      data: { emailLimit: newCredits },
+    // ==========================================================
+    // 💰 STEP 7: Deduct Credits
+    // ==========================================================
+    const newUserCredits = Math.max(0, (user.emailLimit ?? 0) - actualSentCount);
+
+    const latestPayment = await prisma.payment.findFirst({
+      where: { userId: req.user.id, status: "succeeded" },
+      orderBy: { paymentDate: "desc" },
     });
 
-    console.log(`✅ Campaign ${campaign.id} sent: ${results.success.length}, failed: ${results.failed.length}`);
+    if (latestPayment) {
+      const updatedSendCredits = Math.max(
+        0,
+        (latestPayment.emailSendCredits || 0) - actualSentCount
+      );
+      await prisma.payment.update({
+        where: { id: latestPayment.id },
+        data: { emailSendCredits: updatedSendCredits },
+      });
+    }
 
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { emailLimit: newUserCredits },
+    });
+
+    // ✅ Update campaign status
+    await prisma.campaign.update({
+      where: { id: campaign.id },
+      data: { 
+        sentCount: actualSentCount,
+        status: results.failed.length === 0 ? 'sent' : 'failed'
+      },
+    });
+
+    // ✅ Create automation log
+    await prisma.automationLog.create({
+      data: {
+        userId: req.user.id,
+        campaignId: campaign.id,
+        campaignName: emailSubject,
+        status: results.failed.length === 0 ? 'sent' : 'failed',
+        message: `Campaign sent: ${results.success.length} success, ${results.failed.length} failed`,
+        error: results.failed.length > 0 ? `${results.failed.length} emails failed` : null,
+      },
+    });
+
+    console.log(`✅ Immediate campaign sent - Success: ${results.success.length}, Failed: ${results.failed.length}`);
+
+    // ==========================================================
+    // 📤 STEP 8: Response
+    // ==========================================================
     res.status(200).json({
+      success: true,
       message: `Sent: ${results.success.length}, Failed: ${results.failed.length}`,
       campaignId: campaign.id,
       results,
+      creditsUsed: actualSentCount,
+      creditsRemaining: newUserCredits,
     });
   } catch (err) {
-    console.error("Campaign send error:", err);
-    res.status(500).json({ error: "Failed to send campaign", details: err.message });
+    console.error("❌ Campaign send error:", err);
+    res.status(500).json({
+      success: false,
+      error: err.message || "Failed to process campaign",
+    });
   }
 });
-
-/* ==========================================================
-   OTHER ROUTES
-========================================================== */
+ 
 router.get("/", async (req, res) => {
   try {
     const campaigns = await prisma.campaign.findMany({
@@ -274,35 +446,6 @@ router.delete("/:id", async (req, res) => {
     res.json({ message: "Campaign deleted successfully" });
   } catch {
     res.status(500).json({ error: "Failed to delete campaign" });
-  }
-});
-
-router.get("/credits", protect, async (req, res) => {
-  try {
-    const latestPayment = await prisma.payment.findFirst({
-      where: { userId: req.user.id },
-      orderBy: { paymentDate: "desc" },
-    });
-    const user = await prisma.user.findUnique({
-      where: { id: req.user.id },
-      select: { emailLimit: true, contactLimit: true, plan: true },
-    });
-    console.log("🧾 Credit Check =>", {
-      userId: req.user.id,
-      availableCredits,
-      requiredCredits,
-      fromEmail,
-      fromName,
-    });
-
-    res.json({
-      success: true,
-      emailSendCredits: latestPayment?.emailSendCredits ?? user?.emailLimit ?? 50,
-      emailVerificationCredits: latestPayment?.emailVerificationCredits ?? user?.contactLimit ?? 50,
-      plan: user?.plan || "Free",
-    });
-  } catch {
-    res.status(500).json({ error: "Failed to fetch credits" });
   }
 });
 

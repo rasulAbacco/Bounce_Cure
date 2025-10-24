@@ -6,6 +6,55 @@ import {Link} from "react-router-dom"
 const EmailVerificationPage = () => {
     const [emails, setEmails] = useState([]);
     const [results, setResults] = useState(null);
+   const [inputEmail, setInputEmail] = useState("");
+    const [result, setResult] = useState(null);
+    const [error, setError] = useState("");
+    const [remainingCount, setRemainingCount] = useState(null);
+
+  const [limitReached, setLimitReached] = useState(false);
+
+const handleVerify = async () => {
+  if (limitReached) return; // Prevent further attempts
+
+  if (!inputEmail) {
+    setError("Please enter an email address.");
+    return;
+  }
+
+  try {
+    setError("");
+    setResult(null);
+
+    const res = await fetch("http://localhost:5000/api/verifi-frontend/verify-single-limit", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ email: inputEmail }),
+    });
+
+    let data;
+    try {
+      data = await res.json();
+    } catch {
+      throw new Error("Unexpected server response — please try again.");
+    }
+
+    if (!res.ok) {
+      if (res.status === 429) {
+        setLimitReached(true);
+        throw new Error(data.error || "Daily limit reached — try again after 24 hours.");
+      }
+      throw new Error(data.error || "Verification failed");
+    }
+
+    setResult(data.result);
+    setRemainingCount(data.remaining);
+  } catch (err) {
+    console.error("Verification error:", err);
+    setError(err.message);
+  }
+};
 
 
 
@@ -35,25 +84,107 @@ const EmailVerificationPage = () => {
                     </p>
                 </section>
 
-                {/* Single Email Validation */}
+              {/* Single Email Validation */}
                 <section className="backdrop-blur-xl bg-white/5 border border-white/10 rounded-3xl p-8 shadow-2xl hover:border-amber-400/30 transition-all duration-500">
-                    <h2 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-white to-amber-200 bg-clip-text text-transparent">
-                        Single Email Validation
-                    </h2>
-                    <div className="flex flex-col md:flex-row gap-4 justify-center max-w-3xl mx-auto">
-                        <input
-                            type="email"
-                            placeholder="Enter email address to verify"
-                            className="bg-black/20 backdrop-blur-xl border border-white/20 rounded-2xl py-4 px-6 text-white placeholder-gray-400 focus:outline-none focus:border-amber-400/60 focus:bg-black/30 transition-all duration-300 flex-1 text-lg"
-                        />
-                        <button className="bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform hover:scale-105 hover:shadow-lg hover:shadow-amber-500/30">
-                            Verify Now
-                        </button>
-                    </div>
-                    <p className="text-gray-400 mt-6 text-center">
-                        Get instant verification results for individual emails — perfect for quick checks
+                <h2 className="text-3xl font-bold mb-6 text-center bg-gradient-to-r from-white to-amber-200 bg-clip-text text-transparent">
+                    Single Email Validation
+                </h2>
+
+                <div className="flex flex-col md:flex-row gap-4 justify-center max-w-3xl mx-auto">
+                    <input
+                    type="email"
+                    value={inputEmail}
+                    onChange={(e) => setInputEmail(e.target.value)}
+                    placeholder="Enter email address to verify"
+                    className="bg-black/20 backdrop-blur-xl border border-white/20 rounded-2xl py-4 px-6 text-white placeholder-gray-400 focus:outline-none focus:border-amber-400/60 focus:bg-black/30 transition-all duration-300 flex-1 text-lg"
+                    />
+                    <button
+                        onClick={handleVerify}
+                        disabled={limitReached}
+                        className={`bg-gradient-to-r from-amber-500 to-yellow-500 text-black font-bold py-4 px-8 rounded-2xl transition-all duration-300 transform ${
+                            limitReached
+                            ? "opacity-50 cursor-not-allowed"
+                            : "hover:scale-105 hover:shadow-lg hover:shadow-amber-500/30"
+                        }`}
+                        >
+                        {limitReached ? "Daily Limit Reached" : "Verify Now"}
+                    </button>
+
+                </div>
+
+                {/* Display messages */}
+                {/* Display messages */}
+            <div className="mt-6 text-center">
+            {error && (
+                <p className="text-red-400 font-medium">{error}</p>
+            )}
+
+            {result && (
+                <>
+                <div className="mt-4">
+                    {result.status === "valid" && (
+                    <p className="text-green-400 text-xl font-semibold">
+                        ✅ This email is valid!
                     </p>
+                    )}
+                    {result.status === "invalid" && (
+                    <p className="text-red-400 text-xl font-semibold">
+                        ❌ Invalid email address.
+                    </p>
+                    )}
+                    {result.status === "risky" && (
+                    <p className="text-yellow-400 text-xl font-semibold">
+                        ⚠️ This email might be risky or unverifiable.
+                    </p>
+                    )}
+                    {result.status === "unknown" && (
+                    <p className="text-gray-400 text-xl font-semibold">
+                        🤔 Unable to verify — please try again later.
+                    </p>
+                    )}
+                </div>
+
+                {remainingCount !== null && (
+                    <p className="text-gray-400 mt-3">
+                    Remaining verifications today:{" "}
+                    <span className="text-amber-300 font-semibold">
+                        {remainingCount}
+                    </span>
+                    </p>
+                )}
+
+                {/* === 7-LAYER VERIFICATION SUMMARY === */}
+                <div className="mt-10 grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {[
+                    { title: "Syntax Check", desc: "Validates email format", ok: true },
+                    { title: "Domain Lookup", desc: "Checks domain DNS MX records", ok: true },
+                    { title: "MX Records", desc: "Verifies mail exchanger servers", ok: result.status !== "invalid" },
+                    { title: "SMTP Check", desc: "Connects to mail server", ok: result.status === "valid" },
+                    { title: "Disposable Email", desc: "Detects temp mail services", ok: false },
+                    { title: "Role-Based Filter", desc: "Detects generic addresses", ok: true },
+                    { title: "Final Reputation", desc: "Assesses email risk level", ok: result.status === "valid" },
+                    ].map((layer, i) => (
+                    <div key={i} className={`p-5 rounded-2xl backdrop-blur-xl border shadow-xl transition-all duration-300
+                        ${layer.ok ? "bg-green-500/10 border-green-500/30" : "bg-red-500/10 border-red-500/30"}
+                    `}>
+                        <h4 className="font-bold text-lg mb-2 text-white flex items-center justify-between">
+                        {layer.title}
+                        <span>{layer.ok ? "✅" : "❌"}</span>
+                        </h4>
+                        <p className="text-gray-300 text-sm">{layer.desc}</p>
+                    </div>
+                    ))}
+                </div>
+                </>
+            )}
+            </div>
+
+
+                <p className="text-gray-400 mt-8 text-center text-sm">
+                    Free users can verify up to <span className="text-amber-300 font-semibold">5 emails</span> every 24 hours.
+                </p>
                 </section>
+
 
                 {/* Results */}
                 {results && (

@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { Check, X, ChevronDown, ChevronUp, Gift, Users, TrendingUp, Star, ArrowRight, Phone, Mail, Zap, BarChart, Globe, Shield, Smartphone, Package, Target, Send, Layout } from 'lucide-react';
 import { useNavigate, Link } from 'react-router-dom';
 import PageLayout from "../components/PageLayout"; // Adjust path as needed
-import PricingEmailVerifi from "./PricingEmailVerifi"
+import PricingEmailVerifi from "./PricingEmailVerifi";
+import PricingMultiMedia from "./PricingMultiMedia"
 
 const Pricing = () => {
   const [billingPeriod, setBillingPeriod] = useState('monthly');
@@ -12,7 +13,7 @@ const Pricing = () => {
   const [selectedPlan, setSelectedPlan] = useState(null);
   const [selectedCurrency, setSelectedCurrency] = useState('USD');
   const [showEmailVerify, setShowEmailVerify] = useState(false);
-
+  const [showMultiMedia, setShowMultiMedia] = useState(false);
   // Navigation hook
   const navigate = useNavigate();
 
@@ -588,53 +589,72 @@ const Pricing = () => {
           </div>
 
           {/* Conditional Rendering: Show Email Verify OR Standard Plans */}
-          {showEmailVerify ? (
+         {showEmailVerify ? (
             <PricingEmailVerifi 
               selectedCurrency={selectedCurrency}
               currencyRates={currencyRates}
               onClose={() => setShowEmailVerify(false)}
               navigate={navigate}
             />
+          ) : showMultiMedia ? (
+            <PricingMultiMedia 
+              selectedCurrency={selectedCurrency}
+              currencyRates={currencyRates}
+              onClose={() => setShowMultiMedia(false)}
+              navigate={navigate}
+            />
           ) : (
             <>
-              {/* Billing Period Toggle */}
-             {/* 🔄 Billing Period Toggle + Email Verification Button (side by side) */}
-            <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-8">
+               
+              {/* 🔄 Billing Period Toggle + Email Verification Button (side by side) */}
+              <div className="flex flex-col md:flex-row items-center justify-center gap-6 mb-8">
 
-              {/* Billing Period Toggle */}
-              <div className="flex justify-center">
-                <div className="bg-gray-800 rounded-xl p-1 inline-flex gap-7">
-                  {Object.entries(billingPeriods).map(([key, period]) => (
-                    <button
-                      key={key}
-                      onClick={() => setBillingPeriod(key)}
-                      className={`py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${
-                        billingPeriod === key
-                          ? "bg-[#c2831f] text-white shadow-md shadow-[#c2831f]/30"
-                          : "text-gray-300 hover:text-white hover:bg-gray-700/40"
-                      }`}
-                    >
-                      <span className="text-sm">{period.label}</span>
-                    </button>
-                  ))}
+                {/* Billing Period Toggle */}
+                <div className="flex justify-center">
+                  <div className="bg-gray-800 rounded-xl p-1 inline-flex gap-7">
+                    {Object.entries(billingPeriods).map(([key, period]) => (
+                      <button
+                        key={key}
+                        onClick={() => setBillingPeriod(key)}
+                        className={`py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${
+                          billingPeriod === key
+                            ? "bg-[#c2831f] text-white shadow-md shadow-[#c2831f]/30"
+                            : "text-gray-300 hover:text-white hover:bg-gray-700/40"
+                        }`}
+                      >
+                        <span className="text-sm">{period.label}</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
+
+                {/* Email Verification Plans Button (Right side) */}
+                <button
+                  onClick={() => setShowEmailVerify(true)}
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-white 
+                            bg-[#c2831f] px-6 py-3 rounded-xl 
+                            border-2 border-yellow-600 hover:from-blue-500 hover:to-blue-400 
+                            hover:shadow-lg hover:shadow-yellow-500/30 transition-all duration-200"
+                >
+                  <Shield className="w-4 h-4" />
+                  Email Verification Plans
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+
+                {/* Email Verification Plans Button (Right side) */}
+                <button
+                  onClick={() => setShowMultiMedia(true)}
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-white 
+                            bg-[#c2831f] px-6 py-3 rounded-xl 
+                            border-2 border-yellow-600 hover:from-blue-500 hover:to-blue-400 
+                            hover:shadow-lg hover:shadow-yellow-500/30 transition-all duration-200"
+                >
+                  <Shield className="w-4 h-4" />
+                  Multi Media Plans
+                  <ArrowRight className="w-4 h-4" />
+                </button>
               </div>
-
-              {/* Email Verification Plans Button (Right side) */}
-              <button
-                onClick={() => setShowEmailVerify(true)}
-                className="inline-flex items-center gap-2 text-sm font-semibold text-white 
-                           bg-[#c2831f] px-6 py-3 rounded-xl 
-                          border-2 border-yellow-600 hover:from-blue-500 hover:to-blue-400 
-                          hover:shadow-lg hover:shadow-yellow-500/30 transition-all duration-200"
-              >
-                <Shield className="w-4 h-4" />
-                Email Verification Plans
-                <ArrowRight className="w-4 h-4" />
-              </button>
-            </div>
-
-
+              
               {/* Contact Count and Currency Selectors */}
               <div className="max-w-4xl mx-auto mb-8 px-4">
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -811,18 +831,17 @@ const Pricing = () => {
                     </Link>
                   </div>
                 </div>
+                
+              </div>
+                {/* Footer Disclaimer */}
+              <div className="mt-12 text-center text-xs text-gray-500 max-w-4xl mx-auto space-y-2 hide">
+                <p>*Terms and conditions apply. Statistics based on platform user data.</p>
+                <p>Prices may vary globally depending on your region and selected currency.</p>
+                <p>Currency conversions are approximate and based on current exchange rates.</p>
+                <p>Selected currency: {selectedCurrency} {currencyRates[selectedCurrency].symbol}</p>
               </div>
             </>
           )}
-
-          {/* Footer Disclaimer */}
-          <div className="mt-12 text-center text-xs text-gray-500 max-w-4xl mx-auto space-y-2 hide">
-            <p>*Terms and conditions apply. Statistics based on platform user data.</p>
-            <p>Prices may vary globally depending on your region and selected currency.</p>
-            <p>Currency conversions are approximate and based on current exchange rates.</p>
-            <p>Selected currency: {selectedCurrency} {currencyRates[selectedCurrency].symbol}</p>
-          </div>
-          
      
         </div>
       </div>

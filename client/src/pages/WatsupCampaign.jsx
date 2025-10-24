@@ -182,12 +182,13 @@ const WatsupCampaign = () => {
               real results for your business.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button
-                className="bg-[#c2831f] hover:bg-[#a66a1a] text-white font-bold py-3 px-8 rounded-lg transition-colors cursor-pointer"
-                onClick={() => navigate("/login")}
-              >
-                Get Started
-              </button>
+             <button
+              className="bg-[#c2831f] hover:bg-[#a66a1a] text-white font-bold py-3 px-8 rounded-lg transition-colors cursor-pointer"
+              onClick={() => navigate("/pricing")}
+            >
+              Get Started
+            </button>
+
                
             </div>
           </div>

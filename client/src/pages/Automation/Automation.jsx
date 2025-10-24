@@ -41,7 +41,7 @@ const Automation = () => {
       const response = await fetch("http://localhost:5000/api/automation/logs", {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       });
-
+ 
       if (!response.ok) throw new Error(`Error ${response.status}`);
       const data = await response.json();
       setLogs(data);
@@ -68,40 +68,63 @@ const Automation = () => {
     }
   };
 
-  // Fetch scheduled campaigns
-  const fetchScheduledCampaigns = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/automation/scheduled", {
-        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-      });
 
-      if (response.ok) {
-        const data = await response.json();
-        setScheduledCampaigns(data);
+// Fetch scheduled + recurring campaigns (merged endpoint)
+const fetchScheduledCampaigns = async () => {
+  try {
+    setLoading(true);
+    const token = localStorage.getItem("token");
 
-        // Compute stats dynamically
-        const sentCount = data.filter(c => c.status === 'sent').length;
-        const scheduledCount = data.filter(c => c.status === 'scheduled').length;
-        const processingCount = data.filter(c => c.status === 'processing').length;
-        const failedCount = data.filter(c => c.status === 'failed').length;
-        const recurringCount = data.filter(c => c.recurringFrequency).length;
+    const response = await fetch("http://localhost:5000/api/automation-logs/scheduled", {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
 
-        setCampaignStats({
-          sent: sentCount,
-          scheduled: scheduledCount,
-          processing: processingCount,
-          failed: failedCount,
-          recurring: recurringCount,
-          pending: 0 // optional, if you track pending separately
-        });
-      }
-    } catch (error) {
-      console.error("Error fetching scheduled campaigns:", error);
-    } finally {
-      setLoading(false);
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error("❌ Failed to fetch campaigns:", errorText);
+      setScheduledCampaigns([]);
+      return;
     }
-  };
+
+    const data = await response.json();
+    console.log("✅ Fetched campaigns:", data.length);
+
+    const scheduledOnly = data.filter(campaign =>
+      campaign.scheduleType === "scheduled" || campaign.status === "scheduled"
+    );
+    setScheduledCampaigns(scheduledOnly);
+
+    // Calculate summary stats dynamically
+    const sentCount = scheduledOnly.filter(
+      c => c.status === "sent" && (c.scheduleType === "scheduled" || c.scheduleType === "recurring")
+    ).length;
+
+    const scheduledCount = scheduledOnly.filter(
+      c => c.status === "scheduled"
+    ).length;
+
+    const processingCount = data.filter(c => c.status === "processing").length;
+    const failedCount = data.filter(c => c.status === "failed").length;
+    const recurringCount = data.filter(c => c.recurringFrequency).length;
+
+    setCampaignStats({
+      sent: sentCount,
+      scheduled: scheduledCount,
+      processing: processingCount,
+      failed: failedCount,
+      recurring: recurringCount,
+      pending: 0,
+    });
+  } catch (err) {
+    console.error("⚠️ Error fetching campaigns:", err);
+    setScheduledCampaigns([]);
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Check sender verification
   const checkSenderVerification = async () => {
@@ -452,7 +475,7 @@ const renderDeliverabilityTips = () => (
               {/* Trigger Send Button with message display */}
               <div className="relative">
                 <button
-                  onClick={handleTriggerSend}
+                  onClick={fetchScheduledCampaigns}
                   className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center gap-2"
                 >
                   <RefreshCw size={16} />
@@ -493,7 +516,7 @@ const renderDeliverabilityTips = () => (
 
           {/* Tabs */}
           <div className="flex space-x-1 mb-6 bg-gray-900 p-1 rounded-lg w-fit">
-            {['overview', 'scheduled', 'logs'].map((tab) => (
+            {['overview', 'scheduled'].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -532,7 +555,7 @@ const renderDeliverabilityTips = () => (
               </div>
 
               {/* Charts */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
                 <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-white mb-4">Campaign Status Distribution</h3>
                   <div className="h-64">
@@ -540,7 +563,7 @@ const renderDeliverabilityTips = () => (
                   </div>
                 </div>
                 
-                <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
+                {/* <div className="bg-gray-900 border border-gray-800 rounded-lg p-6">
                   <h3 className="text-lg font-semibold text-white mb-4">Recent Activity</h3>
                   <div className="space-y-4">
                     {logs.slice(0, 6).map((log, index) => (
@@ -561,7 +584,7 @@ const renderDeliverabilityTips = () => (
                       </div>
                     ))}
                   </div>
-                </div>
+                </div> */}
               </div>
             </div>
           )}
@@ -666,7 +689,7 @@ const renderDeliverabilityTips = () => (
                           <td className="p-4">
                             <div className="flex items-center text-gray-300">
                               <Users size={16} className="mr-2" />
-                              {campaign.recipientCount || 0}
+                             {campaign.recipients || campaign.sentCount || 0}
                             </div>
                           </td>
                           <td className="p-4">

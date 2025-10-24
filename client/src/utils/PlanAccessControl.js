@@ -148,54 +148,51 @@ export const resetContactUsage = () => {
  * 1. They purchased Standard/Premium plan
  * 2. They still have remaining contacts (credits)
  */
-export const hasCRMAccess = () => {
-  try {
-    const userPlan = getUserPlan();
-    const planName = userPlan.toLowerCase();
-    
-    // Check if plan includes CRM
-    const planIncludesCRM = planName === 'standard' || planName === 'premium';
-    
-    if (!planIncludesCRM) {
-      console.log('🔒 CRM access denied: Plan does not include CRM');
-      return false;
-    }
-    
-    // Check if user has purchased before
-    const hasPurchased = localStorage.getItem('hasPurchasedBefore') === 'true';
-    
-    if (!hasPurchased) {
-      console.log('🔒 CRM access denied: No purchase history');
-      return false;
-    }
-    
-    // Check remaining contacts
-    const usage = getContactUsage();
-    
-    // For Premium plan with unlimited contacts
-    if (usage.total === Infinity || usage.total === 0) {
-      console.log('✅ CRM access granted: Unlimited plan');
+  export const hasCRMAccess = () => {
+    try {
+      const userPlan = getUserPlan();
+      const planName = userPlan.toLowerCase();
+
+      // ✅ CRM access only for Premium plan
+      const planIncludesCRM = planName === 'premium';
+      if (!planIncludesCRM) {
+        console.log('🔒 CRM access denied: Only Premium plan includes CRM');
+        return false;
+      }
+
+      // ✅ Check if user has purchased and plan is still active
+      const hasPurchased = localStorage.getItem('hasPurchasedBefore') === 'true';
+      const planStatus = localStorage.getItem('planStatus') || 'active';
+      const planExpiry = localStorage.getItem('nextPaymentDate');
+
+      if (!hasPurchased) {
+        console.log('🔒 CRM access denied: No active purchase');
+        return false;
+      }
+
+      // Check expiry date if available
+      if (planExpiry) {
+        const expiryDate = new Date(planExpiry);
+        if (expiryDate < new Date()) {
+          console.log('🚫 CRM access denied: Plan expired on', expiryDate);
+          return false;
+        }
+      }
+
+      if (planStatus.toLowerCase() === 'expired') {
+        console.log('🚫 CRM access denied: Plan marked as expired');
+        return false;
+      }
+
+      console.log('✅ CRM access granted for active Premium user');
       return true;
-    }
-    
-    // For plans with limited contacts
-    const hasRemainingContacts = usage.remaining > 0;
-    
-    if (!hasRemainingContacts) {
-      console.log('🔒 CRM access denied: No remaining contacts');
-      console.log(`📊 Usage: ${usage.used}/${usage.total} contacts used`);
+
+    } catch (error) {
+      console.error('Error checking CRM access:', error);
       return false;
     }
-    
-    console.log('✅ CRM access granted');
-    console.log(`📊 Remaining contacts: ${usage.remaining}/${usage.total}`);
-    return true;
-    
-  } catch (error) {
-    console.error('Error checking CRM access:', error);
-    return false;
-  }
-};
+  };
+
 
 /**
  * Check if user has access to a specific feature
@@ -244,24 +241,14 @@ export const needsUpgradeFor = (featureName) => {
  */
 export const initializeUserAfterPurchase = (plan) => {
   try {
-    // Save plan name
     setUserPlan(plan.planName);
-    
-    // Set purchase flag
     localStorage.setItem('hasPurchasedBefore', 'true');
-    
-    // Set total contacts from plan
-    const totalContacts = plan.slots || plan.contactCount || 0;
-    setTotalContacts(totalContacts);
-    
-    // Reset usage
+    localStorage.setItem('planType', plan.planType || 'monthly');
+    localStorage.setItem('planStatus', plan.status || 'succeeded');
+    localStorage.setItem('nextPaymentDate', plan.nextPaymentDate || '');
+    setTotalContacts(plan.contactCount || 0);
     resetContactUsage();
-    
-    console.log('✅ User initialized after purchase:', {
-      plan: plan.planName,
-      totalContacts: totalContacts
-    });
-    
+    console.log('✅ User initialized after purchase with expiry tracking:', plan);
     return true;
   } catch (error) {
     console.error('Error initializing user after purchase:', error);
