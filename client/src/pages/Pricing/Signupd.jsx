@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Mail, Lock, User, CheckCircle, Shield, Zap, Globe, Clock, Phone } from 'lucide-react';
 import PageLayout from '../../components/PageLayout';
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 
 const API_URL = import.meta.env.VITE_API_URL;
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const ModernSignup = () => {
     const navigate = useNavigate();
@@ -18,11 +19,84 @@ const ModernSignup = () => {
     const [focusedField, setFocusedField] = useState('');
     const [isHovered, setIsHovered] = useState(false);
 
+    // ✅ Load Google SDK and initialize button
+    useEffect(() => {
+        if (window.google && window.google.accounts) {
+            initGoogle();
+        } else {
+            const script = document.createElement("script");
+            script.src = "https://accounts.google.com/gsi/client";
+            script.async = true;
+            script.defer = true;
+            script.onload = () => {
+                console.log("✅ Google SDK loaded");
+                initGoogle();
+            };
+            document.body.appendChild(script);
+        }
+    }, []);
+
+    const initGoogle = () => {
+        try {
+            if (!GOOGLE_CLIENT_ID) {
+                console.warn("⚠️ GOOGLE_CLIENT_ID not found");
+                return;
+            }
+
+            window.google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: handleGoogleCredential,
+            });
+
+            window.google.accounts.id.renderButton(
+                document.getElementById("googleSignupButton"),
+                {
+                    theme: "outline",
+                    size: "large",
+                    text: "continue_with",
+                    shape: "rectangular",
+                    width: 320,
+                }
+            );
+
+            console.log("✅ Google Sign-Up initialized");
+        } catch (err) {
+            console.error("Google Sign-Up init error:", err);
+        }
+    };
+
+    // ✅ Handle Google credential response
+    const handleGoogleCredential = async (response) => {
+        try {
+            console.log("🟢 Google credential received:", response);
+            const idToken = response.credential;
+            if (!idToken) return toast.error("Google sign-up failed: no token");
+
+            const res = await fetch(`${API_URL}/auth/google`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ idToken }),
+            });
+
+            const data = await res.json();
+            console.log("📦 Google signup backend response:", data);
+
+            if (res.ok && data.token) {
+                localStorage.setItem("token", data.token);
+                toast.success("Google signup successful 🎉");
+                navigate("/dashboard");
+            } else {
+                toast.error(data.message || "Google signup failed ❌");
+            }
+        } catch (err) {
+            console.error("🔥 Google signup error:", err);
+            toast.error("Something went wrong during Google signup");
+        }
+    };
+
+    // ✅ Manual input handlers
     const handleInputChange = (e) => {
-        setFormData({
-            ...formData,
-            [e.target.name]: e.target.value
-        });
+        setFormData({ ...formData, [e.target.name]: e.target.value });
     };
 
     const handleSubmit = async (e) => {
@@ -34,23 +108,21 @@ const ModernSignup = () => {
                 body: JSON.stringify(formData)
             });
             const data = await res.json();
-            console.log('Server response:', data);
-            // alert("Signup successful! Please check your email for verification.");
+            console.log('📦 Signup response:', data);
 
-            if (res.status === 201) {
+            if (res.status === 201 || res.ok) {
                 toast.success("Signup successful! 🎉 Please check your email for verification.");
-                navigate("/signin"); // Redirect to login
+                navigate("/signin");
             } else {
                 toast.error(data.message || "Signup failed ❌");
             }
-
-
         } catch (err) {
-            console.error('Error submitting form:', err);
+            console.error('🔥 Error submitting form:', err);
             toast.error("Something went wrong!");
         }
     };
 
+    // Benefits + Companies section
     const benefits = [
         { icon: <CheckCircle className="w-5 h-5" />, text: "100 free credits every month" },
         { icon: <Mail className="w-5 h-5" />, text: "Email Provider Integrations" },
@@ -70,40 +142,29 @@ const ModernSignup = () => {
     return (
         <PageLayout>
             <div className="min-h-screen mt-[2%] flex flex-col md:flex-row w-full">
+                {/* Background effects */}
                 <div className="absolute inset-0 overflow-hidden">
                     <div className="absolute -top-40 -right-40 w-80 h-80 bg-white rounded-full mix-blend-difference filter blur-xl opacity-5 animate-pulse hidden sm:block"></div>
                     <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white rounded-full mix-blend-difference filter blur-xl opacity-5 animate-pulse hidden sm:block"></div>
                     <div className="absolute top-40 left-40 w-60 h-60 bg-white rounded-full mix-blend-difference filter blur-xl opacity-5 animate-pulse hidden sm:block"></div>
                 </div>
 
+                {/* Signup form section */}
                 <div className="flex-1 flex items-center justify-center p-6 sm:p-8 relative z-10">
                     <div className="w-full max-w-md md:max-w-lg">
                         <div className="text-center mt-20 mb-8">
                             <div className="inline-flex items-center justify-center w-16 h-16 bg-white rounded-2xl mb-6 transform hover:scale-110 transition-transform duration-300">
-                                <Mail className="w-8 h-8 text-[#c2831f] " />
+                                <Mail className="w-8 h-8 text-[#c2831f]" />
                             </div>
-                            <h1 className="text-3xl sm:text-4xl font-bold text-[#c2831f] mb-2">
-                                Bounce Cure
-                            </h1>
-                            <p className="text-gray-400 text-base sm:text-lg">
-                                Create your free account in seconds
-                            </p>
+                            <h1 className="text-3xl sm:text-4xl font-bold text-[#c2831f] mb-2">Bounce Cure</h1>
+                            <p className="text-gray-400 text-base sm:text-lg">Create your free account in seconds</p>
                             <div className="w-20 h-1 bg-white mx-auto mt-4 rounded-full"></div>
                         </div>
 
-                        <button
-                            className="w-full bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl py-3 px-4 text-white font-medium flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all duration-300 mb-6 group"
-                            onMouseEnter={() => setIsHovered(true)}
-                            onMouseLeave={() => setIsHovered(false)}
-                        >
-                            <div className="w-5 h-5 bg-white rounded-full flex items-center justify-center group-hover:bg-black transition-colors duration-300">
-                                <span className="text-xs font-bold text-black group-hover:text-white">G</span>
-                            </div>
-                            <span className={`transition-transform duration-300 ${isHovered ? 'translate-x-1' : ''}`}>
-                                Continue with Google
-                            </span>
-                        </button>
+                        {/* ✅ Google Sign-Up Button */}
+                        <div id="googleSignupButton" className="flex justify-center mt-4 mb-6"></div>
 
+                        {/* Divider */}
                         <div className="relative mb-6">
                             <div className="absolute inset-0 flex items-center">
                                 <div className="w-full border-t border-gray-600"></div>
@@ -113,10 +174,11 @@ const ModernSignup = () => {
                             </div>
                         </div>
 
+                        {/* Signup form */}
                         <form className="space-y-4" onSubmit={handleSubmit}>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="relative group">
-                                    <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'firstName' ? 'text-white' : 'text-white'}`} />
+                                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-white" />
                                     <input
                                         type="text"
                                         name="firstName"
@@ -125,10 +187,11 @@ const ModernSignup = () => {
                                         onChange={handleInputChange}
                                         onFocus={() => setFocusedField('firstName')}
                                         onBlur={() => setFocusedField('')}
-                                        className="w-full bg-white/5 bg-clip-padding border border-white/20 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300" />
+                                        className="w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
+                                    />
                                 </div>
                                 <div className="relative group">
-                                    <User className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'lastName' ? 'text-white' : 'text-gray-400'}`} />
+                                    <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                                     <input
                                         type="text"
                                         name="lastName"
@@ -137,13 +200,13 @@ const ModernSignup = () => {
                                         onChange={handleInputChange}
                                         onFocus={() => setFocusedField('lastName')}
                                         onBlur={() => setFocusedField('')}
-                                        className="w-full bg-white/5  border border-white/20 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
+                                        className="w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
                                     />
                                 </div>
                             </div>
 
                             <div className="relative group">
-                                <Mail className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'email' ? 'text-white' : 'text-gray-400'}`} />
+                                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                                 <input
                                     type="email"
                                     name="email"
@@ -157,7 +220,7 @@ const ModernSignup = () => {
                             </div>
 
                             <div className="relative group">
-                                <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'password' ? 'text-white' : 'text-gray-400'}`} />
+                                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                                 <input
                                     type="password"
                                     name="password"
@@ -166,7 +229,7 @@ const ModernSignup = () => {
                                     onChange={handleInputChange}
                                     onFocus={() => setFocusedField('password')}
                                     onBlur={() => setFocusedField('')}
-                                    className="w-full bg-white/5  border border-white/20 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
+                                    className="w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
                                 />
                             </div>
 
@@ -180,13 +243,14 @@ const ModernSignup = () => {
 
                         <p className="text-center text-gray-400 mt-6">
                             Already have an account?{' '}
-                            <a href="/login" className="text-white hover:text-gray-300 transition-colors duration-300 underline">
+                            <a href="/signin" className="text-white hover:text-gray-300 transition-colors duration-300 underline">
                                 Sign in here
                             </a>
                         </p>
                     </div>
                 </div>
 
+                {/* Right panel - benefits */}
                 <div className="flex-1 flex items-center justify-center p-6 sm:p-8 relative z-10">
                     <div className="w-full max-w-lg">
                         <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl">
@@ -195,12 +259,8 @@ const ModernSignup = () => {
                                     <Shield className="w-5 h-5 text-[#c2831f]" />
                                     <span className="text-[#c2831f] font-medium text-sm sm:text-base">Premium Business Account</span>
                                 </div>
-                                <h3 className="text-xl sm:text-2xl font-bold text-[#c2831f] mb-2">
-                                    Unlock Premium Features
-                                </h3>
-                                <p className="text-gray-300 text-sm sm:text-base">
-                                    Get everything you need to validate emails at scale
-                                </p>
+                                <h3 className="text-xl sm:text-2xl font-bold text-[#c2831f] mb-2">Unlock Premium Features</h3>
+                                <p className="text-gray-300 text-sm sm:text-base">Get everything you need to validate emails at scale</p>
                             </div>
 
                             <div className="space-y-4 mb-8">
@@ -208,7 +268,6 @@ const ModernSignup = () => {
                                     <div
                                         key={index}
                                         className="flex items-center gap-3 text-white hover:bg-white/5 p-3 rounded-xl transition-all duration-300 group border border-transparent hover:border-white/10"
-                                        style={{ animationDelay: `${index * 100}ms` }}
                                     >
                                         <div className="text-white group-hover:scale-110 transition-transform duration-300">
                                             {benefit.icon}
@@ -243,11 +302,6 @@ const ModernSignup = () => {
                                 </div>
                             </div>
                         </div>
-
-                        <div className="absolute top-10 right-10 w-32 h-32 border border-white/10 rounded-full animate-pulse hidden sm:block"></div>
-                        <div className="absolute bottom-10 left-10 w-24 h-24 border border-white/5 rounded-full animate-pulse hidden sm:block"></div>
-                        <div className="absolute top-1/2 left-0 w-2 h-20 bg-white/20 rounded-full hidden sm:block"></div>
-                        <div className="absolute top-1/4 right-0 w-1 h-32 bg-white/10 rounded-full hidden sm:block"></div>
                     </div>
                 </div>
             </div>

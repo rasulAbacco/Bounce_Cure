@@ -4,17 +4,15 @@ export default function MediaUploader({ mediaUrl, onChange }) {
     const [preview, setPreview] = useState(mediaUrl);
     const [uploading, setUploading] = useState(false);
     const [manualUrl, setManualUrl] = useState("");
-    const [mode, setMode] = useState("upload"); // "upload" or "link"
+    const [mode, setMode] = useState("upload");
 
     const CLOUD_NAME = import.meta.env.VITE_CLOUDINARY_NAME;
     const UPLOAD_PRESET = import.meta.env.VITE_CLOUDINARY_PRESET;
 
-    // 🖼️ Handle file upload from device
     const handleFile = async (e) => {
         const file = e.target.files[0];
         if (!file) return;
 
-        // Local preview before upload
         const localPreview = URL.createObjectURL(file);
         setPreview(localPreview);
 
@@ -49,7 +47,6 @@ export default function MediaUploader({ mediaUrl, onChange }) {
         }
     };
 
-    // 🔗 Handle manual link entry
     const handleLinkSubmit = () => {
         if (!manualUrl.trim()) {
             alert("Please enter a valid image or video link");
@@ -59,27 +56,26 @@ export default function MediaUploader({ mediaUrl, onChange }) {
         setPreview(manualUrl.trim());
     };
 
-    // 🧹 Clear the current media selection
     const handleClear = () => {
         onChange(null);
         setPreview(null);
         setManualUrl("");
     };
 
-    // 🖼️ Determine if URL is an image or video
     const renderPreview = () => {
         if (!preview) return null;
         const isVideo = preview.match(/\.(mp4|mov|avi|webm|mkv)$/i);
         return (
-            <div className="mt-3 relative">
+            <div className="mt-4 relative group/preview animate-fadeIn">
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-500/20 to-transparent rounded-2xl blur-xl"></div>
                 {isVideo ? (
-                    <video src={preview} controls className="rounded-xl max-h-48 w-auto" />
+                    <video src={preview} controls className="relative rounded-2xl max-h-52 w-auto border border-amber-500/30" />
                 ) : (
-                    <img src={preview} alt="preview" className="rounded-xl max-h-48 w-auto" />
+                    <img src={preview} alt="preview" className="relative rounded-2xl max-h-52 w-auto border border-amber-500/30" />
                 )}
                 <button
                     onClick={handleClear}
-                    className="absolute top-2 right-2 bg-black/50 text-white px-2 py-1 rounded-md text-xs hover:bg-black/70"
+                    className="absolute top-3 right-3 bg-red-600/90 backdrop-blur-sm text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-red-700 transition-all duration-300 opacity-0 group-hover/preview:opacity-100"
                 >
                     ✕ Remove
                 </button>
@@ -88,70 +84,72 @@ export default function MediaUploader({ mediaUrl, onChange }) {
     };
 
     return (
-        <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-xl border border-gray-300 dark:border-gray-700">
-            <label className="font-medium text-gray-800 dark:text-gray-200 block mb-2">
+        <div className="bg-gradient-to-br from-gray-900 to-black p-5 rounded-xl border border-amber-500/20">
+            <label className="font-semibold text-amber-400 text-sm uppercase tracking-wider flex items-center gap-2">
+                <span className="w-2 h-2 bg-amber-400 rounded-full animate-pulse"></span>
                 Media (optional)
             </label>
 
-            {/* Toggle between Upload / Link modes */}
-            <div className="flex gap-2 mb-3">
+            <div className="flex gap-2 mt-4">
                 <button
                     type="button"
                     onClick={() => setMode("upload")}
-                    className={`px-3 py-1 rounded-md text-sm ${mode === "upload"
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300"
+                    className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${mode === "upload"
+                            ? "bg-gradient-to-r from-amber-600 to-amber-500 text-black shadow-lg shadow-amber-500/50"
+                            : "bg-gray-800 text-gray-400 hover:bg-gray-700"
                         }`}
                 >
-                    Upload from Device
+                    📤 Upload
                 </button>
                 <button
                     type="button"
                     onClick={() => setMode("link")}
-                    className={`px-3 py-1 rounded-md text-sm ${mode === "link"
-                            ? "bg-blue-600 text-white"
-                            : "bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-300"
+                    className={`flex-1 px-4 py-2.5 rounded-lg text-sm font-medium transition-all duration-300 ${mode === "link"
+                            ? "bg-gradient-to-r from-amber-600 to-amber-500 text-black shadow-lg shadow-amber-500/50"
+                            : "bg-gray-800 text-gray-400 hover:bg-gray-700"
                         }`}
                 >
-                    Paste Media Link
+                    🔗 Paste Link
                 </button>
             </div>
 
-            {/* Upload mode */}
             {mode === "upload" && (
-                <div>
+                <div className="mt-4">
                     <input
                         type="file"
                         accept="image/*,video/*"
-                        className="block mt-2 w-full text-sm text-gray-700 dark:text-gray-300"
+                        className="block w-full text-sm text-gray-400 file:mr-4 file:py-2.5 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-amber-500 file:text-black hover:file:bg-amber-600 file:cursor-pointer transition-all duration-300"
                         onChange={handleFile}
                         disabled={uploading}
                     />
-                    {uploading && <p className="text-blue-600 mt-2">Uploading...</p>}
+                    {uploading && (
+                        <div className="flex items-center gap-2 mt-3 text-amber-400 text-sm">
+                            <div className="w-4 h-4 border-2 border-amber-400 border-t-transparent rounded-full animate-spin"></div>
+                            Uploading...
+                        </div>
+                    )}
                 </div>
             )}
 
-            {/* Paste link mode */}
             {mode === "link" && (
-                <div className="mt-2 space-y-2">
+                <div className="mt-4 space-y-3">
                     <input
                         type="text"
-                        placeholder="Enter a public image or video URL"
+                        placeholder="https://example.com/media.jpg"
                         value={manualUrl}
                         onChange={(e) => setManualUrl(e.target.value)}
-                        className="w-full p-2 border rounded-md bg-white dark:bg-gray-800 border-gray-300 dark:border-gray-700 text-sm text-gray-800 dark:text-gray-200"
+                        className="w-full p-3 border rounded-lg bg-black border-amber-500/20 text-sm text-white placeholder-gray-600 focus:outline-none focus:border-amber-500/50 focus:ring-2 focus:ring-amber-500/20 transition-all duration-300"
                     />
                     <button
                         type="button"
                         onClick={handleLinkSubmit}
-                        className="px-4 py-1 bg-blue-600 text-white rounded-md text-sm hover:bg-blue-700"
+                        className="w-full px-4 py-2.5 bg-gradient-to-r from-amber-600 to-amber-500 text-black rounded-lg text-sm font-medium hover:shadow-lg hover:shadow-amber-500/50 transition-all duration-300"
                     >
                         Add Media Link
                     </button>
                 </div>
             )}
 
-            {/* Preview */}
             {renderPreview()}
         </div>
     );

@@ -84,6 +84,9 @@ const PORT = process.env.PORT || 5000;
 
 // Allowed origins for CORS
 // ---------- CORS (update this block completely) ----------
+// ---------- ✅ CORS CONFIG (FINAL VERSION) ----------
+
+
 const allowedOrigins = [
   "http://localhost:5173",
   "https://www.bouncecure.com"
@@ -92,17 +95,23 @@ const allowedOrigins = [
 app.use(
   cors({
     origin(origin, callback) {
-      // Allow requests with no origin (mobile apps, curl, Postman)
+      // Allow requests with no origin (e.g. Postman, mobile apps)
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) return callback(null, true);
+      console.warn(`❌ Blocked by CORS: ${origin}`);
       return callback(new Error("Not allowed by CORS"));
     },
     methods: ["GET", "HEAD", "PUT", "PATCH", "POST", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization"],
+    allowedHeaders: ["Content-Type", "Authorization"], // ✅ key fix
     credentials: true,
+    preflightContinue: false,
     optionsSuccessStatus: 204,
   })
 );
+
+// ✅ Optional: explicitly handle OPTIONS requests
+app.options("*", cors());
+
 
 // Explicitly handle preflight requests (very important for GIS)
 app.options("*", cors({

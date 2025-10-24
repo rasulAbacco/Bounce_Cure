@@ -3,76 +3,44 @@ import React, { useState, useContext } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { UserContext } from '../../components/UserContext';
 import { Mail, Lock, Eye, EyeOff, ArrowRight, Shield, Zap, Users, CheckCircle } from 'lucide-react';
-import PageLayout from '../../components/PageLayout';
 import toast from 'react-hot-toast';
 
 const API_URL = import.meta.env.VITE_API_URL;
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
 const Signin = () => {
-    // Currency exchange rates (relative to USD)
+    // Currency exchange rates
     const exchangeRates = {
-        USD: 1,
-        EUR: 0.93,
-        GBP: 0.79,
-        INR: 83.12,
-        AUD: 1.52,
-        CAD: 1.36,
-        JPY: 149.62,
-        NZD: 1.66,
-        NOK: 10.65,
-        SEK: 10.75,
-        CHF: 0.89
+        USD: 1, EUR: 0.93, GBP: 0.79, INR: 83.12,
+        AUD: 1.52, CAD: 1.36, JPY: 149.62,
+        NZD: 1.66, NOK: 10.65, SEK: 10.75, CHF: 0.89
     };
 
-    // Currency symbols
     const currencySymbols = {
-        USD: '$',
-        EUR: '€',
-        GBP: '£',
-        INR: '₹',
-        AUD: 'A$',
-        CAD: 'C$',
-        JPY: '¥',
-        NZD: 'NZ$',
-        NOK: 'kr',
-        SEK: 'kr',
-        CHF: 'CHF'
+        USD: '$', EUR: '€', GBP: '£', INR: '₹',
+        AUD: 'A$', CAD: 'C$', JPY: '¥', NZD: 'NZ$',
+        NOK: 'kr', SEK: 'kr', CHF: 'CHF'
     };
 
-    // Format price (already converted from Pricing.jsx)
     const formatPrice = (price, currency) => {
         const symbol = currencySymbols[currency] || '$';
-
-        // The price is already converted in Pricing.jsx, so don't convert again
-        if (currency === 'JPY') {
-            return `${symbol}${Math.round(price)}`;
-        } else if (currency === 'CHF') {
-            return `${price.toFixed(2)} ${symbol}`;
-        } else {
-            return `${symbol}${price.toFixed(2)}`;
-        }
+        if (currency === 'JPY') return `${symbol}${Math.round(price)}`;
+        if (currency === 'CHF') return `${price.toFixed(2)} ${symbol}`;
+        return `${symbol}${price.toFixed(2)}`;
     };
 
-    const [formData, setFormData] = useState({
-        email: "",
-        password: ""
-    });
-    
+    const [formData, setFormData] = useState({ email: "", password: "" });
     const [focusedField, setFocusedField] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [rememberMe, setRememberMe] = useState(false);
-    const [isHovered, setIsHovered] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
-    
+
     const navigate = useNavigate();
     const location = useLocation();
     const { setUser } = useContext(UserContext);
-    
-    // Get redirect path from location state or default to pricing
+
     const from = location.state?.redirectTo || '/pricingdash';
-    
-    // Get plan details from location state if available
     const planDetails = location.state?.plan;
 
     const handleChange = (e) => {
@@ -91,16 +59,11 @@ const Signin = () => {
                 body: JSON.stringify(formData)
             });
 
-            const data = await res.json().catch(err => {
-                console.error("JSON parse error:", err);
-                return {};
-            });
+            const data = await res.json().catch(() => ({}));
 
             if (res.ok && data.token) {
-                // Store token securely
                 localStorage.setItem("token", data.token);
-                
-                // Update user context with plan information
+
                 if (data.user) {
                     setUser({
                         id: data.user.id,
@@ -113,7 +76,6 @@ const Signin = () => {
                         emailLimit: data.user.emailLimit || 1000
                     });
 
-                    // ✅ Store userId in localStorage for Stripe usage
                     localStorage.setItem("userId", data.user.id);
                     localStorage.setItem("userName", data.user.name || "");
                     localStorage.setItem("userEmail", data.user.email || "");
@@ -123,13 +85,10 @@ const Signin = () => {
                     localStorage.setItem("emailLimit", (data.user.emailLimit || 1000).toString());
                 }
 
-                
                 toast.success("Login successful! 🎉");
-                console.log("Token saved, redirecting to:", from);
                 navigate(from, { replace: true });
                 window.location.reload();
             } else {
-                // Clear any old token to avoid using stale credentials
                 localStorage.removeItem("token");
                 setError(data.message || "Login failed");
                 toast.error(data.message || "Login failed");
@@ -143,41 +102,69 @@ const Signin = () => {
         }
     };
 
-    const stats = [
-        { icon: <Users className="w-6 h-6" />, number: "400K+", label: "Active Users" },
-        { icon: <CheckCircle className="w-6 h-6" />, number: "99.9%", label: "Accuracy Rate" },
-        { icon: <Zap className="w-6 h-6" />, number: "<2s", label: "Response Time" },
-        { icon: <Shield className="w-6 h-6" />, number: "100%", label: "Secure" }
-    ];
-
-    const testimonials = [
-        {
-            quote: "Bounce Cure transformed our email campaigns with 99% accuracy.",
-            author: "Sarah Chen",
-            company: "TechStart Inc"
-        },
-        {
-            quote: "The fastest and most reliable email validation service we've used.",
-            author: "Michael Rodriguez",
-            company: "Digital Marketing Pro"
-        },
-        {
-            quote: "Saved us thousands in email costs with precise validation.",
-            author: "Emma Thompson",
-            company: "E-commerce Solutions"
-        }
-    ];
-
-    const [currentTestimonial, setCurrentTestimonial] = useState(0);
-
+    // ✅ Google Sign-In logic from ModernLogin.jsx
     React.useEffect(() => {
-        const interval = setInterval(() => {
-            setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
-        }, 4000);
-        return () => clearInterval(interval);
+        if (!window.google || !GOOGLE_CLIENT_ID) return;
+
+        try {
+            window.google.accounts.id.initialize({
+                client_id: GOOGLE_CLIENT_ID,
+                callback: handleGoogleCredential,
+            });
+
+            window.google.accounts.id.renderButton(
+                document.getElementById("googleSignInDiv"),
+                {
+                    theme: "outline",
+                    size: "large",
+                    text: "continue_with",
+                    shape: "rectangular",
+                    width: 320,
+                }
+            );
+
+            console.log("✅ Google Sign-In initialized (Pricing/Signin)");
+        } catch (err) {
+            console.error("Google initialization error:", err);
+        }
     }, []);
 
-    // FIXED: Helper to get billing period label
+    const handleGoogleCredential = async (response) => {
+        if (!response?.credential) {
+            toast.error("Google sign-in failed: no credential returned");
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}/auth/google`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                credentials: "include",
+                body: JSON.stringify({ idToken: response.credential }),
+            });
+
+            const data = await res.json().catch(() => ({}));
+            if (res.ok && data.token) {
+                localStorage.setItem("token", data.token);
+
+                if (data.user) {
+                    localStorage.setItem("userId", data.user.id);
+                    localStorage.setItem("userName", data.user.name || "");
+                    localStorage.setItem("userEmail", data.user.email || "");
+                }
+
+                toast.success("Signed in with Google ✔️");
+                navigate(from);
+                setTimeout(() => window.location.reload(), 500);
+            } else {
+                toast.error(data.message || "Google sign-in failed");
+            }
+        } catch (err) {
+            console.error("🔥 Google sign-in error:", err);
+            toast.error("Google sign-in error");
+        }
+    };
+
     const getBillingPeriodLabel = () => {
         if (!planDetails) return 'month';
         const period = planDetails.billingPeriod?.toLowerCase();
@@ -186,9 +173,30 @@ const Signin = () => {
         return 'month';
     };
 
+    const stats = [
+        { icon: <Users className="w-6 h-6" />, number: "400K+", label: "Active Users" },
+        { icon: <CheckCircle className="w-6 h-6" />, number: "99.9%", label: "Accuracy Rate" },
+        { icon: <Zap className="w-6 h-6" />, number: "<2s", label: "Response Time" },
+        { icon: <Shield className="w-6 h-6" />, number: "100%", label: "Secure" }
+    ];
+
+    const testimonials = [
+        { quote: "Bounce Cure transformed our email campaigns with 99% accuracy.", author: "Sarah Chen", company: "TechStart Inc" },
+        { quote: "The fastest and most reliable email validation service we've used.", author: "Michael Rodriguez", company: "Digital Marketing Pro" },
+        { quote: "Saved us thousands in email costs with precise validation.", author: "Emma Thompson", company: "E-commerce Solutions" }
+    ];
+
+    const [currentTestimonial, setCurrentTestimonial] = useState(0);
+    React.useEffect(() => {
+        const interval = setInterval(() => {
+            setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+        }, 4000);
+        return () => clearInterval(interval);
+    }, []);
+
     return (
         <div className="min-h-screen bg-black mt-[5%] sm:mt-0 flex flex-col md:flex-row w-full">
-            {/* Animated Background Elements */}
+            {/* Animated background */}
             <div className="absolute inset-0 overflow-hidden">
                 <div className="absolute -top-40 -right-40 w-80 h-80 bg-white rounded-full mix-blend-difference filter blur-xl opacity-3 animate-pulse"></div>
                 <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-white rounded-full mix-blend-difference filter blur-xl opacity-3 animate-pulse"></div>
@@ -198,7 +206,6 @@ const Signin = () => {
             {/* Left Side */}
             <div className="flex-1 flex items-center justify-center p-6 sm:p-8 relative z-10 mt-[5%]">
                 <div className="w-full max-w-lg text-center md:text-left">
-                    {/* Welcome Section */}
                     <div className="mb-8 sm:mb-12 mt-8 md:mt-0">
                         <div className="inline-flex items-center justify-center w-16 h-16 sm:w-20 sm:h-20 bg-white rounded-3xl mb-6 sm:mb-8 transform hover:scale-110 transition-transform duration-300">
                             <Mail className="w-8 h-8 sm:w-10 sm:h-10 text-[#dea923]" />
@@ -219,76 +226,9 @@ const Signin = () => {
             <div className="flex-1 flex items-center justify-center p-6 sm:p-8 relative z-10">
                 <div className="w-full max-w-md">
                     <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-white/10 shadow-2xl">
-                        {/* Header */}
                         <div className="text-center mb-6 sm:mb-8">
-                            <h2 className="text-2xl sm:text-3xl font-bold text-[#c2831f] mb-2">
-                                Sign In to Upgrade
-                            </h2>
-                            <p className="text-gray-300 text-sm sm:text-base">
-                                Access your account to purchase a premium plan
-                            </p>
-                            
-                            {/* Selected Plan Display */}
-                            {planDetails && (
-                                <div className="mt-4 bg-black/30 backdrop-blur-sm rounded-xl p-4 border border-white/10">
-                                    <div className="flex justify-between items-center mb-3">
-                                        <div>
-                                            <p className="text-xs text-gray-400">Selected Plan</p>
-                                            <p className="text-lg font-bold text-white">{planDetails.planName}</p>
-                                        </div>
-                                        <div className="text-right">
-                                            <p className="text-xs text-gray-400">Price</p>
-                                            <p className="text-lg font-bold text-[#c2831f]">
-                                                {formatPrice(planDetails.basePrice, planDetails.currency || 'USD')}
-                                                <span className="text-sm text-gray-400 font-normal">
-                                                    /{getBillingPeriodLabel()}
-                                                </span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                    
-                                    {/* Plan Details Grid */}
-                                    <div className="grid grid-cols-2 gap-3 mt-3 pt-3 border-t border-white/10">
-                                        <div>
-                                            <p className="text-xs text-gray-400">Currency</p>
-                                            <p className="text-sm font-medium text-white">{planDetails.currency || 'USD'}</p>
-                                        </div>
-                                        <div>
-                                            <p className="text-xs text-gray-400">Contacts</p>
-                                            <p className="text-sm font-medium text-white">
-                                                {(planDetails.contactCount || planDetails.slots)?.toLocaleString() || '500'}
-                                            </p>
-                                        </div>
-                                        
-                                        {/* FIXED: Show email sends with billing period */}
-                                        <div>
-                                            <p className="text-xs text-gray-400">Email Sends</p>
-                                            <p className="text-sm font-medium text-white">
-                                                {(planDetails.emailSends || planDetails.emails || 0).toLocaleString()}/{getBillingPeriodLabel()}
-                                            </p>
-                                        </div>
-                                        
-                                        {/* FIXED: Show email validations if available */}
-                                        {planDetails.emailValidations > 0 && (
-                                            <div>
-                                                <p className="text-xs text-gray-400">Email Validations</p>
-                                                <p className="text-sm font-medium text-white">
-                                                    {planDetails.emailValidations.toLocaleString()}/{getBillingPeriodLabel()}
-                                                </p>
-                                            </div>
-                                        )}
-                                    </div>
-                                    
-                                    {/* Discount Badge */}
-                                    {planDetails.discountApplied && (
-                                        <div className="mt-3 bg-green-900/30 border border-green-500 rounded-lg p-2 text-green-200 text-xs flex items-center justify-center">
-                                            <CheckCircle className="w-4 h-4 mr-1" />
-                                            New customer discount: {Math.round(planDetails.discount * 100)}% OFF
-                                        </div>
-                                    )}
-                                </div>
-                            )}
-                            
+                            <h2 className="text-2xl sm:text-3xl font-bold text-[#c2831f] mb-2">Sign In to Upgrade</h2>
+                            <p className="text-gray-300 text-sm sm:text-base">Access your account to purchase a premium plan</p>
                             <div className="w-12 sm:w-16 h-1 bg-white mx-auto mt-3 sm:mt-4 rounded-full"></div>
                         </div>
 
@@ -298,19 +238,10 @@ const Signin = () => {
                             </div>
                         )}
 
-                        {/* Google Button */}
-                        <button
-                            className="w-full bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl py-2 sm:py-3 px-4 text-white font-medium flex items-center justify-center gap-3 hover:bg-white hover:text-black transition-all duration-300 mb-6 group"
-                            onMouseEnter={() => setIsHovered(true)}
-                            onMouseLeave={() => setIsHovered(false)}
-                        >
-                            <div className="w-5 h-5 bg-[#c2831f] rounded-full flex items-center justify-center group-hover:bg-black transition-colors duration-300">
-                                <span className="text-xs font-bold text-black group-hover:text-white">G</span>
-                            </div>
-                            <span className={`transition-transform text-[#c2831f] duration-300 ${isHovered ? 'translate-x-1' : ''}`}>
-                                Continue with Google
-                            </span>
-                        </button>
+                        {/* ✅ Official Google Sign-In Button */}
+                        <div className="flex justify-center mb-6">
+                            <div id="googleSignInDiv"></div>
+                        </div>
 
                         {/* Divider */}
                         <div className="relative mb-6">
@@ -322,10 +253,10 @@ const Signin = () => {
                             </div>
                         </div>
 
-                        {/* Login Form */}
+                        {/* Email Login Form */}
                         <form onSubmit={handleSubmit} className="space-y-4 sm:space-y-6">
                             <div className="relative group">
-                                <Mail className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'email' ? 'text-white' : 'text-gray-400'}`} />
+                                <Mail className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${focusedField === 'email' ? 'text-white' : 'text-gray-400'}`} />
                                 <input
                                     type="email"
                                     name="email"
@@ -340,7 +271,7 @@ const Signin = () => {
                             </div>
 
                             <div className="relative group">
-                                <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors duration-300 ${focusedField === 'password' ? 'text-white' : 'text-gray-400'}`} />
+                                <Lock className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 ${focusedField === 'password' ? 'text-white' : 'text-gray-400'}`} />
                                 <input
                                     type={showPassword ? 'text' : 'password'}
                                     name="password"
@@ -407,7 +338,6 @@ const Signin = () => {
                             </button>
                         </form>
 
-                        {/* Sign Up Link */}
                         <p className="text-center text-gray-400 mt-6 text-sm sm:text-base">
                             Don't have an account?{' '}
                             <a href="/signupd" className="text-[#c2831f] hover:text-gray-300 transition-colors duration-300 underline font-medium">
