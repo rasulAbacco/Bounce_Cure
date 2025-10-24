@@ -336,10 +336,10 @@ export default function CampaignBuilder() {
   const [authError, setAuthError] = useState(false);
 
   // ✅ NEW STATE FOR CREDITS
-  const [emailCredits, setEmailCredits] = useState(0);
+  const [emailCredits, setEmailCredits] = useState(1110);
   const [isLoadingCredits, setIsLoadingCredits] = useState(true);
   const [creditError, setCreditError] = useState(null);
-  const [batchProgress, setBatchProgress] = useState({ current: 0, total: 0 });
+  const [batchProgress, setBatchProgress] = useState({ current: 1110, total: 1110 });
 
   // Helper function to get auth token
   const getAuthToken = () => {
@@ -495,6 +495,7 @@ export default function CampaignBuilder() {
         "Content-Type": "application/json",
         "Authorization": `Bearer ${token}`,
       };
+      console.log("🚀 Sending campaign with token:", getAuthToken());
 
       // Fetch contacts
       const contactsResponse = await fetch(`${API_URL}/api/campaigncontacts`, { headers });

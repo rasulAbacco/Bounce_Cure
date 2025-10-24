@@ -287,6 +287,14 @@ router.get("/credits", protect, async (req, res) => {
       where: { id: req.user.id },
       select: { emailLimit: true, contactLimit: true, plan: true },
     });
+    console.log("🧾 Credit Check =>", {
+      userId: req.user.id,
+      availableCredits,
+      requiredCredits,
+      fromEmail,
+      fromName,
+    });
+
     res.json({
       success: true,
       emailSendCredits: latestPayment?.emailSendCredits ?? user?.emailLimit ?? 50,
