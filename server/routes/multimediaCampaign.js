@@ -182,32 +182,27 @@ router.post("/send", protect, async (req, res) => {
  * Returns WhatsApp + SMS campaigns + recipients for the logged-in user
  */
 router.get("/history", protect, async (req, res) => {
-    try {
-        const userId = req.user.id;
+  try {
+    const userId = req.user.id;
 
-        // Fetch all WhatsApp campaigns with recipients
-        const whatsappCampaigns = await prisma.whatsappCampaign.findMany({
-            where: { userId },
-            include: { recipients: true },
-            orderBy: { createdAt: "desc" },
-        });
+    const whatsappCampaigns = await prisma.whatsAppCampaign.findMany({
+      where: { userId },
+      include: { whatsappRecipients: true }, // update relation name if needed
+      orderBy: { createdAt: "desc" },
+    });
 
-        // Fetch all SMS campaigns with recipients
-        const smsCampaigns = await prisma.smsCampaign.findMany({
-            where: { userId },
-            include: { recipients: true },
-            orderBy: { createdAt: "desc" },
-        });
+    const smsCampaigns = await prisma.sMSCampaign.findMany({
+      where: { userId },
+      include: { smsRecipients: true }, // update relation name if needed
+      orderBy: { createdAt: "desc" },
+    });
 
-        return res.json({
-            success: true,
-            whatsappCampaigns,
-            smsCampaigns,
-        });
-    } catch (error) {
-        console.error("❌ Error fetching campaign history:", error);
-        return res.status(500).json({ success: false, error: error.message });
-    }
+    res.json({ success: true, whatsappCampaigns, smsCampaigns });
+  } catch (error) {
+    console.error("❌ Error fetching campaign history:", error);
+    res.status(500).json({ success: false, error: error.message });
+  }
 });
+
 
 export default router;

@@ -6,7 +6,8 @@ import {
   FileText, Palette, Check, Clock, Calendar, AlertCircle,
   Mail, RefreshCw
 } from "lucide-react";
-
+import ShuffleSubjectModal from "../Components/ShuffleSubjectModal";
+import { Shuffle } from "lucide-react";
 const API_URL = import.meta.env.VITE_VRI_URL;
 
 const steps = [
@@ -325,6 +326,7 @@ export default function CampaignBuilder() {
   const [recipientError, setRecipientError] = useState("");
   const [isCheckingEmail, setIsCheckingEmail] = useState(false);
   const [emailVerificationStatus, setEmailVerificationStatus] = useState(null);
+  const [showShuffleModal, setShowShuffleModal] = useState(false);
   // Helper function to get auth token
   const getAuthToken = () => {
     return localStorage.getItem('token');
@@ -817,6 +819,27 @@ const handleSendCampaign = async () => {
               }
             </button>
           </div>
+          <button
+              onClick={() => setShowShuffleModal(true)}
+              className="flex items-center gap-2 px-4 py-2 text-gray-100 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 rounded-md cursor-pointer transition-all"
+            >
+              <Shuffle size={16} />
+              Shuffle Subject Lines & To: Mails
+            </button>
+
+          
+               <ShuffleSubjectModal
+                  isOpen={showShuffleModal}
+                  onClose={() => setShowShuffleModal(false)}
+                  canvasPages={canvasPages}
+                  fromEmail={formData.fromEmail}
+                  fromName={formData.fromName}
+                  credits={credits}
+                  onCreditsUpdate={(newCredits) => {
+                    setCredits(newCredits);
+                    localStorage.setItem("totalEmails", newCredits);
+                  }}
+                />
         </div>
       </header>
 

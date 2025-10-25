@@ -527,4 +527,356 @@ router.post("/verify-email", async (req, res) => {
   }
 });
 
+
+// Add this route to server/routes/campaigns.js after the /send route
+
+/* ==========================================================
+   📧 SEND SHUFFLED CAMPAIGN WITH MULTIPLE SUBJECT LINES
+   Distributes emails across multiple subject lines
+========================================================== */
+/* ==========================================================
+   📧 SEND SHUFFLED CAMPAIGN WITH MULTIPLE SUBJECT LINES
+   Supports both immediate and scheduled sending
+========================================================== */
+router.post("/send-shuffled", async (req, res) => {
+  try {
+    console.log("🔀 /api/campaigns/send-shuffled called by user:", req.user?.id);
+    console.log("📦 Request body:", JSON.stringify(req.body, null, 2));
+
+    const {
+      fromEmail,
+      fromName,
+      canvasData,
+      distribution, // Array of { subject, emails, count }
+      scheduleType = "immediate",
+      scheduledDate,
+      scheduledTime,
+      timezone
+    } = req.body;
+
+    // Validation with detailed error messages
+    if (!fromEmail) {
+      console.error("❌ Missing fromEmail");
+      return res.status(400).json({ error: "Missing fromEmail field" });
+    }
+    if (!fromName) {
+      console.error("❌ Missing fromName");
+      return res.status(400).json({ error: "Missing fromName field" });
+    }
+    if (!Array.isArray(distribution)) {
+      console.error("❌ distribution is not an array:", typeof distribution);
+      return res.status(400).json({ error: "Distribution must be an array" });
+    }
+    if (distribution.length === 0) {
+      console.error("❌ distribution array is empty");
+      return res.status(400).json({ error: "No distribution data provided" });
+    }
+
+    // Validate distribution structure
+    for (let i = 0; i < distribution.length; i++) {
+      const item = distribution[i];
+      if (!item.subject) {
+        console.error(`❌ Distribution item ${i} missing subject`);
+        return res.status(400).json({ error: `Distribution item ${i} missing subject` });
+      }
+      if (!Array.isArray(item.emails)) {
+        console.error(`❌ Distribution item ${i} emails is not an array`);
+        return res.status(400).json({ error: `Distribution item ${i} emails must be an array` });
+      }
+      if (item.emails.length === 0) {
+        console.error(`❌ Distribution item ${i} has no emails`);
+        return res.status(400).json({ error: `Distribution item ${i} has no emails` });
+      }
+    }
+
+    // Calculate total recipients
+    const totalRecipients = distribution.reduce((sum, item) => sum + item.emails.length, 0);
+    
+    console.log(`📊 Shuffled campaign - ${distribution.length} subjects, ${totalRecipients} total recipients, scheduleType: ${scheduleType}`);
+
+    // ==========================================================
+    // 💰 STEP 1: Credit Validation
+    // ==========================================================
+    const payments = await prisma.payment.findMany({
+      where: { userId: req.user.id, status: "succeeded" },
+      select: { id: true, emailSendCredits: true },
+    });
+
+    const totalPaymentCredits = payments.reduce((sum, p) => sum + (p.emailSendCredits || 0), 0);
+
+    const user = await prisma.user.findUnique({
+      where: { id: req.user.id },
+      select: { emailLimit: true, plan: true },
+    });
+
+    const availableCredits = (user?.emailLimit ?? 0) + totalPaymentCredits;
+    const requiredCredits = totalRecipients;
+
+    console.log(`💳 Credits check - Available: ${availableCredits}, Required: ${requiredCredits}`);
+
+    if (availableCredits < requiredCredits) {
+      return res.status(403).json({
+        error: `Insufficient credits. You need ${requiredCredits} credits but only have ${availableCredits}.`,
+        available: availableCredits,
+        required: requiredCredits,
+        creditLimitReached: true,
+      });
+    }
+
+    // ==========================================================
+    // 📧 STEP 2: SendGrid setup
+    // ==========================================================
+    if (!process.env.SENDGRID_API_KEY) {
+      return res.status(500).json({ error: "SendGrid API key not configured" });
+    }
+    sgMail.setApiKey(process.env.SENDGRID_API_KEY);
+
+    // ==========================================================
+    // 💾 STEP 3: Prepare Scheduled DateTime
+    // ==========================================================
+    let scheduledDateTime = null;
+
+    if (scheduleType === "scheduled" && scheduledDate && scheduledTime) {
+      scheduledDateTime = new Date(`${scheduledDate}T${scheduledTime}:00`);
+      const now = new Date();
+      if (scheduledDateTime <= now) {
+        return res.status(400).json({
+          error: "Scheduled time must be in the future (at least 5 minutes from now)",
+        });
+      }
+      console.log(`📅 Shuffled campaign scheduled for: ${scheduledDateTime.toISOString()}`);
+    }
+
+    // ==========================================================
+    // 💾 STEP 4: Create Campaign Records for Each Subject Line
+    // ==========================================================
+    const campaignIds = [];
+    
+    for (const item of distribution) {
+      const campaign = await prisma.campaign.create({
+        data: {
+          userId: req.user.id,
+          name: `${item.subject} (Shuffled Campaign)`,
+          subject: item.subject,
+          fromEmail,
+          fromName,
+          scheduleType,
+          designJson: JSON.stringify(canvasData || []),
+          recipientsJson: JSON.stringify(item.emails),
+          scheduledAt: scheduledDateTime,
+          status: scheduleType === "immediate" ? "processing" : "scheduled",
+        },
+      });
+      campaignIds.push(campaign.id);
+      console.log(`✅ Campaign ${campaign.id} created for subject: "${item.subject}"`);
+    }
+
+    // ==========================================================
+    // 🕒 STEP 5: If scheduled → Save only and return
+    // ==========================================================
+    if (scheduleType === "scheduled") {
+      // Create automation logs for each campaign
+      for (let i = 0; i < campaignIds.length; i++) {
+        await prisma.automationLog.create({
+          data: {
+            userId: req.user.id,
+            campaignId: campaignIds[i],
+            campaignName: distribution[i].subject,
+            status: "scheduled",
+            message: `Shuffled campaign scheduled for ${scheduledDateTime.toLocaleString()} - ${distribution[i].emails.length} recipients`,
+          },
+        });
+      }
+
+      return res.status(200).json({
+        success: true,
+        message: `✅ Shuffled campaign scheduled for ${scheduledDate} at ${scheduledTime}. ${totalRecipients} emails will be sent across ${distribution.length} subject lines.`,
+        campaignIds,
+        scheduledAt: scheduledDateTime,
+        distribution: distribution.map(d => ({
+          subject: d.subject,
+          count: d.count
+        }))
+      });
+    }
+
+    // ==========================================================
+    // 🚀 STEP 6: Immediate Send
+    // ==========================================================
+    const results = { success: [], failed: [] };
+    const distributionResults = [];
+    let actualSentCount = 0;
+
+    for (let i = 0; i < distribution.length; i++) {
+      const item = distribution[i];
+      const { subject, emails } = item;
+      const campaignId = campaignIds[i];
+      let sentForSubject = 0;
+      let failedForSubject = 0;
+
+      console.log(`📤 Sending with subject: "${subject}" to ${emails.length} recipients`);
+
+      const htmlContent = generateHtmlFromCanvas(canvasData, subject, fromName, fromEmail);
+      const plainTextContent = generatePlainTextFromCanvas(canvasData, subject, fromName, fromEmail);
+
+      for (const email of emails) {
+        if (actualSentCount >= availableCredits) {
+          results.failed.push({ email, subject, error: "Credit limit reached" });
+          failedForSubject++;
+          break;
+        }
+
+        const msg = {
+          to: email,
+          from: { name: fromName, email: fromEmail },
+          subject: subject,
+          text: plainTextContent,
+          html: htmlContent,
+        };
+
+        try {
+          const response = await sgMail.send(msg);
+          if (response[0].statusCode >= 200 && response[0].statusCode < 300) {
+            results.success.push({ email, subject });
+            actualSentCount++;
+            sentForSubject++;
+          } else {
+            results.failed.push({ email, subject, error: `SendGrid status ${response[0].statusCode}` });
+            failedForSubject++;
+          }
+        } catch (err) {
+          const msgErr = err.response?.body?.errors?.[0]?.message || err.message || "Unknown error";
+          console.error(`❌ Failed to send to ${email}:`, msgErr);
+          results.failed.push({ email, subject, error: msgErr });
+          failedForSubject++;
+        }
+
+        await new Promise((r) => setTimeout(r, 200)); // Rate limiting
+      }
+
+      // Update campaign status
+      await prisma.campaign.update({
+        where: { id: campaignId },
+        data: {
+          sentCount: sentForSubject,
+          status: failedForSubject === 0 ? "sent" : "failed",
+        },
+      });
+
+      // Log for this subject
+      await prisma.automationLog.create({
+        data: {
+          userId: req.user.id,
+          campaignId: campaignId,
+          campaignName: subject,
+          status: failedForSubject === 0 ? "sent" : "failed",
+          message: `Shuffled campaign sent: ${sentForSubject} success, ${failedForSubject} failed`,
+          error: failedForSubject > 0 ? `${failedForSubject} emails failed` : null,
+        },
+      });
+
+      distributionResults.push({
+        subject,
+        sent: sentForSubject,
+        failed: failedForSubject,
+        total: emails.length
+      });
+    }
+// ==========================================================
+    // 💰 STEP 7: Deduct Credits (ONLY for immediate sends)
+    // ==========================================================
+    if (scheduleType === "immediate") {
+      console.log("💰 Deducting credits after shuffled campaign...");
+      let remainingToDeduct = actualSentCount;
+
+      // Deduct from payments first (FIFO)
+      const succeededPayments = await prisma.payment.findMany({
+        where: { userId: req.user.id, status: "succeeded" },
+        orderBy: { paymentDate: "asc" },
+        select: { id: true, emailSendCredits: true },
+      });
+
+      for (const p of succeededPayments) {
+        if (remainingToDeduct <= 0) break;
+        const current = p.emailSendCredits || 0;
+        const deduct = Math.min(current, remainingToDeduct);
+        const newCredit = Math.max(0, current - deduct);
+
+        await prisma.payment.update({
+          where: { id: p.id },
+          data: { emailSendCredits: newCredit },
+        });
+
+        remainingToDeduct -= deduct;
+        console.log(`💳 Deducted ${deduct} from payment ${p.id}, remaining: ${remainingToDeduct}`);
+      }
+
+      // Deduct remaining from user.emailLimit
+      const finalUserEmailLimit = Math.max(0, (user.emailLimit ?? 0) - remainingToDeduct);
+
+      await prisma.user.update({
+        where: { id: req.user.id },
+        data: { emailLimit: finalUserEmailLimit },
+      });
+
+      console.log(`✅ Credits updated – user.emailLimit now ${finalUserEmailLimit}`);
+
+      // Calculate total remaining credits
+      const updatedPayments = await prisma.payment.findMany({
+        where: { userId: req.user.id, status: "succeeded" },
+        select: { emailSendCredits: true },
+      });
+      const remainingPaymentCredits = updatedPayments.reduce((sum, p) => sum + (p.emailSendCredits || 0), 0);
+      const totalRemainingCredits = remainingPaymentCredits + finalUserEmailLimit;
+
+      // ==========================================================
+      // 📤 STEP 8: Response for IMMEDIATE send
+      // ==========================================================
+      console.log(`✅ Shuffled campaign complete - Success: ${results.success.length}, Failed: ${results.failed.length}`);
+
+      return res.status(200).json({
+        success: true,
+        message: `Sent: ${results.success.length}, Failed: ${results.failed.length}`,
+        results,
+        distribution: distributionResults,
+        creditsUsed: actualSentCount,
+        creditsRemaining: totalRemainingCredits,
+      });
+    }
+    // Deduct remaining from user.emailLimit
+    const finalUserEmailLimit = Math.max(0, (user.emailLimit ?? 0) - remainingToDeduct);
+
+    await prisma.user.update({
+      where: { id: req.user.id },
+      data: { emailLimit: finalUserEmailLimit },
+    });
+
+    console.log(`✅ Credits updated – user.emailLimit now ${finalUserEmailLimit}`);
+
+    // Calculate total remaining credits
+    const remainingPaymentCredits = succeededPayments.reduce((sum, p) => sum + (p.emailSendCredits || 0), 0);
+    const totalRemainingCredits = remainingPaymentCredits + finalUserEmailLimit;
+
+    // ==========================================================
+    // 📤 STEP 8: Response
+    // ==========================================================
+    console.log(`✅ Shuffled campaign complete - Success: ${results.success.length}, Failed: ${results.failed.length}`);
+
+    res.status(200).json({
+      success: true,
+      message: `Sent: ${results.success.length}, Failed: ${results.failed.length}`,
+      results,
+      distribution: distributionResults,
+      creditsUsed: actualSentCount,
+      creditsRemaining: totalRemainingCredits,
+    });
+  } catch (err) {
+    console.error("❌ Shuffled campaign error:", err);
+    res.status(500).json({
+      success: false,
+      error: err.message || "Failed to process shuffled campaign",
+    });
+  }
+});
+
 export { router };

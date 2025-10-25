@@ -44,7 +44,7 @@ export default function Analytics() {
       try {
         setLoading(true);
 
-        const res = await fetch(`${API_URL}/api/analytics/sendgrid/campaigns`, {
+        const res = await fetch(`${API_URL}/api/analytics/sendgrid/campaigns?limit=1000`, {
           headers: {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`,
