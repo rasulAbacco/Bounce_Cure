@@ -669,16 +669,6 @@ model WhatsappCampaign {
   recipients WhatsappRecipient[]
   user       User                @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-
-model WhatsappRecipient {
-  id                 Int              @id @default(autoincrement())
-  phone              String
-  status             String? // sent | delivered | failed
-  error              String?
-  whatsappCampaignId Int
-  campaign           WhatsappCampaign @relation(fields: [whatsappCampaignId], references: [id], onDelete: Cascade)
-}
-
 model SmsCampaign {
   id         Int            @id @default(autoincrement())
   userId     Int
@@ -691,6 +681,17 @@ model SmsCampaign {
   recipients SmsRecipient[]
   user       User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
+
+model WhatsappRecipient {
+  id                 Int              @id @default(autoincrement())
+  phone              String
+  status             String? // sent | delivered | failed
+  error              String?
+  whatsappCampaignId Int
+  campaign           WhatsappCampaign @relation(fields: [whatsappCampaignId], references: [id], onDelete: Cascade)
+}
+
+
 
 model SmsRecipient {
   id            Int         @id @default(autoincrement())
