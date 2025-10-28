@@ -205,13 +205,19 @@ const handleSubmit = async (e) => {
 
       // Check if this is a multimedia plan
       if (
-        plan.planType === "multimedia-sms" ||
+        plan.planType?.toLowerCase().includes("sms") ||
         plan.planName?.toLowerCase().includes("sms")
       ) {
-        // ===== SMS CAMPAIGN PLAN =====
-        smsCredits = plan.credits || plan.smsVolume || 0;
+        smsCredits =
+          plan.credits ||
+          plan.smsCredits ||
+          plan.smsVolume ||
+          plan.totalCredits ||
+          plan.contactCount ||
+          0;
         console.log("📱 SMS Campaign detected:", smsCredits);
-      } else if (
+      }
+      else if (
         plan.planType === "multimedia-whatsapp" ||
         plan.planName?.toLowerCase().includes("whatsapp")
       ) {
