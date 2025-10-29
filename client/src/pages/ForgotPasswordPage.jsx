@@ -3,7 +3,7 @@ import { Mail, ArrowRight, Shield, Clock, CheckCircle, ArrowLeft, RefreshCw, Loc
 import PageLayout from '../components/PageLayout';
 import toast from "react-hot-toast";
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_API_URL; 
 
 const ModernForgotPassword = () => {
     const [email, setEmail] = useState('');
