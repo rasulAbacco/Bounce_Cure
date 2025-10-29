@@ -1,4 +1,4 @@
-// emailVerification page
+// BulkVerification.jsx
 import React, { useState } from "react";
 import { Upload, CheckCircle, XCircle, AlertTriangle, Shield, BarChart2, FileText, Users, Zap, Mail } from "lucide-react";
 import PageLayout from "../components/PageLayout";
