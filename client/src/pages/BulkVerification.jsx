@@ -4,7 +4,7 @@ import { Upload, CheckCircle, XCircle, AlertTriangle, Shield, BarChart2, FileTex
 import PageLayout from "../components/PageLayout";
 import {Link} from "react-router-dom"
 
-const API_URL = import.meta.env.VITE_API_URL;
+const API_URL = import.meta.env.VITE_VRI_URL;
 
 const EmailVerificationPage = () => {
     const [emails, setEmails] = useState([]);
