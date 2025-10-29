@@ -11,7 +11,7 @@ import {
     X,
 } from "lucide-react";
 
-const API_URL = import.meta.env.VITE_VRI_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_VRI_URL;
 
 export default function InboxSidebar({ email, userId }) {
     const [selectedType, setSelectedType] = useState(null);

@@ -16,7 +16,7 @@ const ActiveSessions = () => {
         const fetchPlanInfo = async () => {
             try {
                 const token = localStorage.getItem("token");
-                const res = await fetch("http://localhost:5000/api/auth/plan-limit", {
+                const res = await fetch(`${API_URL}/api/auth/plan-limit`, {
                     headers: { Authorization: `Bearer ${token}` },
                 });
                 const data = await res.json();

@@ -25,7 +25,7 @@ const handleVerify = async () => {
     setError("");
     setResult(null);
 
-    const res = await fetch("http://localhost:5000/api/verifi-frontend/verify-single-limit", {
+    const res = await fetch(`${API_URL}/api/verifi-frontend/verify-single-limit`, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
