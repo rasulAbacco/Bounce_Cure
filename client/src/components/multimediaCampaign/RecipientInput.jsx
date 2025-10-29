@@ -3,7 +3,7 @@ import React, { useState } from "react";
 // RecipientInput Component
 function RecipientInput({ recipients, onChange }) {
     const [rawInput, setRawInput] = useState("");
-
+ 
     const parseNumbers = (text) => {
         const nums = text
             .split(/[\n,; ]+/)
