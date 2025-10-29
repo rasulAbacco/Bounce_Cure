@@ -11,7 +11,7 @@ import {
   Info, Check
 } from "lucide-react";
 
-const API_URL = import.meta.env.VITE_VRI_URL;
+const API_URL = import.meta.env.VITE_VRI_URL; 
 
 const Automation = () => {
   const [logs, setLogs] = useState([]);
@@ -133,7 +133,7 @@ const fetchScheduledCampaigns = async () => {
   const checkSenderVerification = async () => {
     try {
       const token = localStorage.getItem("token");
-      const response = await fetch("http://localhost:5000/api/automation/sender/verification", {
+      const response = await fetch(`${API_URL}/api/automation/sender/verification`, {
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
       });
 
@@ -163,7 +163,7 @@ const fetchScheduledCampaigns = async () => {
   // Handle campaign actions
   const handleCampaignAction = async (campaignId, action) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/automation/${campaignId}/${action}`, { 
+      const response = await fetch(`${API_URL}/api/automation/${campaignId}/${action}`, { 
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
@@ -198,7 +198,7 @@ const fetchScheduledCampaigns = async () => {
     if (selectedCampaigns.length === 0) return;
     try {
       const promises = selectedCampaigns.map(id => 
-        fetch(`http://localhost:5000/api/automation/${id}/${action}`, { 
+        fetch(`${API_URL}/api/automation/${id}/${action}`, { 
           method: 'POST',
           headers: {
             "Content-Type": "application/json",
@@ -232,7 +232,7 @@ const fetchScheduledCampaigns = async () => {
 
   const handleTriggerSend = async () => {
     try {
-      const response = await fetch("http://localhost:5000/api/automation/trigger-cron", { 
+      const response = await fetch(`${API_URL}/api/automation/trigger-cron`, {
         method: 'POST',
         headers: {
           "Content-Type": "application/json",
