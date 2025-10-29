@@ -11,7 +11,7 @@ import Templets from "./Templets";
 import VerifyCampaignMailForm from "./VerifyCampaignMailForm";
 
 
-const API_URL = import.meta.env.VITE_VRI_URL || "http://localhost:5000";
+const API_URL = import.meta.env.VITE_VRI_URL;
 
 const Dashboard = () => {
   const navigate = useNavigate();
