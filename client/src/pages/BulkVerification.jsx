@@ -3,6 +3,8 @@ import React, { useState } from "react";
 import { Upload, CheckCircle, XCircle, AlertTriangle, Shield, BarChart2, FileText, Users, Zap, Mail } from "lucide-react";
 import PageLayout from "../components/PageLayout";
 import {Link} from "react-router-dom"
+
+const API_URL = import.meta.env.VITE_VRI_URL;
 const EmailVerificationPage = () => {
     const [emails, setEmails] = useState([]);
     const [results, setResults] = useState(null);
