@@ -23,7 +23,7 @@ const UserAuthentication = () => {
   const fetchUserStatus = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/users/me', {
+      const response = await fetch(`${API_URL}/api/auth/users/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }

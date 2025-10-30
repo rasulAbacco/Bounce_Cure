@@ -19,7 +19,7 @@ const TwoFactorAuth = () => {
   const checkTwoFactorStatus = async () => {
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/users/me', {
+      const response = await fetch(`${API_URL}/api/auth/users/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
@@ -42,7 +42,7 @@ const TwoFactorAuth = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/2fa/enable', {
+      const response = await fetch(`${API_URL}/api/auth/2fa/enable`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -75,7 +75,7 @@ const TwoFactorAuth = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/verify-2fa', {
+      const response = await fetch(`${API_URL}/api/auth/verify-2fa`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -118,7 +118,7 @@ const TwoFactorAuth = () => {
 
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/2fa/disable', {
+      const response = await fetch(`${API_URL}/api/auth/2fa/disable`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -152,7 +152,7 @@ const TwoFactorAuth = () => {
     
     try {
       const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:5000/api/auth/2fa/enable', {
+      const response = await fetch(`${API_URL}/api/auth/2fa/enable`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
