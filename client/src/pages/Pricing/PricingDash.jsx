@@ -416,46 +416,65 @@ const PricingDash = () => {
     { value: 200000, label: "2,00,000" },
   ];
 
-  const plans = [
+const plans = [
+  { 
+    name: "Essentials", 
+    tagline: "Send the right content at the right time with testing and scheduling features", 
+    users: 3, 
+    support: "Standard Support", 
+    contactLimit: 50000,
+    emailSendsPerContact: 1,
+    emailValidationPerContact: 0,
+    hasWhatsApp: false,
+    hasCRM: false,
+    isDiscounted: true,
     
-    { 
-      name: "Essentials", 
-      tagline: "Send the right content at the right time with testing and scheduling features", 
-      users: 3, 
-      support: "Standard Support", 
-      contactLimit: 50000,
-      emailSendsPerContact: 1,
-      emailValidationPerContact: 0,
-      hasWhatsApp: false,
-      hasCRM: false,
-      isDiscounted: true 
-    },
-    { 
-      name: "Standard", 
-      tagline: "Sell even more with personalization, optimization tools, and enhanced automations", 
-      users: 5, 
-      support: "Priority Support", 
-      contactLimit: 50000,
-      emailSendsPerContact: 1,
-      emailValidationPerContact: 1,
-      hasWhatsApp: false,
-      hasCRM: false,
-      highlight: true, 
-      isDiscounted: true 
-    },
-    { 
-      name: "Premium", 
-      tagline: "Scale fast with dedicated onboarding, unlimited contacts, and priority support; built for teams", 
-      users: "Unlimited", 
-      support: "Dedicated Support", 
-      features: ["Email marketing", "Email validation", "SMS marketing", "WhatsApp campaigns", "CRM access", "Advanced automation", "A/B testing", "Priority support", "Custom integrations"], 
-      contactLimit: Infinity,
-      emailSendsPerContact: 1,
-      emailValidationPerContact: 1,
-      hasCRM: true,
-      isDiscounted: true 
-    },
-  ];
+    // ✅ Total credits for invoice & checkout
+    emailValidations: 50000 * 0, // 0 validations
+    emailSends: 50000 * 1, // 50k sends
+    smsVolume: 0,
+    whatsappVolume: 0
+  },
+  { 
+    name: "Standard", 
+    tagline: "Sell even more with personalization, optimization tools, and enhanced automations", 
+    users: 5, 
+    support: "Priority Support", 
+    contactLimit: 50000,
+    emailSendsPerContact: 1,
+    emailValidationPerContact: 1,
+    hasWhatsApp: false,
+    hasCRM: false,
+    highlight: true, 
+    isDiscounted: true,
+    
+    emailValidations: 50000 * 1, // 50k validations
+    emailSends: 50000 * 1, // 50k sends
+    smsVolume: 5000,
+    whatsappVolume: 2000
+  },
+  { 
+    name: "Premium", 
+    tagline: "Scale fast with dedicated onboarding, unlimited contacts, and priority support; built for teams", 
+    users: "Unlimited", 
+    support: "Dedicated Support", 
+    features: [
+      "Email marketing", "Email validation", "SMS marketing", 
+      "WhatsApp campaigns", "CRM access", "Advanced automation", 
+      "A/B testing", "Priority support", "Custom integrations"
+    ], 
+    contactLimit: Infinity,
+    emailSendsPerContact: 1,
+    emailValidationPerContact: 1,
+    hasCRM: true,
+    isDiscounted: true,
+
+    emailValidations: 100000, // can be unlimited or large number
+    emailSends: 100000,
+    smsVolume: 10000,
+    whatsappVolume: 5000
+  },
+];
 
   const features = [
     {

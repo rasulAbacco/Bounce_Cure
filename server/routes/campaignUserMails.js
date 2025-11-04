@@ -42,7 +42,7 @@ router.post("/request-verification", async (req, res) => {
         const TO_EMAIL = process.env.TO_EMAIL;
         const FROM_EMAIL = process.env.FROM_EMAIL;
 
-        if (!TO_EMAIL) {
+        if (!TO_EMAIL) { 
             console.error("❌ TO_EMAIL not set in .env");
             return res
                 .status(500)

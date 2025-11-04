@@ -5,7 +5,7 @@ sgMail.setApiKey(process.env.SENDGRID_CMP_API_KEY);
 export async function sendTestEmail(to) {
   const msg = {
     to,
-    from: "info@abaccotech.com", // verified sender
+    from: "info@bouncecure.com", // verified sender
     subject: "Email Verification Test - Do Not Reply",
     text: "This is a test email for bounce-based verification."
   };

@@ -25,8 +25,8 @@ model User {
   // New fields
   plan               String  @default("Free")
   hasPurchasedBefore Boolean @default(false)
-  contactLimit       Int     @default(50)
-  emailLimit         Int     @default(50)
+  contactLimit       Int     @default(0)
+  emailLimit         Int     @default(0)
   smsCredits         Int?    @default(0) // ✅ NEW
   whatsappCredits    Int?    @default(0) // ✅ NEW
 
@@ -462,6 +462,7 @@ model Payment {
   smsCredits               Int?      @default(0)
   whatsappCredits          Int?      @default(0)
   transactionId            String    @unique
+  customInvoiceId          String?   @unique
   planName                 String
   planType                 String
   provider                 String
