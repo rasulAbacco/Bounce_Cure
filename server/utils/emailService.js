@@ -62,7 +62,7 @@ const sendEmail = async ({ to, from, subject, text, html }) => {
         }
 
         const mailOptions = {
-            from: from || process.env.EMAIL_FROM || 'info@abaccotech.com',
+            from: from || process.env.EMAIL_FROM || 'info@bouncecure.com',
             to,
             subject,
             text,

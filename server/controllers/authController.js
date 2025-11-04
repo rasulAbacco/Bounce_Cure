@@ -325,7 +325,7 @@ export const enable2FA = async (req, res) => {
         // Send OTP email
         await sendEmail({
             to: user.email,
-            from: "info@abaccotech.com",
+            from: "info@bouncecure.com",
             subject: "Your 2FA Verification Code",
             text: `Your OTP code is: ${otp}. This code will expire in 10 minutes.`,
             html: `

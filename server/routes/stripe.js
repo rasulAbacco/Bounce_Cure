@@ -80,7 +80,7 @@ router.post("/create-payment-intent", async (req, res) => {
 
 // Updated /api/stripe/save-payment endpoint - stripe.js
 // Replace the entire endpoint (around line 85-250)
-
+// ✅ Save Payment + Generate & Email Invoice
 router.post("/save-payment", async (req, res) => {
   try {
     const {
@@ -101,7 +101,7 @@ router.post("/save-payment", async (req, res) => {
       cardLast4,
       status,
 
-      // ✅ ALL credit types from frontend
+      // ✅ All credit types from frontend
       emailVerificationCredits,
       emailSendCredits,
       smsCredits,
@@ -118,6 +118,7 @@ router.post("/save-payment", async (req, res) => {
       whatsappCredits,
     });
 
+    // 🧩 Basic validation
     if (!name || !planName || !email || !transactionId || !userId) {
       return res.status(400).json({ error: "Missing required fields" });
     }
@@ -132,9 +133,11 @@ router.post("/save-payment", async (req, res) => {
     // ✅ Normalize plan type for SMS / WhatsApp / Email
     let normalizedPlanType = planType?.toLowerCase() || "";
     const lowerPlanName = planName?.toLowerCase() || "";
-    if (lowerPlanName.includes("sms")) normalizedPlanType = "sms";
-    else if (lowerPlanName.includes("whatsapp")) normalizedPlanType = "whatsapp";
+    if (lowerPlanName.includes("sms")) normalizedPlanType = "multimedia-sms";
+    else if (lowerPlanName.includes("whatsapp")) normalizedPlanType = "multimedia-whatsapp";
+    else if (lowerPlanName.includes("verification")) normalizedPlanType = "email-verification";
     else if (lowerPlanName.includes("email")) normalizedPlanType = "email";
+
     const nextPaymentDate = getNextPaymentDate(paymentDateObj, normalizedPlanType);
 
     // 🧩 Validate user
@@ -143,18 +146,37 @@ router.post("/save-payment", async (req, res) => {
       return res.status(400).json({ error: `User with ID ${userIdInt} not found` });
     }
 
-    console.log("👤 Current user credits:", {
-      contactLimit: user.contactLimit,
-      emailLimit: user.emailLimit,
-      smsCredits: user.smsCredits,
-      whatsappCredits: user.whatsappCredits,
-    });
+    // ✅ Auto-fill credits based on plan (if not received from frontend)
+    let finalEmailVerificationCredits = Number(emailVerificationCredits || 0);
+    let finalEmailSendCredits = Number(emailSendCredits || 0);
+    let finalSmsCredits = Number(smsCredits || 0);
+    let finalWhatsappCredits = Number(whatsappCredits || 0);
 
-    // ✅ Compute final credits
-    const finalEmailVerificationCredits = Number(emailVerificationCredits || 0);
-    const finalEmailSendCredits = Number(emailSendCredits || 0);
-    const finalSmsCredits = Number(smsCredits || 0);
-    const finalWhatsappCredits = Number(whatsappCredits || 0);
+    if (
+      finalEmailVerificationCredits === 0 &&
+      finalEmailSendCredits === 0 &&
+      finalSmsCredits === 0 &&
+      finalWhatsappCredits === 0
+    ) {
+      console.log("⚙️ Auto-assigning credits for plan:", lowerPlanName);
+
+      if (lowerPlanName === "essentials") {
+        finalEmailVerificationCredits = 0;       // no verification credits
+        finalEmailSendCredits = 50000;           // 50k sends
+        finalSmsCredits = 0;
+        finalWhatsappCredits = 0;
+      } else if (lowerPlanName === "standard") {
+        finalEmailVerificationCredits = 50000;
+        finalEmailSendCredits = 50000;
+        finalSmsCredits = 5000;
+        finalWhatsappCredits = 2000;
+      } else if (lowerPlanName === "premium") {
+        finalEmailVerificationCredits = 100000;
+        finalEmailSendCredits = 100000;
+        finalSmsCredits = 10000;
+        finalWhatsappCredits = 5000;
+      }
+    }
 
     console.log("💳 Final Credit Breakdown:", {
       finalEmailVerificationCredits,
@@ -162,6 +184,37 @@ router.post("/save-payment", async (req, res) => {
       finalSmsCredits,
       finalWhatsappCredits,
     });
+
+  // 🧾 Generate custom invoice ID (BC234Ab5000 format)
+const prefix = "BC234Ab";
+const startingNumber = 5000;
+
+const lastPayment = await prisma.payment.findFirst({
+  where: { customInvoiceId: { not: null } },
+  orderBy: { id: "desc" },
+  select: { customInvoiceId: true },
+});
+
+let newInvoiceNumber = startingNumber;
+
+if (lastPayment?.customInvoiceId) {
+  const match = lastPayment.customInvoiceId.match(/\d+$/);
+
+  if (match) {
+    const lastNum = parseInt(match[0], 10);
+
+    // ✅ ensure we never go below 5000
+    newInvoiceNumber = lastNum >= startingNumber ? lastNum + 1 : startingNumber;
+  }
+}
+
+// ✅ Pad to minimum 4 digits
+const paddedNumber = String(newInvoiceNumber).padStart(4, "0");
+const customInvoiceId = `${prefix}${paddedNumber}`;
+    console.log("🧾 Generated custom invoice ID:", customInvoiceId);
+
+
+
 
     // 💾 Build payment object
     const paymentData = {
@@ -186,13 +239,22 @@ router.post("/save-payment", async (req, res) => {
       paymentDate: paymentDateObj,
       nextPaymentDate: new Date(nextPaymentDate),
       status: status || "succeeded",
+      customInvoiceId, // ✅ Add new custom invoice field
     };
 
     // ✅ Save payment in DB
     const payment = await prisma.payment.create({ data: paymentData });
-    console.log("✅ Payment saved to DB:", payment.id);
 
-    // ✅ Update user credits dynamically (always add to existing)
+    // 🔁 Reattach credit values for invoice use (Essentials, Standard, Premium)
+    payment.emailVerificationCredits = finalEmailVerificationCredits;
+    payment.emailSendCredits = finalEmailSendCredits;
+    payment.smsCredits = finalSmsCredits;
+    payment.whatsappCredits = finalWhatsappCredits;
+    payment.customInvoiceId = customInvoiceId;
+
+    console.log("✅ Payment saved to DB:", payment.id, "→", payment.customInvoiceId);
+
+    // ✅ Update user credits dynamically
     const updatedUserData = {
       plan: lowerPlanName,
       hasPurchasedBefore: true,
@@ -221,7 +283,7 @@ router.post("/save-payment", async (req, res) => {
       const pdfBuffers = await generatePrintingInvoice(payment);
 
       const html = invoiceEmailTemplate({
-        transactionId: payment.transactionId,
+        transactionId: payment.customInvoiceId || payment.transactionId,
         planName: payment.planName,
         total: payment.amount,
         currency: payment.currency?.toUpperCase() || "USD",
@@ -229,12 +291,13 @@ router.post("/save-payment", async (req, res) => {
 
       await sendInvoiceEmail({
         to: payment.email,
-        subject: `Invoice ${payment.transactionId} - ${payment.planName}`,
+        subject: `Invoice ${payment.customInvoiceId} - ${payment.planName}`,
         html,
         pdfBuffer,
         pdfBuffers,
-        fileName: `invoice-${payment.transactionId}.pdf`,
+        fileName: `invoice-${payment.customInvoiceId}.pdf`,
       });
+
       console.log("✅ Invoice sent successfully");
     } catch (invoiceError) {
       console.error("⚠️ Invoice generation/sending failed:", invoiceError);
@@ -252,6 +315,8 @@ router.post("/save-payment", async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+
 
 
 // 🕒 Every midnight, check and expire outdated plans

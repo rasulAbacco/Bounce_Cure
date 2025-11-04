@@ -90,44 +90,53 @@ export default function Checkout() {
     }, [location.state, navigate]);
 
     // Payment logic
-    const handlePay = () => {
-        if (!plan) return;
+  // Payment logic
+const handlePay = () => {
+  if (!plan) return;
 
-        const updatedPlan = {
-            ...plan,
-            totalCost: getTotalAmount(),
-        };
-        localStorage.setItem("selectedCurrency", selectedCurrency);
+  // ✅ Add credits to the plan object
+  const updatedPlan = {
+    ...plan,
+    totalCost: getTotalAmount(),
 
-        if (selectedPayment === "stripe") {
-            navigate("/stripe", {
-                state: {
-                    plan: updatedPlan,
-                    email: email,
-                    name: "Your Name",
-                },
-            });
-        } else if (selectedPayment === "creditcard") {
-            navigate("/creditcard", {
-                state: {
-                    plan: updatedPlan,
-                    email: email,
-                    name: "Your Name",
-                },
-            });
-        } else if (selectedPayment === "UPI") {
-            navigate("/upi", {
-                state: {
-                    plan: updatedPlan,
-                    email: email,
-                    name: "Your Name",
-                    currency: selectedCurrency,
-                },
-            });
-        } else {
-            alert(`${selectedPayment} payment method is not implemented yet.`);
-        }
-    };
+    emailVerificationCredits: plan.emailValidations || 0,
+    emailSendCredits: plan.emailSends || 0,
+    smsCredits: plan.smsVolume || 0,
+    whatsappCredits: plan.whatsappVolume || 0,
+  };
+
+  localStorage.setItem("selectedCurrency", selectedCurrency);
+
+  if (selectedPayment === "stripe") {
+    navigate("/stripe", {
+      state: {
+        plan: updatedPlan,
+        email: email,
+        name: "Your Name",
+      },
+    });
+  } else if (selectedPayment === "creditcard") {
+    navigate("/creditcard", {
+      state: {
+        plan: updatedPlan,
+        email: email,
+        name: "Your Name",
+      },
+    });
+  } else if (selectedPayment === "UPI") {
+    navigate("/upi", {
+      state: {
+        plan: updatedPlan,
+        email: email,
+        name: "Your Name",
+        currency: selectedCurrency,
+      },
+    });
+  } else {
+    alert(`${selectedPayment} payment method is not implemented yet.`);
+  }
+};
+
 
     // Helper functions
     const getOriginalPrice = () => Number(plan?.originalBasePrice || 0);
@@ -266,11 +275,13 @@ export default function Checkout() {
                                         <span>Plan:</span>
                                         <span className="font-semibold text-white">
                                             {plan.planName}
-                                            {plan.verificationCredits || plan.smsVolume || plan.emailSends ? (
-                                            <span className="text-gray-400 text-sm ml-1">
-                                                — {plan.verificationCredits || plan.smsVolume || plan.emailSends} credits
-                                            </span>
-                                            ) : null}
+                                            {(plan.emailValidations > 0 || plan.emailSends > 0) && (
+                                                <span className="text-gray-400 text-sm ml-1">
+                                                    — {plan.emailValidations > 0 ? `${plan.emailValidations.toLocaleString()} validations` : ""}
+                                                    {plan.emailSends > 0 ? ` ${plan.emailSends.toLocaleString()} sends` : ""}
+                                                </span>
+                                                )}
+
                                         </span>
                                     </div>
 

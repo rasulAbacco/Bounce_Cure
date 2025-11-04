@@ -56,7 +56,7 @@ export const sendInvoiceEmail = async ({ to, subject, html, pdfBuffer, pdfBuffer
     const msg = {
         to,
         from: {
-            email: "info@abaccotech.com",
+            email: "info@bouncecure.com",
             name: "BounceCure Billing",
         },
         subject,

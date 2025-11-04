@@ -72,12 +72,13 @@ export const invoiceEmailTemplate = ({ transactionId, planName, total, currency 
     <!-- Footer -->
     <div style="background: #111; padding: 20px; text-align: center; border-top: 2px solid #FFD700;">
       <p style="margin: 0; font-size: 12px; color: #777;">
-        &copy; 2025 BounceCure. All Rights Reserved.<br>
-        405 N. Angler Ave NE, Atlanta, GA 30312 USA
+        All Rights Reserved © ${new Date().getFullYear()}<br>
+        c/o Abacco Technologies LLC 3524 Silverside Road, <br>
+        Suite 35B Wilmington, DE 19810-4929, USA
       </p>
       <p style="margin-top: 10px; font-size: 12px;">
-        <a href="https://yourcompany.com/terms" style="color: #FFD700; text-decoration: none;">Terms of Use</a> | 
-        <a href="https://yourcompany.com/privacy" style="color: #FFD700; text-decoration: none;">Privacy Policy</a>
+        <a href="https://www.bouncecure.com/terms-and-conditions" style="color: #FFD700; text-decoration: none;">Terms of Use</a> | 
+        <a href="https://www.bouncecure.com/privacy-policy" style="color: #FFD700; text-decoration: none;">Privacy Policy</a>
       </p>
     </div>
   </div>
