@@ -53,7 +53,7 @@ function MultimediaCampaign() {
 useEffect(() => {
   const fetchCredits = async () => {
     try {
-      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/users/credits`, {
+      const res = await fetch(`${import.meta.env.VITE_VRI_URL}/api/users/credits`, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
@@ -130,10 +130,21 @@ useEffect(() => {
   };
 
   // ✅ New Campaign Navigation Handler
-  const handleNewCampaign = (type) => {
-    setShowNewCampaignModal(false);
-    navigate(type === "whatsapp" ? "/whatsapp" : "/sms");
-  };
+const handleNewCampaign = (type) => {
+  const neededCredits = 1; // minimum 1 required
+  if (type === "sms" && credits.sms < neededCredits) {
+    alert("⚠️ You don't have enough SMS credits to create campaign.");
+    return;
+  }
+  if (type === "whatsapp" && credits.whatsapp < neededCredits) {
+    alert("⚠️ You don't have enough WhatsApp credits to create campaign.");
+    return;
+  }
+
+  setShowNewCampaignModal(false);
+  navigate(type === "whatsapp" ? "/whatsapp" : "/sms");
+};
+
 
   // ✅ Modal for New Campaign
   const NewCampaignModal = () => (
@@ -158,8 +169,14 @@ useEffect(() => {
         <div className="flex gap-4">
           <button
             onClick={() => handleNewCampaign("whatsapp")}
-            className="flex-1 p-6 bg-gray-800/40 hover:bg-gray-700/50 border border-gray-600/50 hover:border-[#25D366]/60 rounded-xl transition-all duration-300 flex flex-col items-center text-center group shadow-lg hover:shadow-xl hover:shadow-[#25D366]/10"
-          >
+            disabled={credits.whatsapp <= 0}
+            className={`flex-1 p-6 rounded-xl transition-all ${
+              credits.whatsapp > 0
+                ? "bg-gray-800/40 hover:bg-gray-700/50 cursor-pointer"
+                : "bg-gray-600/30 text-gray-500 cursor-not-allowed"
+              }`}
+            >
+
             <MessageCircle className="w-8 h-8 text-[#25D366]" />
             <h3 className="text-lg font-semibold text-white mt-4">
               WhatsApp Campaign
@@ -168,8 +185,14 @@ useEffect(() => {
 
           <button
             onClick={() => handleNewCampaign("sms")}
-            className="flex-1 p-6 bg-gray-800/40 hover:bg-gray-700/50 border border-gray-600/50 hover:border-[#007BFF]/60 rounded-xl transition-all duration-300 flex flex-col items-center text-center group shadow-lg hover:shadow-xl hover:shadow-[#007BFF]/10"
+            disabled={credits.sms <= 0}
+            className={`flex-1 p-6 rounded-xl transition-all ${
+              credits.sms > 0
+                ? "bg-gray-800/40 hover:bg-gray-700/50 cursor-pointer"
+                : "bg-gray-600/30 text-gray-500 cursor-not-allowed"
+              }`}
           >
+
             <Send className="w-8 h-8 text-[#007BFF]" />
             <h3 className="text-lg font-semibold text-white mt-4">
               SMS Campaign
@@ -203,6 +226,7 @@ useEffect(() => {
             <div className="text-sm text-gray-400">WhatsApp Credits</div>
           </div>
         </div>
+
 
 
           <div className="flex gap-3">

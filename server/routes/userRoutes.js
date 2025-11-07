@@ -247,9 +247,9 @@ router.get("/credits", protect, async (req, res) => {
         latestPayment?.emailSendCredits ?? user.emailLimit ?? 50,
       emailVerificationCredits:
         latestPayment?.emailVerificationCredits ?? user.contactLimit ?? 50,
-      smsCredits: latestPayment?.smsCredits ?? user.smsCredits ?? 0,
-      whatsappCredits:
-        latestPayment?.whatsappCredits ?? user.whatsappCredits ?? 0,
+      smsCredits: user.smsCredits ?? latestPayment?.smsCredits ?? 0,
+      whatsappCredits: user.whatsappCredits ?? latestPayment?.whatsappCredits ?? 0,
+
     });
   } catch (error) {
     console.error("Error fetching credits:", error);
@@ -265,23 +265,36 @@ router.get("/credits", protect, async (req, res) => {
  */
 router.put("/update-credits", protect, async (req, res) => {
   try {
-    const { emailLimit } = req.body;
+    const { emailLimit, smsCredits, whatsappCredits } = req.body;
 
     const updatedUser = await prisma.user.update({
       where: { id: req.user.id },
-      data: { emailLimit: Number(emailLimit) },
+      data: {
+        emailLimit: Number(emailLimit),
+        smsCredits: Number(smsCredits),
+        whatsappCredits: Number(whatsappCredits),
+      },
     });
 
+    // update latest payment record also
     await prisma.payment.updateMany({
       where: { userId: req.user.id },
-      data: { emailSendCredits: Number(emailLimit) },
+      data: {
+        emailSendCredits: Number(emailLimit),
+        smsCredits: Number(smsCredits),
+        whatsappCredits: Number(whatsappCredits),
+      },
     });
 
-    res.json({ success: true, remaining: emailLimit });
+    res.json({
+      success: true,
+      remaining: { emailLimit, smsCredits, whatsappCredits },
+    });
   } catch (error) {
     console.error("Update credits error:", error);
     res.status(500).json({ error: "Failed to update credits" });
   }
 });
+
 
 export default router;

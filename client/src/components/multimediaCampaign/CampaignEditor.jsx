@@ -1,5 +1,5 @@
 //src/components/multimediaCampaign/CampaignEditor.jsx
-import React, { useState } from "react";
+import React, { useState,useEffect } from "react";
 import RecipientInput from "./RecipientInput";
 import MessageComposer from "./MessageComposer";
 import MediaUploader from "./MediaUploader";
@@ -17,34 +17,81 @@ export default function CampaignEditor({ channel = "sms" }) {
     const [error, setError] = useState(null);
     const [success, setSuccess] = useState(false);
     const navigate = useNavigate();
+
+   const [credits, setCredits] = useState({ sms: 0, whatsapp: 0 });
+
+useEffect(() => {
+  const fetchCredits = async () => {
+    try {
+      const res = await fetch(`${import.meta.env.VITE_VRI_URL}/api/users/credits`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
+
+      // If backend responds HTML (login page/404) instead of JSON → avoid crash
+      const text = await res.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        console.error("❌ Invalid JSON in credit API response");
+        return;
+      }
+
+      setCredits({
+        sms: data.smsCredits || 0,
+        whatsapp: data.whatsappCredits || 0,
+      });
+
+    } catch (err) {
+      console.error("Credit fetch error", err);
+    }
+  };
+
+  fetchCredits();
+}, []);
+
+
+
     const handleSend = async () => {
         setIsSending(true);
         setError(null);
         setSuccess(false);
 
+        const neededCredits = recipients.length;
+const userCredits = channel === "sms" ? credits.sms : credits.whatsapp;
+
+if (neededCredits > userCredits) {
+  setIsSending(false);
+  setError(`You don't have enough ${channel.toUpperCase()} credits`);
+  return;
+}
+
+
         try {
             const res = await fetch(`${import.meta.env.VITE_API_URL}/multimedia-campaign/send`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "Authorization": `Bearer ${localStorage.getItem("token")}`,
-                },
-                body: JSON.stringify({
-                    channel,
-                    recipients,
-                    message,
-                    mediaUrl,
-                    schedule,
-                }),
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+            body: JSON.stringify({
+                channel,
+                recipients,
+                message,
+                mediaUrl,
+                schedule,
+            }),
             });
 
             const data = await res.json();
             console.log("Response:", data);
 
             if (res.ok) {
-                setSuccess(true);
+            setSuccess(true);
             } else {
-                setError(data.error || "Failed to send campaign");
+            setError(data.error || "Failed to send campaign");
             }
         } catch (err) {
             console.error("Error:", err);
@@ -53,6 +100,7 @@ export default function CampaignEditor({ channel = "sms" }) {
             setIsSending(false);
         }
     };
+
 
     return (
         <div className="min-h-screen bg-black p-4 sm:p-6 lg:p-8">
