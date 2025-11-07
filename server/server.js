@@ -73,7 +73,7 @@ import verifiFrontendRoutes from "./routes/verifiFrontend.js";
 
 import campaignUserMails from "./routes/campaignUserMails.js";
 import { startCampaignScheduler } from "./services/campaignScheduler.js";
-
+import userCredit from "./routes/userRoutes.js"
 dotenv.config();
 
 // Init
@@ -152,7 +152,7 @@ app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 // ----------------------- Routes -----------------------
 app.use('/api', userRoutes);
-
+app.use('/api/users', userCredit);
 // Test protected route
 app.get("/api/dashboard-data", protect, (req, res) => {
   res.json({ message: "Secret data for logged-in users", user: req.user });

@@ -166,13 +166,13 @@ router.post("/save-payment", async (req, res) => {
         finalSmsCredits = 0;
         finalWhatsappCredits = 0;
       } else if (lowerPlanName === "standard") {
-        finalEmailVerificationCredits = 50000;
-        finalEmailSendCredits = 50000;
+        finalEmailVerificationCredits = 150000;
+        finalEmailSendCredits = 150000;
         finalSmsCredits = 5000;
         finalWhatsappCredits = 2000;
       } else if (lowerPlanName === "premium") {
-        finalEmailVerificationCredits = 100000;
-        finalEmailSendCredits = 100000;
+        finalEmailVerificationCredits = 200000;
+        finalEmailSendCredits = 200000;
         finalSmsCredits = 10000;
         finalWhatsappCredits = 5000;
       }
@@ -211,9 +211,6 @@ if (lastPayment?.customInvoiceId) {
 // ✅ Pad to minimum 4 digits
 const paddedNumber = String(newInvoiceNumber).padStart(4, "0");
 const customInvoiceId = `${prefix}${paddedNumber}`;
-    console.log("🧾 Generated custom invoice ID:", customInvoiceId);
-
-
 
 
     // 💾 Build payment object
