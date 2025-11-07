@@ -4,6 +4,7 @@ import { Mail, Lock, User, CheckCircle, Shield, Zap, Globe, Clock, Phone } from 
 import PageLayout from '../components/PageLayout';
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
+import { Eye, EyeOff } from "lucide-react";
 
 
 const API_URL = import.meta.env.VITE_API_URL;
@@ -20,7 +21,7 @@ const ModernSignup = () => {
 
     const [focusedField, setFocusedField] = useState('');
     const [isHovered, setIsHovered] = useState(false);
-
+    const [showPassword, setShowPassword] = useState(false);
     // ✅ Load Google SDK on mount
     useEffect(() => {
         const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
@@ -239,17 +240,27 @@ const ModernSignup = () => {
                                 />
                             </div>
 
-                            <div className="relative group">
-                                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                                <input
-                                    type="password"
-                                    name="password"
-                                    placeholder="Create Password"
-                                    value={formData.password}
-                                    onChange={handleInputChange}
-                                    className="w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-10 pr-4 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
-                                />
-                            </div>
+                        <div className="relative group">
+                            <Lock className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+
+                            <input
+                                type={showPassword ? "text" : "password"}
+                                name="password"
+                                placeholder="Create Password"
+                                value={formData.password}
+                                onChange={handleInputChange}
+                                className="w-full bg-white/5 border border-white/20 rounded-xl py-3 pl-10 pr-12 text-white placeholder-gray-500 focus:outline-none focus:border-white focus:bg-white/10 transition-all duration-300"
+                            />
+
+                            <button
+                                type="button"
+                                onClick={() => setShowPassword(!showPassword)}
+                                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-white"
+                            >
+                                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                            </button>
+                        </div>
+
 
                             <button
                                 type="submit"
