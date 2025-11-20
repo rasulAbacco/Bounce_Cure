@@ -60,26 +60,45 @@ const generateHtmlFromCanvas = (canvasData, subject, fromName, fromEmail) => {
   // =====================================================
   // 3️⃣ GROUP ELEMENTS INTO ROWS (for side-by-side support)
   // =====================================================
-  function groupRows(elements, threshold = 50) {
-    let rows = [];
+ function groupRows(elements, threshold = 15) {  // Reduced from 50 to 15
+  let rows = [];
 
-    elements.forEach(el => {
-      let added = false;
+  // Sort elements by Y position first, then by X if Y is close
+  const sortedElements = [...elements].sort((a, b) => {
+    if (Math.abs(a.y - b.y) > 10) {
+      return a.y - b.y;
+    }
+    return a.x - b.x;
+  });
 
-      for (let row of rows) {
-        // if element is close to existing row's Y → same row
-        if (Math.abs(row[0].y - el.y) <= threshold) {
-          row.push(el);
-          added = true;
-          break;
-        }
+  sortedElements.forEach(el => {
+    const elTop = el.y;
+    const elBottom = el.y + (el.height || 80);
+    const elMidpoint = el.y + ((el.height || 80) / 2);
+    
+    let added = false;
+
+    for (let row of rows) {
+      const rowMidpoint = (row[0].y + ((row[0].height || 80) / 2));
+      
+      // Only group if midpoints are very close (stricter grouping)
+      if (Math.abs(elMidpoint - rowMidpoint) <= threshold) {
+        row.push(el);
+        added = true;
+        break;
       }
+    }
 
-      if (!added) rows.push([el]);
-    });
+    if (!added) {
+      rows.push([el]);
+    }
+  });
 
-    return rows;
-  }
+  // Sort items within each row by X position (left to right)
+  rows.forEach(row => row.sort((a, b) => a.x - b.x));
+
+  return rows;
+}
 
   const rows = groupRows(sorted);
 

@@ -600,9 +600,23 @@ const handleSaveAsNewTemplate = useCallback(async () => {
     return { animation: `${element.animation} ${duration} ${delay} ${timing} both` };
   };
 
-  const handleLinkClick = (link) => {
-    if (link) window.open(link, '_blank');
-  };
+const handleElementClickLink = (element) => {
+  const { link, email } = element;
+
+  // Email Link
+  if (email) {
+    const mailAddress = email.startsWith("mailto:") ? email : `mailto:${email}`;
+    window.location.href = mailAddress;
+    return;
+  }
+
+  // Normal URL link
+  if (link) {
+    window.open(link, "_blank");
+    return;
+  }
+};
+
 
   // Function to scroll to make an element visible
   const scrollToElement = useCallback((element) => {
@@ -758,7 +772,7 @@ const handleSaveAsNewTemplate = useCallback(async () => {
               }}
               onInput={(e) => handleElementUpdate(element.id, { content: e.currentTarget.textContent })}
               onBlur={() => setSelectedElement(null)}
-              onClick={() => handleLinkClick(element.link)}
+              onClick={() =>handleElementClickLink(element)}
             >
               {element.content || "Click Me"}
             </div>
@@ -886,12 +900,12 @@ const handleSaveAsNewTemplate = useCallback(async () => {
             </div>
           )}
           {element.type === "icon" && (
-            <div className="w-full h-full flex items-center justify-center" onClick={() => handleLinkClick(element.link)}>
+            <div className="w-full h-full flex items-center justify-center" onClick={() =>handleElementClickLink(element)}>
               {renderIcon(element)}
             </div>
           )}
           {element.type === "social" && (
-            <div className="w-full h-full flex items-center justify-center" onClick={() => handleLinkClick(element.link)}>
+            <div className="w-full h-full flex items-center justify-center" onClick={() =>handleElementClickLink(element)}>
               {renderIcon(element)}
             </div>
           )}
@@ -955,7 +969,7 @@ const handleSaveAsNewTemplate = useCallback(async () => {
             fontSize: `${(element.fontSize || 16) * zoomLevel}px`, fontFamily: element.fontFamily || 'Arial',
             fontWeight: element.fontWeight || 'normal',
             border: element.borderWidth ? `${element.borderWidth * zoomLevel}px solid ${element.borderColor}` : 'none'
-          }} onClick={() => handleLinkClick(element.link)}>
+          }} onClick={() =>handleElementClickLink(element)}>
             {element.content || "Click Me"}
           </div>
         )}
@@ -1075,12 +1089,12 @@ const handleSaveAsNewTemplate = useCallback(async () => {
           </div>
         )}
         {element.type === "icon" && (
-          <div className="w-full h-full flex items-center justify-center" onClick={() => handleLinkClick(element.link)}>
+          <div className="w-full h-full flex items-center justify-center" onClick={() =>handleElementClickLink(element)}>
             {renderIcon(element)}
           </div>
         )}
         {element.type === "social" && (
-          <div className="w-full h-full flex items-center justify-center" onClick={() => handleLinkClick(element.link)}>
+          <div className="w-full h-full flex items-center justify-center" onClick={() =>handleElementClickLink(element)}>
             {renderIcon(element)}
           </div>
         )}

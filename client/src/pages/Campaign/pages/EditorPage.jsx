@@ -1842,15 +1842,30 @@ useEffect(() => {
   };
 
   
-  // Handle send campaign
-  const handleSendCampaign = () => {
-    navigate('/send-campaign', { 
-      state: { 
-        canvasData: pages[activePage].elements,
-        subject: "" // You can make this dynamic
-      } 
-    });
-  };
+const handleSendCampaign = () => {
+  const currentElements = pages[activePage].elements;
+  
+  // ✅ Ensure all elements have proper numeric values
+  const normalizedElements = currentElements.map(el => ({
+    ...el,
+    x: Number(el.x) || 0,
+    y: Number(el.y) || 0,
+    width: Number(el.width) || (el.type === 'image' ? 250 : 300),
+    height: Number(el.height) || (el.type === 'paragraph' ? 40 : 80),
+    fontSize: Number(el.fontSize) || 16,
+    rotation: Number(el.rotation) || 0,
+    opacity: Number(el.opacity) || 1,
+  }));
+  
+  navigate('/send-campaign', { 
+    state: { 
+      canvasData: normalizedElements,
+      subject: "",
+      canvasBackgroundColor: canvasBackgroundColor,  // ✅ CORRECT - use the state variable from EditorPage
+      timestamp: Date.now() // Force refresh
+    } 
+  });
+};
   
 
   return (
