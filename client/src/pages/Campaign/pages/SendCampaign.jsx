@@ -78,6 +78,8 @@ class ErrorBoundary extends React.Component {
 
 // Email Preview Component with Exact Editor Styles
 // Replace the current EmailPreview function with this
+// Replace the EmailPreview function in SendCampaign.jsx with this:
+
 function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
   if (!pages || !pages.length || activePage === undefined || activePage >= pages.length) {
     return (
@@ -104,50 +106,73 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
     );
   }
 
-  // --- Normalize & ensure numbers
-  const elems = currentPage.elements.map(e => ({
+  // ✅ Normalize & ensure numbers
+  const normalizedElements = currentPage.elements.map(e => ({
     ...e,
     x: Number(e.x) || 0,
     y: Number(e.y) || 0,
-    width: Number(e.width) || (e.type === 'image' ? 200 : 300),
+    width: Number(e.width) || (e.type === 'image' ? 250 : 300),
     height: Number(e.height) || (e.type === 'paragraph' ? 40 : 80),
+    fontSize: Number(e.fontSize) || 16,
   }));
 
-  // --- sort top-to-bottom
-  elems.sort((a, b) => a.y - b.y || a.x - b.x);
+  // ✅ Sort top-to-bottom ONLY - this is the key fix
+  const sortedElements = [...normalizedElements].sort((a, b) => {
+    // Primary sort by Y position
+    if (Math.abs(a.y - b.y) > 10) {
+      return a.y - b.y;
+    }
+    // Secondary sort by X position if Y is very close
+    return a.x - b.x;
+  });
 
-  // --- Group rows by vertical overlap using bounding boxes
-  function groupRowsByVerticalOverlap(elements) {
+  // ✅ IMPROVED: Group into rows with stricter vertical overlap detection
+  const groupIntoRows = (elements) => {
     const rows = [];
-    for (const el of elements) {
-      const top = el.y;
-      const bottom = el.y + (el.height || 0);
-
+    const VERTICAL_THRESHOLD = 15; // Reduced threshold for stricter grouping
+    
+    elements.forEach(el => {
+      const elTop = el.y;
+      const elBottom = el.y + el.height;
+      const elMidpoint = el.y + (el.height / 2);
+      
       let placed = false;
-      for (const r of rows) {
-        // if overlaps vertically with the row
-        if (!(bottom < r.minY || top > r.maxY)) {
-          r.items.push(el);
-          r.minY = Math.min(r.minY, top);
-          r.maxY = Math.max(r.maxY, bottom);
+      
+      for (const row of rows) {
+        const rowMidpoint = (row.minY + row.maxY) / 2;
+        
+        // Check if element's midpoint is close to row's midpoint
+        // This ensures only truly side-by-side elements are grouped
+        if (Math.abs(elMidpoint - rowMidpoint) < VERTICAL_THRESHOLD) {
+          row.items.push(el);
+          row.minY = Math.min(row.minY, elTop);
+          row.maxY = Math.max(row.maxY, elBottom);
           placed = true;
           break;
         }
       }
-
+      
       if (!placed) {
-        rows.push({ items: [el], minY: top, maxY: bottom });
+        rows.push({
+          items: [el],
+          minY: elTop,
+          maxY: elBottom
+        });
       }
-    }
-
-    // sort rows by vertical position
+    });
+    
+    // Sort rows by their minimum Y position
     rows.sort((a, b) => a.minY - b.minY);
+    
+    // Sort items within each row by X position (left to right)
+    rows.forEach(row => row.items.sort((a, b) => a.x - b.x));
+    
     return rows;
-  }
+  };
 
-  const rows = groupRowsByVerticalOverlap(elems);
+  const rows = groupIntoRows(sortedElements);
 
-  // --- render helpers
+  // ✅ Render element function (unchanged)
   const renderElement = (el) => {
     const baseStyle = {
       fontFamily: el.fontFamily || "Arial, sans-serif",
@@ -164,10 +189,12 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
               fontSize: `${el.fontSize || 28}px`,
               fontWeight: el.fontWeight || "700",
               margin: "6px 0",
+              backgroundColor: el.backgroundColor || "transparent",
             }}
             dangerouslySetInnerHTML={{ __html: el.content || "Heading" }}
           />
         );
+      
       case "subheading":
         return (
           <div
@@ -176,10 +203,12 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
               fontSize: `${el.fontSize || 22}px`,
               fontWeight: el.fontWeight || "600",
               margin: "6px 0",
+              backgroundColor: el.backgroundColor || "transparent",
             }}
             dangerouslySetInnerHTML={{ __html: el.content || "Subheading" }}
           />
         );
+      
       case "paragraph":
         return (
           <div
@@ -189,10 +218,12 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
               lineHeight: el.lineHeight || 1.6,
               margin: "6px 0",
               wordBreak: "break-word",
+              backgroundColor: el.backgroundColor || "transparent",
             }}
             dangerouslySetInnerHTML={{ __html: (el.content || "").trim() || "Paragraph text" }}
           />
         );
+      
       case "blockquote":
         return (
           <div
@@ -203,10 +234,12 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
               borderLeft: `4px solid ${el.borderColor || "#ccc"}`,
               paddingLeft: 12,
               margin: "12px 0",
+              backgroundColor: el.backgroundColor || "transparent",
             }}
             dangerouslySetInnerHTML={{ __html: el.content || "Blockquote" }}
           />
         );
+      
       case "image":
         return (
           <div style={{ textAlign: el.textAlign || "center", margin: "8px 0" }}>
@@ -225,11 +258,11 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
             />
           </div>
         );
+      
       case "button":
         return (
           <div style={{ textAlign: el.textAlign || "center", margin: "12px 0" }}>
-            <a
-              href={el.link || "#"}
+            <a href={el.link || "#"}
               style={{
                 display: "inline-block",
                 padding: `${el.padding || "10px 18px"}`,
@@ -244,6 +277,7 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
             />
           </div>
         );
+      
       case "line":
         return (
           <hr
@@ -255,23 +289,51 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
             }}
           />
         );
+      
+      case "rectangle":
+        return (
+          <div
+            style={{
+              width: "100%",
+              height: `${el.height || 100}px`,
+              backgroundColor: el.backgroundColor || "#4ECDC4",
+              border: el.borderWidth ? `${el.borderWidth}px solid ${el.borderColor || "#000"}` : "none",
+              borderRadius: `${el.borderRadius || 4}px`,
+              margin: "8px 0",
+            }}
+          />
+        );
+      
+      case "circle":
+        return (
+          <div
+            style={{
+              width: `${Math.min(el.width || 100, el.height || 100)}px`,
+              height: `${Math.min(el.width || 100, el.height || 100)}px`,
+              backgroundColor: el.backgroundColor || "#FF6B6B",
+              border: el.borderWidth ? `${el.borderWidth}px solid ${el.borderColor || "#000"}` : "none",
+              borderRadius: "50%",
+              margin: "8px auto",
+            }}
+          />
+        );
+      
       default:
         return null;
     }
   };
 
-  // --- Build preview HTML layout using tables per row to mimic email rendering
+  // ✅ Build preview HTML
   return (
     <div className="h-full bg-gray-100 overflow-auto">
       <div className="max-w-2xl mx-auto my-6">
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="p-8">
             {rows.map((row, rowIndex) => {
-              // sort row items by X so left->right order is preserved
-              const items = row.items.slice().sort((a, b) => a.x - b.x);
+              const items = row.items;
 
               if (items.length === 1) {
-                // single item: render full width block
+                // Single item: full width
                 return (
                   <div key={`row-${rowIndex}`} style={{ marginBottom: 8 }}>
                     {renderElement(items[0])}
@@ -279,7 +341,7 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
                 );
               }
 
-              // multiple items: compute relative widths based on element width values
+              // Multiple items: side-by-side using table
               const totalWidth = items.reduce((s, it) => s + (it.width || 250), 0);
               return (
                 <table key={`row-${rowIndex}`} width="100%" cellPadding="0" cellSpacing="0" style={{ marginBottom: 8 }}>
@@ -301,14 +363,13 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
           </div>
 
           <div className="bg-gray-50 px-8 py-6 border-t border-gray-200 text-center text-sm text-gray-600">
-            Sent preview — matches canvas layout.
+            Sent preview – matches canvas layout exactly
           </div>
         </div>
       </div>
     </div>
   );
 }
-
 
 
 export default function CampaignBuilder() {
@@ -352,6 +413,8 @@ export default function CampaignBuilder() {
     return localStorage.getItem('token');
   };
 const [showExitModal, setShowExitModal] = useState(false);
+const [previewWidth, setPreviewWidth] = useState(500);  
+const [isDragging, setIsDragging] = useState(false);
 
   // Calculate recipient count
   const getRecipientCount = () => {
@@ -371,6 +434,28 @@ const [showExitModal, setShowExitModal] = useState(false);
     return 0;
   };
 
+  useEffect(() => {
+  const handleMouseMove = (e) => {
+    if (!isDragging) return;
+
+    const newWidth = window.innerWidth - e.clientX;
+
+    if (newWidth > 350 && newWidth < 900) {
+      setPreviewWidth(newWidth);
+    }
+  };
+
+  const handleMouseUp = () => setIsDragging(false);
+
+  window.addEventListener("mousemove", handleMouseMove);
+  window.addEventListener("mouseup", handleMouseUp);
+
+  return () => {
+    window.removeEventListener("mousemove", handleMouseMove);
+    window.removeEventListener("mouseup", handleMouseUp);
+  };
+}, [isDragging]);
+
   // Utility: split array into chunks
   const chunkArray = (arr, size) => {
     const result = [];
@@ -380,16 +465,33 @@ const [showExitModal, setShowExitModal] = useState(false);
     return result;
   };
 
-  useEffect(() => {
-    if (location.state?.canvasData) {
-      setCanvasPages([{ id: 1, elements: location.state.canvasData }]);
+useEffect(() => {
+  if (location.state?.canvasData) {
+    console.log('✅ Received canvas data:', location.state.canvasData);
+    
+    // ✅ Normalize all numeric values
+    const normalizedElements = location.state.canvasData.map(el => ({
+      ...el,
+      x: Number(el.x) || 0,
+      y: Number(el.y) || 0,
+      width: Number(el.width) || (el.type === 'image' ? 250 : 300),
+      height: Number(el.height) || (el.type === 'paragraph' ? 40 : 80),
+      fontSize: Number(el.fontSize) || 16,
+    }));
+    
+    setCanvasPages([{ id: 1, elements: normalizedElements }]);
+    setCanvasActivePage(0);
+    
+    if (!completedSteps.includes("design")) {
       setCompletedSteps([...completedSteps, "design"]);
-      setFormData((prev) => ({
-        ...prev,
-        subject: location.state.subject || prev.subject,
-      }));
     }
-  }, [location.state]);
+    
+    setFormData((prev) => ({
+      ...prev,
+      subject: location.state.subject || prev.subject,
+    }));
+  }
+}, [location.state]);
 
   useEffect(() => { 
     fetchContacts(); 
@@ -1724,12 +1826,54 @@ const handleSendCampaign = async () => {
         </div>
 
         {/* Preview Section */}
-        <div className="w-[500px] border-l border-gray-800 bg-gray-900 flex flex-col">
+      {/* === PREVIEW SECTION WITH DRAGGABLE WIDTH === */}
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "row",
+            height: "100%",
+            userSelect: "none",
+          }}
+        >
+          {/* === DRAG HANDLE BETWEEN CONTENT & PREVIEW === */}
+          <div
+            onMouseDown={() => setIsDragging(true)}
+            style={{
+              width: "6px",
+              cursor: "col-resize",
+              background: "#222",
+              zIndex: 50,
+              transition: "background 0.2s",
+            }}
+            onMouseEnter={(e) => (e.target.style.background = "#444")}
+            onMouseLeave={(e) => (e.target.style.background = "#222")}
+          ></div>
+
+          {/* === RESIZABLE PREVIEW PANEL === */}
+        {/* === DRAGGABLE EMAIL PREVIEW SECTION === */}
+        <div
+          style={{
+            width: previewWidth,
+            minWidth: "350px",
+            maxWidth: "900px",
+            borderLeft: "1px solid #333",
+            background: "#1a1a1a",
+            display: "flex",
+            flexDirection: "column",
+            minHeight: "700px",   // 👈 Minimum height
+            maxHeight: "100vh",
+          }}
+        >
+          {/* Header */}
           <div className="p-4 border-b border-gray-800">
-            <h3 className="font-bold text-lg">Email Preview</h3>
+            <h3 className="font-bold text-lg text-white">Email Preview</h3>
           </div>
 
-          <div className="flex-1 overflow-auto p-4">
+          {/* Scrollable Email Preview Content */}
+          <div
+            className="flex-1 p-4"
+            style={{ overflowY: "auto" }}   // 👈 Vertical scroll for long emails
+          >
             <div className="bg-gray-800 rounded-lg border border-gray-700 h-full overflow-auto">
               <ErrorBoundary>
                 <EmailPreview
@@ -1742,6 +1886,7 @@ const handleSendCampaign = async () => {
             </div>
           </div>
 
+          {/* Preview Bottom Button */}
           <div className="p-4 border-t border-gray-800">
             <button
               onClick={handleSendCampaign}
@@ -1753,27 +1898,45 @@ const handleSendCampaign = async () => {
                 !completedSteps.includes("schedule") ||
                 isSending
               }
-
-
-              className={`w-full flex items-center justify-center gap-2 py-3 rounded-md text-white ${!completedSteps.includes("recipients") ||
+              className={`w-full flex items-center justify-center gap-2 py-3 rounded-md text-white ${
+                !completedSteps.includes("recipients") ||
                 !completedSteps.includes("setup") ||
                 !completedSteps.includes("template") ||
                 !completedSteps.includes("schedule") ||
                 isSending
-                ? "bg-gray-800 cursor-not-allowed"
-                : "bg-[#c2831f] hover:bg-[#d09025]"
-                }`}
+                  ? "bg-gray-800 cursor-not-allowed"
+                  : "bg-[#c2831f] hover:bg-[#d09025]"
+              }`}
             >
-              {formData.scheduleType === 'immediate' ? <Send size={16} /> : <Calendar size={16} />}
+              {formData.scheduleType === "immediate" ? (
+                <Send size={16} />
+              ) : (
+                <Calendar size={16} />
+              )}
               {isSending
                 ? "Processing..."
-                : formData.scheduleType === 'immediate'
-                  ? "Send Now"
-                  : "Schedule Campaign"
-              }
+                : formData.scheduleType === "immediate"
+                ? "Send Now"
+                : "Schedule Campaign"}
             </button>
           </div>
         </div>
+
+        {/* === DRAG HANDLE (RESIZER) === */}
+        <div
+          onMouseDown={() => setIsDragging(true)}
+          style={{
+            width: "6px",
+            cursor: "col-resize",
+            background: "#222",
+          }}
+          onMouseEnter={(e) => (e.target.style.background = "#444")}
+          onMouseLeave={(e) => (e.target.style.background = "#222")}
+        ></div>
+
+
+        </div>
+
       </div>
     </div>
   );

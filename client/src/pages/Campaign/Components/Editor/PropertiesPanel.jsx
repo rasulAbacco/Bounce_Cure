@@ -278,10 +278,10 @@ const PropertiesPanel = ({
               <div>
                 <h4 className="font-medium mb-3 text-gray-300">Link</h4>
                 <div className="space-y-3">
+
+                  {/* URL LINK */}
                   <div>
-                    <label className="block text-sm text-gray-400 mb-1">
-                      URL
-                    </label>
+                    <label className="block text-sm text-gray-400 mb-1">URL</label>
                     <input
                       type="text"
                       value={selectedElementData.link || ""}
@@ -294,8 +294,27 @@ const PropertiesPanel = ({
                       placeholder="https://example.com"
                     />
                   </div>
+
+                  {/* EMAIL LINK */}
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Email</label>
+                    <input
+                      type="text"
+                      value={selectedElementData.email || ""}
+                      onChange={(e) =>
+                        updateElement(selectedElementData.id, {
+                          email: e.target.value.startsWith("mailto:")
+                            ? e.target.value
+                            : `mailto:${e.target.value}`,
+                        })
+                      }
+                      className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      placeholder="name@example.com"
+                    />
+                  </div>
+
                   <div className="text-xs text-gray-400">
-                    Leave empty to disable link functionality
+                    Leave both fields empty to disable link functionality
                   </div>
                 </div>
               </div>
