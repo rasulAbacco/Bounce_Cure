@@ -702,3 +702,19 @@ model SmsRecipient {
   smsCampaignId Int
   campaign      SmsCampaign @relation(fields: [smsCampaignId], references: [id], onDelete: Cascade)
 }
+
+model SavedTemplate {
+  id         Int      @id @default(autoincrement())
+  userId     Int
+  templateId String
+  name       String
+  category   String   @default("Saved")
+  preview    String?
+  content    Json // Store the template elements as JSON
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([userId, templateId])
+  @@index([userId])
+  @@map("saved_templates")
+}

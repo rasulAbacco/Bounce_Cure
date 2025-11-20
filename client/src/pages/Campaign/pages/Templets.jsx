@@ -1020,6 +1020,364 @@ const templates = [
       },
     ],
   },
+ 
+  {
+    id: 13,
+    name: "GAL Lifestyle Newsletter",
+    category: "Email",
+    preview: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=600&h=400&fit=crop",
+    rating: 4.9,
+    likes: 578,
+    icon: Mail,
+    description: "Professional lifestyle newsletter template with multiple content sections and CTAs",
+    content: [
+      // Header Section
+      {
+        type: "text",
+        value: "GEORGIA AUTOMATED LIFESTYLES",
+        style: { 
+          fontSize: 28, 
+          color: "#ef4444", 
+          fontWeight: "700", 
+          textAlign: "center",
+          marginBottom: "25px",
+          letterSpacing: "0.05em"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "Blends innovation with personalization, designing smarter spaces where people live and work.",
+        style: { 
+          fontSize: 16, 
+          color: "#ffffff", 
+          textAlign: "center",
+          lineHeight: "1.6",
+          marginBottom: "30px",
+          backgroundColor: "#ef4444",
+          padding: "20px",
+          borderRadius: "8px"
+        },
+      },
+      
+      // Section 1: Golf Simulator
+      {
+        type: "image",
+        value: "https://images.unsplash.com/photo-1587174486073-ae5e5cff23aa?w=600&h=350&fit=crop",
+        style: {
+          borderRadius: "12px",
+          marginBottom: "25px"
+        }
+      },
+      {
+        type: "text",
+        value: "Simulate the Course. Improve your Game.",
+        style: { 
+          fontSize: 28, 
+          color: "#ef4444", 
+          fontWeight: "600", 
+          textAlign: "center",
+          marginBottom: "20px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "GAL has partnered with Foresight Sports to provide indoor golf simulators in virtually any space. Whether it's a basic installation in your garage or a complete custom-designed circuit golf studio for the office - if you have the space, we can create the ultimate golf simulator experience for you.",
+        style: { 
+          fontSize: 15, 
+          color: "#4b5563", 
+          textAlign: "center",
+          lineHeight: "1.7",
+          marginBottom: "20px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "And the core technology that makes it so great indoors, can still go with you to the range to keep your short and putts.",
+        style: { 
+          fontSize: 15, 
+          color: "#4b5563", 
+          textAlign: "center",
+          lineHeight: "1.7",
+          marginBottom: "25px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "✓ Works in virtually any space\n✓ Easily upgradable\n✓ Multipurpose simplicity\n✓ It will goes anywhere",
+        style: { 
+          fontSize: 14, 
+          color: "#6b7280", 
+          textAlign: "center",
+          lineHeight: "2",
+          marginBottom: "25px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "Play the world's best and most exclusive courses, practice your skills on the range, or even compete in skill-building competitions with players around the world – all in beautiful 4K resolution.",
+        style: { 
+          fontSize: 15, 
+          color: "#374151", 
+          textAlign: "center",
+          lineHeight: "1.6",
+          marginBottom: "20px",
+          fontWeight: "500"
+        },
+      },
+      {
+        type: "button",
+        value: "Inquire Now",
+        style: {
+          backgroundColor: "#ef4444",
+          color: "#ffffff",
+          padding: "14px 32px",
+          borderRadius: "25px",
+          fontSize: "15px",
+          fontWeight: "600",
+          margin: "20px auto",
+          display: "block",
+          border: "none",
+          cursor: "pointer"
+        },
+      },
+      
+      // Section 2: Video Walls
+      {
+        type: "image",
+        value: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=350&fit=crop",
+        style: {
+          borderRadius: "12px",
+          marginBottom: "25px",
+          marginTop: "40px"
+        }
+      },
+      {
+        type: "text",
+        value: "The Future is Big.",
+        style: { 
+          fontSize: 28, 
+          color: "#ef4444", 
+          fontWeight: "600", 
+          textAlign: "center",
+          marginBottom: "15px"
+        },
+      },
+      {
+        type: "text",
+        value: "Video Walls for Modern Spaces.",
+        style: { 
+          fontSize: 20, 
+          color: "#6b7280", 
+          fontWeight: "500", 
+          textAlign: "center",
+          marginBottom: "20px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "Whether you're looking to build a custom home theater, leverage the latest technology and investment on meetings, or design stunning feature statement walls for display, collaboration, and broadcast stations, Datapath thanks to technology behind the power of LG's professional displays. Capable of high-quality 120 and LED video walls in your most adaptable, putting them within reach of modern boardrooms and luxury homes.",
+        style: { 
+          fontSize: 15, 
+          color: "#4b5563", 
+          textAlign: "center",
+          lineHeight: "1.7",
+          marginBottom: "20px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "Tailored to fit any dimensions or needs, adding a video wall ensures you don't just display content, you make an unforgettable statement in a grand scale.",
+        style: { 
+          fontSize: 15, 
+          color: "#374151", 
+          textAlign: "center",
+          lineHeight: "1.6",
+          marginBottom: "20px",
+          fontWeight: "500"
+        },
+      },
+      {
+        type: "button",
+        value: "Inquire Now",
+        style: {
+          backgroundColor: "#ef4444",
+          color: "#ffffff",
+          padding: "14px 32px",
+          borderRadius: "25px",
+          fontSize: "15px",
+          fontWeight: "600",
+          margin: "20px auto",
+          display: "block",
+          border: "none",
+          cursor: "pointer"
+        },
+      },
+      
+      // Section 3: Ketra Lighting
+      {
+        type: "image",
+        value: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&h=350&fit=crop",
+        style: {
+          borderRadius: "12px",
+          marginBottom: "25px",
+          marginTop: "40px"
+        }
+      },
+      {
+        type: "text",
+        value: "Is Ketra Lighting Worth the Investment?",
+        style: { 
+          fontSize: 24, 
+          color: "#ef4444", 
+          fontWeight: "600", 
+          textAlign: "center",
+          marginBottom: "10px"
+        },
+      },
+      {
+        type: "text",
+        value: "Absolutely - Here's Why.",
+        style: { 
+          fontSize: 20, 
+          color: "#6b7280", 
+          fontWeight: "500", 
+          textAlign: "center",
+          marginBottom: "20px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "When it comes to smart home lighting, Ketra stands out for its luxury appeal. Ketra by Lutron, known for its flawless integration of light, color, and control, Ketra is not just another smart lighting solution—it's an entirely different experience. With circadian lighting that mimics natural sunlight and provides traditional lighting options, Ketra offers exceptional benefits that make it well worth the investment for homeowners who value comfort, ambiance, and performance.",
+        style: { 
+          fontSize: 15, 
+          color: "#4b5563", 
+          textAlign: "center",
+          lineHeight: "1.7",
+          marginBottom: "25px"
+        },
+      },
+      {
+        type: "button",
+        value: "Learn More",
+        style: {
+          backgroundColor: "#ef4444",
+          color: "#ffffff",
+          padding: "14px 32px",
+          borderRadius: "25px",
+          fontSize: "15px",
+          fontWeight: "600",
+          margin: "20px auto",
+          display: "block",
+          border: "none",
+          cursor: "pointer"
+        },
+      },
+      
+      // Section 4: Network Health Monitoring
+      {
+        type: "image",
+        value: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=350&fit=crop",
+        style: {
+          borderRadius: "12px",
+          marginBottom: "25px",
+          marginTop: "40px"
+        }
+      },
+      {
+        type: "text",
+        value: "INTRODUCING",
+        style: { 
+          fontSize: 14, 
+          color: "#9ca3af", 
+          fontWeight: "600", 
+          textAlign: "center",
+          marginBottom: "10px",
+          letterSpacing: "0.1em"
+        },
+      },
+      {
+        type: "text",
+        value: "Network Health Monitoring",
+        style: { 
+          fontSize: 26, 
+          color: "#111827", 
+          fontWeight: "700", 
+          textAlign: "center",
+          marginBottom: "20px"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "Your connected smart devices and home should now be able to hear, communicate, and effectively optimize your performance. Whether as a manager, you will receive automatic monthly firmware updates pushed to all your network equipment, keeping everything running at peak performance. Should anything go wrong with any of your network connected equipment, your main health audit receive a detailed health report that breaks down exactly how your network is performing, highlights any potential issues before they become serious problems, and offers specific steps to remedy them. And if something does go wrong? Members jump straight to the front of the queue – no waiting on tickets, just fast resolution from GAL's expert support team.",
+        style: { 
+          fontSize: 15, 
+          color: "#4b5563", 
+          textAlign: "center",
+          lineHeight: "1.7",
+          marginBottom: "25px"
+        },
+      },
+      {
+        type: "text",
+        value: "$29.99/month (billed annually)",
+        style: { 
+          fontSize: 16, 
+          color: "#ef4444", 
+          fontWeight: "600", 
+          textAlign: "center",
+          marginBottom: "15px"
+        },
+      },
+      
+      // Footer Section
+      {
+        type: "text",
+        value: "Life is too busy for downtime.",
+        style: { 
+          fontSize: 22, 
+          color: "#111827", 
+          fontWeight: "600", 
+          textAlign: "center",
+          marginBottom: "20px",
+          marginTop: "30px"
+        },
+      },
+      {
+        type: "button",
+        value: "GET STARTED",
+        style: {
+          backgroundColor: "#ef4444",
+          color: "#ffffff",
+          padding: "16px 40px",
+          borderRadius: "25px",
+          fontSize: "16px",
+          fontWeight: "700",
+          margin: "20px auto",
+          display: "block",
+          border: "none",
+          cursor: "pointer",
+          letterSpacing: "0.05em"
+        },
+      },
+      {
+        type: "paragraph",
+        value: "Let GAL Help Automate your Life!",
+        style: { 
+          fontSize: 18, 
+          color: "#ffffff", 
+          textAlign: "center",
+          lineHeight: "1.6",
+          marginBottom: "20px",
+          backgroundColor: "#ef4444",
+          padding: "18px",
+          borderRadius: "8px",
+          fontWeight: "600",
+          marginTop: "30px"
+        },
+      },
+    ],
+  },
+ 
 ];
  
 

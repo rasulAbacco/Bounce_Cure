@@ -38,7 +38,7 @@ router.post("/request-verification", async (req, res) => {
         if (!name) {
             return res.status(400).json({ message: "From Name is required." });
         }
-
+ 
         const TO_EMAIL = process.env.TO_EMAIL;
         const FROM_EMAIL = process.env.FROM_EMAIL;
 

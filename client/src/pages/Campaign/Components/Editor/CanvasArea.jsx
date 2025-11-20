@@ -9,6 +9,7 @@ import {
   Youtube, CreditCard, Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight, 
   Palette 
 } from 'lucide-react';
+import { api } from "../../../../api";
 
 const TextStylePanel = ({ selectedElement, onUpdateElementStyle, onClose, zoomLevel }) => {
   const [fontSize, setFontSize] = useState(selectedElement?.fontSize || 16);
@@ -484,130 +485,91 @@ export default function CanvasArea({
     }
   }, [pages, activePage, saveToLocalStorage, isEditingTemplate, updateEditedTemplate]);
 
-  const handleSaveAsNewTemplate = useCallback(() => {
+const handleSaveAsNewTemplate = useCallback(async () => {
     if (!templateName.trim()) {
-      alert('Please enter a template name');
+      alert("Please enter a template name");
       return;
     }
+
+    const userId = localStorage.getItem("userId");
+    if (!userId) {
+      alert("User not logged in");
+      return;
+    }
+
     const elements = pages[activePage].elements;
-    if (!elements || elements.length === 0) {
-      alert('Cannot save an empty template. Please add some elements to the canvas.');
+    if (!elements.length) {
+      alert("Cannot save an empty template");
       return;
     }
-    let elementsCopy;
+
     try {
-      elementsCopy = JSON.parse(JSON.stringify(elements));
+      const response = await api.post("/saved-templates/save", {
+        userId,
+        templateId: `user-${Date.now()}`,
+        name: templateName,
+        category: "Saved",
+        preview: "https://images.unsplash.com/photo-1557683316-973673baf926?w=600&h=400&fit=crop",
+        content: elements
+      });
+
+      alert("Template saved successfully!");
+      setShowSaveTemplateModal(false);
+      setTemplateName("");
+
+      // Optionally refresh the templates list or navigate back
+      // navigate('/all-templates');
+
     } catch (error) {
-      alert('Error copying template data. Please try again.');
-      return;
+      console.error("Save error", error);
+      alert(`Error saving template: ${error.response?.data?.error || error.message}`);
     }
-    let userTemplates = [];
-    try {
-      const storedTemplates = localStorage.getItem('userCreatedTemplates');
-      if (storedTemplates) userTemplates = JSON.parse(storedTemplates);
-    } catch (error) {
-      console.error('Error loading user templates:', error);
-    }
-    const newTemplate = {
-      id: `user-${Date.now()}`, name: templateName, category: "Saved",
-      preview: "https://images.unsplash.com/photo-1557683316-973673baf926?w=600&h=400&fit=crop",
-      rating: 0, likes: 0, icon: FileText, description: "Custom template created by user",
-      tags: ["saved", "custom"], content: elementsCopy
-    };
-    const updatedUserTemplates = [...userTemplates, newTemplate];
-    try {
-      localStorage.setItem('userCreatedTemplates', JSON.stringify(updatedUserTemplates));
-      console.log('New template saved successfully to localStorage');
-    } catch (error) {
-      alert('Error saving template. Please try again.');
-      return;
-    }
-    let savedTemplates = [];
-    try {
-      const storedSavedTemplates = localStorage.getItem('savedTemplates');
-      if (storedSavedTemplates) savedTemplates = JSON.parse(storedSavedTemplates);
-    } catch (error) {
-      console.error('Error loading saved templates:', error);
-    }
-    if (!savedTemplates.includes(newTemplate.id)) {
-      savedTemplates.push(newTemplate.id);
-      try {
-        localStorage.setItem('savedTemplates', JSON.stringify(savedTemplates));
-        console.log('New template added to savedTemplates:', newTemplate.id);
-      } catch (error) {
-        console.error('Error saving saved templates:', error);
-      }
-    }
-    window.dispatchEvent(new Event('templateSaved'));
-    setShowSaveTemplateModal(false);
-    setTemplateName('');
-    alert('New template saved successfully! You can find it in the "Saved" category in the template library.');
   }, [templateName, pages, activePage]);
 
-  const handleSaveAsTemplate = useCallback(() => {
+
+  const handleSaveAsTemplate = useCallback(async () => {
     if (!templateName.trim()) {
-      alert('Please enter a template name');
+      alert("Please enter template name");
       return;
     }
-    if (!isEditingTemplate || !editingTemplateId) {
-      alert('No template is being edited');
+
+    const userId = localStorage.getItem("userId");
+    if (!userId || !editingTemplateId) {
+      alert("Template not found");
       return;
     }
+
     const elements = pages[activePage].elements;
-    if (!elements || elements.length === 0) {
-      alert('Cannot save an empty template. Please add some elements to the canvas.');
+    if (!elements.length) {
+      alert("Cannot save an empty template");
       return;
     }
-    let elementsCopy;
+
     try {
-      elementsCopy = JSON.parse(JSON.stringify(elements));
-    } catch (error) {
-      alert('Error copying template data. Please try again.');
-      return;
-    }
-    let userTemplates = [];
-    try {
-      const storedTemplates = localStorage.getItem('userCreatedTemplates');
-      if (storedTemplates) userTemplates = JSON.parse(storedTemplates);
-    } catch (error) {
-      alert('Error loading templates. Please try again.');
-      return;
-    }
-    const templateIndex = userTemplates.findIndex(t => t.id === editingTemplateId);
-    if (templateIndex === -1) {
-      alert('Template not found for updating.');
-      return;
-    }
-    const updatedTemplate = { ...userTemplates[templateIndex], name: templateName, content: elementsCopy };
-    userTemplates[templateIndex] = updatedTemplate;
-    try {
-      localStorage.setItem('userCreatedTemplates', JSON.stringify(userTemplates));
-      console.log('Template updated successfully');
-    } catch (error) {
-      alert('Error saving template. Please try again.');
-      return;
-    }
-    let savedTemplates = [];
-    try {
-      const storedSavedTemplates = localStorage.getItem('savedTemplates');
-      if (storedSavedTemplates) savedTemplates = JSON.parse(storedSavedTemplates);
-    } catch (error) {
-      console.error('Error loading saved templates:', error);
-    }
-    if (!savedTemplates.includes(editingTemplateId)) {
-      savedTemplates.push(editingTemplateId);
-      try {
-        localStorage.setItem('savedTemplates', JSON.stringify(savedTemplates));
-        console.log('Template added to savedTemplates:', editingTemplateId);
-      } catch (error) {
-        console.error('Error saving saved templates:', error);
+      const response = await api.put("/saved-templates/update", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId,
+          templateId: editingTemplateId,
+          name: templateName,
+          content: elements
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update template");
       }
+
+      alert("Template updated successfully!");
+      setShowSaveTemplateModal(false);
+      setTemplateName("");
+
+    } catch (error) {
+      console.error("Update error", error);
+      alert("Error updating template");
     }
-    window.dispatchEvent(new Event('templateSaved'));
-    setShowSaveTemplateModal(false);
-    setTemplateName('');
-    alert('Template updated successfully!');
-  }, [templateName, pages, activePage, isEditingTemplate, editingTemplateId]);
+  }, [templateName, editingTemplateId, pages, activePage]);
 
   const renderIcon = (element) => {
     const iconName = element.name || element.iconName || 'Star';
@@ -1193,7 +1155,13 @@ export default function CanvasArea({
           </button>
         </div>
       </div>
-      <div ref={containerRef} className="flex-1 overflow-auto bg-black p-8" onClick={handleCanvasClick}>
+      <div
+          ref={containerRef}
+          className="overflow-auto bg-black p-8"
+          style={{ maxHeight: "700px" }}
+          onClick={handleCanvasClick}
+        >
+
         <div className="flex justify-center items-start min-w-full min-h-full">
           <div ref={canvasRef} className={`canvas-background relative shadow-2xl rounded-lg overflow-visible ${preview ? "" : "ring-1 ring-gray-400/20"}`} style={{
             width: canvasDimensions.width * zoomLevel, height: canvasDimensions.height * zoomLevel,

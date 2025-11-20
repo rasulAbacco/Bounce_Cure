@@ -120,6 +120,7 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
           return (
             <h1 key={element.id} style={{
               ...baseStyle,
+              backgroundColor: element.backgroundColor || "transparent",
               fontSize: `${element.fontSize || 20}px`,
               fontWeight: element.fontWeight || 'bold',
               lineHeight: '1.3',
@@ -134,6 +135,7 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
           return (
             <h2 key={element.id} style={{
               ...baseStyle,
+              backgroundColor: element.backgroundColor || "transparent",
               fontSize: `${element.fontSize || 24}px`,
               fontWeight: element.fontWeight || '600',
               lineHeight: '1.4',
@@ -148,6 +150,7 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
           return (
             <p key={element.id} style={{
               ...baseStyle,
+              backgroundColor: element.backgroundColor || "transparent",
               fontSize: `${element.fontSize || 16}px`,
               lineHeight: '1.6',
               margin: '12px 0',
@@ -160,6 +163,7 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
           return (
             <blockquote key={element.id} style={{
               ...baseStyle,
+              backgroundColor: element.backgroundColor || "transparent",
               fontSize: `${element.fontSize || 16}px`,
               fontStyle: 'italic',
               borderLeft: `4px solid ${element.borderColor || '#cccccc'}`,
