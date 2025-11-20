@@ -28,10 +28,26 @@ const generateHtmlFromCanvas = (canvasData, subject, fromName, fromEmail) => {
                 This email was sent from your campaign builder.
               </p>
               <hr style="border:none;height:1px;background:#eee;margin:30px 0;">
-              <p style="margin:0;font-size:12px;color:#999;text-align:center;">
-                Sent by ${fromName}<br>
-                <a href="mailto:${fromEmail}" style="color:#007bff;">${fromEmail}</a>
-              </p>
+
+              <div style="margin:0;padding:0;text-align:center;">
+  
+                <p style="margin:0;font-size:12px;color:#999;">
+                  Sent by ${fromName}
+                </p>
+
+                <p style="margin:5px 0;font-size:12px;color:#999;">
+                  Gal Electronics · 151 14th St NW #2143 · Atlanta, GA 30318-7835 · USA
+                </p>
+
+                <p style="margin:0;font-size:12px;color:#999;">
+                  <a href="mailto:${fromEmail}" style="color:#007bff;">
+                    ${fromEmail}
+                  </a>
+                </p>
+
+              </div>
+
+
             </td></tr>
           </table>
         </td></tr>
@@ -162,29 +178,36 @@ const generateHtmlFromCanvas = (canvasData, subject, fromName, fromEmail) => {
           />
         `;
 
-      case "button":
-        return `
-          <table cellpadding="0" cellspacing="0" border="0" style="margin:15px auto;">
-            <tr>
-              <td style="
-                background:${el.backgroundColor || "#007bff"};
-                padding:12px 20px;
-                border-radius:6px;
-                text-align:center;
-              ">
-                <a href="${el.link || "#"}" 
-                   style="
-                     color:${el.color || "#fff"};
-                     font-size:${el.fontSize || 16}px;
-                     text-decoration:none;
-                     font-weight:bold;
-                   ">
-                  ${el.content || "Click Me"}
-                </a>
-              </td>
-            </tr>
-          </table>
-        `;
+     case "button":
+  return `
+    <table cellpadding="0" cellspacing="0" border="0" style="margin:15px auto;">
+      <tr>
+        <td style="
+          background:${el.backgroundColor || "#007bff"};
+          padding:12px 20px;
+          border-radius:6px;
+          text-align:center;
+        ">
+          <a 
+            href="${
+              el.email
+                ? (el.email.startsWith("mailto:") ? el.email : "mailto:" + el.email)
+                : (el.link || "#")
+            }"
+            style="
+              color:${el.color || "#fff"};
+              font-size:${el.fontSize || 16}px;
+              text-decoration:none;
+              font-weight:bold;
+            "
+          >
+            ${el.content || "Click Me"}
+          </a>
+        </td>
+      </tr>
+    </table>
+  `;
+
 
       case "line":
         return `
@@ -252,12 +275,24 @@ const generateHtmlFromCanvas = (canvasData, subject, fromName, fromEmail) => {
   // =====================================================
   htmlContent += `
           </td></tr>
-          <tr><td style="padding:20px;background:#f8f9fa;border-top:1px solid #ddd;text-align:center;">
-            <p style="margin:0 0 5px;font-size:12px;color:#777;">Sent by <strong>${fromName}</strong></p>
-            <p style="margin:0;font-size:12px;color:#777;">
-              <a href="mailto:${fromEmail}" style="color:#007bff;">${fromEmail}</a>
-            </p>
-          </td></tr>
+          <tr>
+            <td style="padding:20px;background:#f8f9fa;border-top:1px solid #ddd;text-align:center;">
+
+              <p style="margin:0 0 5px;font-size:12px;color:#777;">
+                Sent by <strong>${fromName}</strong>
+              </p>
+
+              <p style="margin:5px 0;font-size:12px;color:#777;">
+                Gal Electronics · 151 14th St NW #2143 · Atlanta, GA 30318-7835 · USA
+              </p>
+
+              <p style="margin:0;font-size:12px;color:#777;">
+                <a href="mailto:${fromEmail}" style="color:#007bff;">${fromEmail}</a>
+              </p>
+
+            </td>
+          </tr>
+
         </table>
       </td></tr>
     </table>
