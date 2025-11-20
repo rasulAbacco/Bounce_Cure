@@ -65,6 +65,7 @@ import multimediaCampaignRoutes from "./routes/multimediaCampaign.js";
 import twilioRoutes from "./routes/twilioConfig.js";
 import whatsappRoutes from "./routes/whatsappCampaign.js";
 import smsRoutes from "./routes/smsCampaign.js";
+import savedTemplatesRouter from "./routes/savedTemplates.js";
 
 // ENV setup
 import customRoutes from "./routes/customRoutes.js";
@@ -161,6 +162,7 @@ app.get("/api/dashboard-data", protect, (req, res) => {
 // Auth routes
 app.use("/api/auth", authRoutes);
 app.use("/api/auth", passwordRoutes); // Optional, combine with authRoutes if desired
+app.use("/api/saved-templates", savedTemplatesRouter);
 
 // Dashboard & verification
 app.use("/dashboard", dashboardCRM);

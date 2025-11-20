@@ -50,15 +50,15 @@ const generateHtmlFromCanvas = (canvasData, subject, fromName, fromEmail) => {
   canvasData.forEach((element) => {
     switch (element.type) {
       case "heading":
-        htmlContent += `<h1 style="margin:0 0 20px 0;font-size:${element.fontSize || 28}px;color:${element.color || "#333"};font-weight:bold;text-align:${element.textAlign || "left"};">${element.content || "Heading"}</h1>`;
+        htmlContent += `<h1 style="margin:0 0 20px 0;font-size:${element.fontSize || 28}px;color:${element.color || "#333"};background-color:${element.backgroundColor || "transparent"};font-weight:bold;text-align:${element.textAlign || "left"};padding:6px;">${element.content || "Heading"}</h1>`;
         break;
       case "subheading":
-        htmlContent += `<h2 style="margin:0 0 16px 0;font-size:${element.fontSize || 22}px;color:${element.color || "#333"};font-weight:600;text-align:${element.textAlign || "left"};">${element.content || "Subheading"}</h2>`;
+        htmlContent += `<h2 style="margin:0 0 16px 0;font-size:${element.fontSize || 22}px;color:${element.color || "#333"};background-color:${element.backgroundColor || "transparent"};font-weight:600;text-align:${element.textAlign || "left"};padding:6px;">${element.content || "Subheading"}</h2>`;
         break;
       case "paragraph":
         const paragraphs = (element.content || "Paragraph text").split("\n").filter((p) => p.trim());
         paragraphs.forEach((p) => {
-          htmlContent += `<p style="margin:0 0 16px 0;font-size:${element.fontSize || 16}px;color:${element.color || "#333"};line-height:1.6;text-align:${element.textAlign || "left"};">${p.trim()}</p>`;
+          htmlContent += `<p style="margin:0 0 16px 0;font-size:${element.fontSize || 16}px;color:${element.color || "#333"};background-color:${element.backgroundColor || "transparent"};line-height:1.6;text-align:${element.textAlign || "left"};padding:6px;">${p.trim()}</p>`;
         });
         break;
       case "image":

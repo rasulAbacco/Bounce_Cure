@@ -1103,6 +1103,7 @@ const templates = [
       },
     ],
   },
+  
 ];
 
 const categories = ["All", "Email", "Landing Page", "Social", "Event", "Poster", "Business", "Saved"];
@@ -1116,48 +1117,46 @@ const AllTemplates = () => {
   const [savedTemplates, setSavedTemplates] = useState([]);
   const [userCreatedTemplates, setUserCreatedTemplates] = useState([]);
 
-  // Load saved templates from localStorage on component mount
-  useEffect(() => {
-    const saved = localStorage.getItem('savedTemplates');
-    if (saved) {
-      setSavedTemplates(JSON.parse(saved));
-    }
+// Load saved templates from database on component mount
+useEffect(() => {
+  const fetchSavedTemplates = async () => {
+    const userId = localStorage.getItem("userId");
+    if (!userId) return;
 
-    const userTemplates = localStorage.getItem('userCreatedTemplates');
-    if (userTemplates) {
-      const parsed = JSON.parse(userTemplates);
-      // Add default preview if not present
-      const withPreview = parsed.map(t => ({
-        ...t,
-        preview: t.preview || "https://images.unsplash.com/photo-1557683316-973673baf926?w=600&h=400&fit=crop"
-      }));
-      setUserCreatedTemplates(withPreview);
-    }
-
-    // Add event listener for template updates
-    const handleTemplateSaved = () => {
-      const updatedUserTemplates = localStorage.getItem('userCreatedTemplates');
-      if (updatedUserTemplates) {
-        const parsed = JSON.parse(updatedUserTemplates);
-        const withPreview = parsed.map(t => ({
-          ...t,
-          preview: t.preview || "https://images.unsplash.com/photo-1557683316-973673baf926?w=600&h=400&fit=crop"
-        }));
-        setUserCreatedTemplates(withPreview);
+    try {
+      const response = await fetch(`http://localhost:5000/api/saved-templates/${userId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to fetch: ${response.status}`);
       }
-    };
+      
+      const data = await response.json();
 
-    window.addEventListener('templateSaved', handleTemplateSaved);
+      // Extract saved template IDs
+      setSavedTemplates(data.map(t => t.templateId));
 
-    return () => {
-      window.removeEventListener('templateSaved', handleTemplateSaved);
-    };
-  }, []);
+      // Convert DB saved templates into UI structure
+      const formatted = data.map(t => ({
+        id: t.templateId,
+        name: t.name,
+        preview: t.preview || "https://images.unsplash.com/photo-1557683316-973673baf926?w=600&h=400&fit=crop",
+        category: "Saved",
+        description: t.description || "Custom saved template",
+        tags: t.tags || ["custom", "saved"],
+        rating: 4.5,
+        likes: 0,
+        content: t.content
+      }));
 
-  // Save templates to localStorage whenever savedTemplates changes
-  useEffect(() => {
-    localStorage.setItem('savedTemplates', JSON.stringify(savedTemplates));
-  }, [savedTemplates]);
+      setUserCreatedTemplates(formatted);
+      console.log('Loaded saved templates:', formatted.length);
+    } catch (err) {
+      console.error("Error loading saved templates:", err);
+    }
+  };
+
+  fetchSavedTemplates();
+}, []);
 
   const handleExit = () => {
     navigate("/email-campaign");
