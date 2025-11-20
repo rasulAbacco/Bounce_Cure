@@ -23,6 +23,7 @@ router.get("/sender/verification", async (req, res) => {
   }
 });
 
+
 // Add sender verification middleware
 const verifySender = async (req, res, next) => {
   const { fromEmail } = req.body;

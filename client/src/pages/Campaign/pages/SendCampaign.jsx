@@ -77,6 +77,7 @@ class ErrorBoundary extends React.Component {
 }
 
 // Email Preview Component with Exact Editor Styles
+// Replace the current EmailPreview function with this
 function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
   if (!pages || !pages.length || activePage === undefined || activePage >= pages.length) {
     return (
@@ -103,197 +104,212 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
     );
   }
 
-  // Sort elements by Y position (top to bottom)
-  const sortedElements = [...currentPage.elements].sort((a, b) => (a.y || 0) - (b.y || 0));
+  // --- Normalize & ensure numbers
+  const elems = currentPage.elements.map(e => ({
+    ...e,
+    x: Number(e.x) || 0,
+    y: Number(e.y) || 0,
+    width: Number(e.width) || (e.type === 'image' ? 200 : 300),
+    height: Number(e.height) || (e.type === 'paragraph' ? 40 : 80),
+  }));
 
-  const renderEmailElement = (element) => {
-    try {
-      const baseStyle = {
-        fontFamily: element.fontFamily || 'Arial, sans-serif',
-        color: element.color || '#000000',
-        textAlign: element.textAlign || 'left',
-        margin: '15px 0',
-      };
+  // --- sort top-to-bottom
+  elems.sort((a, b) => a.y - b.y || a.x - b.x);
 
-      switch (element.type) {
-        case "heading":
-          return (
-            <h1 key={element.id} style={{
-              ...baseStyle,
-              backgroundColor: element.backgroundColor || "transparent",
-              fontSize: `${element.fontSize || 20}px`,
-              fontWeight: element.fontWeight || 'bold',
-              lineHeight: '1.3',
-              marginTop: '25px',
-              marginBottom: '15px',
-            }}>
-              {element.content || 'Heading'}
-            </h1>
-          );
+  // --- Group rows by vertical overlap using bounding boxes
+  function groupRowsByVerticalOverlap(elements) {
+    const rows = [];
+    for (const el of elements) {
+      const top = el.y;
+      const bottom = el.y + (el.height || 0);
 
-        case "subheading":
-          return (
-            <h2 key={element.id} style={{
-              ...baseStyle,
-              backgroundColor: element.backgroundColor || "transparent",
-              fontSize: `${element.fontSize || 24}px`,
-              fontWeight: element.fontWeight || '600',
-              lineHeight: '1.4',
-              marginTop: '20px',
-              marginBottom: '12px',
-            }}>
-              {element.content || 'Subheading'}
-            </h2>
-          );
-
-        case "paragraph":
-          return (
-            <p key={element.id} style={{
-              ...baseStyle,
-              backgroundColor: element.backgroundColor || "transparent",
-              fontSize: `${element.fontSize || 16}px`,
-              lineHeight: '1.6',
-              margin: '12px 0',
-            }}
-              dangerouslySetInnerHTML={{ __html: element.content || 'Paragraph text' }}
-            />
-          );
-
-        case "blockquote":
-          return (
-            <blockquote key={element.id} style={{
-              ...baseStyle,
-              backgroundColor: element.backgroundColor || "transparent",
-              fontSize: `${element.fontSize || 16}px`,
-              fontStyle: 'italic',
-              borderLeft: `4px solid ${element.borderColor || '#cccccc'}`,
-              paddingLeft: '20px',
-              margin: '20px 0',
-              lineHeight: '1.6',
-              color: element.color || '#666666',
-            }}>
-              {element.content || 'Blockquote text'}
-            </blockquote>
-          );
-
-        case "button":
-          return (
-            <div key={element.id} style={{ margin: '25px 0', textAlign: element.textAlign || 'center' }}>
-              <a
-                href={element.link || '#'}
-                style={{
-                  display: 'inline-block',
-                  padding: '12px 35px',
-                  fontSize: `${element.fontSize || 16}px`,
-                  fontFamily: element.fontFamily || 'Arial, sans-serif',
-                  color: element.color || '#ffffff',
-                  backgroundColor: element.backgroundColor || '#007bff',
-                  textDecoration: 'none',
-                  fontWeight: element.fontWeight || 'bold',
-                  borderRadius: `${element.borderRadius || 6}px`,
-                  border: element.borderWidth ? `${element.borderWidth}px solid ${element.borderColor}` : 'none',
-                }}
-              >
-                {element.content || 'Click Me'}
-              </a>
-            </div>
-          );
-
-        case "image":
-          return (
-            <div key={element.id} style={{ margin: '20px 0', textAlign: element.textAlign || 'center' }}>
-              <img
-                src={element.src || 'https://via.placeholder.com/600x300/e0e0e0/666666?text=Image'}
-                alt={element.alt || 'Email Image'}
-                style={{
-                  maxWidth: '100%',
-                  height: 'auto',
-                  borderRadius: `${element.borderRadius || 0}px`,
-                  border: element.borderWidth ? `${element.borderWidth}px solid ${element.borderColor || '#cccccc'}` : 'none',
-                }}
-              />
-            </div>
-          );
-
-        case "card":
-          return (
-            <div key={element.id} style={{
-              backgroundColor: element.backgroundColor || '#f8f9fa',
-              border: `${element.borderWidth || 1}px solid ${element.borderColor || '#dee2e6'}`,
-              borderRadius: `${element.borderRadius || 8}px`,
-              padding: `${element.padding || 20}px`,
-              margin: '20px 0',
-            }}>
-              <div style={{
-                fontSize: `${element.fontSize || 16}px`,
-                color: element.color || '#000000',
-                fontFamily: element.fontFamily || 'Arial, sans-serif',
-                lineHeight: '1.6',
-              }}>
-                {element.content || 'Card content goes here'}
-              </div>
-            </div>
-          );
-
-        case "line":
-          return (
-            <hr key={element.id} style={{
-              border: 'none',
-              borderTop: `${element.strokeWidth || 2}px solid ${element.strokeColor || '#cccccc'}`,
-              margin: '20px 0',
-            }} />
-          );
-
-        case "rectangle":
-          return (
-            <div key={element.id} style={{
-              backgroundColor: element.backgroundColor || '#e9ecef',
-              height: `${Math.min(element.height || 100, 200)}px`,
-              borderRadius: `${element.borderRadius || 0}px`,
-              border: element.borderWidth ? `${element.borderWidth}px solid ${element.borderColor || '#cccccc'}` : 'none',
-              margin: '20px 0',
-            }} />
-          );
-
-        case "circle":
-          return (
-            <div key={element.id} style={{
-              backgroundColor: element.backgroundColor || '#e9ecef',
-              width: `${Math.min(element.width || 100, 150)}px`,
-              height: `${Math.min(element.height || 100, 150)}px`,
-              borderRadius: '50%',
-              border: element.borderWidth ? `${element.borderWidth}px solid ${element.borderColor || '#cccccc'}` : 'none',
-              margin: '20px auto',
-            }} />
-          );
-
-        default:
-          return null;
+      let placed = false;
+      for (const r of rows) {
+        // if overlaps vertically with the row
+        if (!(bottom < r.minY || top > r.maxY)) {
+          r.items.push(el);
+          r.minY = Math.min(r.minY, top);
+          r.maxY = Math.max(r.maxY, bottom);
+          placed = true;
+          break;
+        }
       }
-    } catch (error) {
-      console.error("Error rendering element:", element, error);
-      return null;
+
+      if (!placed) {
+        rows.push({ items: [el], minY: top, maxY: bottom });
+      }
+    }
+
+    // sort rows by vertical position
+    rows.sort((a, b) => a.minY - b.minY);
+    return rows;
+  }
+
+  const rows = groupRowsByVerticalOverlap(elems);
+
+  // --- render helpers
+  const renderElement = (el) => {
+    const baseStyle = {
+      fontFamily: el.fontFamily || "Arial, sans-serif",
+      color: el.color || "#333",
+      textAlign: el.textAlign || "left",
+    };
+
+    switch (el.type) {
+      case "heading":
+        return (
+          <div
+            style={{
+              ...baseStyle,
+              fontSize: `${el.fontSize || 28}px`,
+              fontWeight: el.fontWeight || "700",
+              margin: "6px 0",
+            }}
+            dangerouslySetInnerHTML={{ __html: el.content || "Heading" }}
+          />
+        );
+      case "subheading":
+        return (
+          <div
+            style={{
+              ...baseStyle,
+              fontSize: `${el.fontSize || 22}px`,
+              fontWeight: el.fontWeight || "600",
+              margin: "6px 0",
+            }}
+            dangerouslySetInnerHTML={{ __html: el.content || "Subheading" }}
+          />
+        );
+      case "paragraph":
+        return (
+          <div
+            style={{
+              ...baseStyle,
+              fontSize: `${el.fontSize || 16}px`,
+              lineHeight: el.lineHeight || 1.6,
+              margin: "6px 0",
+              wordBreak: "break-word",
+            }}
+            dangerouslySetInnerHTML={{ __html: (el.content || "").trim() || "Paragraph text" }}
+          />
+        );
+      case "blockquote":
+        return (
+          <div
+            style={{
+              ...baseStyle,
+              fontSize: `${el.fontSize || 16}px`,
+              fontStyle: "italic",
+              borderLeft: `4px solid ${el.borderColor || "#ccc"}`,
+              paddingLeft: 12,
+              margin: "12px 0",
+            }}
+            dangerouslySetInnerHTML={{ __html: el.content || "Blockquote" }}
+          />
+        );
+      case "image":
+        return (
+          <div style={{ textAlign: el.textAlign || "center", margin: "8px 0" }}>
+            <img
+              src={el.src || "https://via.placeholder.com/300x200?text=Image"}
+              alt={el.alt || "Image"}
+              style={{
+                display: "block",
+                margin: "0 auto",
+                width: "100%",
+                maxWidth: `${el.width || 250}px`,
+                height: "auto",
+                borderRadius: `${el.borderRadius || 0}px`,
+                border: el.borderWidth ? `${el.borderWidth}px solid ${el.borderColor || "#ccc"}` : "none",
+              }}
+            />
+          </div>
+        );
+      case "button":
+        return (
+          <div style={{ textAlign: el.textAlign || "center", margin: "12px 0" }}>
+            <a
+              href={el.link || "#"}
+              style={{
+                display: "inline-block",
+                padding: `${el.padding || "10px 18px"}`,
+                background: el.backgroundColor || "#c2831f",
+                color: el.color || "#fff",
+                borderRadius: `${el.borderRadius || 6}px`,
+                textDecoration: "none",
+                fontWeight: el.fontWeight || "700",
+                fontSize: `${el.fontSize || 16}px`,
+              }}
+              dangerouslySetInnerHTML={{ __html: el.content || "Click Me" }}
+            />
+          </div>
+        );
+      case "line":
+        return (
+          <hr
+            style={{
+              border: "none",
+              height: `${el.strokeWidth || 1}px`,
+              background: el.strokeColor || "#ddd",
+              margin: "12px 0",
+            }}
+          />
+        );
+      default:
+        return null;
     }
   };
 
+  // --- Build preview HTML layout using tables per row to mimic email rendering
   return (
     <div className="h-full bg-gray-100 overflow-auto">
-      {/* Email Body */}
       <div className="max-w-2xl mx-auto my-6">
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
           <div className="p-8">
-            {sortedElements.map(element => renderEmailElement(element))}
+            {rows.map((row, rowIndex) => {
+              // sort row items by X so left->right order is preserved
+              const items = row.items.slice().sort((a, b) => a.x - b.x);
+
+              if (items.length === 1) {
+                // single item: render full width block
+                return (
+                  <div key={`row-${rowIndex}`} style={{ marginBottom: 8 }}>
+                    {renderElement(items[0])}
+                  </div>
+                );
+              }
+
+              // multiple items: compute relative widths based on element width values
+              const totalWidth = items.reduce((s, it) => s + (it.width || 250), 0);
+              return (
+                <table key={`row-${rowIndex}`} width="100%" cellPadding="0" cellSpacing="0" style={{ marginBottom: 8 }}>
+                  <tbody>
+                    <tr>
+                      {items.map((it, i) => {
+                        const w = Math.max(1, Math.round(((it.width || 250) / totalWidth) * 100));
+                        return (
+                          <td key={it.id || `${rowIndex}-${i}`} width={`${w}%`} style={{ verticalAlign: "top", padding: "6px" }}>
+                            {renderElement(it)}
+                          </td>
+                        );
+                      })}
+                    </tr>
+                  </tbody>
+                </table>
+              );
+            })}
           </div>
 
-          {/* Email Footer */}
           <div className="bg-gray-50 px-8 py-6 border-t border-gray-200 text-center text-sm text-gray-600">
-             
+            Sent preview — matches canvas layout.
           </div>
         </div>
       </div>
     </div>
   );
 }
+
+
 
 export default function CampaignBuilder() {
   const location = useLocation();

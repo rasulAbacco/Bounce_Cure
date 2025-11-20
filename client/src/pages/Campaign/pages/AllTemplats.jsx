@@ -6,6 +6,7 @@ import {
   ImageIcon, Monitor, Presentation, PartyPopper, ShoppingBag, Filter,
   Grid, List, X
 } from "lucide-react";
+const API_URL = import.meta.env.VITE_VRI_URL;
 
 const templates = [
   {
@@ -1124,7 +1125,7 @@ useEffect(() => {
     if (!userId) return;
 
     try {
-      const response = await fetch(`http://localhost:5000/api/saved-templates/${userId}`);
+      const response = await fetch(`${API_URL}/api/saved-templates/${userId}`);
       
       if (!response.ok) {
         throw new Error(`Failed to fetch: ${response.status}`);
