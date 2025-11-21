@@ -1381,7 +1381,222 @@ useEffect(() => {
     return matchesCategory && matchesSearch;
   });
 
-  // ... (rest of the component remains unchanged)
+const renderTemplatePreview = (template) => {
+  // Check if content is raw HTML string (from saved templates)
+  if (typeof template.content === 'string' && template.content.includes('<')) {
+    return (
+      <div 
+        className="relative bg-white border border-gray-200 rounded-lg p-6 overflow-auto"
+        style={{
+          minHeight: '400px',
+          maxHeight: '600px',
+          width: '100%'
+        }}
+      >
+        <iframe
+          srcDoc={template.content}
+          style={{
+            width: '100%',
+            minHeight: '500px',
+            border: 'none',
+            backgroundColor: 'white'
+          }}
+          sandbox="allow-same-origin"
+          title="Template Preview"
+        />
+      </div>
+    );
+  }
+
+  // Check if content is array of raw elements (has x, y coordinates)
+  if (template.content && Array.isArray(template.content) && template.content.length > 0) {
+    const hasCoordinates = template.content[0].hasOwnProperty('x') && template.content[0].hasOwnProperty('y');
+    
+    if (hasCoordinates) {
+      return (
+        <div 
+          className="relative bg-white border border-gray-200 rounded-lg mx-auto overflow-auto" 
+          style={{ width: '100%', maxWidth: '800px', height: '600px' }}
+        >
+          <div style={{ position: 'relative', width: '800px', height: '600px' }}>
+            {template.content.map((element) => (
+              <div
+                key={element.id}
+                style={{
+                  position: 'absolute',
+                  left: element.x,
+                  top: element.y,
+                  width: element.width,
+                  height: element.height,
+                  transform: `rotate(${element.rotation || 0}deg)`,
+                  opacity: element.opacity || 1,
+                  zIndex: element.zIndex || 0,
+                }}
+              >
+                {(element.type === "heading" || element.type === "paragraph" || 
+                  element.type === "subheading" || element.type === "blockquote") && (
+                  <div
+                    style={{
+                      fontSize: `${element.fontSize}px`,
+                      fontFamily: element.fontFamily || 'Arial',
+                      color: element.color || '#000000',
+                      fontWeight: element.fontWeight || (element.type === "heading" ? 'bold' : 'normal'),
+                      textAlign: element.textAlign || 'left',
+                      lineHeight: element.lineHeight || '1.4',
+                      backgroundColor: element.backgroundColor || 'transparent',
+                      padding: '8px',
+                      fontStyle: element.fontStyle || (element.type === "blockquote" ? 'italic' : 'normal'),
+                      borderLeft: element.type === "blockquote" ? '4px solid #d1d5db' : 'none',
+                      paddingLeft: element.type === "blockquote" ? '16px' : '8px',
+                      textDecoration: element.textDecoration || 'none',
+                      width: '100%',
+                      height: '100%',
+                      overflow: 'hidden'
+                    }}
+                    dangerouslySetInnerHTML={{ 
+                      __html: element.content || 
+                        (element.type === "heading" ? "Heading" : 
+                         element.type === "subheading" ? "Subheading" :
+                         element.type === "blockquote" ? "Blockquote" : "Paragraph text")
+                    }}
+                  />
+                )}
+                
+                {element.type === "button" && (
+                  <div
+                    style={{
+                      backgroundColor: element.backgroundColor || "#007bff",
+                      color: element.color || "#ffffff",
+                      padding: "10px 20px",
+                      borderRadius: `${element.borderRadius || 6}px`,
+                      fontSize: `${element.fontSize}px`,
+                      fontWeight: element.fontWeight || '600',
+                      fontFamily: element.fontFamily || 'Arial',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: '100%',
+                      width: '100%',
+                      cursor: 'pointer',
+                      border: element.borderWidth ? `${element.borderWidth}px solid ${element.borderColor}` : 'none'
+                    }}
+                  >
+                    {element.content || "Click Me"}
+                  </div>
+                )}
+                
+                {element.type === "image" && (
+                  <img
+                    src={element.src}
+                    alt="Template element"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      borderRadius: `${element.borderRadius || 0}px`,
+                      border: element.borderWidth ? `${element.borderWidth}px solid ${element.borderColor}` : 'none'
+                    }}
+                  />
+                )}
+                
+                {element.type === "card" && (
+                  <div
+                    style={{
+                      backgroundColor: element.backgroundColor || "#FFFFFF",
+                      borderColor: element.borderColor || "#E2E8F0",
+                      borderWidth: `${element.borderWidth || 1}px`,
+                      borderStyle: 'solid',
+                      borderRadius: `${element.borderRadius || 8}px`,
+                      padding: `${element.padding || 16}px`,
+                      fontSize: `${element.fontSize || 16}px`,
+                      fontFamily: element.fontFamily || 'Arial',
+                      color: element.color || '#000000',
+                      height: '100%',
+                      width: '100%',
+                      overflow: 'hidden',
+                      boxShadow: element.boxShadow || 'none'
+                    }}
+                    dangerouslySetInnerHTML={{ __html: element.content || "Card content" }}
+                  />
+                )}
+                
+                {element.type === "rectangle" && (
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      backgroundColor: element.backgroundColor || "#4ECDC4",
+                      border: `${element.borderWidth || 2}px solid ${element.borderColor || '#000'}`,
+                      borderRadius: `${element.borderRadius || 4}px`
+                    }}
+                  />
+                )}
+                
+                {element.type === "circle" && (
+                  <div
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '50%',
+                      backgroundColor: element.backgroundColor || "#FF6B6B",
+                      border: `${element.borderWidth || 2}px solid ${element.borderColor || '#000'}`
+                    }}
+                  />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+  }
+
+  // Fallback: render structured content blocks (for predefined templates)
+  return (
+    <div className="space-y-6">
+      {template.content && template.content.length > 0 ? (
+        template.content.map((block, index) => {
+          if (block.type === "text") {
+            return (
+              <h3 key={index} style={block.style} className="text-gray-900">
+                {block.value}
+              </h3>
+            );
+          }
+          if (block.type === "paragraph") {
+            return (
+              <p key={index} style={block.style} className="text-gray-700 whitespace-pre-line">
+                {block.value}
+              </p>
+            );
+          }
+          if (block.type === "button") {
+            return (
+              <button key={index} style={block.style} className="cursor-default">
+                {block.value}
+              </button>
+            );
+          }
+          if (block.type === "image") {
+            return (
+              <img
+                key={index}
+                src={block.value}
+                alt="Template content"
+                className="rounded-lg max-w-full shadow-lg"
+                style={block.style}
+              />
+            );
+          }
+          return null;
+        })
+      ) : (
+        <p className="text-gray-500 text-center py-10">No content available for this template</p>
+      )}
+    </div>
+  );
+};
+
   
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white">
@@ -1464,11 +1679,14 @@ useEffect(() => {
                 }`}
               >
                 {category}
-                <span className="ml-2 text-xs bg-gray-600 px-2 py-1 rounded-full">
-                  {category === "All" ? allTemplates.length : 
-                   category === "Saved" ? savedTemplates.length + userCreatedTemplates.length :
-                   allTemplates.filter(t => t.category === category).length}
-                </span>
+               <span className="ml-2 text-xs bg-gray-600 px-2 py-1 rounded-full">
+                {category === "All" 
+                  ? allTemplates.length 
+                  : category === "Saved" 
+                    ? userCreatedTemplates.length 
+                    : allTemplates.filter(t => t.category === category).length}
+              </span>
+
               </button>
             ))}
           </div>
@@ -1476,8 +1694,7 @@ useEffect(() => {
           {/* Results Summary */}
           <div className="flex items-center justify-between mb-8">
             <div className="text-gray-400">
-              Showing {filteredTemplates.length} of {selectedCategory === "Saved" ? savedTemplates.length + userCreatedTemplates.length : allTemplates.length} templates
-              {searchTerm && (
+               {searchTerm && (
                 <span className="ml-2">
                   for "<span className="text-blue-400">{searchTerm}</span>"
                 </span>
@@ -1744,135 +1961,9 @@ useEffect(() => {
               </button>
             </div>
             
-            {/* Modal Content */}
+            {/* Modal Content - THIS IS THE UPDATED SECTION */}
             <div className="p-6 overflow-y-auto max-h-[70vh]">
-              <div className="space-y-6">
-                {previewTemplate.content && previewTemplate.content.length > 0 ? (
-                  // Check if content is in raw elements format
-                  previewTemplate.content[0].hasOwnProperty('x') ? (
-                    // Render raw elements directly
-                    <div className="relative bg-white border border-gray-200 rounded-lg" style={{ width: '800px', height: '600px', margin: '0 auto' }}>
-                      {previewTemplate.content.map((element) => (
-                        <div
-                          key={element.id}
-                          className="absolute"
-                          style={{
-                            left: element.x,
-                            top: element.y,
-                            width: element.width,
-                            height: element.height,
-                            transform: `rotate(${element.rotation || 0}deg)`,
-                            opacity: element.opacity || 1,
-                            zIndex: element.zIndex || 0,
-                          }}
-                        >
-                          {element.type === "heading" && (
-                            <div
-                              style={{
-                                fontSize: `${element.fontSize}px`,
-                                fontFamily: element.fontFamily || 'Arial',
-                                color: element.color || '#000000',
-                                fontWeight: element.fontWeight || 'bold',
-                                textAlign: element.textAlign || 'left',
-                                lineHeight: '1.4',
-                                backgroundColor: element.backgroundColor || 'transparent',
-                              }}
-                            >
-                              {element.content || "Heading"}
-                            </div>
-                          )}
-                          {element.type === "paragraph" && (
-                            <div
-                              style={{
-                                fontSize: `${element.fontSize}px`,
-                                fontFamily: element.fontFamily || 'Arial',
-                                color: element.color || '#000000',
-                                fontWeight: element.fontWeight || 'normal',
-                                textAlign: element.textAlign || 'left',
-                                lineHeight: '1.4',
-                                backgroundColor: element.backgroundColor || 'transparent',
-                              }}
-                            >
-                              {element.content || "Paragraph text"}
-                            </div>
-                          )}
-                          {element.type === "button" && (
-                            <div
-                              style={{
-                                backgroundColor: element.backgroundColor || "#007bff",
-                                color: element.color || "#ffffff",
-                                padding: "10px 20px",
-                                borderRadius: `${element.borderRadius || 6}px`,
-                                fontSize: `${element.fontSize}px`,
-                                fontWeight: element.fontWeight || '600',
-                                display: 'flex',
-                                alignItems: 'center',
-                                justifyContent: 'center',
-                                height: '100%',
-                                width: '100%',
-                                cursor: 'pointer'
-                              }}
-                            >
-                              {element.content || "Click Me"}
-                            </div>
-                          )}
-                          {element.type === "image" && (
-                            <img
-                              src={element.src}
-                              alt="Template element"
-                              style={{
-                                width: '100%',
-                                height: '100%',
-                                objectFit: 'cover',
-                                borderRadius: `${element.borderRadius || 0}px`,
-                              }}
-                            />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  ) : (
-                    // Render structured content
-                    previewTemplate.content.map((block, index) => {
-                      if (block.type === "text") {
-                        return (
-                          <h3 key={index} style={block.style} className="text-gray-900">
-                            {block.value}
-                          </h3>
-                        );
-                      }
-                      if (block.type === "paragraph") {
-                        return (
-                          <p key={index} style={block.style} className="text-gray-700 whitespace-pre-line">
-                            {block.value}
-                          </p>
-                        );
-                      }
-                      if (block.type === "button") {
-                        return (
-                          <button key={index} style={block.style} className="cursor-default">
-                            {block.value}
-                          </button>
-                        );
-                      }
-                      if (block.type === "image") {
-                        return (
-                          <img
-                            key={index}
-                            src={block.value}
-                            alt="Template content"
-                            className="rounded-lg max-w-full shadow-lg"
-                            style={block.style}
-                          />
-                        );
-                      }
-                      return null;
-                    })
-                  )
-                ) : (
-                  <p className="text-gray-500 text-center py-10">No content available for this template</p>
-                )}
-              </div>
+              {renderTemplatePreview(previewTemplate)}
             </div>
             
             {/* Modal Footer */}
@@ -1899,7 +1990,6 @@ useEffect(() => {
           </div>
         </div>
       )}
-
       {/* Custom Styles */}
       <style>{`
         .line-clamp-2 {
