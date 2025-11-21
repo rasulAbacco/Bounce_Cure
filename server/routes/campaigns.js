@@ -10,7 +10,7 @@ router.use(protect);
 /* ==========================================================
    HTML + Plain Text Generators
 ========================================================== */
-const generateHtmlFromCanvas = (canvasData, subject, fromName, fromEmail) => {
+const generateHtmlFromCanvas = (canvasData, subject, fromName, fromEmail, fromAddress) => {
 
   // -------------- EMPTY TEMPLATE -----------------
   if (!canvasData || canvasData.length === 0) {
@@ -36,7 +36,7 @@ const generateHtmlFromCanvas = (canvasData, subject, fromName, fromEmail) => {
                 </p>
 
                 <p style="margin:5px 0;font-size:12px;color:#999;">
-                  Gal Electronics · 151 14th St NW #2143 · Atlanta, GA 30318-7835 · USA
+                    ${fromAddress}
                 </p>
 
                 <p style="margin:0;font-size:12px;color:#999;">
@@ -283,7 +283,7 @@ const generateHtmlFromCanvas = (canvasData, subject, fromName, fromEmail) => {
               </p>
 
               <p style="margin:5px 0;font-size:12px;color:#777;">
-                Gal Electronics · 151 14th St NW #2143 · Atlanta, GA 30318-7835 · USA
+                ${fromAddress}
               </p>
 
               <p style="margin:0;font-size:12px;color:#777;">
@@ -375,6 +375,7 @@ router.post("/send", async (req, res) => {
       recipients,
       fromEmail,
       fromName,
+      fromAddress,
       subject,
       canvasData,
       scheduleType = "immediate",
@@ -393,6 +394,10 @@ router.post("/send", async (req, res) => {
     if (!fromEmail || !fromName) {
       return res.status(400).json({ error: "Missing sender fields (fromEmail/fromName)" });
     }
+    if (!fromAddress) {
+      return res.status(400).json({ error: "Sender address is required" });
+    }
+
 
     const emailSubject = subject?.trim() || "Untitled Campaign";
 
@@ -459,6 +464,7 @@ router.post("/send", async (req, res) => {
         subject: emailSubject,
         fromEmail,
         fromName,
+        fromAddress,
         scheduleType,
         designJson: JSON.stringify(canvasData || []),
         recipientsJson: JSON.stringify(recipients),
@@ -489,6 +495,16 @@ router.post("/send", async (req, res) => {
         },
       });
 
+      // 📝 Enhanced console logging for debugging
+      console.log(`✅ Campaign ${campaign.id} scheduled:`);
+      console.log(`   📧 Subject: ${emailSubject}`);
+      console.log(`   📅 Date: ${scheduledDate} ${scheduledTime}`);
+      console.log(`   👥 Recipients: ${recipients.length}`);
+      console.log(`   🎨 Canvas Elements: ${canvasData?.length || 0}`);
+      console.log(`   ⏰ Scheduled DateTime: ${scheduledDateTime.toISOString()}`);
+      console.log(`   📍 Type: ${scheduleType}`);
+      console.log(`   ✉️ From: ${fromName} <${fromEmail}>`);
+
       return res.status(200).json({
         success: true,
         message:
@@ -497,13 +513,20 @@ router.post("/send", async (req, res) => {
             : `✅ Recurring campaign created (${recurringFrequency}).`,
         campaignId: campaign.id,
         scheduledAt: scheduledDateTime,
+        recipientCount: recipients.length,
+        scheduleInfo: {
+          date: scheduledDate,
+          time: scheduledTime,
+          timezone: timezone,
+          type: scheduleType,
+        },
       });
     }
 
     // ==========================================================
     // 🚀 STEP 6: Immediate Send
     // ==========================================================
-    const htmlContent = generateHtmlFromCanvas(canvasData, emailSubject, fromName, fromEmail);
+    const htmlContent = generateHtmlFromCanvas(canvasData, emailSubject, fromName, fromEmail, fromAddress);
     const plainTextContent = generatePlainTextFromCanvas(canvasData, emailSubject, fromName, fromEmail);
 
     const results = { success: [], failed: [] };
@@ -760,6 +783,7 @@ router.post("/send-shuffled", async (req, res) => {
     const {
       fromEmail,
       fromName,
+      fromAddress,
       canvasData,
       distribution, // Array of { subject, emails, count }
       scheduleType = "immediate",
@@ -874,6 +898,7 @@ router.post("/send-shuffled", async (req, res) => {
           subject: item.subject,
           fromEmail,
           fromName,
+          fromAddress,
           scheduleType,
           designJson: JSON.stringify(canvasData || []),
           recipientsJson: JSON.stringify(item.emails),
@@ -930,7 +955,7 @@ router.post("/send-shuffled", async (req, res) => {
 
       console.log(`📤 Sending with subject: "${subject}" to ${emails.length} recipients`);
 
-      const htmlContent = generateHtmlFromCanvas(canvasData, subject, fromName, fromEmail);
+      const htmlContent = generateHtmlFromCanvas(canvasData, subject, fromName, fromEmail,fromAddress);
       const plainTextContent = generatePlainTextFromCanvas(canvasData, subject, fromName, fromEmail);
 
       for (const email of emails) {

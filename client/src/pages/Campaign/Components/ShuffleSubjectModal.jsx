@@ -10,6 +10,7 @@ const ShuffleSubjectModal = ({
   canvasPages, 
   fromEmail, 
   fromName,
+  fromAddress, 
   credits,
   onCreditsUpdate
 }) => {
@@ -175,6 +176,7 @@ const ShuffleSubjectModal = ({
       const payload = {
         fromEmail,
         fromName,
+        fromAddress,
         canvasData: canvasPages[0]?.elements || [],
         distribution,
         scheduleType
