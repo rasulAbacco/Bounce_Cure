@@ -307,3 +307,12 @@ app.get('/verify-email', async (req, res) => {
 
 
 });
+
+
+import { startScheduledCampaignCron } from "./cron/scheduledCampaignCron.js";
+
+// After all your routes are set up and before app.listen():
+// Start the scheduled campaign cron job
+startScheduledCampaignCron();
+
+ 

@@ -382,6 +382,7 @@ export default function CampaignBuilder() {
     recipients: "",
     fromEmail: "",
     fromName: "",
+    fromAddress: "",
     subject: "",
     sendTime: "",
     template: "basic",
@@ -737,6 +738,7 @@ const handleSendCampaign = async () => {
       subject: formData.subject,
       fromEmail: formData.fromEmail,
       fromName: formData.fromName,
+      fromAddress: formData.fromAddress,
       recipients: recipientsList,
       canvasData: canvasPages[0].elements,
       scheduleType: formData.scheduleType,
@@ -828,21 +830,28 @@ const handleSendCampaign = async () => {
         navigate("/analytics");
       }, 3000);
 
-    } else {
-      // Scheduled or Recurring - just confirm it's scheduled
-      const scheduleMessage = formData.scheduleType === "scheduled"
-        ? `✅ Campaign scheduled for ${formData.scheduledDate} at ${formData.scheduledTime}. It will be sent automatically.`
-        : `✅ Recurring campaign created (${formData.recurringFrequency}). It will be sent automatically based on your schedule.`;
+    }  else {
+  // Scheduled or Recurring - just confirm it's scheduled
+  const scheduleMessage = formData.scheduleType === "scheduled"
+    ? `✅ Campaign scheduled successfully!\n\n` +
+      `📅 Scheduled Date: ${formData.scheduledDate}\n` +
+      `🕐 Time: ${formData.scheduledTime}\n` +
+      `🌍 Timezone: ${formData.timezone}\n\n` +
+      `Your campaign will be sent automatically at the scheduled time. ` +
+      `The email will use the same template design you see in the preview.`
+    : `✅ Recurring campaign created (${formData.recurringFrequency}). ` +
+      `It will be sent automatically based on your schedule.`;
 
-      setSendStatus({
-        success: true,
-        message: scheduleMessage,
-      });
+  setSendStatus({
+    success: true,
+    message: scheduleMessage,
+  });
 
-      setTimeout(() => {
-        navigate("/automation");
-      }, 3000);
-    }
+  // Show success message for 4 seconds before redirecting
+  setTimeout(() => {
+    navigate("/automation");
+  }, 4000);
+}
 
   } catch (err) {
     console.error("❌ Error sending campaign:", err);
@@ -911,6 +920,7 @@ const handleSendCampaign = async () => {
             canvasPages={canvasPages}
             fromEmail={formData.fromEmail}
             fromName={formData.fromName}
+            fromAddress={formData.fromAddress} 
             credits={credits}
             onCreditsUpdate={(newCredits) => {
               setCredits(newCredits);
@@ -1398,6 +1408,20 @@ const handleSendCampaign = async () => {
                             onChange={handleChange}
                             className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
                             placeholder="Your sender name"
+                          />
+                        </div>
+                        <div className="mt-4">
+                          <label className="block text-sm font-medium text-gray-300 mb-1">
+                            Sender Address
+                          </label>
+                          <input
+                            type="text"
+                            name="fromAddress"
+                            placeholder="Example: 151 14th St NW #2143, Atlanta, GA 30318 USA"
+                            value={formData.fromAddress || ""}
+                            onChange={handleChange}
+                            className="w-full bg-gray-800 border border-gray-700 rounded-md px-3 py-2
+                                      focus:outline-none focus:ring-2 focus:ring-[#c2831f] text-white"
                           />
                         </div>
 

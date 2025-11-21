@@ -516,7 +516,26 @@ const renderDeliverabilityTips = () => (
 
           {/* Deliverability Tips */}
           {renderDeliverabilityTips()}
-
+{/* Scheduled Campaign Info Box */}
+<div className="bg-blue-900/30 border border-blue-700 rounded-lg p-4 mb-6">
+  <div className="flex items-start gap-3">
+    <Clock className="text-blue-400 flex-shrink-0 mt-0.5" size={20} />
+    <div className="flex-1">
+      <h4 className="font-medium text-blue-400 mb-1">
+        Automated Scheduling Active
+      </h4>
+      <p className="text-blue-300 text-sm">
+        Scheduled campaigns are automatically sent at their designated time. 
+        The system checks every minute for campaigns that are due to be sent. 
+        Your campaigns will maintain their template structure and design exactly as previewed.
+      </p>
+      <div className="mt-2 flex items-center gap-2">
+        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+        <span className="text-xs text-blue-300">Automation system running</span>
+      </div>
+    </div>
+  </div>
+</div>
           {/* Tabs */}
           <div className="flex space-x-1 mb-6 bg-gray-900 p-1 rounded-lg w-fit">
             {['overview', 'scheduled'].map((tab) => (
