@@ -1,7 +1,7 @@
 // src/pages/TemplatesPage.jsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
-import { Plus, Star, Eye, Heart, Mail, Megaphone, Share2, Calendar, Rocket, Users, Award, TrendingUp, Gift, AlignCenter } from "lucide-react";
+import { Plus, Star, Eye, Heart, Mail, Megaphone, Share2, Calendar, Rocket, Users, Award, TrendingUp, Gift, Mic  } from "lucide-react";
 
 // Enhanced templates with more variety
 const templates = [
@@ -1020,404 +1020,176 @@ const templates = [
       },
     ],
   },
- 
 {
-  id: 13,
-  name: "GAL Lifestyle Newsletter",
-  category: "Email",
-  preview: "https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=600&h=400&fit=crop",
-  rating: 4.9,
-  likes: 578,
-  icon: Mail,
-  description: "Professional lifestyle newsletter template with multiple content sections and CTAs",
-  content: [
-    // Header Section with Logo Image
+  "id": 22,
+  "name": "Voiceover Email Full Layout",
+  "category": "Service",
+  "preview": "https://images.unsplash.com/photo-1525182008055-f88b95ff7980?w=600&h=400&fit=crop",
+  "rating": 4.9,
+  "likes": 422,
+  "icon": "Mic",
+  "description": "Full email-style layout with voiceover showcase, images, contact details, and banners.",
+
+  "content": [
     {
-      type: "image",
-      value: "https://ci3.googleusercontent.com/meips/ADKq_NZHDDyfJh-r6UBR51h6700N1YKZMcAqoGNPY0BvRZoVwbQgX9w3nJgpulNQ_HOQGu5W3UuFDknn4hqN200hjFrTrrgwmOm2B9stQpImLP3NtyDbdSGIz1oRcXFegP-6C_ccECsuH7-6_luAblE7Tz50uy8Nbsf7Yhg=s0-d-e1-ft#https://mcusercontent.com/0f43b90422072a9c3c839cf39/images/2027f02c-3a10-29fa-be1e-3bbe440d5c7f.jpg",
-      style: {
-        width: "300px",
-        height: "auto",
-        display: "block",
-        margin: "0 auto 30px",
-        borderRadius: "0"
+      "type": "text",
+      "value": "You need a voiceover and you need one fast and affordable.",
+      "style": {
+        "fontSize": 26,
+        "fontWeight": "700",
+        "color": "#111827",
+        "textAlign": "left",
+        "marginBottom": "15px"
       }
     },
-    
-    // Section 1: Golf Simulator
+
     {
-      type: "image",
-      value: "https://ci3.googleusercontent.com/meips/ADKq_Na9bGgYt99HhByZdnwHIVDntPFhDI_GOih6qAGbgAbFi8flOnu_JP90zYyURgEIm9shV8gF87jQwstkWCbdOgbFfrrv8HQaA19Qd1OweFnUW5c55foMeUpaKJnEWfgHDF_GO37tpIpeRDIbwSI_k3SkxuBSRxn7-M8=s0-d-e1-ft#https://mcusercontent.com/0f43b90422072a9c3c839cf39/images/c103b384-a4bc-9b58-3542-781b413a3c89.jpg",
-      style: {
-        width: "100%",
-        height: "auto",
-        borderRadius: "12px",
-        marginBottom: "25px"
+      "type": "paragraph",
+      "value": "Aaron has got you covered. Click the links below to hear demos instantly.",
+      "style": {
+        "fontSize": 17,
+        "color": "#4b5563",
+        "lineHeight": "1.6",
+        "textAlign": "left",
+        "marginBottom": "25px"
       }
     },
+
     {
-      type: "text",
-      value: "Simulate the Course. Improve your Game.",
-      style: { 
-        fontSize: 28, 
-        color: "#ef4444", 
-        fontWeight: "600", 
-        textAlign: "center",
-        marginBottom: "20px"
-      },
-    },
-    {
-      type: "paragraph",
-      value: "GAL has partnered with Foresight Sports to provide indoor golf simulators in virtually any space. Whether it's a basic installation in your garage or a complete custom-designed circuit golf studio for the office - if you have the space, we can create the ultimate golf simulator experience for you.",
-      style: { 
-        fontSize: 15, 
-        color: "#4b5563", 
-        textAlign: "center",
-        lineHeight: "1.7",
-        marginBottom: "20px"
-      },
-    },
-    {
-      type: "paragraph",
-      value: "And the core technology that makes it so great indoors, can still go with you to the range to keep your short and putts.",
-      style: { 
-        fontSize: 15, 
-        color: "#4b5563", 
-        textAlign: "center",
-        lineHeight: "1.7",
-        marginBottom: "25px"
-      },
-    },
-    {
-      type: "paragraph",
-      value: "✓ Works in virtually any space\n✓ Easily upgradable\n✓ Multipurpose simplicity\n✓ It will goes anywhere",
-      style: { 
-        fontSize: 14, 
-        color: "#6b7280", 
-        textAlign: "center",
-        lineHeight: "2",
-        marginBottom: "25px"
-      },
-    },
-    {
-      type: "paragraph",
-      value: "Play the world's best and most exclusive courses, practice your skills on the range, or even compete in skill-building competitions with players around the world – all in beautiful 4K resolution.",
-      style: { 
-        fontSize: 15, 
-        color: "#374151", 
-        textAlign: "center",
-        lineHeight: "1.6",
-        marginBottom: "20px",
-        fontWeight: "500"
-      },
-    },
-    
-    // Feature Images Grid
-    {
-      type: "div",
-      style: {
-        display: "flex",
-        flexWrap: "wrap",
-        justifyContent: "space-between",
-        marginBottom: "25px"
-      },
-      content: [
-        {
-          type: "image",
-          value: "https://ci3.googleusercontent.com/meips/ADKq_NbPjTZaF4OQNZK-sol4v5570jtViahtuY_KHYJZ38AggMrwf_EWouiMbTVnLIclRqL0f5Kvl4dlZQ7GYa6v39XDzPbJagj8N_3o2J-DaoGkjyaMM49Uqw-fBpq4ilSiFxtsvmCjj4kdo-7R8wEniEDbyDMzALPSKXw=s0-d-e1-ft#https://mcusercontent.com/0f43b90422072a9c3c839cf39/images/bd1aa89b-cf8e-5de4-8f57-358ce637f44e.jpg",
-          style: {
-            width: "48%",
-            height: "auto",
-            borderRadius: "8px",
-            marginBottom: "15px"
-          }
-        },
-        {
-          type: "image",
-          value: "https://ci3.googleusercontent.com/meips/ADKq_NaDvuajX7hM2s8L56m9W787E6j0STHwO7hypnFVgHquMgqLABbbhaL_nNwoa-nEvGgttH_IS_ZbhVCKpPoV9w7brdwIqckWwcWIb1dgsM8v_wSPmiJotT0q3xp_sJhBf1mMJO5xr0ezZMk5zVIyI67GIe_odQ85Nwk=s0-d-e1-ft#https://mcusercontent.com/0f43b90422072a9c3c839cf39/images/d8e9b1fe-e5fe-a9f5-2313-587326195ed2.jpg",
-          style: {
-            width: "48%",
-            height: "auto",
-            borderRadius: "8px",
-            marginBottom: "15px"
-          }
-        },
-        {
-          type: "image",
-          value: "https://ci3.googleusercontent.com/meips/ADKq_NbJyLyEctsDpL2vN-3eR8szLpeEeM0NzeYSnjpVp9MvnSFNjGnU3CPAGdqSahWhshIHTsB9EObamg2fIwkY0e7fNyvnuXNviAcWbhVrR0jl1GyGaqHpoEb_ur2oxbZbDlF5VPYb-zUkTBs-_xItqjv_8eQqJf_t8v0=s0-d-e1-ft#https://mcusercontent.com/0f43b90422072a9c3c839cf39/images/5df6ac73-cc5c-9643-e7f0-65c87da37104.jpg",
-          style: {
-            width: "48%",
-            height: "auto",
-            borderRadius: "8px",
-            marginBottom: "15px"
-          }
-        },
-        {
-          type: "image",
-          value: "https://ci3.googleusercontent.com/meips/ADKq_Na9bGgYt99HhByZdnwHIVDntPFhDI_GOih6qAGbgAbFi8flOnu_JP90zYyURgEIm9shV8gF87jQwstkWCbdOgbFfrrv8HQaA19Qd1OweFnUW5c55foMeUpaKJnEWfgHDF_GO37tpIpeRDIbwSI_k3SkxuBSRxn7-M8=s0-d-e1-ft#https://mcusercontent.com/0f43b90422072a9c3c839cf39/images/c103b384-a4bc-9b58-3542-781b413a3c89.jpg",
-          style: {
-            width: "48%",
-            height: "auto",
-            borderRadius: "8px",
-            marginBottom: "15px"
-          }
-        }
-      ]
-    },
-    
-    {
-      type: "button",
-      value: "Inquire Now",
-      style: {
-        backgroundColor: "#ef4444",
-        color: "#ffffff",
-        padding: "14px 32px",
-        borderRadius: "25px",
-        fontSize: "15px",
-        fontWeight: "600",
-        margin: "20px auto",
-        display: "block",
-        border: "none",
-        cursor: "pointer"
-      },
-    },
-    
-    // Section 2: Video Walls
-    {
-      type: "image",
-      value: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=350&fit=crop",
-      style: {
-        borderRadius: "12px",
-        marginBottom: "25px",
-        marginTop: "40px"
+      "type": "text",
+      "value": "Click to hear demo categories:",
+      "style": {
+        "fontSize": 20,
+        "fontWeight": "600",
+        "marginBottom": "10px"
       }
     },
+
     {
-      type: "text",
-      value: "The Future is Big.",
-      style: { 
-        fontSize: 28, 
-        color: "#ef4444", 
-        fontWeight: "600", 
-        textAlign: "center",
-        marginBottom: "15px"
-      },
-    },
-    {
-      type: "text",
-      value: "Video Walls for Modern Spaces.",
-      style: { 
-        fontSize: 20, 
-        color: "#6b7280", 
-        fontWeight: "500", 
-        textAlign: "center",
-        marginBottom: "20px"
-      },
-    },
-    {
-      type: "paragraph",
-      value: "Whether you're looking to build a custom home theater, leverage the latest technology and investment on meetings, or design stunning feature statement walls for display, collaboration, and broadcast stations, Datapath thanks to technology behind the power of LG's professional displays. Capable of high-quality 120 and LED video walls in your most adaptable, putting them within reach of modern boardrooms and luxury homes.",
-      style: { 
-        fontSize: 15, 
-        color: "#4b5563", 
-        textAlign: "center",
-        lineHeight: "1.7",
-        marginBottom: "20px"
-      },
-    },
-    {
-      type: "paragraph",
-      value: "Tailored to fit any dimensions or needs, adding a video wall ensures you don't just display content, you make an unforgettable statement in a grand scale.",
-      style: { 
-        fontSize: 15, 
-        color: "#374151", 
-        textAlign: "center",
-        lineHeight: "1.6",
-        marginBottom: "20px",
-        fontWeight: "500"
-      },
-    },
-    {
-      type: "button",
-      value: "Inquire Now",
-      style: {
-        backgroundColor: "#ef4444",
-        color: "#ffffff",
-        padding: "14px 32px",
-        borderRadius: "25px",
-        fontSize: "15px",
-        fontWeight: "600",
-        margin: "20px auto",
-        display: "block",
-        border: "none",
-        cursor: "pointer"
-      },
-    },
-    
-    // Section 3: Ketra Lighting
-    {
-      type: "image",
-      value: "https://images.unsplash.com/photo-1513694203232-719a280e022f?w=600&h=350&fit=crop",
-      style: {
-        borderRadius: "12px",
-        marginBottom: "25px",
-        marginTop: "40px"
+      "type": "paragraph",
+      "value": "1) commercials\n\n2) non-partisan political / election advertisements\n\n3) narration\n\n4) PSA’S\n\n5) white board narration\n\nAnd a whole lot more.\n\nTV Promos\nRadio Imaging",
+      "style": {
+        "fontSize": 16,
+        "color": "#374151",
+        "lineHeight": "1.8",
+        "marginBottom": "30px"
       }
     },
+
     {
-      type: "text",
-      value: "Is Ketra Lighting Worth the Investment?",
-      style: { 
-        fontSize: 24, 
-        color: "#ef4444", 
-        fontWeight: "600", 
-        textAlign: "center",
-        marginBottom: "10px"
-      },
-    },
-    {
-      type: "text",
-      value: "Absolutely - Here's Why.",
-      style: { 
-        fontSize: 20, 
-        color: "#6b7280", 
-        fontWeight: "500", 
-        textAlign: "center",
-        marginBottom: "20px"
-      },
-    },
-    {
-      type: "paragraph",
-      value: "When it comes to smart home lighting, Ketra stands out for its luxury appeal. Ketra by Lutron, known for its flawless integration of light, color, and control, Ketra is not just another smart lighting solution—it's an entirely different experience. With circadian lighting that mimics natural sunlight and provides traditional lighting options, Ketra offers exceptional benefits that make it well worth the investment for homeowners who value comfort, ambiance, and performance.",
-      style: { 
-        fontSize: 15, 
-        color: "#4b5563", 
-        textAlign: "center",
-        lineHeight: "1.7",
-        marginBottom: "25px"
-      },
-    },
-    {
-      type: "button",
-      value: "Learn More",
-      style: {
-        backgroundColor: "#ef4444",
-        color: "#ffffff",
-        padding: "14px 32px",
-        borderRadius: "25px",
-        fontSize: "15px",
-        fontWeight: "600",
-        margin: "20px auto",
-        display: "block",
-        border: "none",
-        cursor: "pointer"
-      },
-    },
-    
-    // Section 4: Network Health Monitoring
-    {
-      type: "image",
-      value: "https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&h=350&fit=crop",
-      style: {
-        borderRadius: "12px",
-        marginBottom: "25px",
-        marginTop: "40px"
+      "type": "button",
+      "value": "click",
+      "style": {
+        "backgroundColor": "#2563eb",
+        "color": "#fff",
+        "padding": "14px 38px",
+        "borderRadius": "25px",
+        "fontSize": "16px",
+        "fontWeight": "600",
+        "marginBottom": "35px",
+        "display": "inline-block",
+        "cursor": "pointer",
+        "border": "none"
       }
     },
+
     {
-      type: "text",
-      value: "INTRODUCING",
-      style: { 
-        fontSize: 14, 
-        color: "#9ca3af", 
-        fontWeight: "600", 
-        textAlign: "center",
-        marginBottom: "10px",
-        letterSpacing: "0.1em"
-      },
+      "type": "image",
+      "value": "https://i.imgur.com/pXXHk5Z.jpeg",
+      "style": {
+        "borderRadius": "10px",
+        "marginBottom": "15px"
+      }
     },
+
     {
-      type: "text",
-      value: "Network Health Monitoring",
-      style: { 
-        fontSize: 26, 
-        color: "#111827", 
-        fontWeight: "700", 
-        textAlign: "center",
-        marginBottom: "20px"
-      },
+      "type": "paragraph",
+      "value": "Press:   Aaron was the voice behind the 2024 elections: SF Chronicle",
+      "style": {
+        "fontSize": 14,
+        "color": "#4b5563",
+        "marginBottom": "20px",
+        "textAlign": "left"
+      }
     },
+
     {
-      type: "paragraph",
-      value: "Your connected smart devices and home should now be able to hear, communicate, and effectively optimize your performance. Whether as a manager, you will receive automatic monthly firmware updates pushed to all your network equipment, keeping everything running at peak performance. Should anything go wrong with any of your network connected equipment, your main health audit receive a detailed health report that breaks down exactly how your network is performing, highlights any potential issues before they become serious problems, and offers specific steps to remedy them. And if something does go wrong? Members jump straight to the front of the queue – no waiting on tickets, just fast resolution from GAL's expert support team.",
-      style: { 
-        fontSize: 15, 
-        color: "#4b5563", 
-        textAlign: "center",
-        lineHeight: "1.7",
-        marginBottom: "25px"
-      },
+      "type": "paragraph",
+      "value": "About:   Aaron is a Hollywood based pro voice actor heard daily on CNN as a network promo voice. He was also the promo voice of the Late Show with Stephen Colbert on CBS. To date he voices over 20 TV News stations daily as well as 13 radio stations. He was the election voice of both Chuck Grassley (GOP) and Adam Schiff (Democrat) for Senate. A campaign he won. Aaron has voiced over 30 congressional, senate, governor, mayoral and even 1 presidential campaign to date and is one of America’s top choices for election voiceover. He was also the national voice of Airbnb for 2 years as well as Ring Doorbells. He has also filled in as narrator voice for PBS’s Frontline, considered the gold standard for a voice actor. Aaron is also heard on top video games such as Grand Theft Auto and Call of Duty. Aaron has worked in voiceover full time since 2010 and is a former news anchor in markets like Philly and Miami. Aaron is known for being one of the most versatile voice actors in the business today being able to voice any style for any need.",
+      "style": {
+        "fontSize": 14,
+        "color": "#374151",
+        "lineHeight": "1.8",
+        "marginBottom": "35px"
+      }
     },
+
     {
-      type: "text",
-      value: "$24.99/month (billed annually)",
-      style: { 
-        fontSize: 16, 
-        color: "#ef4444", 
-        fontWeight: "600", 
-        textAlign: "center",
-        marginBottom: "15px"
-      },
+      "type": "image",
+      "value": "https://i.imgur.com/4b2msTT.jpeg",
+      "style": {
+        "borderRadius": "10px",
+        "marginBottom": "25px"
+      }
     },
-    
-    // Footer Section
+
     {
-      type: "text",
-      value: "Life is too busy for downtime.",
-      style: { 
-        fontSize: 22, 
-        color: "#111827", 
-        fontWeight: "600", 
-        textAlign: "center",
-        marginBottom: "20px",
-        marginTop: "30px"
-      },
+      "type": "text",
+      "value": "Aaron Bradley, world-wide voice",
+      "style": {
+        "fontSize": 16,
+        "fontWeight": "700",
+        "marginBottom": "8px"
+      }
     },
+
     {
-      type: "button",
-      value: "GET STARTED",
-      style: {
-        backgroundColor: "#ef4444",
-        color: "#ffffff",
-        padding: "16px 40px",
-        borderRadius: "25px",
-        fontSize: "16px",
-        fontWeight: "700",
-        margin: "20px auto",
-        display: "block",
-        border: "none",
-        cursor: "pointer",
-        letterSpacing: "0.05em"
-      },
+      "type": "paragraph",
+      "value": "studio: 310-362-0529\nmobile/text: 619-227-8458",
+      "style": {
+        "fontSize": 14,
+        "color": "#374151",
+        "lineHeight": "1.6",
+        "marginBottom": "10px"
+      }
     },
+
     {
-      type: "paragraph",
-      value: "Let GAL Help Automate your Life!",
-      style: { 
-        fontSize: 18, 
-        color: "#ffffff", 
-        textAlign: "center",
-        lineHeight: "1.6",
-        marginBottom: "20px",
-        backgroundColor: "#ef4444",
-        padding: "18px",
-        borderRadius: "8px",
-        fontWeight: "600",
-        marginTop: "30px"
-      },
+      "type": "paragraph",
+      "value": "e-mail: aaron@aaronvo.com\nweb / demos: aaronvo.com",
+      "style": {
+        "fontSize": 14,
+        "color": "#1d4ed8",
+        "lineHeight": "1.6",
+        "marginBottom": "15px"
+      }
     },
-  ],
+
+    {
+      "type": "text",
+      "value": "learn more about aaron:",
+      "style": {
+        "fontSize": 14,
+        "fontStyle": "italic",
+        "marginBottom": "12px"
+      }
+    },
+
+    {
+      "type": "paragraph",
+      "value": "* This email and any files transmitted with it are confidential and intended solely for the use of individual or entity to whom they are addressed. This message contains confidential information and is intended only for the individual named. If you are not the named addressee you should not disseminate, distribute or copy this e-mail. Please notify the sender immediately by e-mail if you have received this e-mail by mistake and delete this e-mail from your system. If you are not the intended recipient you are notified that disclosing, copying, distributing or taking any action in reliance on the contents of this information is strictly prohibited.",
+      "style": {
+        "fontSize": 12,
+        "color": "#6b7280",
+        "lineHeight": "1.6",
+        "marginTop": "15px",
+        "marginBottom": "20px"
+      }
+    }
+  ]
 }
+
+
  
 ];
  

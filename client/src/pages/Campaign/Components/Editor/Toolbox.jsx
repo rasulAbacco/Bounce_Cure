@@ -166,13 +166,34 @@ const Toolbox = ({
     { name: "Mail", icon: Mail },
   ];
 
-  const socialIcons = [
-    { name: "Facebook", icon: Facebook, color: "#1877F2" },
-    { name: "Twitter", icon: Twitter, color: "#1DA1F2" },
-    { name: "Instagram", icon: Instagram, color: "#E4405F" },
-    { name: "LinkedIn", icon: Linkedin, color: "#0077B5" },
-    { name: "YouTube", icon: Youtube, color: "#FF0000" },
-  ];
+const socialIcons = [
+  { 
+    name: "Facebook", 
+    src: "https://cdn-icons-png.flaticon.com/512/733/733547.png", 
+    color: "#1877F2" 
+  },
+  { 
+    name: "Twitter", 
+    src: "https://cdn-icons-png.flaticon.com/512/733/733579.png", 
+    color: "#1DA1F2" 
+  },
+  { 
+    name: "Instagram", 
+    src: "https://cdn-icons-png.flaticon.com/512/2111/2111463.png", 
+    color: "#E4405F" 
+  },
+  { 
+    name: "LinkedIn", 
+    src: "https://cdn-icons-png.flaticon.com/512/145/145807.png", 
+    color: "#0077B5" 
+  },
+  { 
+    name: "YouTube", 
+    src: "https://cdn-icons-png.flaticon.com/512/1384/1384060.png", 
+    color: "#FF0000"
+  }
+];
+
 
   const cardStyles = [
     {
@@ -424,12 +445,14 @@ const Toolbox = ({
   const handleAddSocialIcon = (socialName, socialColor) => {
     const link = prompt(`Enter link for ${socialName} (optional):`, "");
 
-    onAddElement("social", {
-      name: socialName,
-      color: socialColor,
-      fontSize: 24,
-      link: link || null,
-    });
+  onAddElement("social", {
+    type: "social",
+    platform: icon.name,
+    src: icon.src,   // ✅ proper image URL
+    link: "#"
+  });
+
+
   };
 
   const handleAddCard = (cardStyle) => {
@@ -924,21 +947,29 @@ const Toolbox = ({
 
               {expandedSections.social && (
                 <div className="grid grid-cols-5 gap-2 mt-3">
-                  {socialIcons.map((social, index) => (
-                    <button
+                  {socialIcons.map((item, index) => (
+                    <div
                       key={index}
-                      onClick={() =>
-                        handleAddSocialIcon(social.name, social.color)
-                      }
-                      className="flex flex-col items-center gap-1 p-2 bg-gray-700 hover:bg-gray-600 rounded-lg transition-colors group"
-                      title={`Add ${social.name} icon`}
+                      className="p-2 cursor-pointer"
+                      onClick={() => onAddElement("social", {
+                        type: "social",
+                        platform: item.name,
+                        src: item.src,
+                        link: "#"
+                      })}
                     >
-                      <social.icon size={18} style={{ color: social.color }} />
-                      <span className="text-xs text-gray-300 group-hover:text-white">
-                        {social.name}
-                      </span>
-                    </button>
+                      <img
+                        src={item.src}
+                        alt={item.name}
+                        style={{
+                          width: 32,
+                          height: 32,
+                          borderRadius: 4
+                        }}
+                      />
+                    </div>
                   ))}
+
                 </div>
               )}
             </div>

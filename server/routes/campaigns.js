@@ -76,7 +76,7 @@ const generateHtmlFromCanvas = (canvasData, subject, fromName, fromEmail, fromAd
   // =====================================================
   // 3️⃣ GROUP ELEMENTS INTO ROWS (for side-by-side support)
   // =====================================================
- function groupRows(elements, threshold = 15) {  // Reduced from 50 to 15
+function groupRows(elements, threshold = 15) {  // ✅ Changed from 50 to 15 to match canvas
   let rows = [];
 
   // Sort elements by Y position first, then by X if Y is close
@@ -95,9 +95,11 @@ const generateHtmlFromCanvas = (canvasData, subject, fromName, fromEmail, fromAd
     let added = false;
 
     for (let row of rows) {
-      const rowMidpoint = (row[0].y + ((row[0].height || 80) / 2));
+      // Use first element in row as reference
+      const rowEl = row[0];
+      const rowMidpoint = rowEl.y + ((rowEl.height || 80) / 2);
       
-      // Only group if midpoints are very close (stricter grouping)
+      // ✅ Stricter grouping - only group if midpoints are very close
       if (Math.abs(elMidpoint - rowMidpoint) <= threshold) {
         row.push(el);
         added = true;
@@ -122,152 +124,230 @@ const generateHtmlFromCanvas = (canvasData, subject, fromName, fromEmail, fromAd
   // =====================================================
   // 4️⃣ RENDER FUNCTION (converts each element → HTML)
   // =====================================================
-  function renderElement(el) {
-    switch (el.type) {
+function renderElement(el) {
+  switch (el.type) {
 
-      case "heading":
-        return `
-          <h1 style="
-            margin:0 0 20px;
-            font-size:${el.fontSize || 28}px;
-            color:${el.color || "#333"};
-            background:${el.backgroundColor || "transparent"};
-            font-weight:bold;
-            text-align:${el.textAlign || "left"};
-            line-height:1.3;
-          ">${el.content || "Heading"}</h1>
-        `;
+    case "heading":
+      return `
+        <h1 style="
+          margin:6px 0;
+          font-size:${el.fontSize || 28}px;
+          color:${el.color || "#333"};
+          background:${el.backgroundColor || "transparent"};
+          font-weight:${el.fontWeight || "700"};
+          font-family:${el.fontFamily || "Arial, sans-serif"};
+          text-align:${el.textAlign || "left"};
+          line-height:1.3;
+        ">${el.content || "Heading"}</h1>
+      `;
 
-      case "subheading":
-        return `
-          <h2 style="
-            margin:0 0 16px;
-            font-size:${el.fontSize || 22}px;
-            color:${el.color || "#333"};
-            background:${el.backgroundColor || "transparent"};
-            font-weight:600;
-            text-align:${el.textAlign || "left"};
-          ">${el.content || "Subheading"}</h2>
-        `;
+    case "subheading":
+      return `
+        <h2 style="
+          margin:6px 0;
+          font-size:${el.fontSize || 22}px;
+          color:${el.color || "#333"};
+          background:${el.backgroundColor || "transparent"};
+          font-weight:${el.fontWeight || "600"};
+          font-family:${el.fontFamily || "Arial, sans-serif"};
+          text-align:${el.textAlign || "left"};
+        ">${el.content || "Subheading"}</h2>
+      `;
 
-      case "paragraph":
-        return `
-          <div style="
-            font-size:${el.fontSize || 16}px;
-            color:${el.color || "#333"};
-            background:${el.backgroundColor || "transparent"};
-            line-height:1.6;
-            text-align:${el.textAlign || "left"};
-            margin:0 0 16px;
-            word-break:break-word;
-          ">
-            ${el.content || ""}
-          </div>
-        `;
-
-      case "image":
-        return `
-          <img src="${el.src}" 
-            style="
-              width:100%;
-              max-width:${el.width || 250}px;
-              border-radius:${el.borderRadius || 0}px;
-              display:block;
-              margin:0 auto;
-            " 
-          />
-        `;
-
-     case "button":
-  return `
-    <table cellpadding="0" cellspacing="0" border="0" style="margin:15px auto;">
-      <tr>
-        <td style="
-          background:${el.backgroundColor || "#007bff"};
-          padding:12px 20px;
-          border-radius:6px;
-          text-align:center;
+    case "paragraph":
+      return `
+        <div style="
+          font-size:${el.fontSize || 16}px;
+          color:${el.color || "#333"};
+          background:${el.backgroundColor || "transparent"};
+          font-family:${el.fontFamily || "Arial, sans-serif"};
+          font-weight:${el.fontWeight || "normal"};
+          font-style:${el.fontStyle || "normal"};
+          text-decoration:${el.textDecoration || "none"};
+          line-height:${el.lineHeight || 1.6};
+          text-align:${el.textAlign || "left"};
+          margin:8px 0;
+          word-wrap:break-word;
+          word-break:break-word;
+          overflow-wrap:break-word;
+          -webkit-hyphens:auto;
+          -moz-hyphens:auto;
+          hyphens:auto;
         ">
-          <a 
-            href="${
-              el.email
-                ? (el.email.startsWith("mailto:") ? el.email : "mailto:" + el.email)
-                : (el.link || "#")
-            }"
-            style="
-              color:${el.color || "#fff"};
-              font-size:${el.fontSize || 16}px;
-              text-decoration:none;
-              font-weight:bold;
-            "
-          >
-            ${el.content || "Click Me"}
-          </a>
-        </td>
-      </tr>
-    </table>
-  `;
+          ${el.content || "Paragraph text"}
+        </div>
+      `;
 
+    case "blockquote":
+      return `
+        <div style="
+          font-size:${el.fontSize || 16}px;
+          color:${el.color || "#333"};
+          background:${el.backgroundColor || "transparent"};
+          font-family:${el.fontFamily || "Arial, sans-serif"};
+          font-style:italic;
+          border-left:4px solid ${el.borderColor || "#ccc"};
+          padding-left:12px;
+          margin:12px 0;
+        ">${el.content || "Blockquote"}</div>
+      `;
 
-      case "line":
-        return `
-          <hr style="
-            height:${el.strokeWidth || 1}px;
-            background:${el.strokeColor || "#ccc"};
-            border:none;
-            margin:20px 0;
-          "/>
-        `;
+case "image": {
+  let imgSrc = el.src;
 
-      default:
-        return "";
-    }
+  // 1️⃣ If blob/base64 → use placeholder OR block sending
+  if (!imgSrc || imgSrc.startsWith("blob:") || imgSrc.startsWith("data:")) {
+    console.warn("Invalid image source detected:", imgSrc);
+    imgSrc = "https://via.placeholder.com/600x400?text=No+Image+Available";
   }
+
+  // 2️⃣ If relative URL → convert to absolute (required for email)
+  if (!imgSrc.startsWith("http://") && !imgSrc.startsWith("https://")) {
+    imgSrc = `${process.env.API_BASE_URL}${imgSrc}`;
+  }
+
+  return `
+    <div style="text-align:${el.textAlign || "center"};margin:12px 0;">
+      <img 
+        src="${imgSrc}"
+        alt="${el.alt || "Image"}"
+        style="
+          display:block;
+          margin:0 auto;
+          width:100%;
+          max-width:${el.width || 300}px;
+          height:auto;
+          border-radius:${el.borderRadius || 0}px;
+          ${el.borderWidth ? `border:${el.borderWidth}px solid ${el.borderColor || "#ccc"};` : ""}
+        "
+      />
+    </div>
+  `;
+}
+
+
+    case "button":
+    return `
+      <table cellpadding="0" cellspacing="0" border="0" width="100%" style="margin:12px 0;">
+        <tr>
+          <td align="${el.textAlign || "left"}">
+            <table cellpadding="0" cellspacing="0" border="0" style="display:inline-block;">
+              <tr>
+                <td style="
+                  background:${el.backgroundColor || "#c2831f"};
+                  padding:${el.padding || "12px 24px"};
+                  border-radius:${el.borderRadius || 6}px;
+                  text-align:center;
+                ">
+                  <a href="${
+                    el.email
+                      ? (el.email.startsWith("mailto:") ? el.email : "mailto:" + el.email)
+                      : (el.link || "#")
+                  }"
+                    style="
+                      color:${el.color || "#fff"};
+                      font-size:${el.fontSize || 16}px;
+                      font-family:${el.fontFamily || "Arial, sans-serif"};
+                      font-weight:${el.fontWeight || "700"};
+                      text-decoration:none;
+                      display:inline-block;
+                      line-height:1.2;
+                    "
+                  >
+                    ${el.content || "Click Me"}
+                  </a>
+                </td>
+              </tr>
+            </table>
+          </td>
+        </tr>
+      </table>
+    `;
+    case "line":
+    return `
+      <hr style="
+        border:none;
+        height:${el.strokeWidth || 1}px;
+        background:${el.strokeColor || "#ddd"};
+        margin:${el.marginTop || 12}px 0 ${el.marginBottom || 12}px 0;
+      "/>
+    `;
+
+    case "rectangle":
+      return `
+        <div style="
+          width:100%;
+          height:${el.height || 100}px;
+          background:${el.backgroundColor || "#4ECDC4"};
+          ${el.borderWidth ? `border:${el.borderWidth}px solid ${el.borderColor || "#000"};` : ""}
+          border-radius:${el.borderRadius || 4}px;
+          margin:8px 0;
+        "></div>
+    `;
+    case "social":
+    return `
+      <a href="${el.link || "#"}" target="_blank" style="margin:0 6px;display:inline-block;">
+        <img src="${el.src}" width="32" height="32" style="display:inline-block;" />
+      </a>
+    `;
+
+
+    case "circle":
+      return `
+        <div style="
+          width:${Math.min(el.width || 100, el.height || 100)}px;
+          height:${Math.min(el.width || 100, el.height || 100)}px;
+          background:${el.backgroundColor || "#FF6B6B"};
+          ${el.borderWidth ? `border:${el.borderWidth}px solid ${el.borderColor || "#000"};` : ""}
+          border-radius:50%;
+          margin:8px auto;
+        "></div>
+    `;
+
+    default:
+      return "";
+  }
+}
 
 
   // =====================================================
   // 5️⃣ BUILD FINAL HTML WITH AUTO SIDE-BY-SIDE ROWS
   // =====================================================
-  let htmlContent = `
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>${subject}</title>
-  </head>
-  <body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial;">
-    <table width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr><td align="center" style="padding:20px;">
-        <table width="600" cellpadding="0" cellspacing="0" border="0" style="background:#fff;max-width:600px;">
-          <tr><td style="padding:30px;">`;
+let htmlContent = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>${subject}</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f4f4;font-family:Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" border="0">
+    <tr><td align="center" style="padding:20px;">
+      <table width="600" cellpadding="0" cellspacing="0" border="0" style="background:#fff;max-width:600px;">
+        <tr><td style="padding:30px;">`;
 
-
-  // ----------- LOOP ROWS ------------
-  rows.forEach(row => {
-
-    // MULTI-COLUMN ROW
-    if (row.length > 1) {
-      const colWidth = Math.floor(100 / row.length);
-
-      htmlContent += `<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>`;
-
-      row.forEach(el => {
-        htmlContent += `
-          <td width="${colWidth}%" valign="top" style="padding:10px;">
-            ${renderElement(el)}
-          </td>
-        `;
-      });
-
-      htmlContent += `</tr></table>`;
-    }
-    else {
-      // SINGLE ELEMENT ROW
-      htmlContent += renderElement(row[0]);
-    }
-
-  });
+// ✅ Loop through rows exactly like SendCampaign preview
+rows.forEach(row => {
+  if (row.length > 1) {
+    // Multi-column row
+    const colWidth = Math.floor(100 / row.length);
+    htmlContent += `<table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom:8px;"><tr>`;
+    
+    row.forEach(el => {
+      htmlContent += `
+        <td width="${colWidth}%" valign="top" style="padding:6px;">
+          ${renderElement(el)}
+        </td>
+      `;
+    });
+    
+    htmlContent += `</tr></table>`;
+  } else {
+    // Single element row
+    htmlContent += `<div style="margin-bottom:8px;">${renderElement(row[0])}</div>`;
+  }
+});
 
 
   // =====================================================

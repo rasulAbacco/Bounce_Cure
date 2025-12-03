@@ -76,8 +76,6 @@ class ErrorBoundary extends React.Component {
   }
 }
 
-// Email Preview Component with Exact Editor Styles
-// Replace the current EmailPreview function with this
 // Replace the EmailPreview function in SendCampaign.jsx with this:
 
 function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
@@ -116,63 +114,47 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
     fontSize: Number(e.fontSize) || 16,
   }));
 
-  // ✅ Sort top-to-bottom ONLY - this is the key fix
-  const sortedElements = [...normalizedElements].sort((a, b) => {
-    // Primary sort by Y position
+  // ✅ Sort by Y position first
+  const sorted = [...normalizedElements].sort((a, b) => {
     if (Math.abs(a.y - b.y) > 10) {
       return a.y - b.y;
     }
-    // Secondary sort by X position if Y is very close
     return a.x - b.x;
   });
 
-  // ✅ IMPROVED: Group into rows with stricter vertical overlap detection
+  // ✅ Group into rows with strict vertical overlap detection
   const groupIntoRows = (elements) => {
     const rows = [];
-    const VERTICAL_THRESHOLD = 15; // Reduced threshold for stricter grouping
+    const VERTICAL_THRESHOLD = 15;
     
     elements.forEach(el => {
-      const elTop = el.y;
-      const elBottom = el.y + el.height;
-      const elMidpoint = el.y + (el.height / 2);
-      
+      const elMidpoint = el.y + ((el.height || 80) / 2);
       let placed = false;
       
       for (const row of rows) {
-        const rowMidpoint = (row.minY + row.maxY) / 2;
+        const rowMidpoint = (row[0].y + ((row[0].height || 80) / 2));
         
-        // Check if element's midpoint is close to row's midpoint
-        // This ensures only truly side-by-side elements are grouped
         if (Math.abs(elMidpoint - rowMidpoint) < VERTICAL_THRESHOLD) {
-          row.items.push(el);
-          row.minY = Math.min(row.minY, elTop);
-          row.maxY = Math.max(row.maxY, elBottom);
+          row.push(el);
           placed = true;
           break;
         }
       }
       
       if (!placed) {
-        rows.push({
-          items: [el],
-          minY: elTop,
-          maxY: elBottom
-        });
+        rows.push([el]);
       }
     });
     
-    // Sort rows by their minimum Y position
-    rows.sort((a, b) => a.minY - b.minY);
-    
-    // Sort items within each row by X position (left to right)
-    rows.forEach(row => row.items.sort((a, b) => a.x - b.x));
+    // Sort items within each row by X position
+    rows.forEach(row => row.sort((a, b) => a.x - b.x));
     
     return rows;
   };
 
-  const rows = groupIntoRows(sortedElements);
+  const rows = groupIntoRows(sorted);
 
-  // ✅ Render element function (unchanged)
+  // ✅ Render element function - FIXED for proper email display
   const renderElement = (el) => {
     const baseStyle = {
       fontFamily: el.fontFamily || "Arial, sans-serif",
@@ -190,6 +172,9 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
               fontWeight: el.fontWeight || "700",
               margin: "6px 0",
               backgroundColor: el.backgroundColor || "transparent",
+              lineHeight: "1.3",
+              wordWrap: "break-word",
+              whiteSpace: "normal",
             }}
             dangerouslySetInnerHTML={{ __html: el.content || "Heading" }}
           />
@@ -204,6 +189,9 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
               fontWeight: el.fontWeight || "600",
               margin: "6px 0",
               backgroundColor: el.backgroundColor || "transparent",
+              lineHeight: "1.4",
+              wordWrap: "break-word",
+              whiteSpace: "normal",
             }}
             dangerouslySetInnerHTML={{ __html: el.content || "Subheading" }}
           />
@@ -215,10 +203,15 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
             style={{
               ...baseStyle,
               fontSize: `${el.fontSize || 16}px`,
+              fontWeight: el.fontWeight || "normal",
+              fontStyle: el.fontStyle || "normal",
+              textDecoration: el.textDecoration || "none",
               lineHeight: el.lineHeight || 1.6,
               margin: "6px 0",
-              wordBreak: "break-word",
               backgroundColor: el.backgroundColor || "transparent",
+              wordWrap: "break-word",
+              whiteSpace: "normal",
+              overflowWrap: "break-word",
             }}
             dangerouslySetInnerHTML={{ __html: (el.content || "").trim() || "Paragraph text" }}
           />
@@ -232,63 +225,83 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
               fontSize: `${el.fontSize || 16}px`,
               fontStyle: "italic",
               borderLeft: `4px solid ${el.borderColor || "#ccc"}`,
-              paddingLeft: 12,
+              paddingLeft: "12px",
               margin: "12px 0",
               backgroundColor: el.backgroundColor || "transparent",
+              lineHeight: "1.6",
+              wordWrap: "break-word",
+              whiteSpace: "normal",
             }}
             dangerouslySetInnerHTML={{ __html: el.content || "Blockquote" }}
           />
         );
       
-      case "image":
-        return (
-          <div style={{ textAlign: el.textAlign || "center", margin: "8px 0" }}>
-            <img
-              src={el.src || "https://via.placeholder.com/300x200?text=Image"}
-              alt={el.alt || "Image"}
-              style={{
-                display: "block",
-                margin: "0 auto",
-                width: "100%",
-                maxWidth: `${el.width || 250}px`,
-                height: "auto",
-                borderRadius: `${el.borderRadius || 0}px`,
-                border: el.borderWidth ? `${el.borderWidth}px solid ${el.borderColor || "#ccc"}` : "none",
-              }}
-            />
-          </div>
-        );
+      // In SendCampaign.jsx, update the image rendering in EmailPreview
+case "image":
+  return (
+    <div style={{ textAlign: el.textAlign || "center", margin: "8px 0" }}>
+      <img
+        src={el.src || "https://via.placeholder.com/300x200?text=Image"}
+        alt={el.alt || "Image"}
+        style={{
+          display: "block",
+          margin: "0 auto",
+          width: "100%",
+          maxWidth: `${el.width || 250}px`,
+          height: "auto",
+          borderRadius: `${el.borderRadius || 0}px`,
+          border: el.borderWidth ? `${el.borderWidth}px solid ${el.borderColor || "#ccc"}` : "none",
+        }}
+        onError={(e) => {
+          console.error("Preview image failed to load:", el.src);
+          e.target.src = "https://via.placeholder.com/300x200?text=Image+Not+Available";
+        }}
+      />
+    </div>
+  );
       
       case "button":
-        return (
-          <div style={{ textAlign: el.textAlign || "center", margin: "12px 0" }}>
-            <a href={el.link || "#"}
-              style={{
-                display: "inline-block",
-                padding: `${el.padding || "10px 18px"}`,
-                background: el.backgroundColor || "#c2831f",
-                color: el.color || "#fff",
-                borderRadius: `${el.borderRadius || 6}px`,
-                textDecoration: "none",
-                fontWeight: el.fontWeight || "700",
-                fontSize: `${el.fontSize || 16}px`,
-              }}
-              dangerouslySetInnerHTML={{ __html: el.content || "Click Me" }}
-            />
-          </div>
-        );
-      
-      case "line":
-        return (
-          <hr
+      return (
+        <div style={{ textAlign: el.textAlign || "left", margin: "12px 0" }}>
+          <a href={el.link || "#"}
             style={{
-              border: "none",
-              height: `${el.strokeWidth || 1}px`,
-              background: el.strokeColor || "#ddd",
-              margin: "12px 0",
+              display: "inline-block",
+              padding: `${el.padding || "10px 18px"}`,
+              background: el.backgroundColor || "#c2831f",
+              color: el.color || "#fff",
+              borderRadius: `${el.borderRadius || 6}px`,
+              textDecoration: "none",
+              fontWeight: el.fontWeight || "700",
+              fontSize: `${el.fontSize || 16}px`,
+              fontFamily: el.fontFamily || "Arial, sans-serif",
             }}
+            dangerouslySetInnerHTML={{ __html: el.content || "Click Me" }}
           />
+        </div>
+      );
+          
+      case "line":
+      return (
+        <hr
+          style={{
+            border: "none",
+            height: `${el.strokeWidth || 1}px`,
+            background: el.strokeColor || "#ddd",
+            margin: `${el.marginTop || 12}px 0 ${el.marginBottom || 12}px 0`,
+          }}
+        />
+      );
+      case "social":
+        return (
+          <a href={el.link || "#"} target="_blank" rel="noopener noreferrer">
+            <img 
+              src={el.src} 
+              alt={el.platform} 
+              style={{ width: 32, height: 32, margin: "0 6px" }} 
+            />
+          </a>
         );
+
       
       case "rectangle":
         return (
@@ -323,41 +336,47 @@ function EmailPreview({ pages, activePage, zoomLevel = 1.0, formData }) {
     }
   };
 
-  // ✅ Build preview HTML
+  // ✅ Build preview HTML with proper table structure
   return (
     <div className="h-full bg-gray-100 overflow-auto">
       <div className="max-w-2xl mx-auto my-6">
         <div className="bg-white rounded-lg shadow-lg overflow-hidden">
-          <div className="p-8">
+          <div className="p-8" style={{ maxWidth: "600px", margin: "0 auto" }}>
             {rows.map((row, rowIndex) => {
-              const items = row.items;
+              const items = row.items || row; // Support both formats
 
               if (items.length === 1) {
-                // Single item: full width
+                // Single item: full width with proper wrapping
                 return (
-                  <div key={`row-${rowIndex}`} style={{ marginBottom: 8 }}>
+                  <div key={`row-${rowIndex}`} style={{ 
+                    marginBottom: "8px",
+                    width: "100%",
+                  }}>
                     {renderElement(items[0])}
                   </div>
                 );
               }
 
-              // Multiple items: side-by-side using table
-              const totalWidth = items.reduce((s, it) => s + (it.width || 250), 0);
+              // Multiple items: side-by-side
               return (
-                <table key={`row-${rowIndex}`} width="100%" cellPadding="0" cellSpacing="0" style={{ marginBottom: 8 }}>
-                  <tbody>
-                    <tr>
-                      {items.map((it, i) => {
-                        const w = Math.max(1, Math.round(((it.width || 250) / totalWidth) * 100));
-                        return (
-                          <td key={it.id || `${rowIndex}-${i}`} width={`${w}%`} style={{ verticalAlign: "top", padding: "6px" }}>
-                            {renderElement(it)}
-                          </td>
-                        );
-                      })}
-                    </tr>
-                  </tbody>
-                </table>
+                <div key={`row-${rowIndex}`} style={{ 
+                  display: "flex", 
+                  gap: "12px",
+                  marginBottom: "8px",
+                  width: "100%",
+                }}>
+                  {items.map((it, i) => (
+                    <div 
+                      key={it.id || `${rowIndex}-${i}`} 
+                      style={{ 
+                        flex: 1,
+                        minWidth: 0, // Important for text wrapping in flex
+                      }}
+                    >
+                      {renderElement(it)}
+                    </div>
+                  ))}
+                </div>
               );
             })}
           </div>
@@ -470,7 +489,7 @@ useEffect(() => {
   if (location.state?.canvasData) {
     console.log('✅ Received canvas data:', location.state.canvasData);
     
-    // ✅ Normalize all numeric values
+    // Normalize all numeric values consistently
     const normalizedElements = location.state.canvasData.map(el => ({
       ...el,
       x: Number(el.x) || 0,
@@ -478,6 +497,18 @@ useEffect(() => {
       width: Number(el.width) || (el.type === 'image' ? 250 : 300),
       height: Number(el.height) || (el.type === 'paragraph' ? 40 : 80),
       fontSize: Number(el.fontSize) || 16,
+      // Preserve all styling properties
+      fontFamily: el.fontFamily || "Arial, sans-serif",
+      fontWeight: el.fontWeight || "normal",
+      fontStyle: el.fontStyle || "normal",
+      textDecoration: el.textDecoration || "none",
+      color: el.color || "#333",
+      backgroundColor: el.backgroundColor || "transparent",
+      textAlign: el.textAlign || "left",
+      lineHeight: el.lineHeight || 1.6,
+      borderRadius: el.borderRadius || 0,
+      borderWidth: el.borderWidth || 0,
+      borderColor: el.borderColor || "#000",
     }));
     
     setCanvasPages([{ id: 1, elements: normalizedElements }]);
